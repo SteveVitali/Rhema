@@ -11,17 +11,16 @@
 // run through the same findings-core functions the SSR handler ran — design/22 OQ8 option (b)).
 import type { ReactNode } from "react";
 import {
+  Button,
   ClaimsTable,
   DispositionControls,
   FindingsDesk,
-  FindingsList,
   LetterView,
-  MarginSurface,
   PageTitle,
   RubricDelta,
   RubricView,
-  RunCard,
   SecondReadView,
+  Select,
   VersionObligationChip,
   type ClaimsTableLabels,
   type ClaimTableRow,
@@ -47,12 +46,9 @@ import {
   buildTriageQueue,
   claimUrlViews,
   collapsedRejected,
-  detectReconciliationConflicts,
-  evidenceUrlViews,
   fetchLogFromRows,
   filterFindings,
   groupFindingsForList,
-  marginItems,
   normalizeEvidence,
   parseFindingFilters,
   pretriageSummary,
@@ -551,7 +547,7 @@ export function findingControlsFor(
       <span
         data-readonly-controls={view.id}
         title={opts.readOnly}
-        style={{ fontSize: "12px", color: "var(--shell-fg-faint)" }}
+        className="ui-d-s ui-vc-faint"
       >
         {opts.readOnly}
       </span>
@@ -566,14 +562,9 @@ export function findingControlsFor(
           expose it (prod's showcase findings carried no applyable suggestion). */}
       {view.suggestion != null && gate.ok && compact !== true ? (
         <form method="post" action={`/p/${slug}/review/${runId}/findings/${view.id}/apply`} data-apply-form={view.id} style={{ display: "inline" }}>
-          <button
-            type="submit"
-            data-apply="true"
-            title={R.applyTitle}
-            style={{ fontSize: "12px", fontWeight: 600, padding: "4px 10px", borderRadius: "4px", border: "1px solid var(--accent)", background: "var(--accent)", color: "var(--shell-bg)", cursor: "pointer" }}
-          >
+          <Button type="submit" variant="primary" size="sm" data-apply="true" title={R.applyTitle}>
             {R.applyLabel}
-          </button>
+          </Button>
         </form>
       ) : null}
       {dispositionControlsFor(view, slug, runId, compact, error)}
@@ -583,51 +574,59 @@ export function findingControlsFor(
         <a
           href={`/p/${slug}/visualize?entry=craft_finding&request=${encodeURIComponent(`${view.title} — ${view.body}`.slice(0, 300))}`}
           data-visualize-finding={view.id}
-          style={{ fontSize: "12px", color: "var(--accent)" }}
+          className="ui-d-s ui-vc-acc"
         >
           {R.visualizeLabel}
         </a>
       ) : null}
       {!opts.hasObligation && !view.provisional ? (
         <form method="post" action={`/p/${slug}/findings/${view.id}/obligations`} style={{ display: "inline" }}>
-          <input type="hidden" name="next" value={`/p/${slug}/review/${runId}`} />
-          <button
-            type="submit"
-            data-add-obligation="true"
-            style={{ fontSize: "12px", background: "none", border: "none", color: "var(--shell-fg-muted)", cursor: "pointer", textDecoration: "underline", padding: 0 }}
-          >
+          <HiddenField name="next" value={`/p/${slug}/review/${runId}`} />
+          <Button type="submit" variant="ghost" size="sm" data-add-obligation="true">
             {R.addObligationLabel}
-          </button>
+          </Button>
         </form>
       ) : null}
     </>
   );
 }
 
+/** The no-JS post's hidden id carriers — the named GUARD-1 exemption (RV-36): Radix's own
+ *  hidden carriers post the named select/checkbox fields, so only these ids ride a raw input. */
+function HiddenField({ name, value }: { readonly name: string; readonly value: string }): ReactNode {
+  return <input type="hidden" name={name} value={value} />;
+}
+
+/** The bulk-preview checklist's `only[]` carrier — the named GUARD-1 exemption (RV-36): the
+ *  consolidated confirm posts checked ids through the form grammar the server arm `asArray`s. */
+function BulkOnlyCheck({ findingId }: { readonly findingId: string }): ReactNode {
+  return <input type="checkbox" name="only" value={findingId} defaultChecked />;
+}
+
 /** The Desk's bulk affordances (§5.7): each posts to the ONE consolidated preview — nothing blind. */
 export function dossierBulkActions(slug: string, runId: string, visible: readonly FindingView[]): ReactNode {
-  const btn = { fontSize: "12px", padding: "4px 10px", borderRadius: "4px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", color: "var(--shell-fg)", cursor: "pointer" } as const;
   const sections = [...new Set(visible.map((v) => v.letterSection).filter((s): s is NonNullable<typeof s> => s != null))];
   const action = `/p/${slug}/review/${runId}/findings/bulk-preview`;
   return (
-    <div data-bulk-controls="true" style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+    <div data-bulk-controls="true" className="ui-d-acts" style={{ flexWrap: "wrap" }}>
       <form method="post" action={action} style={{ display: "inline" }}>
-        <input type="hidden" name="action" value="apply_notes" />
-        <button type="submit" style={btn}>{R.bulk.applyNotes}</button>
+        <HiddenField name="action" value="apply_notes" />
+        <Button type="submit" size="sm">{R.bulk.applyNotes}</Button>
       </form>
       <form method="post" action={action} style={{ display: "inline" }}>
-        <input type="hidden" name="action" value="defer_minor" />
-        <button type="submit" style={btn}>{R.bulk.deferMinor}</button>
+        <HiddenField name="action" value="defer_minor" />
+        <Button type="submit" size="sm">{R.bulk.deferMinor}</Button>
       </form>
       {sections.length > 0 ? (
-        <form method="post" action={action} style={{ display: "inline-flex", gap: "4px", alignItems: "center" }}>
-          <input type="hidden" name="action" value="accept_section" />
-          <select name="section" aria-label={R.bulk.acceptSection} defaultValue={sections[0] ?? ""} style={{ fontSize: "12px" }}>
-            {sections.map((s) => (
-              <option key={s} value={s}>{fmt(R.sectionLabelFmt, { key: s })}</option>
-            ))}
-          </select>
-          <button type="submit" style={btn}>{R.bulk.acceptSection}</button>
+        <form method="post" action={action} className="ui-d-acts">
+          <HiddenField name="action" value="accept_section" />
+          <Select
+            name="section"
+            aria-label={R.bulk.acceptSection}
+            defaultValue={sections[0] ?? ""}
+            items={sections.map((s) => ({ value: s, label: fmt(R.sectionLabelFmt, { key: s }) }))}
+          />
+          <Button type="submit" size="sm">{R.bulk.acceptSection}</Button>
         </form>
       ) : null}
     </div>
@@ -647,7 +646,7 @@ export function dossierSurfaces(data: {
   readonly compact?: boolean;
   /** R7RO.1 — the read-only reason text; set ⇒ every finding/bulk write withholds. */
   readonly readOnly?: string | null;
-}): { marginBody: ReactNode; deskFindingsBody: ReactNode } | Record<string, never> {
+}): { deskFindingsBody: ReactNode } | Record<string, never> {
   const dossier = data.dossier;
   if (!dossier) return {};
   const dv = data.dossierView;
@@ -655,22 +654,9 @@ export function dossierSurfaces(data: {
   const err = data.triage?.dispositionError;
   const compact = data.compact ?? false;
   const readOnly = data.readOnly ?? null;
-  const fetchLog = fetchLogFromRows(dossier.fetchLog.map((normalizedUrl) => ({ normalizedUrl })));
-  const searchOnly = fetchLogFromRows((dossier.searchResultLog ?? []).map((normalizedUrl) => ({ normalizedUrl })));
   const obligationFor = (view: FindingView) => {
     const state = dossier.findingObligations?.[view.id];
     return state ? { state, label: R.obligationStateLabel[state] ?? state } : undefined;
-  };
-  const evidenceFor = (view: FindingView) => {
-    // HOT.1 — normalize at the render seam: a view assembled without the api's row normalization (a
-    // bypass regression) still renders instead of 500ing on `.urls` (ADR-019).
-    const evidence = normalizeEvidence(view.evidence);
-    return evidence != null
-      ? {
-          ...(evidence.verdict != null ? { verdictLabel: R.verdictLabel[evidence.verdict] ?? evidence.verdict } : {}),
-          urls: evidenceUrlViews(evidence, fetchLog, searchOnly),
-        }
-      : undefined;
   };
   const controlsFor = (view: FindingView) =>
     findingControlsFor(view, dossier.slug, dossier.runId, compact, err, {
@@ -678,20 +664,126 @@ export function dossierSurfaces(data: {
       readOnly,
     });
   const filterAction = `/p/${dossier.slug}/review/${dossier.runId}`;
+  // 243a_R7KIT.3e (REQ-PANE-5) — findings live in the right panel's Findings tab ONLY: the
+  // Margin rail (and with it the colour-dot minimap) is REMOVED on the dossier, and the body's
+  // findings column is gone. The workflow furniture the body's findings section carried —
+  // the pre-triage line, the triage promo, the consolidated bulk preview + dispatch lines,
+  // the notice/saved flashes, the severity-budget line and the evidence explainer — moves
+  // WITH the findings into this panel body so every hook stays emitted.
+  const furniture = (
+    <>
+      {(() => {
+        const summary = pretriageSummary([...dossier.findings]);
+        const queue = buildTriageQueue([...dossier.findings]);
+        return (
+          <>
+            {summary.triaged > 0 ? (
+              <p data-pretriage-line="true" className="ui-d-t ui-d-mb10">
+                {fmt(COPY.triage.pretriageFmt, { n: summary.triaged, m: summary.total })}
+              </p>
+            ) : null}
+            {queue.promoteAgentTriage ? (
+              <p data-triage-promo="true" className="ui-d-i ui-d-mb10">
+                {fmt(COPY.triage.promoFmt, { n: 30 })}
+              </p>
+            ) : null}
+          </>
+        );
+      })()}
+      {dv?.bulk && compact !== true ? (
+        <section data-bulk-preview="true" className="ui-bulk" style={{ border: "1px solid var(--shell-border)" }}>
+          <h3 className="ui-d-fd ui-d-b ui-d-mb10">{R.bulk.previewHeading}</h3>
+          {dv.bulk.preview.rows.length === 0 ? (
+            <p className="ui-d-t">{R.bulk.emptyPreview}</p>
+          ) : (
+            <form method="post" action={`/p/${dossier.slug}/review/${dossier.runId}/findings/bulk`}>
+              <HiddenField name="action" value={dv.bulk.action} />
+              {dv.bulk.section != null ? (
+                <HiddenField name="section" value={dv.bulk.section} />
+              ) : null}
+              <ul className="ui-d-p0 ui-d-mb10" style={{ listStyle: "none" }}>
+                {dv.bulk.preview.rows.map((row) => (
+                  <li key={row.findingId} className="ui-d-fd ui-d-p2">
+                    <label className="ui-d-acts" style={{ alignItems: "baseline" }}>
+                      <BulkOnlyCheck findingId={row.findingId} />
+                      <span>
+                        {row.title}{" "}
+                        <span className="ui-d-t">
+                          — {R.severityLabel[row.severity] ?? row.severity} · {R.dispositionPast[row.disposition] ?? row.disposition}
+                        </span>
+                        {row.appliedMarkdown != null ? (
+                          <code className="ui-d-fs ui-d-t ui-d-mt6" style={{ display: "block", whiteSpace: "pre-wrap" }}>
+                            {row.appliedMarkdown.slice(0, 200)}
+                          </code>
+                        ) : null}
+                      </span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+              {dv.bulk.preview.skipped.length > 0 ? (
+                <div data-bulk-skipped="true" className="ui-d-mb10">
+                  <h4 className="ui-d-cap ui-d-s ui-d-t ui-d-mb10">
+                    {R.bulk.skippedHeading}
+                  </h4>
+                  <ul className="ui-d-p0 ui-d-m0 ui-d-s ui-d-t" style={{ listStyle: "none" }}>
+                    {dv.bulk.preview.skipped.map((s) => (
+                      <li key={s.findingId}>{s.title} — {s.reason}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              <Button type="submit" variant="primary" data-bulk-confirm="true">
+                {R.bulk.confirm}
+              </Button>{" "}
+              <a href={`/p/${dossier.slug}/review/${dossier.runId}`} className="ui-d-fd">{R.bulk.cancel}</a>
+            </form>
+          )}
+        </section>
+      ) : null}
+      {dv?.bulkDone ? (
+        <p data-bulk-done="true" role="status" className="ui-d-fd ui-d-ok ui-d-mb10">
+          {fmt(R.bulk.doneFmt, { n: dv.bulkDone.count })}
+        </p>
+      ) : null}
+      {dv?.notice ? (
+        <p
+          data-finding-notice={dv.notice.kind}
+          role={dv.notice.kind === "error" ? "alert" : "status"}
+          className={`ui-d-s ui-d-mb10 ${dv.notice.kind === "error" ? "ui-d-w" : "ui-d-ok"}`}
+        >
+          {dv.notice.message ??
+            (dv.notice.kind === "applied"
+              ? R.appliedToast
+              : dv.notice.kind === "promoted"
+                ? R.promotedToast
+                : R.obligatedToast)}
+        </p>
+      ) : null}
+      {severityBudget([...dossier.findings], dossier.rigor).folded > 0 ? (
+        <p data-severity-budget="true" className="ui-d-s ui-d-t ui-d-mb10">
+          {fmt(R.severityBudgetFmt, { n: severityBudget([...dossier.findings], dossier.rigor).folded })}
+        </p>
+      ) : null}
+      {visible.some((f) => (normalizeEvidence(f.evidence)?.urls.length ?? 0) > 0) ? (
+        <p data-evidence-explainer="true" className="ui-d-i ui-d-mb10">
+          {R.evidenceExplainer}
+        </p>
+      ) : null}
+      {data.triage?.savedFindingId ? (
+        <p data-disposition-saved="true" className="ui-d-s ui-d-ok ui-d-mt6">
+          {COPY.triage.savedLabel}
+        </p>
+      ) : null}
+    </>
+  );
   return {
-    marginBody: (
-      <MarginSurface
-        items={marginItems(visible)}
-        labels={marginLabels}
-        obligationFor={obligationFor}
-        controlsFor={controlsFor}
-        evidenceFor={evidenceFor}
-      />
-    ),
     // §10.1 — the phone-width input set is "the same five verbs + a note; never a bulk action":
     // compact renders omit the bulk affordances entirely.
     deskFindingsBody: (
-      <FindingsDesk
+      <div data-dossier-desk="true">
+        {furniture}
+        <FindingsDesk
         groups={groupFindingsForList(visible)}
         labels={deskFindingsLabels}
         filterAction={filterAction}
@@ -713,14 +805,15 @@ export function dossierSurfaces(data: {
           ? readOnly != null
             ? {
                 bulkActions: (
-                  <span data-readonly-controls="bulk" title={readOnly} style={{ fontSize: "12px", color: "var(--shell-fg-faint)" }}>
+                  <span data-readonly-controls="bulk" title={readOnly} className="ui-d-s ui-vc-faint">
                     {readOnly}
                   </span>
                 ),
               }
             : {}
           : { bulkActions: dossierBulkActions(dossier.slug, dossier.runId, visible) })}
-      />
+        />
+      </div>
     ),
   };
 }
@@ -744,11 +837,11 @@ export function reviewPanelBodies(
   const dossierHref = `/p/${slug}/review/${review.runId}`;
   const n = review.draftN ?? 0;
   const sourceLine = (
-    <p data-review-source={review.runId} style={{ fontSize: "12px", margin: "0 0 8px" }}>
-      <a href={dossierHref} style={{ color: "var(--accent)" }}>
+    <p data-review-source={review.runId} className="ui-d-s ui-d-mb10">
+      <a href={dossierHref} className="ui-vc-acc">
         {fmt(P.reviewFromFmt, { n })}
       </a>
-      <span style={{ color: "var(--shell-fg-faint)" }}>
+      <span className="ui-vc-faint">
         {" "}
         · {review.counts.findings} findings
         {review.counts.strengths > 0 ? ` · ${review.counts.strengths} strengths` : ""}
@@ -778,13 +871,13 @@ export function reviewPanelBodies(
       <div data-review-panel="findings">
         {sourceLine}
         {review.findings.length === 0 ? (
-          <p data-findings-empty="true" style={{ fontSize: 13, color: "var(--shell-fg-muted)" }}>
+          <p data-findings-empty="true" className="ui-d-t">
             {R.findingsEmpty}
           </p>
         ) : (
-          <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 13 }}>
+          <table className="ui-rptab ui-d-fd" style={{ borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ textAlign: "left", color: "var(--shell-fg-muted)" }}>
+              <tr className="ui-d-t">
                 <th scope="col">{P.findingsTable.finding}</th>
                 <th scope="col">{P.findingsTable.severity}</th>
                 <th scope="col">{P.findingsTable.kind}</th>
@@ -795,7 +888,7 @@ export function reviewPanelBodies(
               {review.findings.map((f) => (
                 <tr key={f.id} data-review-finding={f.id}>
                   <td>
-                    <a href={`${dossierHref}#finding-${f.id}`} style={{ color: "inherit" }}>
+                    <a href={`${dossierHref}#finding-${f.id}`} className="ui-d-inh">
                       {f.excerpt}
                     </a>
                   </td>
@@ -818,7 +911,7 @@ export function reviewPanelBodies(
       <div data-review-panel="claims">
         {sourceLine}
         {claimRows.length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--shell-fg-muted)" }}>{P.emptyClaims}</p>
+          <p className="ui-d-t">{P.emptyClaims}</p>
         ) : (
           <ClaimsTable rows={claimRows} labels={claimsLabels} />
         )}
@@ -843,7 +936,7 @@ export function DossierArticle({
   compact,
   dossierView,
   dispositionError,
-  savedFindingId,
+  savedFindingId: _savedFindingId,
   beacon,
   gatePresenceScript,
 }: {
@@ -879,12 +972,8 @@ export function DossierArticle({
   }));
 
   const trustChip = dossier.accessReport == null ? null : buildTrustChip(dossier.accessReport, trustLabels);
-  // P1.07 — ONE list powers the body, the Margin, and the Desk: the Quick severity budget caps the
-  // rendered set first, then the shared GET-param filters narrow every surface together (§5.7).
-  const visible = visibleDossierFindings(dossier, dossierView?.filters);
-  const budget = severityBudget([...dossier.findings], dossier.rigor);
-  const groups = groupFindingsForList(visible);
-  const conflicts = detectReconciliationConflicts([...dossier.findings]);
+  // REQ-PANE-5 — the findings list lives in the right panel's Findings tab (dossierSurfaces);
+  // the article keeps only the second-read + rubric sections beside the letter column.
   const rejected = collapsedRejected([...dossier.findings]);
   const reconciliation = summarizeReconciliation([...dossier.findings]);
 
@@ -900,34 +989,15 @@ export function DossierArticle({
           role="note"
           data-showcase-banner
           data-readonly-notice="showcase"
-          style={{
-            border: "1px solid var(--shell-border)",
-            borderRadius: "10px",
-            padding: "12px 16px",
-            margin: "0 0 16px",
-            background: "var(--shell-raised)",
-            fontSize: "13px",
-          }}
+          className="ui-dbanner ui-d-fd"
+          style={{ border: "1px solid var(--shell-border)" }}
         >
           <strong>{COPY.showcase.bannerTitle}</strong>
-          <span style={{ color: "var(--shell-fg-muted)" }}> — {COPY.showcase.bannerBody} </span>
+          <span className="ui-d-t"> — {COPY.showcase.bannerBody} </span>
           <form method="post" action={`/p/${dossier.slug}/duplicate`} data-duplicate-form="true" style={{ display: "inline" }}>
-            <button
-              type="submit"
-              data-readonly-duplicate="true"
-              style={{
-                fontSize: "13px",
-                fontWeight: 600,
-                padding: "4px 12px",
-                borderRadius: "6px",
-                border: "1px solid var(--accent)",
-                background: "var(--accent)",
-                color: "var(--shell-bg)",
-                cursor: "pointer",
-              }}
-            >
+            <Button type="submit" variant="primary" size="sm" data-readonly-duplicate="true">
               {COPY.showcase.duplicateCta}
-            </button>
+            </Button>
           </form>
         </div>
       ) : null}
@@ -935,34 +1005,24 @@ export function DossierArticle({
           first finding's card — an IntersectionObserver posts the beacon once (the <60 s funnel leg).
           Under the SPA the effect twin in `useShowcaseAnchorBeacon` carries the same ping. */}
       {beacon === "script" && dossier.showcase && dossier.firstFindingId ? (
+        // 243a — the finding anchor moved off the findings rail: the beacon resolves the
+        // letter's passage link first, then the panel's desk row, then any data-finding card.
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){var el=document.querySelector('[data-finding="${dossier.firstFindingId}"]');if(!el)return;var sent=false;function fire(){if(sent)return;sent=true;var b=JSON.stringify({event:"showcase.finding_anchor_viewed",props:{}});try{if(navigator.sendBeacon){navigator.sendBeacon("/a/acq",new Blob([b],{type:"application/json"}));return;}}catch(e){}fetch("/a/acq",{method:"POST",headers:{"content-type":"application/json"},body:b,keepalive:true}).catch(function(){});}var io=new IntersectionObserver(function(es){for(var i=0;i<es.length;i++){if(es[i].isIntersecting){fire();io.disconnect();}}},{threshold:0.4});io.observe(el);setTimeout(function(){var r=el.getBoundingClientRect();if(r.top<window.innerHeight&&r.bottom>0)fire();},1200);})();`,
+            __html: `(function(){var el=document.querySelector('[data-passage-link="${dossier.firstFindingId}"]')||document.querySelector('[data-desk-row="${dossier.firstFindingId}"]')||document.querySelector('[data-finding="${dossier.firstFindingId}"]');if(!el)return;var sent=false;function fire(){if(sent)return;sent=true;var b=JSON.stringify({event:"showcase.finding_anchor_viewed",props:{}});try{if(navigator.sendBeacon){navigator.sendBeacon("/a/acq",new Blob([b],{type:"application/json"}));return;}}catch(e){}fetch("/a/acq",{method:"POST",headers:{"content-type":"application/json"},body:b,keepalive:true}).catch(function(){});}var io=new IntersectionObserver(function(es){for(var i=0;i<es.length;i++){if(es[i].isIntersecting){fire();io.disconnect();}}},{threshold:0.4});io.observe(el);setTimeout(function(){var r=el.getBoundingClientRect();if(r.top<window.innerHeight&&r.bottom>0)fire();},1200);})();`,
           }}
         />
       ) : null}
       {/* RES.2 — the persisted run-level label leads the dossier, above the verdict row
           (the same slot the card + email carry); the claim verdict stays `unverifiable`. */}
       {dossier.deliveryLabel ? (
-        <div
-          data-delivery-label={dossier.deliveryLabel}
-          style={{
-            margin: "0 0 12px",
-            padding: "10px 14px",
-            borderRadius: "8px",
-            border: "1px solid var(--shell-border)",
-            background: "var(--shell-raised)",
-            fontSize: "13px",
-            fontWeight: 600,
-            color: "var(--shell-fg)",
-          }}
-        >
+        <div data-delivery-label={dossier.deliveryLabel} className="ui-dbanner ui-d-b ui-d-fd" style={{ border: "1px solid var(--shell-border)" }}>
           {fmt(R.deliveryBannerFmt, { label: R.deliveryLabel })}
         </div>
       ) : null}
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+      <div className="ui-d-acts" style={{ flexWrap: "wrap" }}>
         <PageTitle>{dossier.projectTitle}</PageTitle>
-        <span style={{ color: "var(--shell-fg-muted)", fontSize: "13px" }}>{dossier.versionLabel}</span>
+        <span className="ui-d-t">{dossier.versionLabel}</span>
         {/* P1.06 — a scoped run's dossier carries its scope pills (the same chips the sheet showed). */}
         {(dossier.scopeLabels ?? []).map((s) => (
           <span key={s} className="ide-pill" data-scope-pill>
@@ -980,36 +1040,30 @@ export function DossierArticle({
           the artifact: the approve flow reads the artifact first — and on phone width (Timeline
           hidden) this is the row's approve surface. */}
       {dossierView?.focusedGate ? (
-        <section data-focused-gate={dossierView.focusedGate.id} style={{ margin: "16px 0" }}>
+        <section data-focused-gate={dossierView.focusedGate.id} className="ui-d-mb16">
           {gateCardFor(dossierView.focusedGate, dossier.slug, compact, dispositionError, {
             ...(gatePresenceScript === false ? { presenceScript: false } : {}),
           })}
         </section>
       ) : null}
 
-      <div style={{ margin: "16px 0" }}>
-        {/* R7COPY.0 (REQ-SYNC-1) — the dossier mounts the SAME RunSummaryView the Timeline's card
-            carries (one query's facts, one builder — C4's "Created 0 cr vs Completed" desync is
-            structurally impossible). The delivered links resolve to this dossier + its anchors. */}
-        <RunCard
-          view={dossier.runSummary.card}
-          labels={runCardLabels}
-          hrefs={{
-            report: `/p/${dossier.slug}/r/${dossier.runId}#report`,
-            deliverable: `/p/${dossier.slug}/review/${dossier.runId}`,
-            deliveredLink: (key) =>
-              key === "letter"
-                ? `/p/${dossier.slug}/review/${dossier.runId}#letter`
-                : key === "ledger"
-                  ? `/p/${dossier.slug}/review/${dossier.runId}#claims`
-                  : `/p/${dossier.slug}/review/${dossier.runId}`,
-          }}
-        />
-      </div>
+      {/* 243a_R7KIT.3e (REQ-PANE-5) — the run card collapses to a one-line run header: the same
+          RunSummaryView facts (workflow · state · meter) and the report link, never the card. */}
+      <p data-run-header="true" className="ui-runhdr ui-d-fd" style={{ alignItems: "baseline", flexWrap: "wrap" }}>
+        <span className="ui-d-b">{TL.workflowLabel[dossier.runSummary.workflow] ?? dossier.runSummary.workflow}</span>
+        <span className="ui-d-t">
+          · {runCardLabels.stateLabel(dossier.runSummary.state)} ·{" "}
+          {runCardLabels.creditsLabel(dossier.runSummary.card.spentCredits, dossier.runSummary.card.capCredits)}
+        </span>
+        <a href={`/p/${dossier.slug}/r/${dossier.runId}#report`} className="ui-vc-acc">
+          {COPY.steer.report}
+        </a>
+      </p>
 
-      <div id="letter" style={{ margin: "16px 0" }}>
-        {/* P1.07 — the letter's passage links resolve to the finding cards/rows (§5.7): each
-            section lists the findings filed under its `letterSection` key. */}
+      <div id="letter">
+        {/* P1.07 — the letter's passage links resolve to the right panel's desk rows
+            (`#desk-finding-<id>`): the findings rail is gone (REQ-PANE-5). REQ-PANE-5 — the
+            claim ledger is a section of the letter column. */}
         <LetterView
           title={dossier.letterTitle}
           sections={dossier.letterSections.map((s) => {
@@ -1019,24 +1073,25 @@ export function DossierArticle({
             return refs.length > 0 ? { ...s, findingRefs: refs } : s;
           })}
           trustChip={trustChip}
-          labels={letterLabels}
+          claims={
+            <section id="claims" data-letter-section="claims" className="ui-d-mb16" style={{ scrollMarginTop: "16px" }}>
+              <ClaimsTable rows={claimRows} labels={claimsLabels} />
+            </section>
+          }
+          labels={{ ...letterLabels, findingHref: (id) => `#desk-finding-${id}`, claimsTocLabel: claimsLabels.heading }}
         />
       </div>
 
-      <div id="claims" style={{ margin: "16px 0" }}>
-        <ClaimsTable rows={claimRows} labels={claimsLabels} />
-      </div>
-
-      <div style={{ margin: "16px 0" }}>
+      <div className="ui-d-mb16">
         <SecondReadView summary={reconciliation} rejected={rejected} labels={secondReadLabels} />
       </div>
 
-      <div style={{ margin: "16px 0" }}>
+      <div className="ui-d-mb16">
         <RubricView view={buildRubricView([...dossier.rubric])} labels={rubricLabels} />
         {/* PRB.06 — a re-review dossier carries the prior round's rubric: the round-summary delta renders
             per-dimension before/after, never an aggregate (REQ-IDE-30). */}
         {dossier.priorRubric ? (
-          <div style={{ marginTop: "12px" }}>
+          <div className="ui-d-mt6">
             <RubricDelta
               view={buildRubricDelta([...dossier.priorRubric], [...dossier.rubric])}
               labels={{
@@ -1049,156 +1104,8 @@ export function DossierArticle({
           </div>
         ) : null}
       </div>
-
-      <div style={{ margin: "16px 0" }}>
-        <h2 style={{ fontSize: "16px", fontWeight: 600 }}>{R.findingsHeading}</h2>
-        {/* pre-triage line (REQ-IDE-28) + the >30-findings triage promo (§5.7). */}
-        {(() => {
-          const summary = pretriageSummary([...dossier.findings]);
-          const queue = buildTriageQueue([...dossier.findings]);
-          return (
-            <>
-              {summary.triaged > 0 ? (
-                <p data-pretriage-line="true" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "4px 0 10px" }}>
-                  {fmt(COPY.triage.pretriageFmt, { n: summary.triaged, m: summary.total })}
-                </p>
-              ) : null}
-              {queue.promoteAgentTriage ? (
-                <p data-triage-promo="true" style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 10px" }}>
-                  {fmt(COPY.triage.promoFmt, { n: 30 })}
-                </p>
-              ) : null}
-            </>
-          );
-        })()}
-        {/* P1.07 — the one-preview bulk render (§5.7; REQ-IDE-29 amended): `?bulk=<action>` lands the
-            consolidated checklist here — checked rows ride `only[]` to the dispatch POST; the skipped
-            rows list their reasons. No blind accept-all exists. */}
-        {/* P1.19 — §10.1 ✗ ("bulk accept/apply"): a crafted ?bulk= URL renders no confirm form at
-            phone width — the preview affordance is desktop-only, like the controls that open it. */}
-        {dossierView?.bulk && compact !== true ? (
-          <section
-            data-bulk-preview="true"
-            style={{ border: "1px solid var(--shell-border)", borderRadius: "8px", padding: "12px 14px", margin: "0 0 14px", background: "var(--shell-surface)" }}
-          >
-            <h3 style={{ fontSize: "13px", fontWeight: 600, margin: "0 0 8px" }}>{R.bulk.previewHeading}</h3>
-            {dossierView.bulk.preview.rows.length === 0 ? (
-              <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{R.bulk.emptyPreview}</p>
-            ) : (
-              <form method="post" action={`/p/${dossier.slug}/review/${dossier.runId}/findings/bulk`}>
-                <input type="hidden" name="action" value={dossierView.bulk.action} />
-                {dossierView.bulk.section != null ? (
-                  <input type="hidden" name="section" value={dossierView.bulk.section} />
-                ) : null}
-                <ul style={{ listStyle: "none", padding: 0, margin: "0 0 8px" }}>
-                  {dossierView.bulk.preview.rows.map((row) => (
-                    <li key={row.findingId} style={{ fontSize: "13px", padding: "4px 0" }}>
-                      <label style={{ display: "flex", gap: "8px", alignItems: "baseline" }}>
-                        <input type="checkbox" name="only" value={row.findingId} defaultChecked />
-                        <span>
-                          {row.title}{" "}
-                          <span style={{ color: "var(--shell-fg-muted)" }}>
-                            — {R.severityLabel[row.severity] ?? row.severity} · {R.dispositionPast[row.disposition] ?? row.disposition}
-                          </span>
-                          {row.appliedMarkdown != null ? (
-                            <code style={{ display: "block", fontSize: "11px", color: "var(--shell-fg-muted)", marginTop: "2px", whiteSpace: "pre-wrap" }}>
-                              {row.appliedMarkdown.slice(0, 200)}
-                            </code>
-                          ) : null}
-                        </span>
-                      </label>
-                    </li>
-                  ))}
-                </ul>
-                {dossierView.bulk.preview.skipped.length > 0 ? (
-                  <div data-bulk-skipped="true" style={{ margin: "4px 0 8px" }}>
-                    <h4 style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--shell-fg-muted)", margin: "0 0 4px" }}>
-                      {R.bulk.skippedHeading}
-                    </h4>
-                    <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "12px", color: "var(--shell-fg-muted)" }}>
-                      {dossierView.bulk.preview.skipped.map((s) => (
-                        <li key={s.findingId}>{s.title} — {s.reason}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-                <button type="submit" data-bulk-confirm="true" style={{ fontSize: "13px", fontWeight: 600, padding: "6px 14px", borderRadius: "4px", border: "1px solid var(--accent)", background: "var(--accent)", color: "var(--shell-bg)", cursor: "pointer" }}>
-                  {R.bulk.confirm}
-                </button>{" "}
-                <a href={`/p/${dossier.slug}/review/${dossier.runId}`} style={{ fontSize: "13px" }}>{R.bulk.cancel}</a>
-              </form>
-            )}
-          </section>
-        ) : null}
-        {dossierView?.bulkDone ? (
-          <p data-bulk-done="true" role="status" style={{ fontSize: "13px", color: "var(--state-ready)", margin: "0 0 10px" }}>
-            {fmt(R.bulk.doneFmt, { n: dossierView.bulkDone.count })}
-          </p>
-        ) : null}
-        {dossierView?.notice ? (
-          <p
-            data-finding-notice={dossierView.notice.kind}
-            role={dossierView.notice.kind === "error" ? "alert" : "status"}
-            style={{ fontSize: "12px", color: dossierView.notice.kind === "error" ? "var(--sev-major)" : "var(--state-ready)", margin: "0 0 10px" }}
-          >
-            {dossierView.notice.message ??
-              (dossierView.notice.kind === "applied"
-                ? R.appliedToast
-                : dossierView.notice.kind === "promoted"
-                  ? R.promotedToast
-                  : R.obligatedToast)}
-          </p>
-        ) : null}
-        {/* the severity-budget line (§5.7): Quick's rendered cap is honest — the folded count names
-            what the roadmap absorbed. */}
-        {budget.folded > 0 ? (
-          <p data-severity-budget="true" style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "4px 0 10px" }}>
-            {fmt(R.severityBudgetFmt, { n: budget.folded })}
-          </p>
-        ) : null}
-        {/* the once-per-surface evidence explainer (§5.7) — shown when any finding carries URLs. */}
-        {visible.some((f) => (normalizeEvidence(f.evidence)?.urls.length ?? 0) > 0) ? (
-          <p data-evidence-explainer="true" style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 10px" }}>
-            {R.evidenceExplainer}
-          </p>
-        ) : null}
-        {/* PRB.16 — the per-finding obligation-state chip (REQ-OBJ-6): the dossier payload carries
-            finding id → obligation state, joined from the delivered revision_obligations rows. */}
-        <FindingsList
-          groups={groups}
-          conflicts={conflicts}
-          collapsedRejected={rejected}
-          labels={findingsLabels}
-          obligationFor={(view) => {
-            const state = dossier.findingObligations?.[view.id];
-            return state
-              ? { state, label: COPY.review.obligationStateLabel[state] ?? state }
-              : undefined;
-          }}
-          controlsFor={(view) =>
-            findingControlsFor(view, dossier.slug, dossier.runId, compact, dispositionError, {
-              hasObligation: dossier.findingObligations?.[view.id] != null,
-            })
-          }
-          promoteActionFor={(view) => `/p/${dossier.slug}/findings/${view.id}/promote`}
-          evidenceFor={(view) => {
-            const evidence = normalizeEvidence(view.evidence);
-            return evidence != null
-              ? {
-                  ...(evidence.verdict != null
-                    ? { verdictLabel: R.verdictLabel[evidence.verdict] ?? evidence.verdict }
-                    : {}),
-                  urls: evidenceUrlViews(evidence, fetchLog, searchOnly),
-                }
-              : undefined;
-          }}
-        />
-        {savedFindingId ? (
-          <p data-disposition-saved="true" style={{ fontSize: "12px", color: "var(--state-ready)", marginTop: "6px" }}>
-            {COPY.triage.savedLabel}
-          </p>
-        ) : null}
-      </div>
+      {/* REQ-PANE-5 — the findings list + its workflow furniture moved into the right panel's
+          Findings tab (dossierSurfaces.deskFindingsBody). No dossier column renders them. */}
     </>
   );
 }

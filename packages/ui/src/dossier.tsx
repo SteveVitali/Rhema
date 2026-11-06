@@ -1,10 +1,14 @@
-import type { ReactNode } from "react";
-import { FetchedUrlChip, severityColor } from "./primitives/chips.js";
+import type { CSSProperties, ReactNode } from "react";
+import { Chip, FetchedUrlChip, severityColor } from "./primitives/chips.js";
+import { claimOrdinalLabel } from "./claims.js";
 
 // The read-only sample dossier (REQ-POS-3): an Editor's letter, a claim ledger, and the findings — rendered
 // with NO triage/disposition controls (the public invite page is read-only). Its point is the 60-second proof
 // that this is not chat: at least one contradicted Tier-1 claim, shown with the fetched URL the fact-check
 // actually retrieved. The primitives are text-agnostic; all copy comes in as props.
+//
+// 243a_R7KIT.3e: migrated onto uiCss() classes (GUARD-1 on) + REQ-COPY-8 — claim ordinals render
+// the source id or 1-based numbering (never `[0]`), and each verdict appears once.
 
 export interface DossierSource {
   readonly url: string;
@@ -12,6 +16,8 @@ export interface DossierSource {
 }
 export interface DossierClaim {
   readonly ordinal: number;
+  /** REQ-COPY-8 — the claim's source id when the ledger carries one. */
+  readonly sourceId?: string;
   readonly text: string;
   readonly tier: 1 | 2 | 3;
   /** Canonical ClaimVerdict machine value (e.g. "contradicted"). */
@@ -36,7 +42,9 @@ export interface DossierLabels {
   readonly fetchedLabel: string;
   /** e.g. (1) => "Tier 1". */
   readonly tierLabel: (tier: number) => string;
-  /** The badge for a contradicted Tier-1 claim (the REQ-POS-3 proof). */
+  /** The badge for a contradicted Tier-1 claim (the REQ-POS-3 proof).
+   * @deprecated REQ-COPY-8 (243a): a verdict is shown once — kept for call-site compat,
+   * no longer rendered as a duplicate badge. */
   readonly contradictedTierOneLabel: string;
 }
 export interface DossierViewProps {
@@ -58,58 +66,27 @@ function ClaimRow({ claim, labels }: { claim: DossierClaim; labels: DossierLabel
       data-verdict={claim.verdict}
       data-tier={claim.tier}
       data-contradicted-tier1={contradicted ? "true" : undefined}
-      style={{
-        listStyle: "none",
-        padding: "12px 14px",
-        borderBottom: "1px solid var(--paper-rule)",
-        borderLeft: contradicted ? "3px solid var(--sev-blocking)" : "3px solid transparent",
-      }}
+      className={`ui-claim${contradicted ? " ui-claim--bad" : ""}`}
+      style={{ borderBottom: "1px solid var(--paper-rule)", borderLeft: "3px solid transparent" }}
     >
-      <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", marginBottom: "4px" }}>
-        <span style={{ color: "var(--paper-fg-muted)", fontVariantNumeric: "tabular-nums", fontSize: "12px" }}>
-          [{claim.ordinal}]
+      <div className="ui-d-acts ui-d-mb10" style={{ flexWrap: "wrap" }}>
+        <span data-claim-ordinal={claim.sourceId ?? String(claim.ordinal + 1)} className="ui-d-s ui-d-cm" style={{ fontVariantNumeric: "tabular-nums" }}>
+          {claimOrdinalLabel(claim)}
         </span>
+        <Chip variant="static" label={labels.tierLabel(claim.tier)} />
         <span
-          style={{
-            fontSize: "11px",
-            padding: "1px 6px",
-            borderRadius: "4px",
-            background: "var(--shell-raised)",
-            color: "var(--shell-fg-muted)",
-          }}
-        >
-          {labels.tierLabel(claim.tier)}
-        </span>
-        <span
-          style={{
-            fontSize: "12px",
-            color: claim.verdict === "contradicted" ? "var(--sev-blocking)" : "var(--paper-fg-muted)",
-            fontWeight: contradicted ? 600 : 400,
-          }}
+          className={contradicted ? "ui-d-s ui-d-sc ui-d-b" : "ui-d-s ui-d-cm"}
+          style={contradicted ? ({ "--d-sev": "var(--sev-blocking)" } as CSSProperties) : undefined}
         >
           {claim.verdictLabel}
         </span>
-        {contradicted ? (
-          <span
-            style={{
-              fontSize: "11px",
-              fontWeight: 600,
-              padding: "1px 6px",
-              borderRadius: "4px",
-              background: "var(--sev-blocking)",
-              color: "var(--shell-bg)",
-            }}
-          >
-            {labels.contradictedTierOneLabel}
-          </span>
-        ) : null}
       </div>
-      <div style={{ color: "var(--paper-fg)", fontSize: "14px", lineHeight: 1.5 }}>{claim.text}</div>
+      <div className="ui-d-fs14">{claim.text}</div>
       {claim.note ? (
-        <div style={{ color: "var(--paper-fg-muted)", fontSize: "12px", marginTop: "4px" }}>{claim.note}</div>
+        <div className="ui-d-s ui-d-cm ui-d-mt6">{claim.note}</div>
       ) : null}
       {claim.fetched.length > 0 ? (
-        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "8px" }}>
+        <div className="ui-d-acts ui-d-mt6" style={{ flexWrap: "wrap" }}>
           {claim.fetched.map((s) => (
             <FetchedUrlChip key={s.url} url={s.url} host={s.host} fetchedLabel={labels.fetchedLabel} />
           ))}
@@ -124,62 +101,41 @@ export function DossierView({ title, letter, claims, findings, labels }: Dossier
     <article
       data-dossier="true"
       data-readonly="true"
-      style={{
-        background: "var(--paper-bg)",
-        color: "var(--paper-fg)",
-        border: "1px solid var(--paper-rule)",
-        borderRadius: "12px",
-        padding: "24px",
-        boxShadow: "0 1px 0 var(--shell-border)",
-      }}
+      className="ui-dsv"
+      style={{ border: "1px solid var(--paper-rule)", boxShadow: "0 1px 0 var(--shell-border)" }}
     >
-      <div
-        role="note"
-        style={{
-          fontSize: "12px",
-          color: "var(--paper-fg-muted)",
-          borderBottom: "1px solid var(--paper-rule)",
-          paddingBottom: "12px",
-          marginBottom: "16px",
-        }}
-      >
+      <div role="note" className="ui-d-s ui-d-cm ui-d-mb16" style={{ borderBottom: "1px solid var(--paper-rule)" }}>
         {labels.readOnlyNote}
       </div>
-      <h2 style={{ fontSize: "22px", fontWeight: 600, margin: "0 0 16px" }}>{title}</h2>
+      <h2 className="ui-d-h ui-d-mb16">{title}</h2>
 
       <section aria-label={labels.letterHeading}>
-        <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--paper-fg-muted)" }}>
-          {labels.letterHeading}
-        </h3>
+        <h3 className="ui-d-cap ui-d-s ui-d-cm">{labels.letterHeading}</h3>
         {letter.map((p, i) => (
-          <p key={i} style={{ fontSize: "16px", lineHeight: 1.55, margin: "0 0 12px", maxWidth: "68ch" }}>
+          <p key={i} className="ui-letter-p">
             {p}
           </p>
         ))}
       </section>
 
-      <section aria-label={labels.claimsHeading} style={{ marginTop: "24px" }}>
-        <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--paper-fg-muted)" }}>
-          {labels.claimsHeading}
-        </h3>
-        <ul style={{ margin: "8px 0 0", padding: 0, border: "1px solid var(--paper-rule)", borderRadius: "8px", overflow: "hidden" }}>
+      <section aria-label={labels.claimsHeading} className="ui-d-mt12">
+        <h3 className="ui-d-cap ui-d-s ui-d-cm">{labels.claimsHeading}</h3>
+        <ul className="ui-claim-list" style={{ border: "1px solid var(--paper-rule)", overflow: "hidden", listStyle: "none" }}>
           {claims.map((c) => (
             <ClaimRow key={c.ordinal} claim={c} labels={labels} />
           ))}
         </ul>
       </section>
 
-      <section aria-label={labels.findingsHeading} style={{ marginTop: "24px" }}>
-        <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--paper-fg-muted)" }}>
-          {labels.findingsHeading}
-        </h3>
-        <ul style={{ margin: "8px 0 0", padding: 0, listStyle: "none" }}>
+      <section aria-label={labels.findingsHeading} className="ui-d-mt12">
+        <h3 className="ui-d-cap ui-d-s ui-d-cm">{labels.findingsHeading}</h3>
+        <ul className="ui-d-p0 ui-d-mt6" style={{ listStyle: "none" }}>
           {findings.map((f, i) => (
-            <li key={i} style={{ display: "flex", gap: "10px", padding: "12px 0", borderBottom: "1px solid var(--paper-rule)" }}>
-              <span aria-hidden="true" style={{ marginTop: "6px", width: "8px", height: "8px", borderRadius: "999px", background: severityColor(f.severity), flexShrink: 0 }} />
+            <li key={i} className="ui-d-acts ui-d-row" style={{ alignItems: "flex-start" }}>
+              <span aria-hidden="true" className="ui-fdot ui-d-mt6" style={{ "--d-sev": severityColor(f.severity), flexShrink: 0 } as CSSProperties} />
               <div>
-                <div style={{ fontWeight: 600, fontSize: "14px" }}>{f.title}</div>
-                <div style={{ color: "var(--paper-fg-muted)", fontSize: "13px", marginTop: "2px" }}>{f.body}</div>
+                <div className="ui-d-fd ui-d-b">{f.title}</div>
+                <div className="ui-d-fd ui-d-cm ui-d-mt6">{f.body}</div>
               </div>
             </li>
           ))}

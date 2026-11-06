@@ -16,7 +16,12 @@ export function useShowcaseAnchorBeacon(findingId: string | undefined): void {
     // `findingId` is always undefined here) but gated explicitly: the `/a/acq` funnel beacon
     // must never fire on a demo surface.
     if (isDemo()) return;
-    const el = document.querySelector(`[data-finding="${findingId}"]`);
+    // 243a_R7KIT.3e — the finding anchor moved off the findings rail: resolve the letter's
+    // passage link first, then the right panel's desk row, then any data-finding card.
+    const el =
+      document.querySelector(`[data-passage-link="${findingId}"]`) ??
+      document.querySelector(`[data-desk-row="${findingId}"]`) ??
+      document.querySelector(`[data-finding="${findingId}"]`);
     if (!(el instanceof Element)) return;
     let sent = false;
     const fire = () => {

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type { ClaimUrlView } from "@rhema/findings-core";
 import { Chip, FetchedUrlChip } from "./primitives/chips.js";
 
@@ -6,9 +6,18 @@ import { Chip, FetchedUrlChip } from "./primitives/chips.js";
 // a per-URL "fetched ✓" chip from the proxy fetch log, and multi-source stance rows. A non-checkable
 // `claim.kind` (interpretive/normative/predictive) renders "not a matter of verification" (REQ-OBJ-19).
 // Text-agnostic: verdict/kind/stance labels come in as props.
+//
+// 243a_R7KIT.3e (REQ-COPY-8; C9): the ordinal renders the source id or 1-based numbering — never
+// `[0]` — and each claim's verdict text appears ONCE (the duplicate "Contradicted · Tier 1" badge
+// is gone; the `data-contradicted-tier1` attribute keeps the integrity marker machine-readable).
+// Chips are the two-variant Chip (C6): tier is `variant="static"`; the host and figure links ride
+// the action variant / FetchedUrlChip.
 
 export interface ClaimTableRow {
   readonly ordinal: number;
+  /** REQ-COPY-8 — the claim's source id (e.g. "C3") when the ledger carries one; the
+   *  ordinal display prefers it over 1-based numbering. */
+  readonly sourceId?: string;
   readonly text: string;
   readonly tier: 1 | 2 | 3;
   /** canonical ClaimVerdict machine value (for `data-verdict`) + its display label. */
@@ -38,8 +47,15 @@ export interface ClaimsTableLabels {
   /** the REQ-OBJ-19 line for a non-checkable claim, e.g. "interpretive — not a matter of verification". */
   readonly notCheckableLabel?: (kind?: string) => string;
   readonly accessedLabel?: (accessedAt: string) => string;
-  /** the badge for a contradicted Tier-1 claim (the integrity proof). */
+  /** the badge for a contradicted Tier-1 claim (the integrity proof).
+   * @deprecated REQ-COPY-8 (243a): a verdict is shown once — the label stays accepted for
+   * call-site compat but is no longer rendered as a duplicate badge. */
   readonly contradictedTierOneLabel?: string;
+}
+
+/** REQ-COPY-8 — the ordinal display: the source id, else 1-based numbering (never "[0]"). */
+export function claimOrdinalLabel(row: { readonly ordinal: number; readonly sourceId?: string }): string {
+  return row.sourceId != null && row.sourceId !== "" ? `[${row.sourceId}]` : `[${row.ordinal + 1}]`;
 }
 
 function hostOf(url: string): string {
@@ -54,7 +70,7 @@ function UrlChip({ view, labels }: { view: ClaimUrlView; labels: ClaimsTableLabe
   const host = hostOf(view.url);
   const stance = view.stance && labels.stanceLabel ? labels.stanceLabel(view.stance) : view.stance;
   return (
-    <span data-claim-url={view.normalizedUrl} data-stance={view.stance ?? undefined} data-url-in-log={view.fetched ? "true" : "false"} style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
+    <span data-claim-url={view.normalizedUrl} data-stance={view.stance ?? undefined} data-url-in-log={view.fetched ? "true" : "false"} className="ui-d-acts">
       {view.fetched ? (
         <FetchedUrlChip
           url={view.url}
@@ -65,9 +81,9 @@ function UrlChip({ view, labels }: { view: ClaimUrlView; labels: ClaimsTableLabe
       ) : (
         <Chip label={host} href={view.url} title={view.url} />
       )}
-      {stance ? <span style={{ fontSize: "11px", color: "var(--paper-fg-muted)" }}>{stance}</span> : null}
+      {stance ? <span className="ui-d-fs ui-d-cm">{stance}</span> : null}
       {view.accessedAt && labels.accessedLabel ? (
-        <span style={{ fontSize: "11px", color: "var(--paper-fg-faint)" }}>{labels.accessedLabel(view.accessedAt)}</span>
+        <span className="ui-d-i">{labels.accessedLabel(view.accessedAt)}</span>
       ) : null}
     </span>
   );
@@ -83,46 +99,34 @@ function ClaimRow({ row, labels }: { row: ClaimTableRow; labels: ClaimsTableLabe
       data-verdict={row.verdict}
       data-claim-kind={row.kind ?? undefined}
       data-contradicted-tier1={contradicted ? "true" : undefined}
-      style={{
-        listStyle: "none",
-        padding: "12px 14px",
-        borderBottom: "1px solid var(--paper-rule)",
-        borderLeft: contradicted ? "3px solid var(--sev-blocking)" : "3px solid transparent",
-      }}
+      className={`ui-claim${contradicted ? " ui-claim--bad" : ""}`}
+      style={{ borderBottom: "1px solid var(--paper-rule)", borderLeft: "3px solid transparent" }}
     >
-      <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", marginBottom: "4px" }}>
-        <span style={{ color: "var(--paper-fg-muted)", fontVariantNumeric: "tabular-nums", fontSize: "12px" }}>[{row.ordinal}]</span>
-        <span style={{ fontSize: "11px", padding: "1px 6px", borderRadius: "4px", background: "var(--shell-raised)", color: "var(--shell-fg-muted)" }}>
-          {labels.tierLabel(row.tier)}
+      <div className="ui-d-acts ui-d-mb10" style={{ flexWrap: "wrap" }}>
+        <span data-claim-ordinal={row.sourceId ?? String(row.ordinal + 1)} className="ui-d-s ui-d-cm" style={{ fontVariantNumeric: "tabular-nums" }}>
+          {claimOrdinalLabel(row)}
         </span>
+        <Chip variant="static" label={labels.tierLabel(row.tier)} />
         {nonCheckable ? (
-          <span data-not-checkable="true" style={{ fontSize: "12px", color: "var(--paper-fg-muted)", fontStyle: "italic" }}>
+          <span data-not-checkable="true" className="ui-d-s ui-d-cm ui-d-it">
             {labels.notCheckableLabel ? labels.notCheckableLabel(row.kind) : row.kind}
           </span>
         ) : (
-          <span style={{ fontSize: "12px", fontWeight: contradicted ? 600 : 400, color: contradicted ? "var(--sev-blocking)" : "var(--paper-fg-muted)" }}>
+          <span
+            className={contradicted ? "ui-d-s ui-d-sc ui-d-b" : "ui-d-s ui-d-cm"}
+            style={contradicted ? ({ "--d-sev": "var(--sev-blocking)" } as CSSProperties) : undefined}
+          >
             {row.verdictLabel}
           </span>
         )}
-        {contradicted && labels.contradictedTierOneLabel ? (
-          <span style={{ fontSize: "11px", fontWeight: 600, padding: "1px 6px", borderRadius: "4px", background: "var(--sev-blocking)", color: "var(--shell-bg)" }}>
-            {labels.contradictedTierOneLabel}
-          </span>
-        ) : null}
         {row.figureHref && row.figureLabel ? (
-          <a
-            data-figure-claim="true"
-            href={row.figureHref}
-            style={{ fontSize: "11px", padding: "1px 6px", borderRadius: "4px", background: "var(--shell-raised)", color: "var(--accent)", textDecoration: "none" }}
-          >
-            {row.figureLabel}
-          </a>
+          <Chip data-figure-claim="true" label={row.figureLabel} href={row.figureHref} />
         ) : null}
       </div>
-      <div style={{ color: "var(--paper-fg)", fontSize: "14px", lineHeight: 1.5 }}>{row.text}</div>
-      {row.note ? <div style={{ color: "var(--paper-fg-muted)", fontSize: "12px", marginTop: "4px" }}>{row.note}</div> : null}
+      <div className="ui-d-fs14">{row.text}</div>
+      {row.note ? <div className="ui-d-s ui-d-cm ui-d-mt6">{row.note}</div> : null}
       {row.urls.length > 0 ? (
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "8px" }}>
+        <div className="ui-d-acts ui-d-mt6" style={{ flexWrap: "wrap" }}>
           {row.urls.map((u) => (
             <UrlChip key={u.normalizedUrl} view={u} labels={labels} />
           ))}
@@ -136,8 +140,8 @@ function ClaimRow({ row, labels }: { row: ClaimTableRow; labels: ClaimsTableLabe
 export function ClaimsTable({ rows, labels }: { rows: readonly ClaimTableRow[]; labels: ClaimsTableLabels }): ReactNode {
   return (
     <section data-claims-table="true" aria-label={labels.heading}>
-      <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--paper-fg-muted)" }}>{labels.heading}</h3>
-      <ul style={{ margin: "8px 0 0", padding: 0, border: "1px solid var(--paper-rule)", borderRadius: "8px", overflow: "hidden" }}>
+      <h3 className="ui-d-cap ui-d-s ui-d-cm">{labels.heading}</h3>
+      <ul className="ui-claim-list" style={{ border: "1px solid var(--paper-rule)", overflow: "hidden", listStyle: "none" }}>
         {rows.map((r) => (
           <ClaimRow key={r.ordinal} row={r} labels={labels} />
         ))}

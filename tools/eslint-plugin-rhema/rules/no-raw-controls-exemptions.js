@@ -165,4 +165,23 @@ module.exports = [
     reason:
       "the hidden `returnTo` post-carrier — prior batches' named exemption shape for hidden form fields (RV-36).",
   },
+  // ---- 243a_R7KIT.3e — the dossier composition's named no-JS/SSR exemptions ----
+  {
+    file: "apps/web/src/dossier-view.tsx",
+    component: "HiddenField",
+    reason:
+      "the no-JS post's hidden id carriers (`next`/`action`/`section`) — prior batches' named exemption shape for hidden form fields (RV-36).",
+  },
+  {
+    file: "apps/web/src/dossier-view.tsx",
+    component: "BulkOnlyCheck",
+    reason:
+      "the consolidated bulk confirm's `only[]` checkboxes post checked ids through the native form grammar the server arm `asArray`s (RV-36 — a Radix carrier would need client JS for the same post).",
+  },
+  {
+    file: "apps/web/src/spa/surfaces/dossier.tsx",
+    component: "HiddenField",
+    reason:
+      "the obligation sheet's hidden `next` post-carrier — the JSON submit collects the form's fields verbatim (RV-36).",
+  },
 ];

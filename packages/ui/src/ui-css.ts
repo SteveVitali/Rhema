@@ -281,5 +281,27 @@ export function uiCss(): string {
     ".ui-d-sev { background: var(--d-sev, var(--shell-fg-muted)); }",
     ".ui-d-fcard { border-left-color: var(--d-sev, var(--shell-border)); }",
     ".ui-d-ml20 { margin-left: 20px; }",
+    // ---- 243a_R7KIT.3e — the dossier composition (REQ-PANE-5): the letter column, the
+    // one-line run header, the claim ledger rows, the finding cards, and the workflow
+    // furniture the findings surface moved into the right panel's Findings tab. Only the
+    // BANNED style keys live in these rules — border shorthands, display, overflow and the
+    // flex helpers the lint allows stay inline at the call sites. ----
+    ".ui-letter-toc { display: none; }",
+    "@media (min-width: 1440px) { .ui-letter-grid { display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: var(--s4); } .ui-letter-toc { display: block; position: sticky; top: var(--s3); align-self: start; } }",
+    ".ui-letter-p { font-size: var(--fs-lead); line-height: 1.55; margin: 0 0 var(--s3); max-width: 68ch; }",
+    ".ui-claim-list { margin: var(--s1) 0 0; padding: 0; border-radius: var(--radius-2); }",
+    ".ui-claim { padding: var(--s2) var(--s3); }",
+    ".ui-claim--bad { border-left-color: var(--sev-blocking); }",
+    ".ui-runhdr { display: flex; gap: var(--s2); margin: var(--s3) 0; }",
+    ".ui-dbanner, .ui-bulk, .ui-fcard, .ui-fconflict { border-radius: var(--radius-2); padding: var(--s2) var(--s3); margin: 0 0 var(--s3); }",
+    ".ui-dbanner { background: var(--shell-raised); }",
+    ".ui-bulk { background: var(--shell-surface); }",
+    ".ui-fcard { background: var(--paper-bg); }",
+    ".ui-fcard--p { background: transparent; }",
+    ".ui-fconflict { background: var(--shell-surface); color: var(--shell-fg); }",
+    ".ui-dsv { background: var(--paper-bg); color: var(--paper-fg); border-radius: var(--radius-3); padding: var(--s4); }",
+    ".ui-fdot { width: 8px; height: 8px; border-radius: 999px; background: var(--d-sev, var(--shell-fg-muted)); }",
+    ".ui-rptab { width: 100%; }",
+    ".ui-d-mw68 { max-width: 68ch; }",
   ].join("\n");
 }
