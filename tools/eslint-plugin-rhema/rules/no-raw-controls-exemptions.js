@@ -86,4 +86,22 @@ module.exports = [
     reason:
       "the visually-hidden file proxy the styled dropzone (role=button) drives via DataTransfer — no file-input primitive exists and the accessible control is the dropzone, not the input (RV-36).",
   },
+  {
+    file: "apps/web/src/spa/surfaces/outline.tsx",
+    component: "HiddenField",
+    reason:
+      "the no-JS promote post's hidden carriers (scope, threadId, turnId) — Radix's own hidden carriers post the named fields, so only these ids ride a raw input (RV-36); every visible control is a primitive.",
+  },
+  {
+    file: "apps/web/src/spa/surfaces/figures.tsx",
+    component: "HiddenField",
+    reason:
+      "the no-JS posts' hidden carriers (spec-edit mark; iterate figureId/priorVersion/entryPoint) — Radix's own hidden carriers post the named fields, so only these ride a raw input (RV-36); every visible control is a primitive.",
+  },
+  {
+    file: "packages/ui/src/outline-sections.tsx",
+    component: "EdCheckbox",
+    reason:
+      "the claim strike checkbox posts `ed.claim.*.strike` inside the Approve-outline gate card's no-JS decision form — the SSR gate card renders to static HTML where a Radix toggle is inert, so this stays the KIT-1-styled native checkbox (RV-36); every other field is a TextField primitive.",
+  },
 ];

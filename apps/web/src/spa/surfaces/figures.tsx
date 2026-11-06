@@ -23,15 +23,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { Fragment, useState, type FormEvent, type ReactNode } from "react";
-import { Chip } from "@rhema/ui";
+import { Button, Checkbox, Chip, Select, TextArea, TextField } from "@rhema/ui";
 import { COPY } from "../../copy.js";
 import { BffError, bffFetch } from "../bff.js";
 import { PageBody, PageHeader } from "../page-header.js";
-import type {
-  BffFigureCardTwin,
-  BffFiguresTwin,
-  BffVisualizeTwin,
-} from "../queries.js";
+import type { BffFigureCardTwin, BffFiguresTwin, BffVisualizeTwin } from "../queries.js";
 
 // Destructure the COPY branches once — the REQ-SAFE-10 leaf scan keys on `COPY.<path>` literals.
 const { figuresPage: F, figureCard: FC, visualize: V } = COPY;
@@ -85,15 +81,21 @@ function collectJsonFields(form: HTMLFormElement): Record<string, string> {
   return out;
 }
 
-const FIGURE_CHIP_STYLE = {
-  padding: "6px 12px",
-  borderRadius: "8px",
-  border: "1px solid var(--shell-border)",
-  background: "var(--shell-surface)",
-  color: "var(--shell-fg)",
-  fontSize: "12px",
-  cursor: "pointer",
-} as const;
+/**
+ * The no-JS post grammar's hidden carrier — GUARD-1's named exemption owns this one component
+ * (the spec-edit `mark`, iterate `figureId`/`priorVersion`/`entryPoint` replays ride a raw
+ * input, RV-36; every visible control is a 225/225a primitive).
+ */
+function HiddenField({
+  name,
+  value,
+  ...rest
+}: {
+  readonly name: string;
+  readonly value: string;
+} & Record<string, unknown>): ReactNode {
+  return <input type="hidden" name={name} value={value} {...rest} />;
+}
 
 export interface FiguresSurfaceProps {
   /** the `GET /bff/p/:slug/figures` twin bag — `items` may be empty (the designed empty arm). */
@@ -110,7 +112,7 @@ export function FiguresSurface({ data }: FiguresSurfaceProps): ReactNode {
       <div data-spa-surface>
         <PageBody>
           <PageHeader title={F.heading} />
-          <p style={{ color: "var(--shell-fg-muted)" }}>{F.empty}</p>
+          <p className="ui-set-t--m">{F.empty}</p>
         </PageBody>
       </div>
     );
@@ -122,23 +124,36 @@ export function FiguresSurface({ data }: FiguresSurfaceProps): ReactNode {
           title={F.heading}
           crumbs={[{ label: data.slug, href: `/p/${data.slug}` }, { label: F.heading }]}
         />
-        <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0" }}>
-          <a href={`/p/${data.slug}/visualize`} data-new-figure="true" style={{ color: "var(--accent)" }}>{F.newLabel}</a>
+        <p className="ui-set-t ui-set-t--m">
+          <a href={`/p/${data.slug}/visualize`} data-new-figure="true" className="ui-c2-ca">
+            {F.newLabel}
+          </a>
         </p>
         {data.items.length === 0 ? (
-          <p data-figures-empty="true" style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{F.empty}</p>
+          <p data-figures-empty="true" className="ui-set-t ui-set-t--m">
+            {F.empty}
+          </p>
         ) : (
-          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
+          <ul
+            className="ui-c2-l0"
+            style={{ listStyle: "none", display: "flex", flexDirection: "column" }}
+          >
             {data.items.map((f) => (
-              <li key={f.id} data-figure-row={f.id} style={{ border: "1px solid var(--shell-border)", borderRadius: "10px", padding: "12px 14px", background: "var(--shell-surface)" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                  <a href={`/p/${data.slug}/figures/${f.id}`} style={{ color: "var(--shell-fg)", fontSize: "14px", fontWeight: 600, textDecoration: "none" }}>
+              <li key={f.id} data-figure-row={f.id} className="ui-inbox-row">
+                <div className="ui-set-form">
+                  <a
+                    href={`/p/${data.slug}/figures/${f.id}`}
+                    className="ui-c2-a"
+                    style={{ textDecoration: "none" }}
+                  >
                     {f.title || f.caption || f.id}
                   </a>
                   <Chip label={f.kind} />
                   {f.badgeText ? <Chip label={f.badgeText} color="var(--sev-major)" /> : null}
                   <Chip label={fmt(F.versionFmt, { n: f.n })} />
-                  {f.insertedInDraftId ? <Chip label={F.insertedChip} color="var(--state-ok)" /> : null}
+                  {f.insertedInDraftId ? (
+                    <Chip label={F.insertedChip} color="var(--state-ok)" />
+                  ) : null}
                   {f.pendingProposal ? <Chip label={F.proposalChip} /> : null}
                   {!f.hasRender && f.specKind !== "table" ? <Chip label={F.renderingChip} /> : null}
                 </div>
@@ -150,10 +165,11 @@ export function FiguresSurface({ data }: FiguresSurfaceProps): ReactNode {
                     src={f.assetUri}
                     alt={f.caption || f.title || f.id}
                     data-figure-image={f.id}
-                    style={{ display: "block", marginTop: "8px", maxWidth: "100%", maxHeight: "220px", borderRadius: "6px", border: "1px solid var(--shell-border)" }}
+                    className="ui-c2-img ui-c2-img--l"
+                    style={{ display: "block", border: "1px solid var(--shell-border)" }}
                   />
                 ) : null}
-                {f.caption ? <p style={{ margin: "6px 0 0", fontSize: "12px", color: "var(--shell-fg-muted)" }}>{f.caption}</p> : null}
+                {f.caption ? <p className="ui-c2-ts ui-c2-mt">{f.caption}</p> : null}
               </li>
             ))}
           </ul>
@@ -231,7 +247,7 @@ export function FigureCardSurface({ data, saved, notice }: FigureCardSurfaceProp
       <div data-spa-surface>
         <PageBody>
           <PageHeader title={F.heading} />
-          <p style={{ color: "var(--shell-fg-muted)" }}>{V.notFound}</p>
+          <p className="ui-set-t--m">{V.notFound}</p>
         </PageBody>
       </div>
     );
@@ -255,7 +271,7 @@ export function FigureCardSurface({ data, saved, notice }: FigureCardSurfaceProp
               { label: img.title || FC.untitled },
             ]}
           />
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", margin: "4px 0 12px" }}>
+          <div className="ui-set-form ui-c2-mv">
             <Chip label={FC.imageKindChip} />
             <Chip label={FC.importedChip} />
           </div>
@@ -263,15 +279,21 @@ export function FigureCardSurface({ data, saved, notice }: FigureCardSurfaceProp
             src={img.assetUri}
             alt={img.alt || img.title || img.id}
             data-figure-image={img.id}
-            style={{ display: "block", maxWidth: "100%", borderRadius: "8px", border: "1px solid var(--shell-border)" }}
+            className="ui-c2-img"
+            style={{ display: "block", border: "1px solid var(--shell-border)" }}
           />
-          {img.caption ? <p style={{ margin: "8px 0 0", fontSize: "13px", color: "var(--shell-fg-muted)" }}>{img.caption}</p> : null}
-          {img.sourceLine ? <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--shell-fg-faint)" }}>{img.sourceLine}</p> : null}
-          <details data-figure-versions="true" style={{ marginTop: "10px" }} open={img.versions.length > 1}>
-            <summary style={{ fontSize: "13px", color: "var(--shell-fg)", cursor: "pointer" }}>{FC.versionsHeading}</summary>
-            <ul style={{ listStyle: "none", margin: "8px 0 0", padding: 0, display: "flex", flexDirection: "column", gap: "6px" }}>
+          {img.caption ? <p className="ui-c2-mt ui-set-t--m">{img.caption}</p> : null}
+          {img.sourceLine ? <p className="ui-c2-mt ui-vc-faint">{img.sourceLine}</p> : null}
+          <details data-figure-versions="true" className="ui-c2-mt" open={img.versions.length > 1}>
+            <summary className="ui-os-d" style={{ cursor: "pointer" }}>
+              {FC.versionsHeading}
+            </summary>
+            <ul
+              className="ui-c2-vl"
+              style={{ listStyle: "none", display: "flex", flexDirection: "column" }}
+            >
               {img.versions.map((v) => (
-                <li key={v.n} data-version={v.n} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", color: "var(--shell-fg-muted)", flexWrap: "wrap" }}>
+                <li key={v.n} data-version={v.n} className="ui-set-form ui-c2-ts">
                   <Chip label={`v${v.n}`} />
                   <span>{v.label ?? FC.emptyField}</span>
                 </li>
@@ -282,7 +304,9 @@ export function FigureCardSurface({ data, saved, notice }: FigureCardSurfaceProp
       </div>
     );
   }
-  const missing = card.readiness.missing.map((m) => (m === "alt" ? FC.missingAlt : FC.missingSource));
+  const missing = card.readiness.missing.map((m) =>
+    m === "alt" ? FC.missingAlt : FC.missingSource,
+  );
   const declined = card.versions.find((v) => v.renderStatus === "declined");
   const shownNotice = postError ?? notice;
   return (
@@ -296,11 +320,15 @@ export function FigureCardSurface({ data, saved, notice }: FigureCardSurfaceProp
             { label: card.title || FC.untitled },
           ]}
         />
-        <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0" }}>
+        <p className="ui-set-t ui-set-t--m">
           {saved ? <span data-saved-note="true">{COPY.outlinePage.savedNote}</span> : null}
-          {shownNotice ? <span data-notice="true" style={{ marginLeft: "12px", color: "var(--sev-major)" }}>{shownNotice}</span> : null}
+          {shownNotice ? (
+            <span data-notice="true" className="ui-c2-ml ui-set-t--warn">
+              {shownNotice}
+            </span>
+          ) : null}
         </p>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", margin: "4px 0 12px" }}>
+        <div className="ui-set-form ui-c2-mv">
           <Chip label={card.kind} />
           {card.badgeText ? <Chip label={card.badgeText} color="var(--sev-major)" /> : null}
           {card.insertedInDraftId ? <Chip label={FC.insertedNote} color="var(--state-ok)" /> : null}
@@ -310,28 +338,51 @@ export function FigureCardSurface({ data, saved, notice }: FigureCardSurfaceProp
             its markdown source. (`&&` guards keep the copy-containment scan out of the ternary
             boundaries — REQ-SAFE-10.) */}
         {card.files.svgLight != null && (
-          <div data-figure-preview="true" style={{ border: "1px solid var(--shell-border)", borderRadius: "10px", padding: "12px", background: "var(--paper-bg, var(--shell-surface))", overflowX: "auto" }}
-            dangerouslySetInnerHTML={{ __html: card.files.svgLight }} />
+          <div
+            data-figure-preview="true"
+            className="ui-c2-pv"
+            style={{ border: "1px solid var(--shell-border)", overflowX: "auto" }}
+            dangerouslySetInnerHTML={{ __html: card.files.svgLight }}
+          />
         )}
         {card.files.svgLight == null && card.files.tableSource != null && (
-          <pre data-figure-preview="true" style={{ border: "1px solid var(--shell-border)", borderRadius: "10px", padding: "12px", background: "var(--shell-surface)", fontSize: "12px", whiteSpace: "pre-wrap" }}>{card.files.tableSource}</pre>
+          <pre
+            data-figure-preview="true"
+            className="ui-c2-pvs"
+            style={{ border: "1px solid var(--shell-border)", whiteSpace: "pre-wrap" }}
+          >
+            {card.files.tableSource}
+          </pre>
         )}
         {card.files.svgLight == null && card.files.tableSource == null && (
-          <p data-figure-preview-pending="true" style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{F.renderingChip}</p>
+          <p data-figure-preview-pending="true" className="ui-set-t--m">
+            {F.renderingChip}
+          </p>
         )}
         {declined ? (
-          <p data-declined-note="true" style={{ fontSize: "12px", color: "var(--sev-major)" }}>{fmt(FC.declinedFmt, { suggestion: declined.renderError ?? "" })}</p>
+          <p data-declined-note="true" className="ui-c2-w">
+            {fmt(FC.declinedFmt, { suggestion: declined.renderError ?? "" })}
+          </p>
         ) : null}
 
         {/* the type chips — a vega_lite mark edit is a 0-cr local spec edit (no run, no model call). */}
         {card.specKind === "vega_lite" ? (
-          <section data-type-chips="true" style={{ marginTop: "14px" }}>
-            <p style={{ margin: "0 0 6px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>{FC.chipsHeading} <span style={{ color: "var(--shell-fg-faint)" }}>— {FC.chipsNote}</span></p>
-            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+          <section data-type-chips="true" className="ui-c2-mt3">
+            <p className="ui-c2-mb ui-c2-ts">
+              {FC.chipsHeading} <span className="ui-vc-faint">— {FC.chipsNote}</span>
+            </p>
+            <div className="ui-set-form ui-c2-g1">
               {(["bar", "line", "point", "area"] as const).map((mark) => (
-                <form key={mark} method="post" action={`${cardBase}/spec-edit`} style={{ display: "inline" }}>
-                  <input type="hidden" name="mark" value={mark} />
-                  <button type="submit" data-chip={mark} style={FIGURE_CHIP_STYLE}>{mark}</button>
+                <form
+                  key={mark}
+                  method="post"
+                  action={`${cardBase}/spec-edit`}
+                  style={{ display: "inline" }}
+                >
+                  <HiddenField name="mark" value={mark} />
+                  <Button type="submit" variant="secondary" size="sm" data-chip={mark}>
+                    {mark}
+                  </Button>
                 </form>
               ))}
             </div>
@@ -339,74 +390,117 @@ export function FigureCardSurface({ data, saved, notice }: FigureCardSurfaceProp
         ) : null}
 
         {/* the card fields — user-authored caption/alt/source line (alt + source gate the insert). */}
-        <form method="post" action={cardBase} data-figure-fields="true" style={{ marginTop: "14px", display: "flex", flexDirection: "column", gap: "8px", maxWidth: "520px" }}>
+        <form
+          method="post"
+          action={cardBase}
+          data-figure-fields="true"
+          className="ui-c2-col ui-c2-mw ui-c2-mt3"
+          style={{ display: "flex", flexDirection: "column" }}
+        >
           {/* pages.tsx's `figureField` markup verbatim — the literal `name=` tokens here are the
               emit-scan proof the field grammar is real (the SSR helper carries them as args). */}
-          <label style={{ display: "block", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+          <label className="ui-vc-lab">
             {FC.captionLabel}
-            <input type="text" name="caption" defaultValue={card.caption}
-              style={{ display: "block", marginTop: "3px", width: "100%", boxSizing: "border-box", padding: "6px 10px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", fontSize: "13px" }} />
+            <TextField type="text" name="caption" defaultValue={card.caption} />
           </label>
-          <label style={{ display: "block", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+          <label className="ui-vc-lab">
             {FC.altLabel}
-            <input type="text" name="alt" defaultValue={card.alt}
-              style={{ display: "block", marginTop: "3px", width: "100%", boxSizing: "border-box", padding: "6px 10px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", fontSize: "13px" }} />
+            <TextField type="text" name="alt" defaultValue={card.alt} />
           </label>
-          <label style={{ display: "block", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+          <label className="ui-vc-lab">
             {FC.sourceLabel}
-            <input type="text" name="sourceLine" defaultValue={card.sourceLine}
-              style={{ display: "block", marginTop: "3px", width: "100%", boxSizing: "border-box", padding: "6px 10px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", fontSize: "13px" }} />
+            <TextField type="text" name="sourceLine" defaultValue={card.sourceLine} />
           </label>
           <div>
-            <button type="submit" style={{ padding: "6px 14px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "12px" }}>
+            <Button type="submit" variant="primary" size="sm">
               {COPY.outlinePage.saveLabel}
-            </button>
+            </Button>
           </div>
         </form>
 
         {/* provenance — the structured honesty record, never a caption convention. */}
-        <details data-provenance="true" style={{ marginTop: "16px" }}>
-          <summary style={{ fontSize: "13px", color: "var(--shell-fg)", cursor: "pointer" }}>{FC.provenanceHeading}</summary>
-          <dl style={{ margin: "8px 0 0", fontSize: "12px", color: "var(--shell-fg-muted)", display: "grid", gridTemplateColumns: "auto 1fr", gap: "4px 12px" }}>
-            <dt>{"kind"}</dt><dd data-prov-kind="true" style={{ margin: 0 }}>{card.provenance.kind}</dd>
-            <dt>{"verification"}</dt><dd data-prov-verification="true" style={{ margin: 0 }}>{card.provenance.verification}</dd>
-            <dt>{"computedBy"}</dt><dd style={{ margin: 0 }}>{card.provenance.computedBy}</dd>
+        <details data-provenance="true" className="ui-c2-mt4">
+          <summary className="ui-os-d" style={{ cursor: "pointer" }}>
+            {FC.provenanceHeading}
+          </summary>
+          <dl className="ui-c2-dl" style={{ display: "grid", gridTemplateColumns: "auto 1fr" }}>
+            <dt>{"kind"}</dt>
+            <dd data-prov-kind="true" className="ui-c2-m0">
+              {card.provenance.kind}
+            </dd>
+            <dt>{"verification"}</dt>
+            <dd data-prov-verification="true" className="ui-c2-m0">
+              {card.provenance.verification}
+            </dd>
+            <dt>{"computedBy"}</dt>
+            <dd className="ui-c2-m0">{card.provenance.computedBy}</dd>
             {card.provenance.refs.map((r, i) => (
               <Fragment key={i}>
                 <dt>{"ref"}</dt>
-                <dd style={{ margin: 0 }}>{r.url ?? r.claimId ?? r.assetId ?? r.transform ?? FC.emptyField}</dd>
+                <dd className="ui-c2-m0">
+                  {r.url ?? r.claimId ?? r.assetId ?? r.transform ?? FC.emptyField}
+                </dd>
               </Fragment>
             ))}
           </dl>
         </details>
 
         {card.files.dataCsv ? (
-          <details data-figure-data="true" style={{ marginTop: "10px" }}>
-            <summary style={{ fontSize: "13px", color: "var(--shell-fg)", cursor: "pointer" }}>{FC.dataHeading}</summary>
-            <pre style={{ margin: "8px 0 0", fontSize: "12px", color: "var(--shell-fg-muted)", whiteSpace: "pre-wrap", border: "1px solid var(--shell-border)", borderRadius: "8px", padding: "10px" }}>{card.files.dataCsv}</pre>
+          <details data-figure-data="true" className="ui-c2-mt">
+            <summary className="ui-os-d" style={{ cursor: "pointer" }}>
+              {FC.dataHeading}
+            </summary>
+            <pre
+              className="ui-c2-pre"
+              style={{ whiteSpace: "pre-wrap", border: "1px solid var(--shell-border)" }}
+            >
+              {card.files.dataCsv}
+            </pre>
           </details>
         ) : null}
         {card.files.spec ? (
-          <details data-figure-spec="true" style={{ marginTop: "10px" }}>
-            <summary style={{ fontSize: "13px", color: "var(--shell-fg)", cursor: "pointer" }}>{FC.specHeading}</summary>
-            <pre style={{ margin: "8px 0 0", fontSize: "12px", color: "var(--shell-fg-muted)", whiteSpace: "pre-wrap", border: "1px solid var(--shell-border)", borderRadius: "8px", padding: "10px" }}>{card.files.spec}</pre>
+          <details data-figure-spec="true" className="ui-c2-mt">
+            <summary className="ui-os-d" style={{ cursor: "pointer" }}>
+              {FC.specHeading}
+            </summary>
+            <pre
+              className="ui-c2-pre"
+              style={{ whiteSpace: "pre-wrap", border: "1px solid var(--shell-border)" }}
+            >
+              {card.files.spec}
+            </pre>
           </details>
         ) : null}
 
         {/* the Versions strip — each iterate's request text + render state + one-click restore. */}
-        <details data-figure-versions="true" style={{ marginTop: "10px" }} open={card.versions.length > 1}>
-          <summary style={{ fontSize: "13px", color: "var(--shell-fg)", cursor: "pointer" }}>{FC.versionsHeading}</summary>
-          <ul style={{ listStyle: "none", margin: "8px 0 0", padding: 0, display: "flex", flexDirection: "column", gap: "6px" }}>
+        <details data-figure-versions="true" className="ui-c2-mt" open={card.versions.length > 1}>
+          <summary className="ui-os-d" style={{ cursor: "pointer" }}>
+            {FC.versionsHeading}
+          </summary>
+          <ul
+            className="ui-c2-vl"
+            style={{ listStyle: "none", display: "flex", flexDirection: "column" }}
+          >
             {card.versions.map((v) => (
-              <li key={v.n} data-version={v.n} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", color: "var(--shell-fg-muted)", flexWrap: "wrap" }}>
+              <li key={v.n} data-version={v.n} className="ui-set-form ui-c2-ts">
                 <Chip label={`v${v.n}`} />
                 <span>{v.request ?? FC.emptyField}</span>
-                <span style={{ color: "var(--shell-fg-faint)" }}>{v.renderStatus}</span>
+                <span className="ui-vc-faint">{v.renderStatus}</span>
                 {v.n !== card.versions.at(-1)?.n ? (
-                  <form method="post" action={`${cardBase}/versions/${v.n}/restore`} style={{ display: "inline" }}>
-                    <button type="submit" data-restore={v.n} style={{ padding: "2px 10px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "transparent", color: "var(--accent)", fontSize: "12px" }}>
+                  <form
+                    method="post"
+                    action={`${cardBase}/versions/${v.n}/restore`}
+                    style={{ display: "inline" }}
+                  >
+                    <Button
+                      type="submit"
+                      variant="secondary"
+                      size="sm"
+                      className="ui-c2-ca"
+                      data-restore={v.n}
+                    >
                       {FC.restoreLabel}
-                    </button>
+                    </Button>
                   </form>
                 ) : null}
               </li>
@@ -416,49 +510,76 @@ export function FigureCardSurface({ data, saved, notice }: FigureCardSurfaceProp
 
         {/* the insert surface — a proposal card, never a direct draft write. Accept splices the
             block in ONE tx (frozen ⇒ fork); Reject keeps the asset. */}
-        <section data-insert="true" style={{ marginTop: "18px", borderTop: "1px solid var(--shell-border)", paddingTop: "12px" }}>
-          <p style={{ margin: "0 0 4px", fontSize: "13px", color: "var(--shell-fg)", fontWeight: 600 }}>{FC.insertHeading}</p>
-          <p style={{ margin: "0 0 10px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>{FC.insertNote}</p>
+        <section
+          data-insert="true"
+          className="ui-c2-ins"
+          style={{ borderTop: "1px solid var(--shell-border)" }}
+        >
+          <p className="ui-c2-ih">{FC.insertHeading}</p>
+          <p className="ui-c2-ts ui-c2-mb">{FC.insertNote}</p>
           {card.pendingProposal != null ? (
             <div data-pending-proposal="true">
-              <p style={{ margin: "0 0 8px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>{FC.pendingNote}</p>
-              <pre data-proposal-block="true" style={{ margin: "0 0 10px", fontSize: "11px", color: "var(--shell-fg-muted)", whiteSpace: "pre-wrap", border: "1px solid var(--shell-border)", borderRadius: "8px", padding: "10px" }}>{card.pendingProposal.markdown}</pre>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <form method="post" action={`${cardBase}/proposals/accept`} style={{ display: "inline" }}>
-                  <button type="submit" data-accept="true" style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "13px", fontWeight: 600 }}>
+              <p className="ui-c2-ts ui-c2-mb">{FC.pendingNote}</p>
+              <pre
+                data-proposal-block="true"
+                className="ui-c2-pre ui-c2-mb"
+                style={{ whiteSpace: "pre-wrap", border: "1px solid var(--shell-border)" }}
+              >
+                {card.pendingProposal.markdown}
+              </pre>
+              <div className="ui-set-form">
+                <form
+                  method="post"
+                  action={`${cardBase}/proposals/accept`}
+                  style={{ display: "inline" }}
+                >
+                  <Button type="submit" variant="primary" data-accept="true">
                     {FC.acceptLabel}
-                  </button>
+                  </Button>
                 </form>
-                <form method="post" action={`${cardBase}/proposals/reject`} style={{ display: "inline" }}>
-                  <button type="submit" data-reject="true" style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "transparent", color: "var(--shell-fg)", fontSize: "13px" }}>
+                <form
+                  method="post"
+                  action={`${cardBase}/proposals/reject`}
+                  style={{ display: "inline" }}
+                >
+                  <Button type="submit" variant="secondary" data-reject="true">
                     {FC.rejectLabel}
-                  </button>
+                  </Button>
                 </form>
               </div>
             </div>
           ) : (
             <Fragment>
               {card.insertedInDraftId != null && (
-                <p data-inserted-note="true" style={{ margin: 0, fontSize: "12px", color: "var(--state-ok)" }}>{FC.insertedNote}</p>
+                <p data-inserted-note="true" className="ui-c2-m0 ui-tok">
+                  {FC.insertedNote}
+                </p>
               )}
               {card.insertedInDraftId == null && card.readiness.ok && data.headDraftId != null ? (
-                <form method="post" action={`${cardBase}/propose`} data-propose-form="true" style={{ display: "flex", flexDirection: "column", gap: "8px", maxWidth: "520px" }}>
-                  <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+                <form
+                  method="post"
+                  action={`${cardBase}/propose`}
+                  data-propose-form="true"
+                  className="ui-c2-col ui-c2-mw"
+                  style={{ display: "flex", flexDirection: "column" }}
+                >
+                  <label className="ui-vc-lab">
                     {FC.anchorLabel}
-                    <input type="text" name="afterBlockId" style={{ display: "block", marginTop: "3px", padding: "6px 10px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", fontSize: "13px" }} />
+                    <TextField type="text" name="afterBlockId" />
                   </label>
                   <div>
-                    <button type="submit" data-propose="true" style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "13px", fontWeight: 600 }}>
+                    <Button type="submit" variant="primary" data-propose="true">
                       {FC.proposeLabel}
-                    </button>
+                    </Button>
                   </div>
                 </form>
               ) : null}
-              {card.insertedInDraftId == null && !(card.readiness.ok && data.headDraftId != null) && (
-                <p data-not-ready="true" style={{ margin: 0, fontSize: "12px", color: "var(--sev-major)" }}>
-                  {fmt(FC.notReadyFmt, { missing: missing.join(" + ") })}
-                </p>
-              )}
+              {card.insertedInDraftId == null &&
+                !(card.readiness.ok && data.headDraftId != null) && (
+                  <p data-not-ready="true" className="ui-c2-m0 ui-c2-w">
+                    {fmt(FC.notReadyFmt, { missing: missing.join(" + ") })}
+                  </p>
+                )}
             </Fragment>
           )}
         </section>
@@ -539,7 +660,7 @@ export function VisualizeSurface({ data, contentKey }: VisualizeSurfaceProps): R
       <div data-spa-surface>
         <PageBody>
           <PageHeader title={V.heading} />
-          <p style={{ color: "var(--shell-fg-muted)" }}>{V.notFound}</p>
+          <p className="ui-set-t--m">{V.notFound}</p>
         </PageBody>
       </div>
     );
@@ -551,47 +672,77 @@ export function VisualizeSurface({ data, contentKey }: VisualizeSurfaceProps): R
           title={V.heading}
           crumbs={[{ label: data.slug, href: `/p/${data.slug}` }, { label: V.heading }]}
         />
-        <form key={contentKey} method="post" action={`/p/${data.slug}/visualize`} data-visualize-form="true" style={{ display: "flex", flexDirection: "column", gap: "10px", maxWidth: "560px" }}>
-          {data.figureId ? <input type="hidden" name="figureId" value={data.figureId} /> : null}
-          {data.priorVersion != null ? <input type="hidden" name="priorVersion" value={String(data.priorVersion)} /> : null}
-          {data.entryPoint ? <input type="hidden" name="entryPoint" value={data.entryPoint} /> : null}
+        <form
+          key={contentKey}
+          method="post"
+          action={`/p/${data.slug}/visualize`}
+          data-visualize-form="true"
+          className="ui-c2-col ui-c2-mw5"
+          style={{ display: "flex", flexDirection: "column" }}
+        >
+          {data.figureId ? <HiddenField name="figureId" value={data.figureId} /> : null}
+          {data.priorVersion != null ? (
+            <HiddenField name="priorVersion" value={String(data.priorVersion)} />
+          ) : null}
+          {data.entryPoint ? <HiddenField name="entryPoint" value={data.entryPoint} /> : null}
           {data.figureId ? (
-            <p data-iterate-note="true" style={{ margin: 0, fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+            <p data-iterate-note="true" className="ui-c2-m0 ui-c2-ts">
               {V.iterateLabel} <code>{data.figureId}</code>
             </p>
           ) : null}
-          <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+          <label className="ui-vc-lab">
             {V.requestLabel}
-            <textarea name="request" required defaultValue={data.request} rows={4}
-              style={{ display: "block", marginTop: "3px", width: "100%", boxSizing: "border-box", padding: "8px 10px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", fontSize: "13px", fontFamily: "inherit" }} />
+            <TextArea
+              name="request"
+              required
+              defaultValue={data.request}
+              rows={4}
+              className="ui-rs-mt"
+            />
           </label>
-          <p style={{ margin: 0, fontSize: "12px", color: "var(--shell-fg-faint)" }}>{V.requestHint}</p>
-          <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+          <p className="ui-c2-m0 ui-vc-faint">{V.requestHint}</p>
+          <label className="ui-vc-lab">
             {V.kindLabel}
-            <select name="specKind" defaultValue={data.specKind}
-              style={{ display: "block", marginTop: "3px", padding: "6px 10px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", fontSize: "13px" }}>
-              <option value="">{V.kindAuto}</option>
-              {/* the enum tokens ARE the labels (REQ-SAFE-10 wraps them as expressions) */}
-              <option value="vega_lite">{"vega_lite"}</option>
-              <option value="mermaid">{"mermaid"}</option>
-              <option value="table">{"table"}</option>
-            </select>
+            {/* Radix forbids an empty-string Item value: `"auto"` is the sheet's auto pick and the
+                api's kind match treats any non-enum value (incl. the old `""`) as auto anyway —
+                the post grammar is unchanged (`specKind` absent the enum ⇒ auto). */}
+            <Select
+              name="specKind"
+              defaultValue={data.specKind === "" ? "auto" : data.specKind}
+              aria-label={V.kindLabel}
+              className="ui-rs-mt"
+              items={[
+                { value: "auto", label: V.kindAuto },
+                { value: "vega_lite", label: "vega_lite" },
+                { value: "mermaid", label: "mermaid" },
+                { value: "table", label: "table" },
+              ]}
+            />
           </label>
-          <label data-insist="true" style={{ fontSize: "12px", color: "var(--shell-fg-muted)", display: "flex", gap: "6px", alignItems: "flex-start" }}>
-            <input type="checkbox" name="insist" value="1" style={{ marginTop: "2px" }} />
+          <label
+            data-insist="true"
+            className="ui-set-form ui-c2-ts"
+            style={{ alignItems: "flex-start" }}
+          >
+            <Checkbox name="insist" value="1" aria-label={V.insistLabel} className="ui-rs-mt" />
             <span>{V.insistLabel}</span>
           </label>
-          <p data-estimate="true" style={{ margin: 0, fontSize: "13px", color: "var(--shell-fg)" }}>
-            {fmt(V.estimateFmt, { estimate: data.estimateCredits.toLocaleString("en-US"), cap: data.capCredits.toLocaleString("en-US") })}
+          <p data-estimate="true" className="ui-c2-p0">
+            {fmt(V.estimateFmt, {
+              estimate: data.estimateCredits.toLocaleString("en-US"),
+              cap: data.capCredits.toLocaleString("en-US"),
+            })}
           </p>
-          <p style={{ margin: 0, fontSize: "12px", color: "var(--shell-fg-faint)" }}>{V.chipNote}</p>
+          <p className="ui-c2-m0 ui-vc-faint">{V.chipNote}</p>
           {notice ? (
-            <p data-notice="true" style={{ margin: 0, fontSize: "12px", color: "var(--sev-major)" }}>{notice}</p>
+            <p data-notice="true" className="ui-c2-m0 ui-c2-w">
+              {notice}
+            </p>
           ) : null}
           <div>
-            <button type="submit" style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "13px", fontWeight: 600 }}>
+            <Button type="submit" variant="primary">
               {V.startLabel}
-            </button>
+            </Button>
           </div>
         </form>
       </PageBody>

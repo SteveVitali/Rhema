@@ -48,7 +48,9 @@ describe("§5.9 contrast invariants — dark theme", () => {
   it("paper body ≥ 10:1 (AAA reading contrast)", () => {
     expectMin([[fg(v, "--paper-fg"), fg(v, "--paper-bg")]], 10, "dark paper");
     // muted paper text clears ordinary body contrast
-    expect(contrastRatio(fg(v, "--paper-fg-muted"), fg(v, "--paper-bg"))).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(fg(v, "--paper-fg-muted"), fg(v, "--paper-bg"))).toBeGreaterThanOrEqual(
+      4.5,
+    );
   });
   it("chips/labels ≥ 4.5:1 — accent + severity + state hues on their grounds", () => {
     expectMin(
@@ -116,7 +118,9 @@ describe("§5.9 contrast invariants — light theme", () => {
   });
   it("paper body ≥ 10:1 (AAA reading contrast)", () => {
     expectMin([[fg(v, "--paper-fg"), fg(v, "--paper-bg")]], 10, "light paper");
-    expect(contrastRatio(fg(v, "--paper-fg-muted"), fg(v, "--paper-bg"))).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(fg(v, "--paper-fg-muted"), fg(v, "--paper-bg"))).toBeGreaterThanOrEqual(
+      4.5,
+    );
   });
   it("chips/labels ≥ 4.5:1", () => {
     expectMin(
@@ -151,7 +155,9 @@ describe("§5.9 contrast invariants — light theme", () => {
       "light marks",
     );
     // borders/rules are structural hairlines (decorative) — perceivable, not meaningful marks.
-    expect(contrastRatio(fg(v, "--shell-border"), fg(v, "--shell-bg"))).toBeGreaterThanOrEqual(1.05);
+    expect(contrastRatio(fg(v, "--shell-border"), fg(v, "--shell-bg"))).toBeGreaterThanOrEqual(
+      1.05,
+    );
     expect(contrastRatio(fg(v, "--paper-rule"), fg(v, "--paper-bg"))).toBeGreaterThanOrEqual(1.05);
   });
 });
@@ -162,7 +168,10 @@ describe("§5.9 contrast invariants — light theme", () => {
 // the same floor the structural hairlines clear); `--state-ok` is a text/chip hue — AA ≥4.5:1 on
 // every shell ground and on the scoped-paper grounds it can land inside `.paper`.
 describe("R7KIT.1 token floors — diff tints + state-ok (UXC-32)", () => {
-  for (const [name, v] of [["dark", DARK_VARS], ["light", LIGHT_VARS]] as const) {
+  for (const [name, v] of [
+    ["dark", DARK_VARS],
+    ["light", LIGHT_VARS],
+  ] as const) {
     it(`${name}: paper body text keeps ≥10:1 on both diff tints, and the tints are perceivable`, () => {
       for (const tint of ["--paper-diff-add", "--paper-diff-del"] as const) {
         expect(
@@ -191,8 +200,30 @@ describe("R7KIT.1 token floors — diff tints + state-ok (UXC-32)", () => {
     for (const mode of ["light", "dark"] as const) {
       const p = paperVars(mode);
       for (const tint of ["--paper-diff-add", "--paper-diff-del"] as const) {
-        expect(contrastRatio(p["--paper-fg"]!, p[tint]!), `pinned ${mode} ${tint}`).toBeGreaterThanOrEqual(10);
+        expect(
+          contrastRatio(p["--paper-fg"]!, p[tint]!),
+          `pinned ${mode} ${tint}`,
+        ).toBeGreaterThanOrEqual(10);
         expect(contrastRatio(p[tint]!, p["--paper-bg"]!)).toBeGreaterThanOrEqual(1.1);
+      }
+    }
+  });
+  it("242 batch c2's usages hold: outline 'saved'/figure 'inserted' notes ride --state-ok text on shell-bg (the PageBody ground), and the diff tints stay on the paper grounds their consumers use", () => {
+    for (const [name, v] of [
+      ["dark", DARK_VARS],
+      ["light", LIGHT_VARS],
+    ] as const) {
+      // `.ui-tok` + Chip color="var(--state-ok)" render text on the PageBody's --shell-bg.
+      expect(
+        contrastRatio(fg(v, "--state-ok"), fg(v, "--shell-bg")),
+        `${name} saved/inserted note (--state-ok on --shell-bg)`,
+      ).toBeGreaterThanOrEqual(4.5);
+      // The diff consumers (compare/what-changed) put body-coloured marks on each tint.
+      for (const tint of ["--paper-diff-add", "--paper-diff-del"] as const) {
+        expect(
+          contrastRatio(fg(v, "--paper-fg"), fg(v, tint)),
+          `${name} diff usage ${tint}`,
+        ).toBeGreaterThanOrEqual(10);
       }
     }
   });
