@@ -6,7 +6,7 @@
 - **Harness:** devin-desktop/swe-2-high/subagent
 - **Skills:** e981ec5
 - **Started:** 2026-11-06T00:52Z
-- **Closed:** —
+- **Closed:** 2026-11-06 (Stage A)
 - **Config:** full (ledger/self-review/gap-analysis/tests; live_verification = fixture-verified only — Stage A $0, no preview per GD-PREVIEW.R7)
 
 ## Deferrals read
@@ -103,4 +103,8 @@ this ticket — both stay OPEN as owner-250 rows; my new row joins them.
 
 ## Evidence report
 
-_(filled Phase 6)_
+- PR: #270 (base `stevevitali/r7reload-1-forms`), head `6255e859`; unmerged — OPERATOR policy.
+- Entry delta: **+13.9 kB gz** vs `apps/web/spa-budget-baseline.json` (baseline `04a4e98b`) — inside the ≤15 kB REQ-KIT-5 allowance; chat lives in leaf chunks.
+- AC layers: every in-ticket criterion is met at the fixture-verified/engineered layer (unit + DOM + api tests); the deployed walk is `met-engineered(D-R7TALK.1a-1)` owner 250; markdown rendering `met-engineered(D-R7TALK.1a-2)` owner 245.
+- ci: pending at record time — `ci-boundary` JSON at `docs/build/logs/ci-R7TALK.1a.json` (bounded read follows).
+- Out of scope honoured: no token deltas, no new event shape, no paid run, no preview/deploy, no ledger write, no money-mode change, demo path stays read-free.
