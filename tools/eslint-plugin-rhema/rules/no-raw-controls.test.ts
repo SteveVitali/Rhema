@@ -157,19 +157,20 @@ const isOff = (v: unknown): boolean => severityOf(v) === 0 || severityOf(v) === 
 describe("registration in the real eslint.config.js (per-file enablement)", () => {
   it("is `off` over both scope globs, absent for primitives/** and out-of-scope files", async () => {
     const eslint = new ESLint({ cwd: REPO_ROOT });
-    for (const file of ["apps/web/src/spa/surfaces/voices.tsx", "apps/web/src/pages.tsx"]) {
+    for (const file of ["apps/web/src/spa/surfaces/dossier.tsx", "apps/web/src/pages.tsx"]) {
       const cfg = await eslint.calculateConfigForFile(file);
       const entry = (cfg.rules as Record<string, unknown>)["rhema/no-raw-controls"];
       expect(entry, `rule configured for ${file}`).toBeDefined();
       expect(isOff(entry), `rule off for ${file}`).toBe(true);
     }
     // R7TALK.1a enabled the first batch-d file — the rule is ON (never off) for it; R7KIT.3a
-    // enabled batch a's settings/billing/usage (voices stays off until 240a).
+    // enabled batch a's settings/billing/usage and 240a_R7KIT.3a2 completed batch a with voices.
     for (const file of [
       "packages/ui/src/chat-panel.tsx",
       "apps/web/src/spa/surfaces/settings.tsx",
       "apps/web/src/spa/surfaces/billing.tsx",
       "apps/web/src/spa/surfaces/usage.tsx",
+      "apps/web/src/spa/surfaces/voices.tsx",
     ]) {
       const on = await eslint.calculateConfigForFile(file);
       const onEntry = (on.rules as Record<string, unknown>)["rhema/no-raw-controls"];
@@ -202,9 +203,15 @@ describe("registration in the real eslint.config.js (per-file enablement)", () =
       filePath: "apps/web/src/spa/surfaces/settings.tsx",
     });
     expect(on.messages.some((m) => m.ruleId === "rhema/no-raw-controls")).toBe(true);
+    // 240a_R7KIT.3a2's seeded leg: a raw <button> in voices.tsx now fails the ENABLED rule
+    // (batch a's enablement covers the file — no override needed for the violation to land).
+    const [voices] = await eslint.lintText(code, {
+      filePath: "apps/web/src/spa/surfaces/voices.tsx",
+    });
+    expect(voices.messages.some((m) => m.ruleId === "rhema/no-raw-controls")).toBe(true);
     // Same code in a not-yet-migrated file: the rule stays off (enablement is per-file).
     const [off] = await eslint.lintText(code, {
-      filePath: "apps/web/src/spa/surfaces/voices.tsx",
+      filePath: "apps/web/src/spa/surfaces/dossier.tsx",
     });
     expect(off.messages.some((m) => m.ruleId === "rhema/no-raw-controls")).toBe(false);
     // Same code in an exempt file: enabled, but the exemption wins.

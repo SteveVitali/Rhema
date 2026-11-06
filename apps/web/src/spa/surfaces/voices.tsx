@@ -1,10 +1,19 @@
 // SPA.13 — the `voices` surface's React twins (REQ-SEQ-9, REQ-BFF-1/2/9/16, REQ-DAT-4, REQ-TST-2,
 // REQ-VFY-2/6; design/22 §2 voices/voicesNew/voiceDetail/p.voiceReseed rows). `VoicesSurface`,
 // `VoiceNewSurface`, `VoiceDetailSurface`, and `VoiceReseedSurface` port pages.tsx `VoicesPage` /
-// `VoiceNewPage` / `VoiceDetailPage` / `VoiceReseedPage` verbatim — the same `<Shell>`/`<PageTitle>`
+// `VoiceNewPage` / `VoiceDetailPage` / `VoiceReseedPage` — the same `<PageBody>`/`<PageHeader>`
 // chrome, the same tab bar, the same `data-*` vocabulary — on data read through the `voices*Query`
 // twins instead of `usePageData()`. Every hook literal resolves to dom-contract.ts; nothing
 // unmanifested is invented.
+//
+// 240a_R7KIT.3a2 (REQ-KIT-3 batch a; REQ-GUARD-1; REQ-KIT-4's D4; UXC-16): every control is a 225a
+// primitive (Button/TextField/TextArea/Select/Checkbox/RadioGroup — the Radix pickers' own hidden
+// form carriers keep the no-JS post grammar verbatim), every spacing/type/colour/radius value rides
+// `.ui-vc-*`/`.ui-set-*` classes from `uiCss()`, and enum keys render through the COPY label maps
+// (`sourceKind`, `providerLabel`, `stateBadge`, `qualityBadge`, `calibrationVerdict`,
+// `runStateLabel`, `tierLabel`, `usage.workflowLabels`) with a humanized fallback — no
+// `substack_export`-style key reaches rendered text (D4). `HiddenField` is the file's one named
+// GUARD-1 exemption — the hidden id/flag carriers the Radix pickers do not own (RV-36).
 //
 // Port notes (the places a React mount CANNOT be a byte-copy):
 //   • forms keep their SSR markup verbatim (`method="post"`, the action path, the field
@@ -40,6 +49,15 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { PageBody, PageHeader } from "../page-header.js";
+import {
+  Button,
+  Checkbox,
+  RadioGroup,
+  RadioGroupItem,
+  Select,
+  TextArea,
+  TextField,
+} from "@rhema/ui";
 import type {
   PresignedImportDto,
   VoiceConnectionDto,
@@ -56,62 +74,47 @@ import { BffError, bffFetch } from "../bff.js";
 import { navigateDocument } from "../dom.js";
 import type { BffVoiceDetailTwin, BffVoiceReseedTwin } from "../queries.js";
 
-const { voice: VC } = COPY;
+const { voice: VC, usage: U } = COPY;
 
 /** `{key}`-template substitution — the local twin of pages.tsx's `fmt` (one helper, both renderers). */
 function fmt(template: string, vars: Record<string, string | number>): string {
   return template.replace(/\{(\w+)\}/g, (_, k: string) => (k in vars ? String(vars[k]) : `{${k}}`));
 }
 
+/** "run_progress" → "Run progress" — the humanized fallback an unlisted enum key degrades to. */
+function humanizeKey(key: string): string {
+  const s = key.replace(/_/g, " ");
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/** REQ-KIT-4 (D4) — an enum key renders its COPY label; an unlisted key humanizes, never leaks. */
+function enumLabel(map: Record<string, string> | undefined, key: string): string {
+  return map?.[key] ?? humanizeKey(key);
+}
+
+/**
+ * The no-JS form grammar's hidden carrier — GUARD-1's named exemption owns this one component
+ * (Radix's own hidden select/radio/checkbox carriers post the named fields; the id/flag carriers
+ * it does not own — runId, provider, scope, tier, quarantineKey, known — ride this, RV-36).
+ */
+function HiddenField({
+  name,
+  value,
+}: {
+  readonly name: string;
+  readonly value: string;
+}): ReactNode {
+  return <input type="hidden" name={name} value={value} />;
+}
 
 /** P1.19 — the §10.1 ✗ column's phone-width note (pages.tsx `PhoneBlockedNote` verbatim). */
 function PhoneBlockedNote(): ReactNode {
   return (
-    <p data-phone-blocked="true" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", maxWidth: "68ch" }}>
+    <p data-phone-blocked="true" className="ui-set-t ui-set-t--m ui-set-t--meas">
       {COPY.phoneBlocked.note}
     </p>
   );
 }
-
-// ---- The SSR's shared micro-styles, verbatim (pages.tsx) ----------------------------------------
-
-const fieldStyle = {
-  display: "block",
-  width: "100%",
-  padding: "8px 10px",
-  marginTop: "4px",
-  borderRadius: "8px",
-  border: "1px solid var(--shell-border)",
-  background: "var(--shell-bg)",
-  color: "var(--shell-fg)",
-  fontSize: "14px",
-  boxSizing: "border-box" as const,
-};
-const submitStyle = {
-  width: "100%",
-  padding: "9px 14px",
-  borderRadius: "8px",
-  border: "none",
-  background: "var(--accent)",
-  color: "var(--shell-bg)",
-  fontSize: "14px",
-  fontWeight: 600,
-  cursor: "pointer",
-};
-const textAreaStyle = {
-  display: "block",
-  width: "100%",
-  minHeight: "160px",
-  marginTop: "4px",
-  padding: "8px 10px",
-  borderRadius: "8px",
-  border: "1px solid var(--shell-border)",
-  background: "var(--shell-bg)",
-  color: "var(--shell-fg)",
-  fontSize: "13px",
-  fontFamily: '"JetBrains Mono", ui-monospace, monospace',
-  boxSizing: "border-box" as const,
-};
 
 // ---- The delegated mutation leg (one hook per surface mount) -------------------------------------
 
@@ -283,48 +286,53 @@ function useVoiceFormSubmit(opts?: {
 function voicePillSpan(status: VoiceStatusDto | null | undefined): ReactNode {
   if (!status) return null;
   return (
-    <span data-voice-pill={status.pill.tone} style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+    <span data-voice-pill={status.pill.tone} className="ui-set-t--sm ui-set-t--m">
       {status.pill.label}
     </span>
   );
 }
 
-/** One library card (§9.1) — pages.tsx `VoiceCard` verbatim. */
+/** One library card (§9.1) — pages.tsx `VoiceCard` verbatim; REQ-KIT-4's D4 renders `sources`
+ *  through `detail.sourceKind` — "Substack export", never `substack_export`. */
 function VoiceCard({ v }: { v: VoiceListRowDto }): ReactNode {
   return (
-    <li key={v.personaId} data-voice-card={v.personaId} data-voice-group={v.group} style={{ border: "1px solid var(--shell-border)", borderRadius: "8px", padding: "10px 14px" }}>
-      <a href={`/v/${v.personaId}`} style={{ fontWeight: 600, fontSize: "14px" }}>
+    <li key={v.personaId} data-voice-card={v.personaId} data-voice-group={v.group} className="ui-vc-card">
+      <a href={`/v/${v.personaId}`} className="ui-vc-name">
         {v.name ?? v.personaId}
       </a>
-      {v.byline ? <span style={{ color: "var(--shell-fg-muted)", fontSize: "13px" }}> · {v.byline}</span> : null}
+      {v.byline ? <span className="ui-set-t--sm ui-set-t--m"> · {v.byline}</span> : null}
       {v.readOnly ? (
-        <span data-read-only="true" style={{ color: "var(--shell-fg-faint)", fontSize: "11px", marginLeft: "8px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+        <span data-read-only="true" className="ui-vc-faint ui-vc-tag ui-vc-up">
           {VC.card.readOnlyNote}
         </span>
       ) : null}
       {v.tier ? (
-        <span data-voice-tier={v.tier} style={{ color: "var(--shell-fg-faint)", fontSize: "11px", marginLeft: "8px" }}>
-          {VC.card.tierLabel[v.tier] ?? v.tier}
+        <span data-voice-tier={v.tier} className="ui-vc-faint ui-vc-tag">
+          {enumLabel(VC.card.tierLabel, v.tier)}
         </span>
       ) : null}
       {v.members.length > 0 ? (
-        <div data-composed-from="true" style={{ fontSize: "12px", color: "var(--shell-fg-muted)", marginTop: "2px" }}>
+        <div data-composed-from="true" className="ui-set-t--sm ui-set-t--m">
           {fmt(VC.card.composedFmt, { names: v.members.map((m) => m.name ?? m.personaId).join(", ") })}
         </div>
       ) : null}
-      <div style={{ marginTop: "4px", display: "flex", gap: "12px", alignItems: "center", fontSize: "12px", color: "var(--shell-fg-faint)", flexWrap: "wrap" }}>
+      <div className="ui-set-form ui-set-t--sm ui-set-t--f">
         {voicePillSpan(v.status)}
         <span>{fmt(VC.sampleCountFmt, { n: v.sampleCount })}</span>
-        {v.sources.length > 0 ? <span data-voice-sources="true">{v.sources.join(" · ")}</span> : null}
+        {v.sources.length > 0 ? (
+          <span data-voice-sources="true">
+            {v.sources.map((s) => enumLabel(VC.detail.sourceKind, s)).join(" · ")}
+          </span>
+        ) : null}
         {v.projectCount > 0 ? <span>{fmt(VC.card.projectsFmt, { n: v.projectCount })}</span> : null}
         {v.lastBuiltAt ? (
           <span>{fmt(VC.card.lastBuiltFmt, { d: new Date(v.lastBuiltAt).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" }) })}</span>
         ) : null}
         {v.readOnly ? (
-          <form method="post" action={`/v/${v.personaId}/fork`} style={{ margin: 0 }}>
-            <button type="submit" data-fork-voice={v.personaId} style={{ fontSize: "12px", background: "none", border: "none", color: "var(--accent)", cursor: "pointer", padding: 0 }}>
+          <form method="post" action={`/v/${v.personaId}/fork`}>
+            <Button type="submit" variant="ghost" size="sm" data-fork-voice={v.personaId}>
               {VC.card.forkCta}
-            </button>
+            </Button>
           </form>
         ) : null}
       </div>
@@ -361,19 +369,19 @@ export function VoicesSurface({
           </p>
         )}
         {total === 0 ? (
-          <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px" }}>{VC.listEmpty}</p>
+          <p className="ui-set-t ui-set-t--m">{VC.listEmpty}</p>
         ) : (
           sections.map((s) => {
             const rows = groups?.[s.key] ?? [];
             return (
-              <section key={s.key} data-voice-group-section={s.key} style={{ marginTop: "16px" }}>
-                <h2 style={{ fontSize: "13px", fontWeight: 600, color: "var(--shell-fg-muted)", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>
+              <section key={s.key} data-voice-group-section={s.key} className="ui-vc-sec">
+                <h2 className="ui-prow-heading">
                   {s.heading}
                 </h2>
                 {rows.length === 0 ? (
-                  <p style={{ fontSize: "13px", color: "var(--shell-fg-faint)", margin: "4px 0" }}>{s.empty}</p>
+                  <p className="ui-set-t ui-set-t--f">{s.empty}</p>
                 ) : (
-                  <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: "10px" }}>
+                  <ul className="ui-vc-list">
                     {rows.map((v) => (
                       <VoiceCard key={v.personaId} v={v} />
                     ))}
@@ -410,74 +418,82 @@ export function VoiceNewSurface({ compact }: { readonly compact: boolean }): Rea
       <PageBody>
         <PageHeader title={VC.new.heading} />
         {refusal != null ? (
-          <p role="alert" style={{ color: "var(--sev-major)", fontSize: "13px" }}>{refusal}</p>
+          <p role="alert" className="ui-set-t ui-set-t--warn">{refusal}</p>
         ) : null}
-        <form method="post" action="/voices/new" encType="multipart/form-data" style={{ maxWidth: "68ch" }}>
-          <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block" }}>
+        <form method="post" action="/voices/new" encType="multipart/form-data" className="ui-set-t--meas ui-vc-form">
+          <label className="ui-vc-lab">
             {VC.new.nameLabel}
-            <input name="name" required placeholder={VC.new.namePlaceholder} style={fieldStyle} />
+            <TextField name="name" required placeholder={VC.new.namePlaceholder} />
           </label>
-          <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block", marginTop: "12px" }}>
+          <label className="ui-vc-lab">
             {VC.new.bylineLabel}
-            <input name="byline" style={fieldStyle} />
+            <TextField name="byline" />
           </label>
-          <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block", marginTop: "16px" }}>
+          <label className="ui-vc-lab">
             {VC.new.describeLabel}
-            <textarea name="description" style={textAreaStyle} />
+            <TextArea name="description" />
           </label>
-          <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 0" }}>{VC.new.describeHint}</p>
-          <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block", marginTop: "16px" }}>
+          <p className="ui-set-note">{VC.new.describeHint}</p>
+          <label className="ui-vc-lab">
             {VC.new.sampleTitleLabel}
-            <input name="sample_title" style={fieldStyle} />
+            <TextField name="sample_title" />
           </label>
-          <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block", marginTop: "8px" }}>
+          <label className="ui-vc-lab">
             {VC.new.sampleLabel}
-            <textarea name="sample_text" style={textAreaStyle} />
+            <TextArea name="sample_text" />
           </label>
           {/* REQ-BFF-16 — the presign→PUT leg's key carrier; it precedes the file input in DOM
               order so the collected `""` is overwritten by the minted key (an empty value trims
               away server-side when no file rides). */}
-          <input type="hidden" name="quarantineKey" value="" />
-          <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block", marginTop: "8px" }}>
+          <HiddenField name="quarantineKey" value="" />
+          <label className="ui-vc-lab">
             {VC.new.sampleFileLabel}
-            <input type="file" name="sample_file" accept=".md,.txt,.html" style={{ display: "block", marginTop: "4px", color: "var(--shell-fg)" }} />
+            <TextField type="file" name="sample_file" accept=".md,.txt,.html" />
           </label>
-          <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block", marginTop: "8px" }}>
+          <label className="ui-vc-lab">
             {VC.new.sampleUrlLabel}
-            <input name="sample_url" type="url" placeholder={VC.urlPlaceholder} style={fieldStyle} />
+            <TextField name="sample_url" type="url" placeholder={VC.urlPlaceholder} />
           </label>
-          <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 0" }}>{VC.new.sampleUrlHint}</p>
-          <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 0" }}>{VC.new.sampleHint}</p>
-          <fieldset style={{ border: "none", padding: 0, margin: "16px 0 0" }}>
-            <legend style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{VC.new.tierLabel}</legend>
-            <label style={{ display: "block", fontSize: "14px", marginTop: "6px" }}>
-              <input type="radio" name="tier" value="quick" defaultChecked /> {VC.new.quickOption}
-              <span style={{ color: "var(--shell-fg-faint)", fontSize: "12px" }}> · {VC.new.quickHint}</span>
-            </label>
-            <label style={{ display: "block", fontSize: "14px", marginTop: "6px" }}>
-              <input type="radio" name="tier" value="full" data-tier-full="true" /> {VC.new.fullOption}
-              <span style={{ color: "var(--shell-fg-faint)", fontSize: "12px" }}> · {VC.new.fullHint}</span>
-            </label>
+          <p className="ui-set-note">{VC.new.sampleUrlHint}</p>
+          <p className="ui-set-note">{VC.new.sampleHint}</p>
+          <fieldset className="ui-set-fs">
+            <legend>{VC.new.tierLabel}</legend>
+            <RadioGroup name="tier" defaultValue="quick" aria-label={VC.new.tierLabel}>
+              <label className="ui-set-row">
+                <RadioGroupItem value="quick" aria-label={VC.new.quickOption} /> {VC.new.quickOption}
+                <span className="ui-set-t--sm ui-set-t--f"> · {VC.new.quickHint}</span>
+              </label>
+              <label className="ui-set-row">
+                <RadioGroupItem value="full" data-tier-full="true" aria-label={VC.new.fullOption} />{" "}
+                {VC.new.fullOption}
+                <span className="ui-set-t--sm ui-set-t--f"> · {VC.new.fullHint}</span>
+              </label>
+            </RadioGroup>
           </fieldset>
-          <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block", marginTop: "16px" }}>
+          <label className="ui-vc-lab">
             {VC.new.modeLabel}{" "}
-            <select name="mode" defaultValue="self" style={{ fontSize: "13px" }}>
-              <option value="self">{VC.new.modeOption.self}</option>
-              <option value="house">{VC.new.modeOption.house}</option>
-              <option value="consented">{VC.new.modeOption.consented}</option>
-              <option value="study">{VC.new.modeOption.study}</option>
-            </select>
+            <Select
+              name="mode"
+              defaultValue="self"
+              aria-label={VC.new.modeLabel}
+              items={[
+                { value: "self", label: VC.new.modeOption.self },
+                { value: "house", label: VC.new.modeOption.house },
+                { value: "consented", label: VC.new.modeOption.consented },
+                { value: "study", label: VC.new.modeOption.study },
+              ]}
+            />
           </label>
-          <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", marginTop: "16px", maxWidth: "68ch" }}>
+          <p className="ui-set-note ui-set-t--meas">
             {VC.new.aup}
           </p>
-          <div style={{ display: "flex", gap: "10px", marginTop: "14px" }}>
-            <button type="submit" name="intent" value="build" style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}>
+          <div className="ui-vc-btns">
+            <Button type="submit" variant="primary" name="intent" value="build">
               {VC.new.createBuild}
-            </button>
-            <button type="submit" name="intent" value="save" style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", color: "var(--shell-fg)", fontSize: "14px", cursor: "pointer" }}>
+            </Button>
+            <Button type="submit" variant="secondary" name="intent" value="save">
               {VC.new.createOnly}
-            </button>
+            </Button>
           </div>
         </form>
       </PageBody>
@@ -515,23 +531,20 @@ export function voiceNoticeFor(search: {
               : undefined;
 }
 
-/** The tab bar — server-rendered links verbatim (`?tab=` document navs; the strangler re-decides). */
+/** The tab bar — server-rendered links verbatim (`?tab=` document navs; the strangler re-decides).
+ *  `.ui-tabs-*` styles it like the kit's tab strip; `data-state` mirrors the active arm onto the
+ *  same selector Radix uses (`aria-current` stays the semantic + the contract hook). */
 function voiceTabBar(pid: string, active: string): ReactNode {
   return (
-    <nav data-voice-tabs="true" aria-label={VC.nav} style={{ display: "flex", gap: "14px", borderBottom: "1px solid var(--shell-border)", margin: "12px 0 16px", fontSize: "13px" }}>
+    <nav data-voice-tabs="true" aria-label={VC.nav} className="ui-tabs-list ui-vc-tabs">
       {VOICE_TABS.map((t) => (
         <a
           key={t}
           href={t === "overview" ? `/v/${pid}` : `/v/${pid}?tab=${t}`}
           data-voice-tab={t}
+          data-state={active === t ? "active" : undefined}
           aria-current={active === t ? "page" : undefined}
-          style={{
-            padding: "6px 2px",
-            color: active === t ? "var(--shell-fg)" : "var(--shell-fg-muted)",
-            fontWeight: active === t ? 600 : 400,
-            borderBottom: active === t ? "2px solid var(--accent)" : "2px solid transparent",
-            textDecoration: "none",
-          }}
+          className="ui-tabs-trigger ui-vc-tab"
         >
           {VC.detail.tabs[t]}
         </a>
@@ -545,19 +558,19 @@ function VoiceFactsPanelView({ detail, plan }: { detail: VoiceDetailDto; plan?: 
   const panel = detail.factsPanel;
   if (!panel) return null;
   return (
-    <section data-facts-panel="true" style={{ marginTop: "14px", border: "1px solid var(--shell-border)", borderRadius: "8px", padding: "10px 14px", maxWidth: "68ch" }}>
-      <h2 style={{ fontSize: "13px", fontWeight: 600, margin: "0 0 6px", color: "var(--shell-fg-muted)" }}>{VC.detail.factsHeading}</h2>
-      <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "13px", display: "grid", gap: "4px" }}>
+    <section data-facts-panel="true" className="ui-vc-card ui-vc-sec ui-set-t--meas">
+      <h2 className="ui-set-h3">{VC.detail.factsHeading}</h2>
+      <ul className="ui-vc-list ui-set-t">
         {panel.facts.map((f) => (
-          <li key={f.key} data-fact={f.key} data-changed={f.changed ? "true" : "false"} style={{ color: f.changed ? "var(--shell-fg)" : "var(--shell-fg-muted)" }}>
-            <span style={{ fontWeight: f.changed ? 600 : 400 }}>{f.label}</span>
+          <li key={f.key} data-fact={f.key} data-changed={f.changed ? "true" : "false"} className={f.changed ? undefined : "ui-set-t--m"}>
+            <span className={f.changed ? "ui-vc-b" : undefined}>{f.label}</span>
             {" — "}
             {f.line}
           </li>
         ))}
       </ul>
       {panel.corpusWords.built != null ? (
-        <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "6px 0 0" }}>
+        <p className="ui-set-note">
           {fmt(VC.detail.corpusLineFmt, {
             built: panel.corpusWords.built.toLocaleString("en-US"),
             current: panel.corpusWords.current.toLocaleString("en-US"),
@@ -566,7 +579,7 @@ function VoiceFactsPanelView({ detail, plan }: { detail: VoiceDetailDto; plan?: 
         </p>
       ) : null}
       {plan?.route.sentence ? (
-        <p data-update-route="true" style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "8px 0 0" }}>
+        <p data-update-route="true" className="ui-set-t--sm ui-set-t--m">
           {plan.route.sentence}
         </p>
       ) : null}
@@ -578,13 +591,13 @@ function VoiceFactsPanelView({ detail, plan }: { detail: VoiceDetailDto; plan?: 
 function VoiceGateCardView({ pid, gate }: { pid: string; gate: NonNullable<VoiceDetailDto["gate"]> }): ReactNode {
   const card = gate.card;
   return (
-    <section data-gate-card="true" style={{ marginTop: "14px", border: "1px solid var(--accent)", borderRadius: "8px", padding: "12px 14px", maxWidth: "68ch" }}>
-      <h2 style={{ fontSize: "14px", fontWeight: 600, margin: "0 0 6px" }}>{VC.detail.gateHeading}</h2>
-      <p style={{ fontSize: "13px", margin: "0 0 4px" }}>{card.includedLine}</p>
+    <section data-gate-card="true" className="ui-vc-card ui-vc-card--acc ui-vc-sec ui-set-t--meas">
+      <h2 className="ui-set-h2">{VC.detail.gateHeading}</h2>
+      <p className="ui-set-t">{card.includedLine}</p>
       {card.exclusions.length > 0 ? (
         <>
-          <p style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "6px 0 2px" }}>{VC.detail.gateExclusionsHeading}</p>
-          <ul style={{ margin: 0, paddingLeft: "18px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+          <p className="ui-set-t--sm ui-set-t--m">{VC.detail.gateExclusionsHeading}</p>
+          <ul className="ui-set-list ui-set-t--sm ui-set-t--m">
             {card.exclusions.map((e) => (
               <li key={e.title}>
                 {e.title} — {e.reason}
@@ -594,68 +607,69 @@ function VoiceGateCardView({ pid, gate }: { pid: string; gate: NonNullable<Voice
         </>
       ) : null}
       {card.holdoutLine ? (
-        <p data-holdout-line="true" style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "6px 0 0" }}>{card.holdoutLine}</p>
+        <p data-holdout-line="true" className="ui-set-t--sm ui-set-t--m">{card.holdoutLine}</p>
       ) : null}
       {card.calibrationWarning ? (
-        <p data-calibration-warning="true" style={{ fontSize: "12px", color: "var(--sev-major)", margin: "6px 0 0" }}>{card.calibrationWarning}</p>
+        <p data-calibration-warning="true" className="ui-set-t--sm ui-set-t--warn">{card.calibrationWarning}</p>
       ) : null}
       {card.estimate.credits != null ? (
-        <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "6px 0 0" }}>
+        <p className="ui-set-note">
           {fmt(VC.detail.gateEstimateFmt, { n: card.estimate.credits, cap: card.estimate.capCredits ?? "—" })}
         </p>
       ) : null}
       {card.waitingUntil ? (
-        <p data-gate-waiting="true" style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "6px 0 0" }}>
+        <p data-gate-waiting="true" className="ui-set-t--sm ui-set-t--m">
           {fmt(VC.detail.gateWaitingFmt, { at: new Date(card.waitingUntil).toLocaleString("en-US", { timeZone: "UTC" }) })}
         </p>
       ) : null}
-      <form method="post" action={`/v/${pid}/gates/${gate.gateId}`} style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
-        <input type="hidden" name="runId" value={gate.runId} />
-        <button type="submit" name="action" value="approve" data-gate-approve="true" style={{ padding: "7px 14px", borderRadius: "8px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+      <form method="post" action={`/v/${pid}/gates/${gate.gateId}`} className="ui-vc-btns">
+        <HiddenField name="runId" value={gate.runId} />
+        <Button type="submit" variant="primary" size="sm" name="action" value="approve" data-gate-approve="true">
           {VC.detail.gateApprove}
-        </button>
-        <button type="submit" name="action" value="wait" style={{ padding: "7px 14px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", color: "var(--shell-fg)", fontSize: "13px", cursor: "pointer" }}>
+        </Button>
+        <Button type="submit" variant="secondary" size="sm" name="action" value="wait">
           {VC.detail.gateWait}
-        </button>
-        <button type="submit" name="action" value="stop" style={{ padding: "7px 14px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "none", color: "var(--sev-major)", fontSize: "13px", cursor: "pointer" }}>
+        </Button>
+        <Button type="submit" variant="danger" size="sm" name="action" value="stop">
           {VC.detail.gateStop}
-        </button>
+        </Button>
       </form>
     </section>
   );
 }
 
-/** The §9.4 calibration table — pages.tsx `VoiceCalibrationTable` verbatim. */
+/** The §9.4 calibration table — pages.tsx `VoiceCalibrationTable` verbatim; the measure names
+ *  humanize (`sentence_length` → "Sentence length"; the key stays on `data-calibration-row`). */
 function VoiceCalibrationTable({ calibration }: { calibration: NonNullable<VoiceDetailDto["calibration"]> }): ReactNode {
   const t = VC.detail.calibrationTable;
   return (
-    <section data-calibration="true" style={{ marginTop: "16px", maxWidth: "68ch" }}>
-      <h2 style={{ fontSize: "14px", fontWeight: 600, margin: "0 0 4px" }}>{VC.detail.calibrationHeading}</h2>
+    <section data-calibration="true" className="ui-vc-sec ui-set-t--meas">
+      <h2 className="ui-set-h2">{VC.detail.calibrationHeading}</h2>
       {calibration.verdict ? (
-        <p data-calibration-verdict={String(calibration.verdict)} style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "0 0 6px" }}>
-          {VC.detail.calibrationVerdict[String(calibration.verdict)] ?? String(calibration.verdict)}
+        <p data-calibration-verdict={String(calibration.verdict)} className="ui-set-t--sm ui-set-t--m">
+          {enumLabel(VC.detail.calibrationVerdict, String(calibration.verdict))}
           {" · "}
           {fmt(VC.detail.calibrationWithinFmt, { n: calibration.withinCount, total: calibration.totalCount })}
         </p>
       ) : null}
-      <table style={{ fontSize: "12px", borderCollapse: "collapse", width: "100%" }}>
+      <table className="ui-matrix ui-vc-w ui-set-t--sm">
         <thead>
-          <tr style={{ textAlign: "left", color: "var(--shell-fg-muted)" }}>
-            <th style={{ padding: "3px 8px 3px 0", fontWeight: 500 }}>{t.feature}</th>
-            <th style={{ padding: "3px 8px", fontWeight: 500 }}>{t.target}</th>
-            <th style={{ padding: "3px 8px", fontWeight: 500 }}>{t.prediction}</th>
-            <th style={{ padding: "3px 8px", fontWeight: 500 }}>{t.real}</th>
-            <th style={{ padding: "3px 0", fontWeight: 500 }}>{t.band}</th>
+          <tr>
+            <th>{t.feature}</th>
+            <th>{t.target}</th>
+            <th>{t.prediction}</th>
+            <th>{t.real}</th>
+            <th>{t.band}</th>
           </tr>
         </thead>
         <tbody>
           {calibration.rows.map((r) => (
             <tr key={r.feature} data-calibration-row={r.feature} data-within-band={r.withinBand ? "true" : "false"}>
-              <td style={{ padding: "3px 8px 3px 0" }}>{r.feature}</td>
-              <td style={{ padding: "3px 8px" }}>{r.target}</td>
-              <td style={{ padding: "3px 8px" }}>{r.prediction ?? "—"}</td>
-              <td style={{ padding: "3px 8px" }}>{r.actual}</td>
-              <td style={{ padding: "3px 0", color: r.withinBand ? "var(--state-ready)" : "var(--sev-major)" }}>
+              <td>{humanizeKey(r.feature)}</td>
+              <td>{r.target}</td>
+              <td>{r.prediction ?? "—"}</td>
+              <td>{r.actual}</td>
+              <td className={r.withinBand ? "ui-set-t--ok" : "ui-set-t--warn"}>
                 {r.withinBand ? "✓" : "✗"}
               </td>
             </tr>
@@ -670,16 +684,16 @@ function VoiceCalibrationTable({ calibration }: { calibration: NonNullable<Voice
 
 /** One linked source card — pages.tsx `VoiceSourceCard` verbatim; the 'new' items render the
  *  checkbox review form (unchecked stays omitted and is NEVER fetched, REQ-INGEST-4/5). The
- *  review checkbox gains `aria-label` for component axe (REQ-VFY-6 — the SSR's bare input has no
- *  programmatic name; no hook or copy changes). */
+ *  review checkbox keeps its REQ-VFY-6 `aria-label` on the Radix root; the provider name is the
+ *  `providerLabel` map (D4 — `substack_export` renders "Substack export"). */
 function VoiceSourceCard({ pid, conn, samples }: { pid: string; conn: VoiceConnectionDto; samples: readonly VoiceSampleDto[] }): ReactNode {
   const pending = samples.filter((s) => s.connection_id === conn.id && s.state === "new" && s.external_id);
   return (
-    <li data-source={conn.id} data-provider={conn.provider} style={{ border: "1px solid var(--shell-border)", borderRadius: "8px", padding: "8px 12px", fontSize: "13px" }}>
-      <div style={{ display: "flex", gap: "10px", alignItems: "baseline", flexWrap: "wrap" }}>
-        <strong>{VC.detail.providerLabel[conn.provider] ?? conn.provider}</strong>
-        <span style={{ color: "var(--shell-fg-muted)", fontSize: "12px" }}>{conn.handle ?? ""}</span>
-        <span style={{ color: "var(--shell-fg-faint)", fontSize: "12px" }}>
+    <li data-source={conn.id} data-provider={conn.provider} className="ui-vc-card">
+      <div className="ui-set-form">
+        <strong>{enumLabel(VC.detail.providerLabel, conn.provider)}</strong>
+        <span className="ui-set-t--sm ui-set-t--m">{conn.handle ?? ""}</span>
+        <span className="ui-vc-faint">
           {fmt(VC.detail.sourceItemsFmt, { included: String(conn.included), items: String(conn.items) })}
           {" · "}
           {conn.last_sync_at
@@ -688,59 +702,59 @@ function VoiceSourceCard({ pid, conn, samples }: { pid: string; conn: VoiceConne
         </span>
       </div>
       {conn.error ? (
-        <p data-source-error="true" style={{ color: "var(--sev-major)", fontSize: "12px", margin: "6px 0 0" }}>{conn.error}</p>
+        <p data-source-error="true" className="ui-set-t--sm ui-set-t--warn">{conn.error}</p>
       ) : null}
-      <div style={{ display: "flex", gap: "8px", marginTop: "6px", flexWrap: "wrap" }}>
+      <div className="ui-vc-btns">
         {conn.provider !== "upload" && conn.provider !== "paste" ? (
-          <form method="post" action={`/v/${pid}/connections/${conn.id}/discover`} style={{ margin: 0 }}>
-            <button type="submit" data-discover="true" style={{ fontSize: "12px", background: "none", border: "1px solid var(--shell-border)", borderRadius: "6px", color: "var(--shell-fg)", padding: "3px 10px", cursor: "pointer" }}>
+          <form method="post" action={`/v/${pid}/connections/${conn.id}/discover`}>
+            <Button type="submit" variant="secondary" size="sm" data-discover="true">
               {VC.detail.discoverCta}
-            </button>
+            </Button>
           </form>
         ) : null}
-        <form method="post" action={`/v/${pid}/connections/${conn.id}/sync`} style={{ margin: 0 }}>
-          <button type="submit" data-resync="true" style={{ fontSize: "12px", background: "none", border: "1px solid var(--shell-border)", borderRadius: "6px", color: "var(--shell-fg)", padding: "3px 10px", cursor: "pointer" }}>
+        <form method="post" action={`/v/${pid}/connections/${conn.id}/sync`}>
+          <Button type="submit" variant="secondary" size="sm" data-resync="true">
             {VC.detail.resyncCta}
-          </button>
+          </Button>
         </form>
-        <form method="post" action={`/v/${pid}/connections/${conn.id}/remove`} style={{ margin: 0 }}>
-          <button type="submit" data-remove-source="true" style={{ fontSize: "12px", background: "none", border: "1px solid var(--shell-border)", borderRadius: "6px", color: "var(--sev-major)", padding: "3px 10px", cursor: "pointer" }}>
+        <form method="post" action={`/v/${pid}/connections/${conn.id}/remove`}>
+          <Button type="submit" variant="danger" size="sm" data-remove-source="true">
             {VC.detail.removeSourceCta}
-          </button>
+          </Button>
         </form>
       </div>
       {/* the per-source settings (§9.5 Settings): auto-include + daily auto-sync. */}
-      <form method="post" action={`/v/${pid}/connections/${conn.id}/settings`} data-source-settings-form="true" style={{ margin: "6px 0 0", display: "flex", gap: "12px", alignItems: "center", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
-        <label style={{ display: "flex", gap: "4px", alignItems: "center" }}>
-          <input type="checkbox" name="autoIncludeNew" defaultChecked={conn.auto_include_new !== false} />
+      <form method="post" action={`/v/${pid}/connections/${conn.id}/settings`} data-source-settings-form="true" className="ui-set-form ui-set-t--sm ui-set-t--m">
+        <label className="ui-set-form">
+          <Checkbox name="autoIncludeNew" defaultChecked={conn.auto_include_new !== false} aria-label={VC.detail.autoIncludeLabel} />
           {VC.detail.autoIncludeLabel}
         </label>
-        <label style={{ display: "flex", gap: "4px", alignItems: "center" }}>
-          <input type="checkbox" name="dailySync" defaultChecked={conn.schedule === "daily"} />
+        <label className="ui-set-form">
+          <Checkbox name="dailySync" defaultChecked={conn.schedule === "daily"} aria-label={VC.detail.dailySyncLabel} />
           {VC.detail.dailySyncLabel}
         </label>
-        <button type="submit" style={{ fontSize: "12px", background: "none", border: "none", color: "var(--accent)", cursor: "pointer" }}>{VC.detail.saveSettingsCta}</button>
+        <Button type="submit" variant="ghost" size="sm">{VC.detail.saveSettingsCta}</Button>
       </form>
       {/* the review step: 'new' items wait for the confirm click — a checked box includes, an
           unchecked one omits, and nothing fetches before this posts (REQ-INGEST-4). */}
       {pending.length > 0 ? (
-        <form method="post" action={`/v/${pid}/connections/${conn.id}/confirm`} data-confirm="true" style={{ marginTop: "8px", borderTop: "1px solid var(--shell-border)", paddingTop: "8px" }}>
-          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: "4px" }}>
+        <form method="post" action={`/v/${pid}/connections/${conn.id}/confirm`} data-confirm="true" className="ui-vc-ct">
+          <ul className="ui-vc-list">
             {pending.map((s) => (
-              <li key={s.id} data-review-item={s.external_id ?? s.id} style={{ display: "flex", gap: "8px", alignItems: "baseline", fontSize: "12px" }}>
-                <input type="hidden" name="known" value={s.external_id ?? ""} />
-                <input type="checkbox" name="include" value={s.external_id ?? ""} defaultChecked={s.access === "free"} aria-label={s.title ?? s.external_id ?? s.id} />
-                <span style={{ flex: 1 }}>{s.title ?? s.external_id ?? s.id}</span>
+              <li key={s.id} data-review-item={s.external_id ?? s.id} className="ui-set-form ui-set-t--sm">
+                <HiddenField name="known" value={s.external_id ?? ""} />
+                <Checkbox name="include" value={s.external_id ?? ""} defaultChecked={s.access === "free"} aria-label={s.title ?? s.external_id ?? s.id} />
+                <span className="ui-vc-grow">{s.title ?? s.external_id ?? s.id}</span>
                 {s.access === "paywalled" ? (
-                  <span style={{ color: "var(--sev-major)" }}>{VC.detail.paywallBadge}</span>
+                  <span className="ui-set-t--warn">{VC.detail.paywallBadge}</span>
                 ) : null}
               </li>
             ))}
           </ul>
-          <p style={{ fontSize: "11px", color: "var(--shell-fg-faint)", margin: "6px 0 4px" }}>{VC.detail.confirmNote}</p>
-          <button type="submit" data-confirm-cta="true" style={{ fontSize: "12px", padding: "5px 12px", borderRadius: "6px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontWeight: 600, cursor: "pointer" }}>
+          <p className="ui-set-note">{VC.detail.confirmNote}</p>
+          <Button type="submit" variant="primary" size="sm" data-confirm-cta="true">
             {VC.detail.confirmCta}
-          </button>
+          </Button>
         </form>
       ) : null}
     </li>
@@ -753,50 +767,50 @@ function VoiceSourceCard({ pid, conn, samples }: { pid: string; conn: VoiceConne
 function VoiceSourcesPane({ pid, connections, samples }: { pid: string; connections?: VoiceConnectionsDto; samples: readonly VoiceSampleDto[] }): ReactNode {
   const conns = connections?.connections ?? [];
   return (
-    <section data-sources="true" style={{ marginBottom: "16px" }}>
-      <h2 style={{ fontSize: "14px", fontWeight: 600, margin: "0 0 6px" }}>{VC.detail.sourcesHeading}</h2>
+    <section data-sources="true" className="ui-vc-sec">
+      <h2 className="ui-set-h2">{VC.detail.sourcesHeading}</h2>
       {conns.length === 0 ? (
-        <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{VC.detail.sourcesEmpty}</p>
+        <p className="ui-set-t ui-set-t--m">{VC.detail.sourcesEmpty}</p>
       ) : (
         <>
-          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: "8px" }}>
+          <ul className="ui-vc-list">
             {conns.map((cn) => (
               <VoiceSourceCard key={cn.id} pid={pid} conn={cn} samples={samples} />
             ))}
           </ul>
-          <form method="post" action={`/v/${pid}/sync`} style={{ margin: "8px 0 0" }}>
-            <button type="submit" data-resync-all="true" style={{ fontSize: "12px", background: "none", border: "1px solid var(--shell-border)", borderRadius: "6px", color: "var(--shell-fg)", padding: "4px 12px", cursor: "pointer" }}>
+          <form method="post" action={`/v/${pid}/sync`} className="ui-vc-btns">
+            <Button type="submit" variant="secondary" size="sm" data-resync-all="true">
               {VC.detail.resyncAllCta}
-            </button>
+            </Button>
           </form>
         </>
       )}
       {/* the three link flows — no credential field exists anywhere (never-cookies, AC-I-B). */}
-      <div style={{ display: "grid", gap: "8px", marginTop: "10px", fontSize: "12px" }}>
-        <form method="post" action={`/v/${pid}/connections`} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          <input type="hidden" name="provider" value="substack" />
-          <label style={{ flex: 1, color: "var(--shell-fg-muted)" }}>
+      <div className="ui-vc-list ui-vc-sec">
+        <form method="post" action={`/v/${pid}/connections`} className="ui-set-form">
+          <HiddenField name="provider" value="substack" />
+          <label className="ui-vc-lab ui-vc-grow">
             {VC.detail.linkSubstackLabel}
-            <input name="handle" placeholder={VC.detail.linkSubstackPlaceholder} style={{ ...fieldStyle, marginTop: "2px" }} />
+            <TextField name="handle" placeholder={VC.detail.linkSubstackPlaceholder} />
           </label>
-          <button type="submit" data-link-substack="true" style={{ ...submitStyle, width: "auto", padding: "5px 12px", fontSize: "12px" }}>{VC.detail.linkSubstackCta}</button>
+          <Button type="submit" variant="primary" size="sm" data-link-substack="true">{VC.detail.linkSubstackCta}</Button>
         </form>
-        <form method="post" action={`/v/${pid}/connections`} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          <input type="hidden" name="provider" value="url" />
-          <label style={{ flex: 1, color: "var(--shell-fg-muted)" }}>
+        <form method="post" action={`/v/${pid}/connections`} className="ui-set-form">
+          <HiddenField name="provider" value="url" />
+          <label className="ui-vc-lab ui-vc-grow">
             {VC.detail.linkUrlLabel}
-            <input name="url" type="url" placeholder={VC.urlPlaceholder} style={{ ...fieldStyle, marginTop: "2px" }} />
+            <TextField name="url" type="url" placeholder={VC.urlPlaceholder} />
           </label>
-          <button type="submit" data-link-url="true" style={{ ...submitStyle, width: "auto", padding: "5px 12px", fontSize: "12px" }}>{VC.detail.linkUrlCta}</button>
+          <Button type="submit" variant="primary" size="sm" data-link-url="true">{VC.detail.linkUrlCta}</Button>
         </form>
-        <form method="post" action={`/v/${pid}/connections`} encType="multipart/form-data" style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          <input type="hidden" name="provider" value="substack_export" />
-          <input type="hidden" name="quarantineKey" value="" />
-          <label style={{ flex: 1, color: "var(--shell-fg-muted)" }}>
+        <form method="post" action={`/v/${pid}/connections`} encType="multipart/form-data" className="ui-set-form">
+          <HiddenField name="provider" value="substack_export" />
+          <HiddenField name="quarantineKey" value="" />
+          <label className="ui-vc-lab ui-vc-grow">
             {VC.detail.linkExportLabel}
-            <input type="file" name="file" accept=".zip" style={{ display: "block", marginTop: "2px", color: "var(--shell-fg)" }} />
+            <TextField type="file" name="file" accept=".zip" />
           </label>
-          <button type="submit" data-link-export="true" style={{ ...submitStyle, width: "auto", padding: "5px 12px", fontSize: "12px" }}>{VC.detail.linkExportCta}</button>
+          <Button type="submit" variant="primary" size="sm" data-link-export="true">{VC.detail.linkExportCta}</Button>
         </form>
       </div>
     </section>
@@ -812,20 +826,20 @@ function VoiceSampleDrawer({ pid, detail, compact = false }: { pid: string; deta
   const visualOffered =
     quality === "unreadable" || notes.some((n) => /visual tier|scanned/i.test(n));
   return (
-    <section data-sample-drawer="true" style={{ border: "1px solid var(--accent)", borderRadius: "8px", padding: "10px 14px", marginBottom: "14px" }}>
-      <h2 style={{ fontSize: "14px", fontWeight: 600, margin: "0 0 2px" }}>
+    <section data-sample-drawer="true" className="ui-vc-card ui-vc-card--acc">
+      <h2 className="ui-set-h2">
         {detail.item.title ?? VC.detail.drawerHeading}
       </h2>
-      <p style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "0 0 6px" }}>
-        {VC.detail.stateBadge[detail.item.state] ?? detail.item.state}
+      <p className="ui-set-t--sm ui-set-t--m">
+        {enumLabel(VC.detail.stateBadge, detail.item.state)}
         {detail.item.access === "paywalled" ? ` · ${VC.detail.paywallBadge}` : ""}
-        {quality ? ` · ${VC.detail.qualityBadge[quality] ?? quality}` : ""}
-        {detail.item.url ? <> · <a href={detail.item.url} style={{ color: "var(--accent)" }}>{detail.item.url}</a></> : null}
+        {quality ? ` · ${enumLabel(VC.detail.qualityBadge, quality)}` : ""}
+        {detail.item.url ? <> · <a href={detail.item.url} className="ui-vc-acc">{detail.item.url}</a></> : null}
       </p>
       {notes.length > 0 ? (
-        <div data-quality-notes="true" style={{ margin: "6px 0" }}>
-          <h3 style={{ fontSize: "12px", fontWeight: 600, color: "var(--shell-fg-muted)", margin: "0 0 2px" }}>{VC.detail.qualityNotesHeading}</h3>
-          <ul style={{ margin: 0, paddingLeft: "18px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+        <div data-quality-notes="true">
+          <h3 className="ui-set-h3">{VC.detail.qualityNotesHeading}</h3>
+          <ul className="ui-set-list ui-set-t--sm ui-set-t--m">
             {notes.map((n, i) => (
               <li key={i}>{n}</li>
             ))}
@@ -836,38 +850,38 @@ function VoiceSampleDrawer({ pid, detail, compact = false }: { pid: string; deta
           flag a scanned/no-text-layer source (the opt-in ~180-credit pass).
           P1.19 — §10.1 ✗: a building control — suppressed on phone width. */}
       {!compact && quality && quality !== "clean" && quality !== "reconstructed" ? (
-        <div style={{ display: "flex", gap: "8px", margin: "8px 0", flexWrap: "wrap" }}>
-          <form method="post" action={`/v/${pid}/samples/${detail.item.id}/reconstruct`} style={{ margin: 0 }}>
-            <input type="hidden" name="tier" value="text" />
-            <button type="submit" data-reconstruct-text="true" style={{ fontSize: "12px", padding: "5px 12px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", color: "var(--shell-fg)", cursor: "pointer" }}>
+        <div className="ui-vc-btns">
+          <form method="post" action={`/v/${pid}/samples/${detail.item.id}/reconstruct`}>
+            <HiddenField name="tier" value="text" />
+            <Button type="submit" variant="secondary" size="sm" data-reconstruct-text="true">
               {VC.detail.reconstructTextCta}
-            </button>
+            </Button>
           </form>
           {visualOffered ? (
-            <form method="post" action={`/v/${pid}/samples/${detail.item.id}/reconstruct`} style={{ margin: 0 }}>
-              <input type="hidden" name="tier" value="visual" />
-              <button type="submit" data-reconstruct-visual="true" style={{ fontSize: "12px", padding: "5px 12px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", color: "var(--shell-fg)", cursor: "pointer" }}>
+            <form method="post" action={`/v/${pid}/samples/${detail.item.id}/reconstruct`}>
+              <HiddenField name="tier" value="visual" />
+              <Button type="submit" variant="secondary" size="sm" data-reconstruct-visual="true">
                 {VC.detail.reconstructVisualCta}
-              </button>
+              </Button>
             </form>
           ) : null}
         </div>
       ) : null}
-      <h3 style={{ fontSize: "12px", fontWeight: 600, color: "var(--shell-fg-muted)", margin: "8px 0 2px" }}>{VC.detail.previewHeading}</h3>
+      <h3 className="ui-set-h3">{VC.detail.previewHeading}</h3>
       {detail.document ? (
-        <pre data-sample-preview="true" style={{ fontSize: "12px", whiteSpace: "pre-wrap", maxHeight: "320px", overflow: "auto", border: "1px solid var(--shell-border)", borderRadius: "6px", padding: "8px", margin: 0 }}>
+        <pre data-sample-preview="true" className="ui-vc-pre ui-vc-pre--cap">
           {detail.document}
         </pre>
       ) : (
-        <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)" }}>{VC.detail.noDocument}</p>
+        <p className="ui-set-note">{VC.detail.noDocument}</p>
       )}
       {detail.versions.length > 0 ? (
         <>
-          <h3 style={{ fontSize: "12px", fontWeight: 600, color: "var(--shell-fg-muted)", margin: "8px 0 2px" }}>{VC.detail.versionsHeading}</h3>
-          <ul data-sample-versions="true" style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+          <h3 className="ui-set-h3">{VC.detail.versionsHeading}</h3>
+          <ul data-sample-versions="true" className="ui-vc-list ui-set-t--sm ui-set-t--m">
             {detail.versions.map((v) => (
               <li key={v.id} data-version={v.n}>
-                {fmt(VC.detail.versionFmt, { n: String(v.n), quality: v.quality ?? "—" })}
+                {fmt(VC.detail.versionFmt, { n: String(v.n), quality: v.quality != null ? enumLabel(VC.detail.qualityBadge, v.quality) : "—" })}
                 {v.word_count != null ? ` · ${v.word_count.toLocaleString("en-US")} w` : ""}
               </li>
             ))}
@@ -901,22 +915,22 @@ export function VoiceDetailSurface({
     <div data-spa-surface onSubmit={onSubmit}>
       <PageBody>
         <PageHeader title={d?.persona.display_name ?? ""} />
-        {d?.persona.byline ? <p style={{ color: "var(--shell-fg-muted)", fontSize: "13px", marginTop: "-6px" }}>{d.persona.byline}</p> : null}
+        {d?.persona.byline ? <p className="ui-set-t ui-set-t--m">{d.persona.byline}</p> : null}
         {d && d.members && d.members.length > 0 ? (
-          <p data-composed-from="true" style={{ color: "var(--shell-fg-muted)", fontSize: "12px", marginTop: "2px" }}>
+          <p data-composed-from="true" className="ui-set-t--sm ui-set-t--m">
             {fmt(VC.card.composedFmt, { names: d.members.map((m) => m.display_name ?? m.id).join(", ") })}
           </p>
         ) : null}
-        <p data-voice-status="true" style={{ margin: "4px 0 0" }}>
+        <p data-voice-status="true" className="ui-set-t">
           {voicePillSpan(d?.status)}
           {voice?.estimate ? (
-            <span style={{ fontSize: "12px", color: "var(--shell-fg-faint)", marginLeft: "10px" }}>
+            <span className="ui-vc-faint ui-vc-tag">
               {fmt(VC.detail.estimateFmt, { n: voice.estimate.estimateCredits })}
             </span>
           ) : null}
         </p>
         {notice != null ? (
-          <p role="status" style={{ color: "var(--state-ready)", fontSize: "13px" }}>{notice}</p>
+          <p role="status" className="ui-set-t ui-set-t--ok">{notice}</p>
         ) : null}
         {d ? (
           <>
@@ -927,35 +941,35 @@ export function VoiceDetailSurface({
                 {/* Build / update / cancel — the pill's ONE verb (§9.3).
                     P1.19 — §10.1 ✗: voice-building controls never render on phone width. */}
                 {compact === true ? <PhoneBlockedNote /> : (
-                  <div style={{ display: "flex", gap: "10px", margin: "10px 0" }}>
+                  <div className="ui-vc-btns">
                     {d.status.action === "build" ? (
-                      <form method="post" action={`/v/${pid}/build`} style={{ margin: 0 }}>
-                        <button type="submit" data-build-voice="true" style={{ padding: "7px 14px", borderRadius: "8px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+                      <form method="post" action={`/v/${pid}/build`}>
+                        <Button type="submit" variant="primary" size="sm" data-build-voice="true">
                           {VC.detail.buildCta}
-                        </button>
+                        </Button>
                       </form>
                     ) : null}
                     {d.status.action === "update_voice" || d.status.action === "test" ? (
-                      <form method="post" action={`/v/${pid}/update`} style={{ margin: 0 }}>
-                        <button type="submit" data-update-voice="true" style={{ padding: "7px 14px", borderRadius: "8px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+                      <form method="post" action={`/v/${pid}/update`}>
+                        <Button type="submit" variant="primary" size="sm" data-update-voice="true">
                           {d.status.action === "test" ? VC.detail.testCta : VC.detail.updateCta}
-                        </button>
+                        </Button>
                       </form>
                     ) : null}
                     {d.upgradeRoute ? (
-                      <form method="post" action={`/v/${pid}/update`} style={{ margin: 0 }}>
-                        <input type="hidden" name="scope" value="full_from_quick" />
-                        <button type="submit" data-upgrade-voice="true" style={{ padding: "7px 14px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", color: "var(--shell-fg)", fontSize: "13px", cursor: "pointer" }}>
+                      <form method="post" action={`/v/${pid}/update`}>
+                        <HiddenField name="scope" value="full_from_quick" />
+                        <Button type="submit" variant="secondary" size="sm" data-upgrade-voice="true">
                           {VC.detail.upgradeCta}
-                        </button>
+                        </Button>
                       </form>
                     ) : null}
                     {d.persona.active_run_id ? (
-                      <form method="post" action={`/v/${pid}/cancel`} style={{ margin: 0 }}>
-                        <input type="hidden" name="runId" value={d.persona.active_run_id} />
-                        <button type="submit" style={{ padding: "7px 14px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", color: "var(--shell-fg)", fontSize: "13px", cursor: "pointer" }}>
+                      <form method="post" action={`/v/${pid}/cancel`}>
+                        <HiddenField name="runId" value={d.persona.active_run_id} />
+                        <Button type="submit" variant="secondary" size="sm">
                           {VC.detail.cancelRun}
-                        </button>
+                        </Button>
                       </form>
                     ) : null}
                   </div>
@@ -966,19 +980,19 @@ export function VoiceDetailSurface({
 
                 {/* the Overview's hub paragraph — profile/index.md's head text when a build produced it. */}
                 {d.hubMarkdown ? (
-                  <section data-hub="true" style={{ marginTop: "16px", maxWidth: "68ch", fontSize: "14px", whiteSpace: "pre-wrap" }}>
+                  <section data-hub="true" className="ui-vc-sec ui-set-t--meas ui-set-t ui-vc-prewrap">
                     {d.hubMarkdown}
                   </section>
                 ) : null}
                 {holdout?.held && !holdout.revealed ? (
-                  <p data-holdout-hidden="true" style={{ fontSize: "12px", color: "var(--shell-fg-faint)", marginTop: "12px" }}>
+                  <p data-holdout-hidden="true" className="ui-set-t--sm ui-set-t--f">
                     {VC.detail.holdoutGeneric}
                   </p>
                 ) : null}
                 {d.projects.length > 0 ? (
-                  <section data-projects="true" style={{ marginTop: "16px", maxWidth: "68ch" }}>
-                    <h2 style={{ fontSize: "13px", fontWeight: 600, color: "var(--shell-fg-muted)", margin: "0 0 6px" }}>{VC.detail.projectsHeading}</h2>
-                    <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "13px", display: "grid", gap: "4px" }}>
+                  <section data-projects="true" className="ui-vc-sec ui-set-t--meas">
+                    <h2 className="ui-set-h3">{VC.detail.projectsHeading}</h2>
+                    <ul className="ui-vc-list ui-set-t">
                       {d.projects.map((p) => (
                         <li key={p.id}>
                           <a href={`/p/${p.slug}`}>{p.title}</a>
@@ -991,15 +1005,15 @@ export function VoiceDetailSurface({
                     30-day window); the typed "delete" confirm guards the destructive POST.
                     P1.19 — §10.1 ✗: never rendered on phone width. */}
                 {compact === true ? null : (
-                  <section data-voice-delete="true" style={{ marginTop: "24px", maxWidth: "68ch", borderTop: "1px solid var(--shell-border)", paddingTop: "12px" }}>
-                    <h2 style={{ fontSize: "13px", fontWeight: 600, color: "var(--sev-major)", margin: "0 0 4px" }}>{VC.detail.deleteVoiceHeading}</h2>
-                    <p style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "0 0 6px" }}>{VC.detail.deleteVoiceNote}</p>
-                    <form method="post" action={`/v/${pid}/delete`} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                  <section data-voice-delete="true" className="ui-set-sec ui-set-t--meas ui-vc-ct">
+                    <h2 className="ui-set-h3 ui-set-t--warn">{VC.detail.deleteVoiceHeading}</h2>
+                    <p className="ui-set-t--sm ui-set-t--m">{VC.detail.deleteVoiceNote}</p>
+                    <form method="post" action={`/v/${pid}/delete`} className="ui-set-form">
                       {/* REQ-VFY-6 — aria-label the typed-confirm input (no hook/copy change). */}
-                      <input name="confirm" placeholder={VC.detail.deletePlaceholder} aria-label={VC.detail.deleteVoiceHeading} style={{ ...fieldStyle, maxWidth: "14ch" }} />
-                      <button type="submit" data-delete-voice="true" style={{ padding: "6px 14px", borderRadius: "8px", border: "1px solid var(--sev-major)", background: "none", color: "var(--sev-major)", fontSize: "13px", cursor: "pointer" }}>
+                      <TextField name="confirm" placeholder={VC.detail.deletePlaceholder} aria-label={VC.detail.deleteVoiceHeading} className="ui-field--w" />
+                      <Button type="submit" variant="danger" size="sm" data-delete-voice="true">
                         {VC.detail.deleteVoiceCta}
-                      </button>
+                      </Button>
                     </form>
                   </section>
                 )}
@@ -1009,45 +1023,45 @@ export function VoiceDetailSurface({
             {active === "description" ? (
               <>
                 {/* the seed editor — plain markdown; on save the J9 hash recomputes and the pill flips live. */}
-                <section data-seed-editor="true" style={{ maxWidth: "68ch" }}>
+                <section data-seed-editor="true" className="ui-set-t--meas">
                   {d.persona.seed_authored_by === "persona_builder" ? (
-                    <p data-agent-drafted="true" style={{ fontSize: "12px", color: "var(--sev-major)", margin: "0 0 6px" }}>
+                    <p data-agent-drafted="true" className="ui-set-t--sm ui-set-t--warn">
                       {VC.detail.agentDraftedMark}
                     </p>
                   ) : null}
                   {/* P1.19 — §10.1 ✗: seed edits are a voice-building control — suppressed on phone width. */}
                   {compact === true ? <PhoneBlockedNote /> : (
-                    <form method="post" action={`/v/${pid}/seed`}>
-                      <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)", display: "block" }}>
+                    <form method="post" action={`/v/${pid}/seed`} className="ui-vc-form">
+                      <label className="ui-vc-lab">
                         {VC.detail.bylineLabel}
-                        <input name="byline" defaultValue={d.persona.byline ?? ""} style={fieldStyle} />
+                        <TextField name="byline" defaultValue={d.persona.byline ?? ""} />
                       </label>
-                      <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)", display: "block", marginTop: "8px" }}>
+                      <label className="ui-vc-lab">
                         {VC.detail.registersLabel}
-                        <input name="registers" defaultValue={(d.persona.registers ?? []).join(", ")} style={fieldStyle} />
+                        <TextField name="registers" defaultValue={(d.persona.registers ?? []).join(", ")} />
                       </label>
                       {/* REQ-VFY-6 — the SSR's bare textarea has no programmatic name; aria-label
                           carries the section's heading word (no hook/copy change). */}
-                      <textarea name="description" defaultValue={d.seedMarkdown} aria-label={VC.detail.seedHeading} style={{ ...textAreaStyle, marginTop: "8px" }} />
-                      <button type="submit" style={{ ...submitStyle, width: "auto", marginTop: "8px", padding: "7px 14px", fontSize: "13px" }}>
+                      <TextArea name="description" defaultValue={d.seedMarkdown} aria-label={VC.detail.seedHeading} />
+                      <Button type="submit" variant="primary" size="sm">
                         {VC.detail.seedSave}
-                      </button>
+                      </Button>
                     </form>
                   )}
                 </section>
 
                 {/* the corrections ledger (§9.4): a correction lands as a blockquote on the seed + a
                     consume-once row the next build picks up. */}
-                <section data-corrections="true" style={{ marginTop: "18px", maxWidth: "68ch" }}>
-                  <h2 style={{ fontSize: "15px", fontWeight: 600, margin: "0 0 6px" }}>{VC.detail.correctionsHeading}</h2>
+                <section data-corrections="true" className="ui-set-sec ui-set-t--meas">
+                  <h2 className="ui-set-h2">{VC.detail.correctionsHeading}</h2>
                   {(d.corrections ?? []).length === 0 ? (
-                    <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{VC.detail.correctionsEmpty}</p>
+                    <p className="ui-set-t ui-set-t--m">{VC.detail.correctionsEmpty}</p>
                   ) : (
-                    <ul style={{ listStyle: "none", padding: 0, margin: "0 0 10px", fontSize: "13px", display: "grid", gap: "6px" }}>
+                    <ul className="ui-vc-list">
                       {(d.corrections ?? []).map((cr) => (
-                        <li key={cr.id} data-correction={cr.id} data-consumed={cr.consumed_by_profile_id ? "true" : "false"} style={{ border: "1px solid var(--shell-border)", borderRadius: "6px", padding: "6px 10px" }}>
+                        <li key={cr.id} data-correction={cr.id} data-consumed={cr.consumed_by_profile_id ? "true" : "false"} className="ui-vc-card">
                           <span>{cr.text}</span>
-                          <span style={{ color: "var(--shell-fg-faint)", fontSize: "12px", marginLeft: "8px" }}>
+                          <span className="ui-vc-faint ui-vc-tag">
                             {cr.consumed_by_profile_id ? VC.detail.correctionConsumed : VC.detail.correctionPending}
                           </span>
                         </li>
@@ -1055,25 +1069,25 @@ export function VoiceDetailSurface({
                     </ul>
                   )}
                   {compact === true ? null : (
-                    <form method="post" action={`/v/${pid}/corrections`}>
-                      <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)", display: "block" }}>
+                    <form method="post" action={`/v/${pid}/corrections`} className="ui-vc-form">
+                      <label className="ui-vc-lab">
                         {VC.detail.correctionLabel}
-                        <textarea name="text" required placeholder={VC.detail.correctionPlaceholder} style={{ ...textAreaStyle, minHeight: "60px", marginTop: "4px" }} />
+                        <TextArea name="text" required placeholder={VC.detail.correctionPlaceholder} />
                       </label>
-                      <button type="submit" style={{ ...submitStyle, width: "auto", marginTop: "8px", padding: "7px 14px", fontSize: "13px" }}>
+                      <Button type="submit" variant="primary" size="sm">
                         {VC.detail.correctionCta}
-                      </button>
+                      </Button>
                     </form>
                   )}
                 </section>
 
                 {/* build notes — the last build's own notes (§9.4). */}
                 {(d.buildNotes ?? []).length > 0 ? (
-                  <section data-build-notes="true" style={{ marginTop: "18px", maxWidth: "68ch" }}>
-                    <h2 style={{ fontSize: "15px", fontWeight: 600, margin: "0 0 6px" }}>{VC.detail.buildNotesHeading}</h2>
-                    <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "13px", display: "grid", gap: "6px" }}>
+                  <section data-build-notes="true" className="ui-set-sec ui-set-t--meas">
+                    <h2 className="ui-set-h2">{VC.detail.buildNotesHeading}</h2>
+                    <ul className="ui-vc-list">
                       {(d.buildNotes ?? []).map((n) => (
-                        <li key={n.id} data-build-note={n.id} style={{ border: "1px solid var(--shell-border)", borderRadius: "6px", padding: "6px 10px", whiteSpace: "pre-wrap" }}>
+                        <li key={n.id} data-build-note={n.id} className="ui-vc-card ui-vc-prewrap">
                           {typeof n.body === "string" ? n.body : JSON.stringify(n.body)}
                         </li>
                       ))}
@@ -1084,7 +1098,7 @@ export function VoiceDetailSurface({
             ) : null}
 
             {active === "samples" ? (
-              <section data-samples="true" style={{ maxWidth: "68ch" }}>
+              <section data-samples="true" className="ui-set-t--meas">
                 {/* P1.15 — the Sources pane: linked providers + the review-confirm step + the three
                     link flows + Re-sync all. P1.19 — §10.1 ✗: a building surface — hidden on phone. */}
                 {compact === true ? null : (
@@ -1093,46 +1107,46 @@ export function VoiceDetailSurface({
                 {/* the open drawer — `?tab=samples&sample=<itemId>` (§9.5 preview/versions). */}
                 {voice?.sampleDetail ? <VoiceSampleDrawer pid={pid} detail={voice.sampleDetail} compact={compact === true} /> : null}
                 {d.samples.length === 0 ? (
-                  <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{VC.detail.samplesEmpty}</p>
+                  <p className="ui-set-t ui-set-t--m">{VC.detail.samplesEmpty}</p>
                 ) : (
-                  <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: "6px" }}>
+                  <ul className="ui-vc-list">
                     {d.samples.map((s) => (
-                      <li key={s.id} data-sample={s.id} style={{ display: "flex", gap: "10px", alignItems: "center", fontSize: "13px", border: "1px solid var(--shell-border)", borderRadius: "6px", padding: "6px 10px" }}>
-                        <a href={`/v/${pid}?tab=samples&sample=${encodeURIComponent(s.id)}`} data-sample-open={s.id} style={{ flex: 1, color: "var(--shell-fg)", textDecoration: "none" }}>
+                      <li key={s.id} data-sample={s.id} className="ui-set-form ui-vc-card">
+                        <a href={`/v/${pid}?tab=samples&sample=${encodeURIComponent(s.id)}`} data-sample-open={s.id} className="ui-vc-grow ui-vc-link">
                           {s.title ?? s.id}
                         </a>
                         {/* the hold-out badge shows ONLY post-reveal (§9.4) — pre-calibration the
                             identity stays server-side; the generic line is on Overview. */}
                         {holdout?.revealed && holdout.itemId === s.id ? (
-                          <span data-holdout-badge="true" style={{ color: "var(--accent)", fontSize: "12px" }}>
+                          <span data-holdout-badge="true" className="ui-vc-acc ui-set-t--sm">
                             {fmt(VC.detail.holdoutRevealedFmt, { title: s.title ?? s.id })}
                           </span>
                         ) : null}
                         {/* P1.15 — the item's ingest state + paywall + quality verdicts ride the row. */}
                         {s.state !== "included" ? (
-                          <span data-sample-state={s.state} style={{ color: "var(--shell-fg-faint)", fontSize: "12px" }}>
-                            {VC.detail.stateBadge[s.state] ?? s.state}
+                          <span data-sample-state={s.state} className="ui-vc-faint">
+                            {enumLabel(VC.detail.stateBadge, s.state)}
                           </span>
                         ) : null}
                         {s.access === "paywalled" ? (
-                          <span data-sample-paywalled="true" style={{ color: "var(--sev-major)", fontSize: "12px" }}>{VC.detail.paywallBadge}</span>
+                          <span data-sample-paywalled="true" className="ui-set-t--sm ui-set-t--warn">{VC.detail.paywallBadge}</span>
                         ) : null}
                         {s.quality && s.quality !== "clean" ? (
-                          <span data-sample-quality={s.quality} style={{ color: "var(--sev-major)", fontSize: "12px" }}>
-                            {VC.detail.qualityBadge[s.quality] ?? s.quality}
+                          <span data-sample-quality={s.quality} className="ui-set-t--sm ui-set-t--warn">
+                            {enumLabel(VC.detail.qualityBadge, s.quality)}
                           </span>
                         ) : null}
-                        <span style={{ color: "var(--shell-fg-faint)", fontSize: "12px" }}>
+                        <span className="ui-vc-faint">
                           {s.word_count != null ? `${s.word_count.toLocaleString("en-US")} w` : ""}
                         </span>
-                        <a href={`/v/${pid}?tab=samples&sample=${encodeURIComponent(s.id)}`} style={{ fontSize: "12px", color: "var(--accent)", textDecoration: "none" }}>
+                        <a href={`/v/${pid}?tab=samples&sample=${encodeURIComponent(s.id)}`} className="ui-set-t--sm ui-vc-acc">
                           {VC.detail.viewLabel}
                         </a>
                         {compact === true ? null : (
-                          <form method="post" action={`/v/${pid}/samples/${s.id}`} style={{ margin: 0 }}>
-                            <button type="submit" name="included" value={s.state === "included" ? "false" : "true"} style={{ fontSize: "12px", background: "none", border: "none", color: "var(--accent)", cursor: "pointer" }}>
+                          <form method="post" action={`/v/${pid}/samples/${s.id}`}>
+                            <Button type="submit" variant="ghost" size="sm" name="included" value={s.state === "included" ? "false" : "true"}>
                               {s.state === "included" ? VC.detail.omitLabel : VC.detail.includeLabel}
-                            </button>
+                            </Button>
                           </form>
                         )}
                       </li>
@@ -1140,35 +1154,35 @@ export function VoiceDetailSurface({
                   </ul>
                 )}
                 {compact === true ? null : (
-                  <form method="post" action={`/v/${pid}/samples`} encType="multipart/form-data" data-samples-form="true" style={{ marginTop: "10px" }}>
-                    <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)", display: "block" }}>
+                  <form method="post" action={`/v/${pid}/samples`} encType="multipart/form-data" data-samples-form="true" className="ui-vc-form ui-vc-sec">
+                    <label className="ui-vc-lab">
                       {VC.detail.addSampleTitleLabel}
-                      <input name="title" style={fieldStyle} />
+                      <TextField name="title" />
                     </label>
-                    <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)", display: "block", marginTop: "6px" }}>
+                    <label className="ui-vc-lab">
                       {VC.detail.addSampleLabel}
-                      <textarea name="text" style={{ ...textAreaStyle, minHeight: "100px" }} />
+                      <TextArea name="text" />
                     </label>
-                    <input type="hidden" name="quarantineKey" value="" />
-                    <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)", display: "block", marginTop: "6px" }}>
+                    <HiddenField name="quarantineKey" value="" />
+                    <label className="ui-vc-lab">
                       {VC.detail.addSampleFileLabel}
-                      <input type="file" name="file" accept=".md,.txt,.html" style={{ display: "block", marginTop: "4px", color: "var(--shell-fg)" }} />
+                      <TextField type="file" name="file" accept=".md,.txt,.html" />
                     </label>
-                    <button type="submit" style={{ ...submitStyle, width: "auto", marginTop: "8px", padding: "7px 14px", fontSize: "13px" }}>
+                    <Button type="submit" variant="primary" size="sm">
                       {VC.detail.addSampleCta}
-                    </button>
+                    </Button>
                   </form>
                 )}
                 {/* the fetcher-only URL path (REQ-INGEST-13) — the URL is fetched once, server-side. */}
                 {compact === true ? null : (
-                  <form method="post" action={`/v/${pid}/samples/url`} style={{ marginTop: "10px" }}>
-                    <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)", display: "block" }}>
+                  <form method="post" action={`/v/${pid}/samples/url`} className="ui-vc-form ui-vc-sec">
+                    <label className="ui-vc-lab">
                       {VC.detail.addSampleUrlLabel}
-                      <input name="url" type="url" placeholder={VC.urlPlaceholder} style={fieldStyle} />
+                      <TextField name="url" type="url" placeholder={VC.urlPlaceholder} />
                     </label>
-                    <button type="submit" data-add-url="true" style={{ ...submitStyle, width: "auto", marginTop: "8px", padding: "7px 14px", fontSize: "13px" }}>
+                    <Button type="submit" variant="primary" size="sm" data-add-url="true">
                       {VC.detail.addUrlCta}
-                    </button>
+                    </Button>
                   </form>
                 )}
               </section>
@@ -1177,77 +1191,79 @@ export function VoiceDetailSurface({
             {active === "profile" ? (
               <>
                 {d.snapshot ? (
-                  <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "0 0 8px" }}>
-                    {VC.card.tierLabel[d.snapshot.tier ?? ""] ?? d.snapshot.tier ?? ""} · {fmt(VC.detail.calibrationVerdict[d.snapshot.calibrationStatus ?? ""] ?? d.snapshot.calibrationStatus ?? "untested", {})}
+                  <p className="ui-vc-faint">
+                    {enumLabel(VC.card.tierLabel, d.snapshot.tier ?? "")} · {enumLabel(VC.detail.calibrationVerdict, d.snapshot.calibrationStatus ?? "") || "untested"}
                   </p>
                 ) : (
-                  <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{VC.detail.profileEmpty}</p>
+                  <p className="ui-set-t ui-set-t--m">{VC.detail.profileEmpty}</p>
                 )}
                 {d.upgradeRoute && compact !== true ? (
-                  <form method="post" action={`/v/${pid}/update`} style={{ margin: "0 0 12px" }}>
-                    <input type="hidden" name="scope" value="full_from_quick" />
-                    <button type="submit" data-upgrade-voice="true" style={{ padding: "7px 14px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", color: "var(--shell-fg)", fontSize: "13px", cursor: "pointer" }}>
+                  <form method="post" action={`/v/${pid}/update`} className="ui-vc-btns">
+                    <HiddenField name="scope" value="full_from_quick" />
+                    <Button type="submit" variant="secondary" size="sm" data-upgrade-voice="true">
                       {VC.detail.upgradeCta}
-                    </button>
+                    </Button>
                   </form>
                 ) : null}
                 {d.calibration ? <VoiceCalibrationTable calibration={d.calibration} /> : null}
                 {/* the Profile tab's fixed §9.4 order — calibration report first, collapsed sections
                     folded, the (Advanced) measures last-but-lexicon. */}
-                <section data-profile-sections="true" style={{ marginTop: "14px", maxWidth: "68ch" }}>
-                  {(d.profileSections ?? []).map((sec) => {
-                    const art = sec.path ? d.artifacts.find((a) => a.mirror_path === sec.path) : null;
-                    const emptyPara = (
-                      <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 0" }}>{VC.detail.sectionEmpty}</p>
-                    );
-                    // Statement-shaped arms — the copy-containment scan keys on a `>…<` span, so
-                    // each branch is a `return` (code tokens) rather than a bare ternary.
-                    const inner = (() => {
-                      if (sec.key === "voice-measures") {
-                        if (!d.measures) return emptyPara;
-                        return (
-                          <pre data-voice-measures="true" style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "6px 0 0", whiteSpace: "pre-wrap" }}>
-                            {JSON.stringify(d.measures.corpus, null, 0)}
-                          </pre>
-                        );
-                      }
-                      if (!art) return emptyPara;
-                      return (
-                        <p style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "4px 0 0" }}>{art.mirror_path}</p>
+                <section data-profile-sections="true" className="ui-set-sec ui-set-t--meas">
+                  <div className="ui-vc-list">
+                    {(d.profileSections ?? []).map((sec) => {
+                      const art = sec.path ? d.artifacts.find((a) => a.mirror_path === sec.path) : null;
+                      const emptyPara = (
+                        <p className="ui-set-note">{VC.detail.sectionEmpty}</p>
                       );
-                    })();
-                    const body = (
-                      <>
-                        <h3 style={{ fontSize: "13px", fontWeight: 600, margin: "0", display: "inline" }}>
-                          {sec.key}
-                          {sec.advanced ? <span style={{ color: "var(--shell-fg-faint)", fontWeight: 400 }}> {VC.detail.advancedTag}</span> : null}
-                        </h3>
-                        {inner}
-                      </>
-                    );
-                    return sec.collapsed ? (
-                      <details key={sec.key} data-profile-section={sec.key} style={{ marginBottom: "10px" }}>
-                        <summary style={{ cursor: "pointer" }}>{body}</summary>
-                      </details>
-                    ) : (
-                      <section key={sec.key} data-profile-section={sec.key} style={{ marginBottom: "10px" }}>
-                        {body}
-                      </section>
-                    );
-                  })}
+                      // Statement-shaped arms — the copy-containment scan keys on a `>…<` span, so
+                      // each branch is a `return` (code tokens) rather than a bare ternary.
+                      const inner = (() => {
+                        if (sec.key === "voice-measures") {
+                          if (!d.measures) return emptyPara;
+                          return (
+                            <pre data-voice-measures="true" className="ui-vc-prewrap ui-set-t--sm ui-set-t--m">
+                              {JSON.stringify(d.measures.corpus, null, 0)}
+                            </pre>
+                          );
+                        }
+                        if (!art) return emptyPara;
+                        return (
+                          <p className="ui-set-t--sm ui-set-t--m">{art.mirror_path}</p>
+                        );
+                      })();
+                      const body = (
+                        <>
+                          <h3 className="ui-set-h3">
+                            {sec.key}
+                            {sec.advanced ? <span className="ui-vc-faint"> {VC.detail.advancedTag}</span> : null}
+                          </h3>
+                          {inner}
+                        </>
+                      );
+                      return sec.collapsed ? (
+                        <details key={sec.key} data-profile-section={sec.key}>
+                          <summary className="ui-vc-sum">{body}</summary>
+                        </details>
+                      ) : (
+                        <section key={sec.key} data-profile-section={sec.key}>
+                          {body}
+                        </section>
+                      );
+                    })}
+                  </div>
                 </section>
                 {/* derived profile artifacts — read-only by policy (§9.5 row 36; a write attempt 405s). */}
-                <section data-artifacts="true" style={{ marginTop: "14px", maxWidth: "68ch" }}>
-                  <h2 style={{ fontSize: "13px", fontWeight: 600, margin: "0 0 6px", color: "var(--shell-fg-muted)" }}>{VC.detail.artifactsHeading}</h2>
+                <section data-artifacts="true" className="ui-set-sec ui-set-t--meas">
+                  <h2 className="ui-set-h3">{VC.detail.artifactsHeading}</h2>
                   {d.artifacts.length === 0 ? (
-                    <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{VC.detail.artifactsEmpty}</p>
+                    <p className="ui-set-t ui-set-t--m">{VC.detail.artifactsEmpty}</p>
                   ) : (
                     <>
-                      <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "0 0 6px" }}>{VC.detail.artifactsNote}</p>
-                      <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "13px", display: "grid", gap: "4px" }}>
+                      <p className="ui-set-note">{VC.detail.artifactsNote}</p>
+                      <ul className="ui-vc-list ui-set-t">
                         {d.artifacts.map((a) => (
                           <li key={a.version_id} data-artifact-kind={a.kind}>
-                            {a.mirror_path} · {a.kind}
+                            {a.mirror_path} · {humanizeKey(a.kind)}
                           </li>
                         ))}
                       </ul>
@@ -1258,14 +1274,14 @@ export function VoiceDetailSurface({
             ) : null}
 
             {active === "runs" ? (
-              <section data-runs="true" style={{ maxWidth: "68ch" }}>
+              <section data-runs="true" className="ui-set-t--meas">
                 {d.runs.length === 0 ? (
-                  <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{VC.detail.runsEmpty}</p>
+                  <p className="ui-set-t ui-set-t--m">{VC.detail.runsEmpty}</p>
                 ) : (
-                  <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "13px", display: "grid", gap: "4px" }}>
+                  <ul className="ui-vc-list ui-set-t">
                     {d.runs.map((r) => (
                       <li key={r.id} data-run={r.id}>
-                        {r.workflow} · {VC.detail.runStateLabel[r.state] ?? r.state} · {r.spent_credits} cr ·{" "}
+                        {enumLabel(U.workflowLabels, r.workflow)} · {enumLabel(VC.detail.runStateLabel, r.state)} · {r.spent_credits} cr ·{" "}
                         {new Date(r.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}
                       </li>
                     ))}
@@ -1273,13 +1289,13 @@ export function VoiceDetailSurface({
                 )}
                 {d.profiles.length > 0 ? (
                   <>
-                    <h2 style={{ fontSize: "13px", fontWeight: 600, color: "var(--shell-fg-muted)", margin: "14px 0 6px" }}>{VC.detail.snapshotsHeading}</h2>
-                    <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "13px", display: "grid", gap: "4px" }}>
+                    <h2 className="ui-set-h3 ui-vc-sec">{VC.detail.snapshotsHeading}</h2>
+                    <ul className="ui-vc-list ui-set-t">
                       {d.profiles.map((p) => (
                         <li key={p.id} data-profile={p.id}>
                           {new Date(p.built_at).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })} ·{" "}
-                          {VC.card.tierLabel[p.tier ?? ""] ?? p.tier ?? ""} ·{" "}
-                          {VC.detail.calibrationVerdict[p.calibration_status ?? ""] ?? p.calibration_status ?? ""}
+                          {enumLabel(VC.card.tierLabel, p.tier ?? "")} ·{" "}
+                          {enumLabel(VC.detail.calibrationVerdict, p.calibration_status ?? "")}
                           {p.corpus_size_at_build != null ? ` · ${p.corpus_size_at_build.toLocaleString("en-US")} w` : ""}
                         </li>
                       ))}
@@ -1322,27 +1338,27 @@ export function VoiceReseedSurface({
         {preview && compact !== true ? (
           <>
             {!preview.charterFound ? (
-              <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{VC.detail.reseedNoCharter}</p>
+              <p className="ui-set-t ui-set-t--m">{VC.detail.reseedNoCharter}</p>
             ) : (
-              <pre data-reseed-diff="true" style={{ fontSize: "12px", maxWidth: "88ch", whiteSpace: "pre-wrap", border: "1px solid var(--shell-border)", borderRadius: "8px", padding: "10px 14px" }}>
+              <pre data-reseed-diff="true" className="ui-vc-diff">
                 {preview.diff.map((l, i) => (
-                  <div key={i} data-diff-kind={l.kind} style={{ color: l.kind === "added" ? "var(--state-ready)" : l.kind === "removed" ? "var(--sev-major)" : "var(--shell-fg-muted)" }}>
+                  <div key={i} data-diff-kind={l.kind} className={l.kind === "added" ? "ui-set-t--ok" : l.kind === "removed" ? "ui-set-t--warn" : "ui-set-t--m"}>
                     {l.kind === "added" ? "+ " : l.kind === "removed" ? "- " : "  "}
                     {l.line}
                   </div>
                 ))}
               </pre>
             )}
-            <p data-guidance-preserved={preview.guidancePreserved ? "true" : "false"} style={{ fontSize: "12px", color: "var(--shell-fg-faint)", marginTop: "8px" }}>
+            <p data-guidance-preserved={preview.guidancePreserved ? "true" : "false"} className="ui-vc-faint">
               {preview.guidancePreserved ? VC.detail.reseedGuidanceKept : VC.detail.reseedGuidanceLost}
             </p>
-            <form method="post" action={`/p/${slug}/voice/adopt`} style={{ marginTop: "12px", display: "flex", gap: "10px" }}>
-              <button type="submit" name="reseed" value="true" data-adopt-reseed="true" style={{ padding: "7px 14px", borderRadius: "8px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+            <form method="post" action={`/p/${slug}/voice/adopt`} className="ui-vc-btns">
+              <Button type="submit" variant="primary" size="sm" name="reseed" value="true" data-adopt-reseed="true">
                 {VC.detail.adoptReseedCta}
-              </button>
-              <button type="submit" name="reseed" value="false" style={{ padding: "7px 14px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", color: "var(--shell-fg)", fontSize: "13px", cursor: "pointer" }}>
+              </Button>
+              <Button type="submit" variant="secondary" size="sm" name="reseed" value="false">
                 {VC.detail.adoptCta}
-              </button>
+              </Button>
             </form>
           </>
         ) : null}
