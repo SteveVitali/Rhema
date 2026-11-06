@@ -11,6 +11,7 @@
 // `data-palette` stays emitted (REQ-TST-2 attr parity).
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { reviewPanelBodies } from "../../dossier-view.js";
 import { type FeedRow, type IdeShellProps, type RunCardLabels, type TimelineHrefs, type TimelineLabels, type TimelineViewWire } from "@rhema/ui";
 import type { PaletteData } from "@rhema/ide";
 import type { BffIdeBag } from "../queries.js";
@@ -41,6 +42,8 @@ export interface IdeChromeData {
   readonly findings?: NonNullable<IdeShellProps["findings"]>;
   readonly marginBody?: ReactNode;
   readonly deskFindingsBody?: ReactNode;
+  /** R7TALK.1b — the Claims tab body (the latest delivered review's ledger; absent ⇒ empty state). */
+  readonly deskClaimsBody?: ReactNode;
   readonly chatBody?: ReactNode;
   readonly timeline?: IdeShellProps["timeline"];
   readonly timelineView?: TimelineViewWire;
@@ -176,6 +179,10 @@ export function useShellChrome(shell: IdeTwinShell, extras?: IdeChromeData): voi
       ...(shell.ide.activeRun ? { activeRun: shell.ide.activeRun } : {}),
       ...(shell.ide.inboxCount != null ? { inboxCount: shell.ide.inboxCount } : {}),
       ...(shell.ide.findings ? { findings: shell.ide.findings } : {}),
+      // R7TALK.1b (REQ-TALK-4) — the Findings/Claims tabs' latest-delivered-review bodies, built
+      // through the ONE composition the SSR IdeFrame calls (dossier-view's reviewPanelBodies).
+      // `extras` still wins: the dossier leaf keeps its own FindingsDesk.
+      ...(shell.ide.latestReview ? reviewPanelBodies(shell.ide.latestReview, slug) : {}),
       ...(shell.ide.timeline ? { timeline: shell.ide.timeline } : {}),
       ...(shell.ide.timelineView
         ? { timelineView: shell.ide.timelineView as IdeChromeData["timelineView"] }

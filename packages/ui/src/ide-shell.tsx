@@ -83,6 +83,12 @@ export interface IdeShellProps {
    */
   readonly deskFindingsBody?: ReactNode;
   /**
+   * R7TALK.1b (REQ-TALK-4) — the panel's Claims tab body (the latest delivered review's claim
+   * ledger). Absent ⇒ the tab keeps its empty state — which is correct ONLY when the project
+   * never delivered a review.
+   */
+  readonly deskClaimsBody?: ReactNode;
+  /**
    * P1.11 — the Desk's Chat tab body (ChatDesk: threads, transcript, composer, cost strip, plan
    * card, pins, sources — §7.1). Absent ⇒ the tab keeps its placeholder copy.
    */
@@ -311,7 +317,7 @@ export function IdeShell(props: IdeShellProps): ReactNode {
               ))}
             </div>
             <div data-panel-body="claims" data-desk-panel="claims">
-              <p>{L.panel.emptyClaims}</p>
+              {props.deskClaimsBody ?? <p>{L.panel.emptyClaims}</p>}
             </div>
             <div data-panel-body="timeline" data-desk-panel="timeline">
               {/* the Timeline aside's content, moved unchanged (§5.5 the round log). */}

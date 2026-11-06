@@ -1819,6 +1819,10 @@ export const COPY = {
       emptyFeed: "No run activity yet.",
       emptyFindings: "No findings yet.",
       emptyClaims: "No claims yet.",
+      // R7TALK.1b (REQ-TALK-4) — the Findings/Claims tabs' delivered-review source line.
+      reviewFromFmt: "From Review of v{n}",
+      openDossier: "Open the review",
+      onVersionFmt: "on v{n}",
       findingsTable: {
         finding: "Finding",
         severity: "Severity",

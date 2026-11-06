@@ -36,6 +36,7 @@ import type {
   VersionDiffDto,
   RestorePointDto,
   FilesDto,
+  LatestReviewDto,
   ChatPanelDto,
   OutlinePromotionDto,
   FigureListItemDto,
@@ -200,6 +201,9 @@ export interface PageData {
     readonly inboxCount?: number;
     /** the Margin's findings (absent ⇒ the region hides — §5.1). */
     readonly findings?: readonly { id: string; severity: string; kind: string; excerpt: string }[];
+    /** R7TALK.1b (REQ-TALK-4) — the project's latest delivered review for the right panel's
+     *  Findings/Claims tabs (absent ⇒ never delivered — the empty states render only then). */
+    readonly latestReview?: LatestReviewDto;
     /** the Timeline's run rows. */
     readonly timeline?: readonly { id: string; label: string; state: string; href?: string }[];
     /**

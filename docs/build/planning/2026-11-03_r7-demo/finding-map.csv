@@ -110,3 +110,4 @@ UXC-33,R6 §9 P,P1,REQ-SPEED-1,246_R7SYNC.1,R6 serial handoff POST delays open,o
 UXC-34,R6 §9 P,P1,REQ-SPEED-3,246_R7SYNC.1,R6 no hover/focus prefetch,open
 UXC-35,R6 §9 P,P2,REQ-SPEED-3,246_R7SYNC.1,R6 chrome flash + broad refetches,open
 UXC-36,R6 §9 P,P2,REQ-SPEED-4,246_R7SYNC.1,R6 no font preload FOUT,open
+B6,R5 §/p,P1,REQ-SYNC-6,233_R7TALK.1b,"SYNC-6 closed (a) conformance: cap 5/burn 16 + cap 40/burn 43 PGlite fixture — debited==cap both modes, residual absorbed COGS, failed turn net 0 (packages/ledger/src/chat-turn-burn.test.ts; apps/egress-proxy handler.test.ts B6 leg)",closed
