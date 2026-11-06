@@ -37,10 +37,23 @@ create table if not exists public.demo_events (
 -- (b) the insert-only role — created here so the lint registers it as new; NOLOGIN and
 --     every dangerous attribute denied. Never granted TO any existing role (that would be
 --     a role_membership change on an existing grantee).
+--
+-- 223b R7DEM.6c portability amendment (found by 224 Part A on pr-259's AlloyDB POSTGRES_18):
+-- `createrole_self_grant` did NOT leave the managed `postgres` migration user able to
+-- `SET ROLE` to this role, so `ALTER FUNCTION … OWNER TO` below failed live with
+-- `must be able to SET ROLE "rhema_demo_writer"`. The `ROLE postgres` clause grants the
+-- bootstrap migration user membership AT CREATION — the same end-state the self-grant
+-- yields on prod's Cloud SQL POSTGRES_16. It is part of `CREATE ROLE` (not a
+-- `GRANT <role> TO <role>` statement), so the additive lint's role_change rule still
+-- holds; `postgres` already out-powers this insert-only role, so no user-facing surface
+-- widens. A stage whose earlier attempt created `rhema_demo_writer` WITHOUT this clause
+-- must drop the orphan first (documented in `runs/R7DEP.1.md` — `if not exists` would
+-- otherwise skip creation and strand the un-membered role).
 do $$
 begin
   if not exists (select 1 from pg_roles where rolname = 'rhema_demo_writer') then
-    create role rhema_demo_writer nologin nobypassrls nosuperuser nocreatedb nocreaterole;
+    create role rhema_demo_writer nologin nobypassrls nosuperuser nocreatedb nocreaterole
+      role postgres;
   end if;
 end
 $$;
@@ -66,6 +79,17 @@ as $$
   insert into public.demo_events (event, essay, step, src)
   values (p_event, p_essay, p_step, p_src);
 $$;
+
+-- 223b R7DEM.6c (proven on pr-259's AlloyDB via the IAP-tunnel reproduction, rolled back):
+-- `ALTER FUNCTION … OWNER TO` checks that the NEW OWNER holds CREATE on the containing
+-- schema — `public` is owned by `alloydbsuperuser` on AlloyDB, and the migration user can
+-- grant on it (it owns the database) but `rhema_demo_writer` holds only USAGE. Grant CREATE
+-- for the single statement that needs it and revoke it immediately — the role's durable
+-- surface stays exactly `usage`+`insert`; both statements carry `ON <object>` so the lint's
+-- role_change rule is untouched.
+grant create on schema public to rhema_demo_writer;
 alter function public.rhema_demo_event_insert(text, text, integer, text) owner to rhema_demo_writer;
+revoke create on schema public from rhema_demo_writer;
+
 revoke all on function public.rhema_demo_event_insert(text, text, integer, text) from public;
 grant execute on function public.rhema_demo_event_insert(text, text, integer, text) to rhema_app;

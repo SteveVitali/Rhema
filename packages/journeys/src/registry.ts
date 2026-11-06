@@ -726,7 +726,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     asserts:
       "/demo meets N10's public-page invariants (distinct title, one <h1>, meta, favicon); the four essay cards are visible and actionable; the persistent provenance banner renders; the landing + /showcase entry links resolve to /demo (REQ-TOUR-1/8, REQ-DACC-1)",
     owner: "R7DEM.5b",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   {
@@ -735,7 +735,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     asserts:
       "the full guided tour on Structure of Political Difference end to end: each coach mark visible with its DOM-contract target un-occluded, Next/Back actionable, the route change through the expected mechanism, and the final CTA → /signup?src=demo (REQ-TOUR-2, REQ-DACC-2; 248 R7TOUR.2 is the sanctioned re-flipper, P4-23)",
     owner: "R7DEM.6a",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   {
@@ -744,7 +744,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     asserts:
       "demo pages make zero same-origin non-GET requests except the REQ-TOUR-9 POST, open no EventSource/WebSocket, serve no 4xx/5xx, and mount no mutation forms or contenteditable (REQ-DACC-3, REQ-DWEB-14)",
     owner: "R7DEM.5",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   {
@@ -753,7 +753,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     asserts:
       "demo Pages at 390 and 320 px: no overflow, axe clean, the SPA-compact render holds and REQ-UX-10's desktop-capability subtree never mounts (REQ-DACC-4 restated — NOT the phone reader contract)",
     owner: "R7DEM.4b",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   {
@@ -763,7 +763,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     asserts:
       "signed-in /demo renders the same content as the logged-out walk (returningUser('a'), never a fresh signup — cohort hygiene per R4 §6) (REQ-DACC-5)",
     owner: "R7DEM.4b",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   {

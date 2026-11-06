@@ -1,0 +1,86 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "feec03318c82",
+  "startedAt": "2026-11-04T21:00:46.109Z",
+  "finishedAt": "2026-11-04T21:06:14.283Z",
+  "webBaseUrl": "https://rhema-pr-259-web-4043971-tkbl73n3tq-uc.a.run.app",
+  "apiBaseUrl": "https://rhema-pr-259-api-e2d977b-tkbl73n3tq-uc.a.run.app",
+  "provenance": {
+    "expected": "4f66cebc39bf7f1d0b996cadf860a68f355df914",
+    "observed": {
+      "web": "4f66cebc39bf7f1d0b996cadf860a68f355df914",
+      "api": "4f66cebc39bf7f1d0b996cadf860a68f355df914"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "D1.hub",
+      "journey": "new-visitor",
+      "owner": "R7DEM.5b",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 1180,
+      "screenshot": "D1.hub.png"
+    },
+    {
+      "id": "D2.tour",
+      "journey": "new-visitor",
+      "owner": "R7DEM.6a",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 16120,
+      "screenshot": "D2.tour.png"
+    },
+    {
+      "id": "D3.readonly",
+      "journey": "both",
+      "owner": "R7DEM.5",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 270474,
+      "screenshot": "D3.readonly.png"
+    },
+    {
+      "id": "P1.demo",
+      "journey": "phone",
+      "owner": "R7DEM.4b",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2489
+    },
+    {
+      "id": "R11.demo",
+      "journey": "returning",
+      "owner": "R7DEM.4b",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 37539,
+      "screenshot": "R11.demo.png"
+    }
+  ],
+  "passed": true
+}

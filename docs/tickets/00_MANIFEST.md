@@ -426,6 +426,8 @@ Dispatched **out of order** (`GD-ORDER.R7`): `200_R6WATCH.1` (clock-bound ≥ 20
 | 222 | `222_R7DEM.6a__guided-tour.md` | R7a demo | guided tour on SPD + entry points + honesty copy (REQ-TOUR-2/4/5) | — |
 | 223 | `223_R7DEM.6b__demo-metrics-carve-out.md` | R7a demo | anonymous metrics carve-out + reused-surface analytics suppression (REQ-TOUR-9, REQ-DOPS-5) | — |
 | 223a | `223a_HUMAN-H15__demo-copy-sign-off.md` | R7a marker | **human** — demo/tour copy sign-off on the R7a preview | — |
+| 223c | `223c_R7FIX.2__demo-leg-defects.md` | R7a insert | fix the two owed legs (D-R7DEP.1-1/-2) on pr-259 before Part B (operator 'fix first') | — |
+| 223b | `223b_R7DEM.6c__demo-events-owner-portability.md` | R7a demo | **run-time insert** (found by 224 Part A on pr-259): `0061` `OWNER TO` fails on AlloyDB POSTGRES_18 — two checks proven via IAP-tunnel repro: `postgres` needs membership in `rhema_demo_writer` (granted at `CREATE ROLE`, lint-clean) AND the new owner needs CREATE on `public` (transient `GRANT CREATE`/`REVOKE` around `OWNER TO`; durable surface stays usage+insert) | — |
 | 224 | `224_R7DEP.1__r7a-deploy.md` | R7a deploy | the ONE R7a preview (walk all R7a legs; H15 sign-off) → golden classification (≤1 rerun) → prod deploy → CDN invalidation → Stage B → provenance → teardown (REQ-DOPS-6, REQ-DACC-1…6) | pre-auth (GD-DEPLOY.R7, GD-GOLDEN.R7, GD-PREVIEW.R7); H15 |
 | 225 | `225_R7KIT.2__ui-primitives.md` | R7b foundations | baseline/budget, deps, `uiCss()`, entry guard, ADR-129, shell-critical primitives (REQ-KIT-2 part, REQ-KIT-5, REQ-DOPS-8) | — |
 | 225a | `225a_R7KIT.2b__primitives-forms-guard-rule.md` | R7b foundations | form/menu primitives (Popover, ContextMenu, Select, Tabs, Checkbox, RadioGroup, Switch, cmdk Combobox, TextField/Area, RadioCards, Chip, EmptyState, Accordion) + `no-raw-controls` rule off (REQ-KIT-2 rest, REQ-GUARD-1 authoring) | — |
@@ -1190,6 +1192,16 @@ sequence (BM-COMPAT-05 — historical filenames are not renamed).
   Trigger: `/Users/stevenvitali/rhema-ci-handoff/handoff-prompt.md` + the 2026-10-20 CI spend
   measurement (18,023 billed min/month pace; 44 % docs-only heads). Operator rulings D1–D9 verbatim
   in LEDGER § GATE DECISIONS; ADR-115. Ledger notes ride this ticket's branch (rule 9).
+- **2026-11-04 — INSERT `223b_R7DEM.6c`** (run-time insert, BM-MANIFEST-03; discovered live by 224 Part A on the
+  `pr-259` preview): `0061_demo_events.sql`'s `ALTER FUNCTION … OWNER TO rhema_demo_writer` fails on AlloyDB
+  POSTGRES_18 — the file's `createrole_self_grant` assumption did not hold for the managed `postgres`
+  (alloydbsuperuser, non-superuser, no memberships). Rolled-back tunnel repro proved BOTH requirements the
+  statement needs: the migration user must hold the new role (fixed by `ROLE postgres` at `CREATE ROLE`,
+  inside the role-creation statement so the additive lint's `role_change` rule stays clean) and the new owner
+  must hold `CREATE` on `public` (owned by `alloydbsuperuser` — satisfied by a transient `GRANT CREATE … /
+  REVOKE CREATE …` pair around `OWNER TO`; the role's durable surface stays `usage`+`insert`). Verified
+  end-state on the live engine: `create=false, usage=true, owner=rhema_demo_writer`. Folded into PR #259
+  (`stevevitali/r7dep-1-r7a-deploy`) since it gates 224's deploy lane.
 - **2026-11-03 — ROUND 7 opened** (`decompose-spec mode=extend`): `### Round 7` rows 209–254 + suffix rows (58 rows;
   spec `docs/round-7-draft-spec.md` v0.2, ratified `GD-RATIFY.R7`). Dispatched **out of order** (`GD-ORDER.R7`):
   `nextTicket` → `209_R7OPEN.1`; `200_R6WATCH.1` (clock ≥ 2026-11-11) and the R6 tail 201–208 resume on their own
