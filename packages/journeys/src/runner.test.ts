@@ -80,26 +80,17 @@ describe("runJourneys — the expected-flag semantics", () => {
   // cannot re-redden. Removing a leg's stub (or flipping its row green) fails this test.
   it("every round-7 registry leg reports owed on the offline path", async () => {
     // 224 R7DEP.1 flipped the five D*/R11/P1.demo legs green on pr-259 evidence @4f66cebc —
-    // they are out of this owed census; U3.stopgap + R8.showcase.spa stay owed (D-R7DEP.1-1/-2).
+    // they are out of this owed census; U3.stopgap + R8.showcase.spa followed on R7FIX.2's
+    // live proof at @18a0df79 (2026-11-05), leaving the seven R7b U* legs until 250.
     const R7_IDS = [
       "U1.shell", "U2.noreload", "U3.occlusion", "U4.controls", "U5.write", "U6.chat", "U7.import",
-      "U3.stopgap", "R8.showcase.spa",
     ];
     const steps = STEP_REGISTRY.filter((s) => R7_IDS.includes(s.id));
     expect(steps.map((s) => s.id).sort()).toEqual(R7_IDS.slice().sort());
     const r = await run(steps, ALL_IMPLS);
     for (const res of r.results) {
       expect(res.outcome, res.id).toBe("owed");
-      // R7RO.1 / R7FIX.1 landed the real `R8.showcase.spa` / `U3.stopgap` bodies — they still
-      // classify `owed` on the offline path (a red step failing), but their errors are the
-      // bodies' own, never the stub's.
-      // R7DEM.4b landed the real `R11.demo`/`P1.demo` bodies; R7DEM.5 landed `D3.readonly`;
-      // R7DEM.5b landed `D1.hub`; 222 R7DEM.6a landed `D2.tour` — same classification arm.
-      if (["R8.showcase.spa", "U3.stopgap"].includes(res.id)) {
-        expect(res.error, res.id).not.toContain("owed — owner");
-      } else {
-        expect(res.error, res.id).toContain(`owed — owner ${res.owner}`);
-      }
+      expect(res.error, res.id).toContain(`owed — owner ${res.owner}`);
     }
     expect(r.passed).toBe(true); // owed is a debt report, never a run failure
   });

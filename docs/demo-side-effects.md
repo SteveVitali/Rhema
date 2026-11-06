@@ -4,7 +4,7 @@
 
 # Demo side-effect table (regenerated)
 
-- Generated: 2026-11-04T18:10:08.815Z against http://127.0.0.1:43889
+- Generated: 2026-11-05T01:03:15.964Z against http://127.0.0.1:43968
 - Walks: 4 (essay × {logged out, cookie} × {desktop, phone})
 - Violations: 0
 
@@ -17,12 +17,12 @@
 | `GET /assets/fonts/literata-latin-standard-italic.woff2` | font | 52 | GET/HEAD — allowed |
 | `GET /assets/fonts/literata-latin-standard-normal.woff2` | font | 176 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/ClientOnly-CcbOzC0Z.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/_authenticated-DauXgIxC.js` | script | 188 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/_authenticated-D9BsyCuZ.js` | script | 188 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/approval-settings-Dw6qEWYO.js` | script | 160 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/chrome-data-B-LZ5G3X.js` | script | 188 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/copy-BAloWFwY.js` | script | 188 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/demo-CCAng9KE.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/demo-beacon-YSzjXEdU.js` | script | 188 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/demo-beacon-YSzjXEdU.js` | script | 187 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/demo-tour-CG2Iy-PY.js` | script | 188 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/dist-C-4zyzNN.js` | script | 188 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/dist-DQsaaEhN.js` | script | 188 | GET/HEAD — allowed |
@@ -34,18 +34,18 @@
 | `GET /assets/spa/assets/gate-card-CZFc-sCr.js` | script | 176 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/gate-presence-1MQg9e7R.js` | script | 176 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/hold-store-C3LEXoIG.js` | script | 160 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/main-DADhlSQW.js` | script | 188 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/main-Dwg988fN.js` | script | 188 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/not-found-i5RsCZif.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project-aTsMUr1j.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project.a._artifactId-ZFhLk1uB.js` | script | 104 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project.figures-BOQDqsBD.js` | script | 4 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project.figures_._figureId-DMqwKAF8.js` | script | 8 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project.index-BejP7-io.js` | script | 4 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project.r._runId-BrPqDHB-.js` | script | 8 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project.review._runId-DlWfsq7L.js` | script | 8 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project.revisions._cid-CNeuQAW0.js` | script | 12 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project.v._n.diff._m-D8hEBg6O.js` | script | 12 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project.v._v-D78oUbmP.js` | script | 28 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project-Bukzz6FG.js` | script | 188 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project.a._artifactId-fZK2Otdy.js` | script | 104 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project.figures-B9jxxtBA.js` | script | 4 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project.figures_._figureId-Ba-PJact.js` | script | 8 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project.index-DeLlFZHW.js` | script | 4 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project.r._runId-BEPTHbz3.js` | script | 8 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project.review._runId-CGh1XA2k.js` | script | 8 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project.revisions._cid-CSQ9ZhUT.js` | script | 12 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project.v._n.diff._m-DBmUH3Wg.js` | script | 12 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project.v._v-D-ecqVaF.js` | script | 28 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/preload-helper-BgScVnTf.js` | script | 188 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/read-only-T-A619tu.js` | script | 188 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/search-DL4SZJ_y.js` | script | 188 | GET/HEAD — allowed |

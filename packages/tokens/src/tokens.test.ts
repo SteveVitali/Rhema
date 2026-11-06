@@ -228,6 +228,17 @@ describe("ideCss()", () => {
   it("the only modal styling is the Cancel-run shell modal — no generic modal utilities", () => {
     expect(css).toContain(".ide-modal");
   });
+  it("R7FIX.2 (REQ-PANE-0, B2) — the desk head stays hit-testable above the statusbar", () => {
+    // The drawer's height transition passes through a window where the box is shorter than the
+    // head — the head overflows over `.ide-statusbar`, whose later DOM order would otherwise win
+    // elementFromPoint at the tabs' centers (the ⌘J dead zone 224 walked into). A positioned,
+    // z-indexed head rides its drawer above the bar.
+    const head = /\.ide-desk \.ide-desk-head \{([^}]*)\}/.exec(css)?.[1] ?? "";
+    expect(head).toContain("position: relative");
+    expect(head).toContain("z-index: 1");
+    const statusbar = /\.ide-statusbar \{([^}]*)\}/.exec(css)?.[1] ?? "";
+    expect(statusbar).not.toContain("position:");
+  });
   // D-CAP.2-3 (UX.2 / ADR-067) — the cascade seam: the phone override for `.ide .ide-actions a`
   // (≥44 px inside `@media (max-width: ${bpPhone-1}px)`) must be the LAST equal-specificity
   // declaration of the property. A base rule emitted after the media block silently deads the

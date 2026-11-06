@@ -135,6 +135,18 @@ export function handleSpaClick(e: MouseEvent, router: AnyRouter): void {
   // 11. the intercepted commit — push-only (REQ-NAVM-3); `pathname+search+hash` verbatim
   //     (REQ-NAVC-12). `resetScroll`/`hashScrollIntoView`/`viewTransition` are never
   //     overridden — router defaults + scrollRestoration own them (O2-F22).
+  // R7FIX.2 — the identical-location arm: `router.navigate` dedupes an href equal to the
+  //     current location into a silent `load()` (router-core `isSameLocation` — compared
+  //     against `latestLocation.href`, the same value used here), which commits NO transition —
+  //     the click dies after `preventDefault` (a dead self-link: 224's `R8.showcase.spa` owed on
+  //     exactly this — the run card's "Dossier" link on the dossier itself). Native semantics
+  //     are a reload; the SPA's in-document twin is a committed same-location transition —
+  //     `history.push` mints the new location key `data-nav-count` counts, and the route's
+  //     loaders revalidate. Any OTHER href still goes through `router.navigate`.
+  if (href === router.latestLocation.href) {
+    router.history.push(href);
+    return;
+  }
   void router.navigate({ href });
 }
 
