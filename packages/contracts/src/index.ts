@@ -128,3 +128,8 @@ export * from "./gcs-bytes.js";
 // chip matcher, the benchmark scorer, the proxy fetch-log normalizer, and every completeness scan share
 // it (REQ-VIS-9/REQ-OBJ-18).
 export * from "./url-normalize.js";
+
+// R7WRITE.2 (REQ-KEYS-1/2) — the Page editor's key-binding table lives at
+// `@rhema/contracts/page-keymap` — a dedicated SUBPATH export, deliberately NOT barrel-re-exported:
+// a barrel re-export would pin the table into every consumer's shared chunk (the entry-bundle
+// budget), while the subpath lands only in the chunks that actually bind keys.

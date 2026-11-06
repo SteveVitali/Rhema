@@ -41,5 +41,7 @@ export {
 export { PAGE_FRAGMENT, pageFragment, markdownToUpdate, replaceDocContent, docToCanonicalMarkdown } from "./ydoc.js";
 export type { FormatAction } from "./format-commands.js";
 export { FORMAT_ACTIONS, formatCommand, linkCommand } from "./format-commands.js";
+export type { PageKeyBinding } from "./page-keymap.js";
+export { PAGE_KEYMAP, pageShortcutFor, pmKeyToChord, BASE_KEYMAP_CHORDS } from "./page-keymap.js";
 export type { SourceEditRun } from "./source-mode.js";
 export { SOURCE_EDIT_META, diffTopBlocks, applySourceMarkdown } from "./source-mode.js";

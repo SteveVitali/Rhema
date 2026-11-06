@@ -441,9 +441,12 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
     }
   }, [userId]);
 
-  // The `[`/`]` chords: inside `.ide` the controller dispatches them (sidebar → this event;
-  // `]` → the Timeline). Outside the IDE the shell dispatches bare keys itself.
+  // The `[`/`]` + `g` go-to chords: inside `.ide` the controller dispatches them (sidebar → this
+  // event; `]` → the right panel). Outside the IDE the shell dispatches bare keys itself —
+  // REQ-KEYS-1 (239): the `g p/i/v/s` go-tos navigate in-router; `g` arms a prefix for 1.2 s.
   useEffect(() => {
+    let pending: "g" | "r" | null = null;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     const onToggle = () => toggleSidebar();
     const onKey = (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
@@ -451,7 +454,18 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
       const action = dispatchIdeKey(
         { key: e.key.length === 1 ? e.key.toLowerCase() : e.key, metaKey: e.metaKey, ctrlKey: e.ctrlKey, shiftKey: e.shiftKey, altKey: e.altKey },
         shellZone(),
+        pending,
       );
+      if (action?.kind === "prefix") {
+        e.preventDefault();
+        pending = action.prefix;
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => {
+          pending = null;
+        }, 1200);
+        return;
+      }
+      pending = null;
       if (action?.kind === "sidebar") {
         e.preventDefault();
         toggleSidebar();
@@ -460,6 +474,18 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
         window.dispatchEvent(new CustomEvent("rhema:palette-open", {
           detail: { toggle: true, ...(e.key === "/" ? { initial: "/" } : {}) },
         }));
+      } else if (action?.kind === "goto-projects") {
+        e.preventDefault();
+        router.history.push("/app");
+      } else if (action?.kind === "inbox") {
+        e.preventDefault();
+        router.history.push("/app/inbox");
+      } else if (action?.kind === "goto-voices") {
+        e.preventDefault();
+        router.history.push("/voices");
+      } else if (action?.kind === "settings") {
+        e.preventDefault();
+        router.history.push("/app/settings/account");
       }
     };
     window.addEventListener(SIDEBAR_TOGGLE_EVENT, onToggle);
@@ -467,8 +493,9 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
     return () => {
       window.removeEventListener(SIDEBAR_TOGGLE_EVENT, onToggle);
       window.removeEventListener("keydown", onKey);
+      if (timer) clearTimeout(timer);
     };
-  }, [toggleSidebar]);
+  }, [toggleSidebar, router]);
 
   // R7SHELL.1c — the palette's theme rows dispatch `rhema:app-theme` here (the same apply +
   // fire-and-forget POST as the account menu — the palette itself issues no write).
@@ -549,10 +576,10 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
           <div className="app-shell-nav" role="group" aria-label={COPY.appShell.frameLabel}>
             <ShellItem hook="data-shell-new-project" href="/app/new" icon={<FilePlus2 size={18} aria-hidden />} label={COPY.appShell.newProject} collapsed={collapsed} />
             <ShellItem hook="data-shell-search" onClick={openPalette} icon={<Search size={18} aria-hidden />} label={COPY.appShell.search} chord={shortcutFor("palette")} collapsed={collapsed} />
-            <ShellItem hook="data-shell-inbox" href="/app/inbox" icon={<InboxIcon size={18} aria-hidden />} label={COPY.appShell.inbox} badge={inbox.data?.badge ?? null} collapsed={collapsed} current={loc.pathname === "/app/inbox"} />
-            <ShellItem hook="data-shell-voices" href="/voices" icon={<Mic size={18} aria-hidden />} label={COPY.appShell.voices} collapsed={collapsed} current={loc.pathname.startsWith("/v") || loc.pathname.startsWith("/voices")} />
+            <ShellItem hook="data-shell-inbox" href="/app/inbox" icon={<InboxIcon size={18} aria-hidden />} label={COPY.appShell.inbox} badge={inbox.data?.badge ?? null} collapsed={collapsed} current={loc.pathname === "/app/inbox"} chord={shortcutFor("inbox")} />
+            <ShellItem hook="data-shell-voices" href="/voices" icon={<Mic size={18} aria-hidden />} label={COPY.appShell.voices} collapsed={collapsed} current={loc.pathname.startsWith("/v") || loc.pathname.startsWith("/voices")} chord={shortcutFor("goto-voices")} />
             <ShellItem hook="data-shell-usage" href="/usage" icon={<Gauge size={18} aria-hidden />} label={COPY.appShell.usage} collapsed={collapsed} current={loc.pathname === "/usage"} />
-            <ShellItem hook="data-shell-settings" href="/app/settings/account" icon={<Settings size={18} aria-hidden />} label={COPY.appShell.settings} collapsed={collapsed} current={loc.pathname.startsWith("/app/settings") || loc.pathname === "/settings"} />
+            <ShellItem hook="data-shell-settings" href="/app/settings/account" icon={<Settings size={18} aria-hidden />} label={COPY.appShell.settings} collapsed={collapsed} current={loc.pathname.startsWith("/app/settings") || loc.pathname === "/settings"} chord={shortcutFor("settings")} />
           </div>
           {projectSlug != null ? (
             <ProjectSection
@@ -574,7 +601,7 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
                 <span className="app-shell-label">{r.title}</span>
               </a>
             ))}
-            <ShellItem hook="data-shell-all-projects" href="/app" icon={<Menu size={18} aria-hidden />} label={COPY.appShell.allProjects} collapsed={collapsed} />
+            <ShellItem hook="data-shell-all-projects" href="/app" icon={<Menu size={18} aria-hidden />} label={COPY.appShell.allProjects} collapsed={collapsed} chord={shortcutFor("goto-projects")} />
           </div>
           <span className="app-shell-spacer" />
           <DropdownMenu

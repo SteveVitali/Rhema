@@ -46,6 +46,7 @@ import {
   type FindingForDecoration,
 } from "@rhema/editor";
 import { PmPreview, type PmPreviewContext } from "@rhema/ui";
+import { ISLAND_CHORDS, matchesChord } from "@rhema/ide";
 import {
   createCollabWire,
   isCollabWire,
@@ -146,6 +147,10 @@ export interface PageMountProps {
   readonly viewRef?: MutableRefObject<EditorView | null>;
   /** post-mount callback (tests + the leaf's first-meter paint). */
   readonly onMounted?: (view: EditorView) => void;
+  /** REQ-WRITE-5 (239) — controlled source-mode state: the header strip's ONE toggle drives it;
+   *  absent ⇒ the mount manages its own (tests). */
+  readonly sourceMode?: boolean;
+  readonly onSourceModeChange?: (next: boolean) => void;
 }
 
 export function PageMount(props: PageMountProps): ReactNode {
@@ -160,7 +165,11 @@ export function PageMount(props: PageMountProps): ReactNode {
   // SPA.25 — the source view (REQ-ED-17; design/30): the CodeMirror half lazily mounts inside
   // `[data-source-host]` while the PM view stays mounted+bound under `[data-pm-host]` (hidden).
   // `sourceStale` drives `data-source-note` when a foreign doc change lands mid-edit.
-  const [sourceMode, setSourceMode] = useState(false);
+  const [sourceModeState] = useState(false);
+  // REQ-WRITE-5 (239) — the toggle is CONTROLLED by the leaf: it lives in the header strip
+  // (one Rich text / Source control), never as a floating chip inside the page host. The
+  // internal state is the uncontrolled (test) default; `onSourceModeChange` drives the flip.
+  const sourceMode = props.sourceMode ?? sourceModeState;
   const [sourceStale, setSourceStale] = useState(false);
   const sourceRef = useRef<SourceModeHandle | null>(null);
 
@@ -620,7 +629,8 @@ export function PageMount(props: PageMountProps): ReactNode {
         return !inInput;
       };
       const onKeydown = (e: KeyboardEvent) => {
-        if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== "s") return;
+        // REQ-KEYS-1 (239) — the chord reads the committed ISLAND_CHORDS table, never a literal.
+        if (!ISLAND_CHORDS.some((b) => matchesChord({ key: e.key, metaKey: e.metaKey, ctrlKey: e.ctrlKey, shiftKey: e.shiftKey, altKey: e.altKey }, b.chord))) return;
         if (chromeClaimsChord()) return; // the CustomEvent below mints — never twice per chord
         e.preventDefault();
         mintRestorePoint();
@@ -732,27 +742,16 @@ export function PageMount(props: PageMountProps): ReactNode {
           <PmPreview docJson={props.docJson} {...(props.previewCtx ? { ctx: props.previewCtx } : {})} />
         </div>
       )}
-      {/* SPA.25 (REQ-ED-17) — the source/rich toggle lives inside the SPA mount only: the SSR host
-          never emits it, and forced-SSR postures (phone/showcase, REQ-ED-12) never reach this code. */}
-      {mounted ? (
-        <div data-source-bar className="rm-source-bar">
-          <button
-            type="button"
-            data-source-toggle
-            className="rm-source-toggle"
-            aria-pressed={sourceMode}
-            onClick={() => setSourceMode((s) => !s)}
-          >
-            {COPY.editor.sourceToggle}
-          </button>
-          {sourceStale ? (
-            <span data-source-note className="rm-source-note">
-              {COPY.editor.sourceStaleNote}
-            </span>
-          ) : null}
-        </div>
-      ) : null}
-      <div data-source-host className="rm-source-host" ref={sourceHostRef} hidden={!sourceMode} />
+      {/* REQ-WRITE-5 (239) — the ONE toggle lives in the page header strip now; the floating
+          Source chip is removed. The stale note stays with the host. */}
+      <div data-source-wrap hidden={!sourceMode}>
+        {sourceStale ? (
+          <span data-source-note className="rm-source-note">
+            {COPY.editor.sourceStaleNote}
+          </span>
+        ) : null}
+        <div data-source-host className="rm-source-host" ref={sourceHostRef} />
+      </div>
       <div data-pm-host ref={pmHostRef} hidden={sourceMode} />
     </div>
   );

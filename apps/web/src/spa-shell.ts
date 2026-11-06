@@ -52,7 +52,7 @@ const BOOT = themeBootScript();
  * structurally. SPA.28: the `spa` consult field is gone — no request fact can veto the shell.
  */
 export interface SpaShellDeps {
-  readonly dataSource: Pick<DataSource, "getSessionPrincipal" | "getTheme">;
+  readonly dataSource: Pick<DataSource, "getSessionPrincipal" | "getTheme" | "getProjectTheme">;
   /** The on-disk dir the Vite SPA build emits into (default: this package's `public/spa/`). */
   readonly spaAssetRoot?: string;
   /** Log seam for the manifest-degrade warn line (default `console.warn`). */
@@ -190,6 +190,19 @@ export async function spaBootPayload(
           .catch(() => null),
       ]);
   const deviceClass = deviceClassFor(c);
+  const slug = projectSlugFor(c.req.path);
+  // REQ-WRITE-8 (239; B15) — the per-project paper policy is stamped into the FIRST document
+  // bytes on hard loads into a project (never the boot-script's light default with a stored
+  // dark/follow pin behind it). One best-effort read beside the session/theme reads.
+  const projectTheme =
+    opts?.paperTheme != null
+      ? opts.paperTheme
+      : slug != null && !opts?.demo
+        ? await Promise.resolve()
+            .then(() => deps.dataSource.getProjectTheme?.(session, slug))
+            .then((r) => r?.paperTheme)
+            .catch(() => undefined)
+        : undefined;
   // SPA.28 — the renderer map is STATIC truth: every surface-keyed document route serves the
   // shell unconditionally (the SSR documents + the flag consult are gone), so the map is a
   // capability fact, not a flag set — a leaf's SsrHandoff still needs it so a phone-served
@@ -207,12 +220,11 @@ export async function spaBootPayload(
     surfaces[doc.routeId] = doc.surfaces != null && !forcedSsr ? "spa" : "ssr";
   }
   for (const routeId of SPA_PUBLIC_ROUTES) surfaces[routeId] = "ssr";
-  const slug = projectSlugFor(c.req.path);
   return {
     ...(principal != null ? { principal } : {}),
     theme: {
       ...(theme?.appTheme != null ? { appTheme: theme.appTheme } : {}),
-      ...(opts?.paperTheme != null ? { paperTheme: opts.paperTheme } : {}),
+      ...(projectTheme != null ? { paperTheme: projectTheme } : {}),
     },
     deviceClass,
     surfaces,

@@ -470,11 +470,11 @@ describe("R7FIX.1 — Focus mode is never a trap (REQ-WRITE-4)", () => {
     await mount();
     expect(document.querySelector("[data-ide-focus-exit]")).not.toBeNull();
     expect(document.querySelector("[data-ide-focus-exit]")?.textContent).toBe(COPY.ide.focusExit);
-    key({ key: "f", metaKey: true, shiftKey: true });
+    key({ key: "f" }); // R7WRITE.2's re-homed focus chord (bare key, chrome focus)
     expect(ide()?.dataset["view"]).toBe("focus");
     click(document.querySelector("[data-ide-focus-exit]"));
     expect(ide()?.dataset["view"]).toBe("write");
-    key({ key: "f", metaKey: true, shiftKey: true });
+    key({ key: "f" });
     expect(ide()?.dataset["view"]).toBe("focus");
     key({ key: "Escape" });
     expect(ide()?.dataset["view"]).toBe("write");
@@ -482,7 +482,7 @@ describe("R7FIX.1 — Focus mode is never a trap (REQ-WRITE-4)", () => {
 
   it("a reload after entering focus restores write — the stored view never carries focus", async () => {
     await mount();
-    key({ key: "f", metaKey: true, shiftKey: true });
+    key({ key: "f" });
     expect(ide()?.dataset["view"]).toBe("focus");
     const raw = JSON.parse(localStorage.getItem(paneStorageKey("u1", "p-alpha"))!) as { view?: string };
     expect(raw.view).toBe("write");
@@ -496,9 +496,9 @@ describe("R7FIX.1 — Focus mode is never a trap (REQ-WRITE-4)", () => {
 describe("the §5.12 focus zones (REQ-ISL-10)", () => {
   it("findings chords fire in the margin zone: j moves the finding cursor + lights data-selected", async () => {
     await mount();
-    // ⌘⇧T triage enters the findings focus ring (desk open + first card focused) — the island's
-    // real entry path — then the bare j chord moves the cursor and lights data-selected.
-    key({ key: "t", metaKey: true, shiftKey: true });
+    // the re-homed bare `t` triage chord enters the findings focus ring (desk open + first card
+    // focused) — the island's real entry path — then the bare j chord moves the cursor.
+    key({ key: "t" });
     const first = document.querySelector<HTMLElement>(".ide-fcard[data-finding-id='f1']");
     expect(document.activeElement).toBe(first);
     key({ key: "j" });
@@ -768,8 +768,8 @@ describe("the menu/cmdmenu legs + manifest assertion coverage (REQ-ISL-11/12, RE
       ),
     };
     await mount("/p/alpha", { leaf: publishLeaf(bag) });
-    // ⌘⇧T focuses the first finding (the margin card) → the scoped 'r' chord arms its verb.
-    key({ key: "t", metaKey: true, shiftKey: true });
+    // bare `t` focuses the first finding (the margin card) → the scoped 'r' chord arms its verb.
+    key({ key: "t" });
     key({ key: "r" });
     expect(document.querySelector("[data-verb='rebut']")?.getAttribute("data-armed")).toBe("true");
     // the §5.1 default is ON — the island's applySuggestions previews replacements inline at bind;
@@ -864,30 +864,32 @@ describe("NAVC.4 — native hash hops + the scroll-preserving navs (REQ-NAVM-10,
     expect(document.querySelector("[data-selected='true']")).toBeNull();
   });
 
-  // R7SHELL.1a (REQ-KEYS-1) — version stepping moved to the provisional ⌥-bracket pair;
-  // bare `[`/`]` now own the sidebar and the right-side pane.
-  it("`⌥[`/`⌥]` version stepping commits through navigate({resetScroll:false}) — never a scroll reset (REQ-NAVC-16)", async () => {
+  // R7WRITE.2 (REQ-KEYS-1) — version stepping's FINAL home is the bare `h`/`l` pair;
+  // `⌥[`/`⌥]` is retired with 226's provisional pair (`[`/`]` own sidebar + pane).
+  it("the `h`/`l` chords step versions through navigate({resetScroll:false}) — never a scroll reset (REQ-NAVC-16)", async () => {
     // the `/v/$v` leaf must carry a "spa" verdict or the layout mounts it unframed (no chrome).
     const { router } = await mount("/p/alpha/v/3", {
       boot: bootFor({ "/p/$project/v/$v": "spa" }),
     });
     const navSpy = vi.spyOn(router, "navigate");
-    key({ key: "[", altKey: true });
+    key({ key: "h" });
     await vi.waitFor(() => expect(router.state.location.pathname).toBe("/p/alpha/v/2"));
     expect(navSpy).toHaveBeenCalledWith(
       expect.objectContaining({ href: "/p/alpha/v/2", resetScroll: false }),
     );
     navSpy.mockClear();
-    key({ key: "]", altKey: true });
+    key({ key: "l" });
     await vi.waitFor(() => expect(router.state.location.pathname).toBe("/p/alpha/v/3"));
     expect(navSpy).toHaveBeenCalledWith(
       expect.objectContaining({ href: "/p/alpha/v/3", resetScroll: false }),
     );
   });
 
-  it("`⌥[`/`⌥]` are inert off a /v/:n path — no malformed nav", async () => {
+  it("`h`/`l` are inert off a /v/:n path — and `⌥[`/`⌥]` is retired everywhere", async () => {
     const { router } = await mount("/p/alpha");
     const navSpy = vi.spyOn(router, "navigate");
+    key({ key: "h" });
+    key({ key: "l" });
     key({ key: "[", altKey: true });
     key({ key: "]", altKey: true });
     expect(navSpy).not.toHaveBeenCalled();
@@ -906,17 +908,17 @@ describe("NAVC.4 — native hash hops + the scroll-preserving navs (REQ-NAVM-10,
     expect(ide()?.dataset["view"]).toBe("focus");
   });
 
-  it("⌘⇧T toggles ?triage through navigate({resetScroll:false}) on a dossier path", async () => {
+  it("the `t` chord toggles ?triage through navigate({resetScroll:false}) on a dossier path", async () => {
     const { router } = await mount("/p/alpha/review/r9", {
       boot: bootFor({ "/p/$project/review/$runId": "spa" }),
     });
     const navSpy = vi.spyOn(router, "navigate");
-    key({ key: "t", metaKey: true, shiftKey: true });
+    key({ key: "t" });
     await vi.waitFor(() => expect(router.state.location.searchStr).toBe("?triage=1"));
     expect(navSpy).toHaveBeenCalledWith(
       expect.objectContaining({ href: "/p/alpha/review/r9?triage=1", resetScroll: false }),
     );
-    key({ key: "t", metaKey: true, shiftKey: true });
+    key({ key: "t" });
     await vi.waitFor(() => expect(router.state.location.searchStr).toBe(""));
     expect(navSpy).toHaveBeenLastCalledWith(
       expect.objectContaining({ href: "/p/alpha/review/r9", resetScroll: false }),

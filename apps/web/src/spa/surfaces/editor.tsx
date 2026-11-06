@@ -360,6 +360,9 @@ function PageHost(props: {
   readonly page: PageChromeBag;
   readonly compact?: boolean;
   readonly viewRef: MutableRefObject<EditorView | null>;
+  /** REQ-WRITE-5 — the leaf-owned source-mode state the strip's toggle drives. */
+  readonly sourceMode?: boolean;
+  readonly onSourceModeChange?: (next: boolean) => void;
 }): ReactNode {
   const { page } = props;
   const slug = page.slug;
@@ -383,6 +386,8 @@ function PageHost(props: {
       {...(page.focusFindingId ? { focusFindingId: page.focusFindingId } : {})}
       previewCtx={previewCtx}
       viewRef={props.viewRef}
+      {...(props.sourceMode != null ? { sourceMode: props.sourceMode } : {})}
+      {...(props.onSourceModeChange != null ? { onSourceModeChange: props.onSourceModeChange } : {})}
     />
   );
 }
@@ -459,6 +464,9 @@ export function ProjectPageSurface({ data, compact, search }: EditorSurfaceProps
   useDwell("project");
   const page = usePageBag(data.page);
   const pageView = useFilteredPage(page, seams.filter);
+  // REQ-WRITE-5 (239) — the leaf owns the source-mode state so the strip's ONE toggle and the
+  // PageMount stay in sync (the floating chip is gone).
+  const [sourceMode, setSourceMode] = useState(false);
   // R7WRITE.1a (REQ-WRITE-6) — the header strip above `.paper`: crumb, version chip, sync,
   // notice, Run ▾/Export/⋯. The ReadOnlyProject notice lives INSIDE the strip now (S-3's one
   // notice); its write actions withhold under every reason.
@@ -472,12 +480,12 @@ export function ProjectPageSurface({ data, compact, search }: EditorSurfaceProps
             compact,
             readOnlyReason: ro?.reason ?? null,
             ...(ro != null ? { notice: <ReadOnlyNotice reason={ro.reason} slug={slug} /> } : {}),
-            onEditSource: () => (document.querySelector("[data-page-root] [data-source-toggle]") as HTMLElement | null)?.click(),
+            source: { on: sourceMode, onToggle: () => setSourceMode((s) => !s) },
             onProposalAccept: seams.accept,
             onProposalReject: seams.reject,
           })
         : undefined,
-    [pageView, data.project.title, compact, ro, slug, seams.accept, seams.reject],
+    [pageView, data.project.title, compact, ro, slug, seams.accept, seams.reject, sourceMode],
   );
   // R7WRITE.1b — the comment margin cards + ticks on the working head too (REQ-WRITE-2).
   const margin = useCommentMargin(page, data.ide.findings);
@@ -526,7 +534,7 @@ export function ProjectPageSurface({ data, compact, search }: EditorSurfaceProps
         {...(ro != null ? { readOnly: ro.reason } : {})}
         compact={compact}
         {...(pageView ? { page: pageView } : {})}
-        {...(page ? { pageHost: <PageHost page={page} compact={compact} viewRef={viewRef} /> } : {})}
+        {...(page ? { pageHost: <PageHost page={page} compact={compact} viewRef={viewRef} sourceMode={sourceMode} onSourceModeChange={setSourceMode} /> } : {})}
         pageEmbeds={false}
         onProposalAccept={seams.accept}
         onProposalReject={seams.reject}
@@ -565,6 +573,8 @@ export function VersionPageSurface({
     ...(restoredN != null ? { restoredN } : {}),
   });
   const pageView = useFilteredPage(page, seams.filter);
+  // REQ-WRITE-5 (239) — leaf-owned source-mode state for the strip's ONE toggle.
+  const [sourceMode, setSourceMode] = useState(false);
   // R7WRITE.1a — the version Page's header strip (the notice lives inside it now). Memoized —
   // the chrome publish depends on a stable element (see the project leaf).
   const strip = useMemo(
@@ -575,12 +585,12 @@ export function VersionPageSurface({
             compact,
             readOnlyReason: ro?.reason ?? null,
             ...(ro != null ? { notice: <ReadOnlyNotice reason={ro.reason} slug={slug} /> } : {}),
-            onEditSource: () => (document.querySelector("[data-page-root] [data-source-toggle]") as HTMLElement | null)?.click(),
+            source: { on: sourceMode, onToggle: () => setSourceMode((s) => !s) },
             onProposalAccept: seams.accept,
             onProposalReject: seams.reject,
           })
         : undefined,
-    [pageView, data.project?.title, compact, ro, slug, seams.accept, seams.reject],
+    [pageView, data.project?.title, compact, ro, slug, seams.accept, seams.reject, sourceMode],
   );
   // R7WRITE.1b — the comment margin cards + ticks (REQ-WRITE-2).
   const margin = useCommentMargin(page, data.ide.findings);
@@ -606,7 +616,7 @@ export function VersionPageSurface({
         page={pageView}
         compact={compact}
         {...(ro != null ? { readOnlyReason: ro.reason } : {})}
-        host={<PageHost page={pageView} compact={compact} viewRef={viewRef} />}
+        host={<PageHost page={pageView} compact={compact} viewRef={viewRef} sourceMode={sourceMode} onSourceModeChange={setSourceMode} />}
         embeds={false}
         onProposalAccept={seams.accept}
         onProposalReject={seams.reject}

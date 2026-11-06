@@ -19,6 +19,7 @@ import { readSpaBoot, setSpaBoot, type SpaBoot } from "./boot.js";
 import { setSessionExpiredHandler } from "./bff.js";
 import { navigateDocument } from "./dom.js";
 import { installSpaClickInterceptor } from "./nav-intercept.js";
+import { applyPaperForPath } from "./paper-boot.js";
 import { makeSpaQueryClient, sessionQuery } from "./queries.js";
 import { PendingShell, SpaNotFound, SpaRouteError } from "./states.js";
 
@@ -111,6 +112,11 @@ export function mountSpa(root: HTMLElement): void {
   // at mount (never inside `createSpaRouter` — the router-direct dom suites must stay
   // un-intercepted). The listener outlives the mount for the document's lifetime.
   installSpaClickInterceptor(router);
+  // REQ-WRITE-8 (239) — the paper policy resolves BEFORE the target leaf paints on every client
+  // navigation (the mirror arm; the twin's reconcile corrects only on a real difference).
+  router.subscribe("onBeforeNavigate", (evt) => {
+    applyPaperForPath(evt.toLocation.pathname);
+  });
   createRoot(root).render(
     <StrictMode>
       <RouterProvider router={router} />

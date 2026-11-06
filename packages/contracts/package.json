@@ -11,6 +11,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./page-keymap": {
+      "types": "./dist/page-keymap.d.ts",
+      "default": "./dist/page-keymap.js"
     }
   },
   "scripts": {

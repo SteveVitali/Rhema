@@ -441,6 +441,8 @@ function main(): void {
     const el = document.activeElement as HTMLElement | null;
     if (!el || el === document.body) return "none";
     if (el.closest("[data-app-palette]") || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName)) return "input";
+    // REQ-KEYS-1 Rule 5 (239) — the Source host's zone: CodeMirror's bindings win while focused.
+    if (el.closest("[data-source-host]") || el.closest(".cm-editor")) return "source";
     if (el.isContentEditable || el.closest(".ProseMirror") || el.closest("[data-page-host]")) return "page";
     if (el.closest("[data-margin-card]") || el.closest(".ide-fcard") || el.closest(".ide-margin")) return "margin";
     if (el.closest("[data-desk-row]") || el.closest("[data-findings-desk]")) return "findings";
@@ -458,8 +460,10 @@ function main(): void {
     selectFinding(id);
   });
 
-  // ---- the §5.12 keymap dispatcher (⌘K palette · ⌘1/⌘2/⌘J panes · ⌘⇧F/M/L · ⌘⇧R next step ·
-  //      ⌘G approval · ⌥[/⌥] versions · j/k + P A D R F E findings · ? cheat sheet · ⌘S restore) ----
+  // ---- the §5.12 keymap dispatcher (239: ⌘K palette · [ ] panes · f/t/v/c/h/l + g/r sequences ·
+  //      j/k + P A D R F E findings · ? cheat sheet · ⌘S restore · ⌘⏎ run sheet · Rule-5 source) ----
+  let pendingPrefix: "g" | "r" | null = null;
+  let prefixTimer: ReturnType<typeof setTimeout> | undefined;
   window.addEventListener("keydown", (e) => {
     const action = dispatchIdeKey(
       {
@@ -470,7 +474,18 @@ function main(): void {
         altKey: e.altKey,
       },
       focusZone(),
+      pendingPrefix,
     );
+    if (action?.kind === "prefix") {
+      e.preventDefault();
+      pendingPrefix = action.prefix;
+      if (prefixTimer) clearTimeout(prefixTimer);
+      prefixTimer = setTimeout(() => {
+        pendingPrefix = null;
+      }, 1200);
+      return;
+    }
+    pendingPrefix = null;
     if (!action) {
       if (e.key === "Escape") {
         closeMenus();
@@ -518,9 +533,17 @@ function main(): void {
         }
         break;
       }
-      case "goto-approval":
+      case "goto-projects":
         e.preventDefault();
-        if (slug) window.location.assign(`/p/${slug}`); // the Needs-you strip owns the gate list
+        window.location.assign("/app");
+        break;
+      case "goto-voices":
+        e.preventDefault();
+        window.location.assign("/voices");
+        break;
+      case "run-sheet":
+        e.preventDefault();
+        if (slug) window.location.assign(`/p/${slug}/run`); // ⌘⏎ — Rule 4's run sheet
         break;
       case "inbox":
         e.preventDefault();

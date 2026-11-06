@@ -258,7 +258,7 @@ describe("theme policy (REQ-IDE-38 amended)", () => {
     expect(resolveAppTheme("light", false)).toBe("light");
     expect(resolveAppTheme("dark", true)).toBe("dark");
   });
-  it("⌘⇧L cycles the paper theme light → follow → dark → light", () => {
+  it("⇧T cycles the paper theme light → follow → dark → light (R7WRITE.2's re-homed chord)", () => {
     expect(cyclePaperTheme("light")).toBe("follow");
     expect(cyclePaperTheme("follow")).toBe("dark");
     expect(cyclePaperTheme("dark")).toBe("light");
@@ -313,7 +313,7 @@ describe("the View menu (§5.1 — exact contents; Source absent)", () => {
 });
 
 describe("progressive disclosure (§5.1 three tiers)", () => {
-  it("the §5.1 Advanced members are classified advanced and gated by ⌘⇧M", () => {
+  it("the §5.1 Advanced members are classified advanced and gated through the `v` View menu", () => {
     for (const c of ["view.source", "raw.tokens", "model.tier", "model.names", "memory.files", "restore.old", "feed.verbose"]) {
       expect(CONTROL_DISCLOSURE[c], c).toBe("advanced");
       expect(controlVisible(c, false), `${c} hidden`).toBe(false);

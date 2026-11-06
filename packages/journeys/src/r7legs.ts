@@ -1374,19 +1374,28 @@ const U5_WRITE: StepFn = async (ctx) => {
   await page.locator("[data-comment-card]").first().waitFor({ timeout: 30_000 });
   await page.screenshot({ path: join(ctx.outDir, "u5-comment.png"), fullPage: true });
 
-  // focus mode enters on ⌘⇧F and Esc exits it (one Esc, one layer).
-  await page.keyboard.press("ControlOrMeta+Shift+F");
+  // focus mode enters on the re-homed `f` chord (R7WRITE.2's browser-safe map — bare keys fire
+  // in chrome focus only, so the caret blurs out of the Page first) and Esc exits it.
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press("f");
   if ((await page.locator(".ide").first().getAttribute("data-view")) !== "focus") {
-    throw new Error("⌘⇧F did not enter focus mode");
+    throw new Error("the `f` chord did not enter focus mode");
   }
   await page.keyboard.press("Escape");
   if ((await page.locator(".ide").first().getAttribute("data-view")) === "focus") {
     throw new Error("Esc did not exit focus mode");
   }
 
-  // the single Rich text/Source toggle soft-wraps prose (REQ-WRITE-5's stopgap view).
-  const toggle = page.locator("[data-source-toggle]").first();
+  // the ONE Rich text/Source toggle lives in the page header strip (REQ-WRITE-5; I7 — the ⋯
+  // item and the floating in-page chip are gone) and the Source view soft-wraps prose.
+  const toggle = page.locator("[data-page-strip] [data-source-toggle]").first();
   await toggle.waitFor({ timeout: 10_000 });
+  if ((await page.locator("[data-source-toggle]").count()) !== 1) {
+    throw new Error("expected exactly one Source toggle — REQ-WRITE-5");
+  }
+  if ((await page.locator("[data-page-host] [data-source-toggle]").count()) !== 0) {
+    throw new Error("an in-page Source toggle survives — the strip's is the only one");
+  }
   await toggle.click();
   await page.locator("[data-source-host]").first().waitFor({ timeout: 30_000 });
   if ((await toggle.getAttribute("aria-pressed")) !== "true") {

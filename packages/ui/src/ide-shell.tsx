@@ -6,7 +6,7 @@
 
 import type { ReactNode } from "react";
 import type { PanelTab, ViewMode } from "@rhema/ide";
-import { viewMenuModel, VIEW_MODES, CHEAT_SHEET, PANEL_TABS } from "@rhema/ide";
+import { viewMenuModel, VIEW_MODES, CHEAT_SHEET, PANEL_TABS, shortcutFor } from "@rhema/ide";
 import { EmptyFindings } from "./ide-states.js";
 import { LiveFeed, type FeedRow, type LiveFeedLabels, type RunCardLabels } from "./run-card.js";
 import { TimelinePane, type TimelineViewWire, type TimelineLabels, type TimelineHrefs } from "./timeline.js";
@@ -385,8 +385,8 @@ export function IdeShell(props: IdeShellProps): ReactNode {
         {props.status?.venueCap ? <span data-status-venue>{props.status.venueCap}</span> : null}
         <span style={{ marginLeft: "auto" }} />
         {typeof props.status?.credits === "number" ? <span className="ide-count">{fmt(L.statusBar.creditsFmt, props.status.credits)}</span> : null}
-        {/* R7SHELL.1a (UXC-10) — the View menu's home while the rail is suppressed (⌘⇧M). */}
-        <button type="button" data-ide-view-menu aria-haspopup="menu" aria-expanded="false">{L.statusBar.view}</button>
+        {/* R7SHELL.1a (UXC-10) — the View menu's home while the rail is suppressed (`v` chord). */}
+        <button type="button" data-ide-view-menu aria-haspopup="menu" aria-expanded="false" title={shortcutFor("view-menu") ?? undefined}>{L.statusBar.view}</button>
         <button type="button" data-ide-theme-menu aria-haspopup="menu" aria-expanded="false">{L.statusBar.theme}</button>
       </footer>
 
@@ -396,7 +396,8 @@ export function IdeShell(props: IdeShellProps): ReactNode {
         {VIEW_MODES.map((m) => (
           <button key={m.id} type="button" role="menuitemradio" aria-checked={view === m.id}
                   data-ide-view={m.id} className="ide-menu-row">
-            {L.viewMenu.views[m.id]}
+            <span>{L.viewMenu.views[m.id]}</span>
+            {m.keys ? <kbd className="ide-menu-key">{m.keys}</kbd> : null}
           </button>
         ))}
         <div className="ide-menu-sep" />
@@ -409,11 +410,12 @@ export function IdeShell(props: IdeShellProps): ReactNode {
                   // `data-ide-timeline-toggle` stays emitted as the R7a alias.
                   {...(t.id === "panel" ? { "data-ide-panel-toggle": true, "data-ide-timeline-toggle": true } : { "data-ide-toggle": t.id })}
                   className="ide-menu-row">
-            {t.id === "panel" ? L.viewMenu.panel
+            <span>{t.id === "panel" ? L.viewMenu.panel
               : t.id === "findingCards" ? L.viewMenu.findingCards
               : t.id === "suggestionsInline" ? L.viewMenu.suggestionsInline
               : t.id === "authorship" ? L.viewMenu.authorship
-              : L.viewMenu.advanced}
+              : L.viewMenu.advanced}</span>
+            {t.keys ? <kbd className="ide-menu-key">{t.keys}</kbd> : null}
           </button>
         ))}
         <div className="ide-menu-sep" />

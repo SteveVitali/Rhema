@@ -5,18 +5,21 @@
 // absence.
 
 import type { ViewMode } from "./layout.js";
+import { shortcutFor } from "./keymap.js";
 
 export interface ViewMenuItem {
   readonly id: string;
   /** which views the row is visible in — absent ⇒ always. */
   readonly inViews?: readonly ViewMode[];
+  /** the generated chord glyph (REQ-KEYS-2 — from the keymap, never hand-typed). */
+  readonly keys?: string | null;
 }
 
-/** The View menu's radio group — exactly Write · Read · Focus. */
-export const VIEW_MODES: readonly { id: ViewMode }[] = [
+/** The View menu's radio group — exactly Write · Read · Focus (Focus carries the `f` chord). */
+export const VIEW_MODES: readonly { id: ViewMode; keys?: string | null }[] = [
   { id: "write" },
   { id: "read" },
-  { id: "focus" },
+  { id: "focus", keys: shortcutFor("focus-mode") },
 ] as const;
 
 /** The View menu's toggle rows, in order. `authorship` is P1.02's overlay (read-only decorations over
@@ -25,7 +28,7 @@ export const VIEW_MODES: readonly { id: ViewMode }[] = [
  *  where the panel is closed by default; the island renders it as `data-ide-panel-toggle`
  *  (overlay modes never persist). */
 export const VIEW_MENU_TOGGLES: readonly ViewMenuItem[] = [
-  { id: "panel" },
+  { id: "panel", keys: shortcutFor("pane:panel") },
   { id: "findingCards" },
   { id: "suggestionsInline", inViews: ["write", "read"] },
   { id: "authorship", inViews: ["write", "read"] },
