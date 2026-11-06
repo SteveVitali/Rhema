@@ -18,6 +18,17 @@
 import { verbSpec } from "@rhema/commands";
 import type { FormatAction } from "@rhema/editor";
 import { commandForVerb } from "./palette.js";
+import { shortcutFor } from "./keymap.js";
+
+// REQ-KEYS-2 (239) — the bubble's chord hints come from the keymaps, never a hand-typed string.
+// `BUBBLE_MARK_HINTS` is a committed copy of the PM keymap's display glyphs (the editor table
+// lives in a subpath module the runtime graph must not pull into the entry bundle) — the
+// keymap test asserts every row matches `pageShortcutFor`, so drift fails the check.
+export const BUBBLE_MARK_HINTS: Readonly<Record<"bold" | "italic" | "link", string>> = {
+  bold: "⌘B",
+  italic: "⌘I",
+  link: shortcutFor("palette") ?? "⌘K",
+};
 
 export interface CommandMenuItem {
   readonly label: string;
@@ -66,9 +77,9 @@ export function selectionMenuModel(opts?: SelectionMenuOpts): SelectionMenuModel
     // inline composer over the selection and writes anchored Guidance (the margin card).
     comment: { label: "Comment", action: "comment" },
     format: [
-      { label: "Bold", format: "bold" },
-      { label: "Italic", format: "italic" },
-      { label: "Link", format: "link" },
+      { label: "Bold", format: "bold", hint: BUBBLE_MARK_HINTS.bold },
+      { label: "Italic", format: "italic", hint: BUBBLE_MARK_HINTS.italic },
+      { label: "Link", format: "link", hint: BUBBLE_MARK_HINTS.link },
       { label: "H2", format: "h2" },
       { label: "H3", format: "h3" },
       { label: "Quote", format: "quote" },

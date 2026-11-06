@@ -91,6 +91,40 @@ describe("R7WRITE.1a — the page header strip (REQ-WRITE-6)", () => {
     }
   });
 
+  it("REQ-WRITE-5 (239) — the ONE Rich text / Source toggle renders in the strip's action row", () => {
+    const { container, rerender } = render(
+      pageStripFor(PAGE, {
+        projectTitle: "Demo Project",
+        source: { on: false, onToggle: () => {} },
+      }) as JSX.Element,
+    );
+    const strip = container.querySelector("[data-page-strip]")!;
+    const toggle = strip.querySelector<HTMLElement>("[data-source-toggle]");
+    expect(toggle).not.toBeNull();
+    expect(toggle?.getAttribute("aria-pressed")).toBe("false");
+    expect(toggle?.textContent).toBe(COPY.pageStrip.sourceSource);
+    // exactly ONE toggle on the whole strip — and the ⋯ menu no longer carries Edit source.
+    expect(strip.querySelectorAll("[data-source-toggle]")).toHaveLength(1);
+    rerender(
+      pageStripFor(PAGE, {
+        projectTitle: "Demo Project",
+        source: { on: true, onToggle: () => {} },
+      }) as JSX.Element,
+    );
+    const on = container.querySelector<HTMLElement>("[data-source-toggle]");
+    expect(on?.getAttribute("aria-pressed")).toBe("true");
+    expect(on?.textContent).toBe(COPY.pageStrip.sourceRich);
+    // a read-only reason withholds the toggle with every other write action.
+    const { container: ro } = render(
+      pageStripFor(PAGE, {
+        projectTitle: "D",
+        readOnlyReason: "run_lock",
+        source: { on: false, onToggle: () => {} },
+      }) as JSX.Element,
+    );
+    expect(ro.querySelector("[data-source-toggle]")).toBeNull();
+  });
+
   it(".paper's PageEditor emits NO banner, pill or proposal card (the move-out AC)", () => {
     const { container } = render(
       <PageEditor

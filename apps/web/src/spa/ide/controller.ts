@@ -415,6 +415,9 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
     const el = document.activeElement as HTMLElement | null;
     if (!el || el === document.body) return "none";
     if (el.closest("[data-app-palette]") || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName)) return "input";
+    // REQ-KEYS-1 Rule 5 (239) — the Source host's zone comes FIRST: CodeMirror's own bindings
+    // win while it has focus, so the dispatcher only sees ⌘S there.
+    if (el.closest("[data-source-host]") || el.closest(".cm-editor")) return "source";
     if (el.isContentEditable || el.closest(".ProseMirror") || el.closest("[data-page-host]")) return "page";
     if (el.closest("[data-margin-card]") || el.closest(".ide-fcard") || el.closest(".ide-margin")) return "margin";
     if (el.closest("[data-desk-row]") || el.closest("[data-findings-desk]")) return "findings";
@@ -1048,7 +1051,9 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
       dismissOverlays();
     };
 
-    // ---- the §5.12 keymap dispatcher ----
+    // ---- the §5.12 keymap dispatcher (239: g/r two-key sequences + the Rule-5 source zone) ----
+    let pendingPrefix: "g" | "r" | null = null;
+    let prefixTimer: ReturnType<typeof setTimeout> | undefined;
     const onKeydown = (e: KeyboardEvent): void => {
       if (e.defaultPrevented) return;
       const action = dispatchIdeKey(
@@ -1060,7 +1065,18 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
           altKey: e.altKey,
         },
         focusZone(),
+        pendingPrefix,
       );
+      if (action?.kind === "prefix") {
+        e.preventDefault();
+        pendingPrefix = action.prefix;
+        if (prefixTimer) clearTimeout(prefixTimer);
+        prefixTimer = setTimeout(() => {
+          pendingPrefix = null;
+        }, 1200); // the prefix lapses — the Linear/GitHub sequence timeout
+        return;
+      }
+      pendingPrefix = null;
       if (!action) {
         if (e.key === "Escape") {
           // REQ-PANE-0 / REQ-WRITE-4 — one Esc dismisses one layer: menus/cmdmenu/cheat first,
@@ -1150,9 +1166,18 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
           }
           break;
         }
-        case "goto-approval":
+        case "goto-projects":
           e.preventDefault();
-          nav.push(`/p/${slug}`);
+          nav.push("/app");
+          break;
+        case "goto-voices":
+          e.preventDefault();
+          nav.push("/voices");
+          break;
+        case "run-sheet":
+          e.preventDefault();
+          if (isDemo()) break;
+          nav.push(`/p/${slug}/run`);
           break;
         case "inbox":
           e.preventDefault();

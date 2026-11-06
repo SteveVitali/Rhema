@@ -31,6 +31,7 @@ import {
   type CompareLabels,
 } from "@rhema/ui";
 import type { EditorDocDto } from "@rhema/api-client";
+import { shortcutFor } from "@rhema/ide";
 import { COPY } from "./copy.js";
 import { DemoDocMarkers, DemoLedgerDecisions } from "./demo-markers.js";
 import type { ReadOnlyReason } from "@rhema/contracts";
@@ -157,7 +158,8 @@ export const railLabels: VersionRailLabels = {
   compare: VR.compare,
   comparePrevious: VR.comparePrevious,
   restorePoints: VR.restorePoints,
-  restoreEmpty: VR.restoreEmpty,
+  // REQ-KEYS-2 (239) — the chord glyph comes from the keymap, never a COPY literal.
+  restoreEmpty: VR.restoreEmpty.replace("{chord}", shortcutFor("restore-point") ?? ""),
   restoreGroupLabel: (group, beforeReviewN) =>
     group === "before_review" && beforeReviewN != null
       ? fmt(VR.restoreGroup[group] ?? group, { n: beforeReviewN })
@@ -223,10 +225,9 @@ export function pageStripFor(
     readonly notice?: ReactNode;
     readonly onProposalAccept?: (p: PageProposalView) => void;
     readonly onProposalReject?: (id: string) => void;
-    /** the Edit-source seam (SPA): the ⋯ item calls this — the leaf wires it to the mounted
-     *  `[data-source-toggle]` chip (239 replaces it with the Rich text / Source toggle). Absent ⇒
-     *  the item stays the SSR `/v/working` link. */
-    readonly onEditSource?: () => void;
+    /** REQ-WRITE-5 (239) — the ONE Rich text / Source toggle, emitted in the strip's action row
+     *  (SPA arm only; the SSR strip never emits it — Source mode is SPA-mounted). */
+    readonly source?: { readonly on: boolean; readonly onToggle: () => void };
     /** estimator-rendered run-item hints (keyed by workflow label; the one estimator's output). */
     readonly runHints?: Readonly<Record<string, string>>;
   } = {},
@@ -245,12 +246,15 @@ export function pageStripFor(
     { label: COPY.runSheet.runRevise, href: `${base}/run?workflow=revise`, ...(opts.runHints?.["revise"] ? { hint: opts.runHints["revise"] } : {}) },
     { label: COPY.pageStrip.runDraft, href: `${base}/run?workflow=draft`, ...(opts.runHints?.["draft"] ? { hint: opts.runHints["draft"] } : {}) },
   ];
-  const moreItems = [
-    ...(opts.onEditSource
-      ? [{ label: COPY.pageStrip.editSource, onSelect: opts.onEditSource }]
-      : [{ label: COPY.pageStrip.editSource, href: `${base}/v/working` }]),
-    { label: COPY.project.importCta, href: `${base}/import` },
-  ];
+  // REQ-WRITE-5 (239) — the ⋯ menu's "Edit source" item is REMOVED: the strip's toggle is the
+  // one Source affordance (I7's dead link is gone with it).
+  const moreItems = [{ label: COPY.project.importCta, href: `${base}/import` }];
+  const runKeys: Readonly<Record<string, string | null>> = {
+    [COPY.runSheet.runReview]: shortcutFor("sheet:review"),
+    [COPY.runSheet.runRevise]: shortcutFor("sheet:revise"),
+    [COPY.pageStrip.runDraft]: shortcutFor("sheet:draft"),
+  };
+  const runItemsWithKeys = runItems.map((i) => ({ ...i, keys: runKeys[i.label] ?? null }));
   return (
     <PageStrip
       crumbs={crumbs}
@@ -271,10 +275,20 @@ export function pageStripFor(
       {...(page.readOnly === true ? { readOnly: true } : {})}
       {...(ro != null ? { readOnlyReason: ro, readOnlyTooltip: COPY.readOnly.reason[ro] } : {})}
       {...(opts.notice != null ? { notice: opts.notice } : {})}
+      {...(opts.source && !withhold
+        ? {
+            source: {
+              on: opts.source.on,
+              onToggle: opts.source.onToggle,
+              richLabel: COPY.pageStrip.sourceRich,
+              sourceLabel: COPY.pageStrip.sourceSource,
+            },
+          }
+        : {})}
       actions={
         withhold
           ? null
-          : { run: runItems, exportHref: `${base}/export`, more: moreItems }
+          : { run: runItemsWithKeys, exportHref: `${base}/export`, more: moreItems }
       }
       reviseUrl={`${base}/edit/${doc.draftId}/revise`}
       cancelUrl={`${base}/edit/${doc.draftId}/cancel-run`}

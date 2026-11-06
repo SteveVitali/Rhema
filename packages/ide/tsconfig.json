@@ -6,7 +6,8 @@
   },
   "include": [
     "src",
-    "src/reserved-chords.json"
+    "src/reserved-chords.json",
+    "src/reserved-chords-evidence.json"
   ],
   "references": [
     {

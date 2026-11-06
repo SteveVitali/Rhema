@@ -1,18 +1,30 @@
-// The §5.12 keyboard map — a PURE dispatcher: a key event + the focus zone → an IdeAction the client
-// island executes. Findings chords (J/K/P/A D R F E/Enter/Esc/⌥J/⌥K) are scoped to Margin /
-// Findings-list focus ONLY — inert while the caret is in the Page (§5.12's scoped-chords row; the
-// chord BEHAVIOURS land with P1.07's findings surface, the dispatcher + focus scoping land here).
+// The §5.12 keyboard map — a PURE dispatcher: a key event + the focus zone (+ any pending
+// two-key prefix) → an IdeAction the client island executes. Findings chords (J/K/P/A D R F
+// E/Enter/Esc/⌥J/⌥K) are scoped to Margin / Findings-list focus ONLY — inert while the caret is
+// in the Page (§5.12's scoped-chords row; the chord BEHAVIOURS land with P1.07's findings
+// surface, the dispatcher + focus scoping land here).
 //
-// REQ-KEYS-1 (226_R7SHELL.1a; RV-14/33) — the map is now DATA: `IDE_KEYMAP` is the committed
-// binding table every chord (and every shortcut a tooltip or the `?` sheet shows) derives from,
-// and `reserved-chords.json`'s checker pins it against the browser-safe rules. The sidebar/panel
-// chords land here: `[` toggles the AppShell sidebar, `]` toggles the right-side pane (today's
-// Timeline; 229 retargets the right panel). ⌘1/⌘2/⌘J and `[`/`]`-as-version-step are retired —
-// version prev/next is the PROVISIONAL `⌥[`/`⌥]` pair until 239 writes the full table.
+// REQ-KEYS-1 (226_R7SHELL.1a, completed 239_R7WRITE.2; RV-14/33) — the map is DATA: `IDE_KEYMAP`
+// is the committed binding table every chord (and every shortcut a tooltip or the `?` sheet
+// shows) derives from, and `reserved-chords.json`'s checker pins it against the browser-safe
+// rules. 239's remap, under Rules 1–5:
+//   • every ⌘⇧*/⌘G/⌘,/⌘I conventional chord is RE-HOMED to Rule 3's idiom — bare keys (`f`,
+//     `t`, `v`, `c`, `h`, `l`, `T`) and `g`/`r` two-key sequences (`g p/i/v/s` go-to per the
+//     spec; `r d/r/v/n` run sheets) — firing only OUTSIDE text input;
+//   • ⌘K / ⌘⏎ / ⌘S / ⌘Z / ⌘⇧Z stay (Rule 4 + the recorded ⌘S save-semantics exception);
+//   • `goto-approval` is the map's one recorded REMOVAL — its Needs-you surface moved to the
+//     Inbox (R7HOME.2b), so `g i` owns the intent;
+//   • `[`/`]` sidebar/panel chords from 226 are unchanged; version prev/next leaves 226's
+//     provisional `⌥[`/`⌥]` for the final `h`/`l` pair;
+//   • ⌘I is free for the Page editor's italic; `mod+enter` (⌘⏎) is newly bound — the run sheet
+//     from the Page (Rule 4).
+// The `source` focus zone (Rule 5) narrows dispatch while CodeMirror has focus: only ⌘S
+// (the buffer's commit mint) fires — every other chord belongs to the editor's own bindings.
 
-/** Where keyboard focus sits. `page` = caret in the editor surface; `input` = a text field (palette,
- *  sheet, sheet fields); `margin`/`findings` = the Findings list focus ring; `none` = chrome. */
-export type FocusZone = "page" | "margin" | "findings" | "input" | "none";
+/** Where keyboard focus sits. `page` = caret in the editor surface; `source` = focus inside the
+ *  Source-mode CodeMirror host; `input` = a text field (palette, sheet, sheet fields);
+ *  `margin`/`findings` = the Findings list focus ring; `none` = chrome. */
+export type FocusZone = "page" | "source" | "margin" | "findings" | "input" | "none";
 
 export interface KeyChord {
   readonly key: string; // KeyboardEvent.key, case-normalized by the caller contract below
@@ -23,6 +35,7 @@ export interface KeyChord {
 }
 
 export type IdeAction =
+  | { readonly kind: "prefix"; readonly prefix: "g" | "r" }
   | { readonly kind: "palette" }
   | { readonly kind: "sidebar" }
   | { readonly kind: "pane"; readonly pane: "panel" }
@@ -32,9 +45,11 @@ export type IdeAction =
   | { readonly kind: "triage" }
   | { readonly kind: "restore-point" }
   | { readonly kind: "run-next" }
+  | { readonly kind: "run-sheet" }
   | { readonly kind: "sheet"; readonly workflow: "draft" | "review" | "revise" }
-  | { readonly kind: "goto-approval" }
+  | { readonly kind: "goto-projects" }
   | { readonly kind: "inbox" }
+  | { readonly kind: "goto-voices" }
   | { readonly kind: "settings" }
   | { readonly kind: "cheatsheet" }
   | { readonly kind: "finding-next" }
@@ -62,17 +77,18 @@ const FINDINGS_DISPOSITIONS: Readonly<Record<string, "accept" | "adapt" | "rebut
 const FINDINGS_ZONES: readonly FocusZone[] = ["margin", "findings"];
 
 // ---------------------------------------------------------------------------
-// REQ-KEYS-1 — the committed binding table. `chord` is canonical (`mod+shift+t`, `alt+[`, or a
-// bare key) — the reserved-chords checker reads it verbatim. `actionKind` is the IdeAction
-// discriminator (`sheet:<workflow>` carries the payload). `scope:"findings"` marks the
-// Margin/list-scoped rows (inert in Page/input focus). Descriptions are the `?` sheet's text;
-// `keys` is the display glyph a tooltip or the sheet shows.
+// REQ-KEYS-1 — the committed binding table. `chord` is canonical (`mod+shift+t`, `alt+[`, a bare
+// key, or a two-key sequence `g p` / `r d` — the checker validates each key of a sequence).
+// `actionKind` is the IdeAction discriminator (`sheet:<workflow>` carries the payload).
+// `scope:"findings"` marks the Margin/list-scoped rows (inert in Page/input focus). Descriptions
+// are the `?` sheet's text; `keys` is the display glyph a tooltip or the sheet shows.
 // ---------------------------------------------------------------------------
 
 export interface IdeBinding {
-  /** canonical chord for the checker — `mod[+shift]+<key>` / `alt[+shift]+<key>` / bare key. */
+  /** canonical chord for the checker — `mod[+shift]+<key>` / `alt[+shift]+<key>` / `shift+<key>`
+   *  / bare `<key>` / `<key> <key>` (a two-key sequence). */
   readonly chord: string;
-  /** display form for the cheat sheet and tooltips (⌘⇧T, ⌥[, g p). */
+  /** display form for the cheat sheet and tooltips (⌘K, g p, ⇧T). */
   readonly keys: string;
   /** the IdeAction discriminator the chord dispatches (`sheet:draft` names the payload). */
   readonly actionKind: string;
@@ -84,44 +100,81 @@ export interface IdeBinding {
 
 export const IDE_KEYMAP: readonly IdeBinding[] = [
   { chord: "mod+k", keys: "⌘K", actionKind: "palette", action: "Command palette" },
-  { chord: "/", keys: "/", actionKind: "palette", action: "Command palette (command mode)" },
+  { chord: "/", keys: "/", actionKind: "palette", action: "Palette (command mode)" },
+  { chord: "mod+enter", keys: "⌘⏎", actionKind: "run-sheet", action: "Run sheet" },
   { chord: "[", keys: "[", actionKind: "sidebar", action: "Toggle the sidebar" },
-  { chord: "]", keys: "]", actionKind: "pane:panel", action: "Toggle the right-side pane" },
-  { chord: "mod+shift+m", keys: "⌘⇧M", actionKind: "view-menu", action: "View menu" },
-  { chord: "mod+shift+f", keys: "⌘⇧F", actionKind: "focus-mode", action: "Focus view" },
-  { chord: "mod+shift+l", keys: "⌘⇧L", actionKind: "paper-theme", action: "Paper theme" },
-  { chord: "mod+shift+t", keys: "⌘⇧T", actionKind: "triage", action: "Triage" },
-  { chord: "mod+s", keys: "⌘S", actionKind: "restore-point", action: "Mark a named restore point" },
-  { chord: "mod+shift+r", keys: "⌘⇧R", actionKind: "run-next", action: "Run the next step" },
-  { chord: "mod+shift+d", keys: "⌘⇧D", actionKind: "sheet:draft", action: "Draft sheet" },
-  { chord: "mod+shift+e", keys: "⌘⇧E", actionKind: "sheet:review", action: "Review sheet" },
-  { chord: "mod+shift+v", keys: "⌘⇧V", actionKind: "sheet:revise", action: "Revise sheet" },
-  { chord: "mod+g", keys: "⌘G", actionKind: "goto-approval", action: "Oldest open approval" },
-  { chord: "mod+i", keys: "⌘I", actionKind: "inbox", action: "Inbox" },
-  { chord: "mod+,", keys: "⌘,", actionKind: "settings", action: "Project settings" },
-  { chord: "mod+shift+c", keys: "⌘⇧C", actionKind: "compare-previous", action: "Compare with previous" },
-  // REQ-KEYS-1 — the PROVISIONAL version-step pair (off `[`/`]`, which now own sidebar/pane).
-  // ⌥-bracket is capturable and outside Rule 2's conventional set; 239 finalizes the table.
-  { chord: "alt+[", keys: "⌥[", actionKind: "version-prev", action: "Previous version" },
-  { chord: "alt+]", keys: "⌥]", actionKind: "version-next", action: "Next version" },
+  { chord: "]", keys: "]", actionKind: "pane:panel", action: "Toggle the right pane" },
+  { chord: "v", keys: "v", actionKind: "view-menu", action: "View menu" },
+  { chord: "f", keys: "f", actionKind: "focus-mode", action: "Focus view" },
+  { chord: "shift+t", keys: "⇧T", actionKind: "paper-theme", action: "Paper theme" },
+  { chord: "t", keys: "t", actionKind: "triage", action: "Triage" },
+  { chord: "mod+s", keys: "⌘S", actionKind: "restore-point", action: "Named restore point" },
+  { chord: "r n", keys: "r n", actionKind: "run-next", action: "Run the next step" },
+  { chord: "r d", keys: "r d", actionKind: "sheet:draft", action: "Draft sheet" },
+  { chord: "r r", keys: "r r", actionKind: "sheet:review", action: "Review sheet" },
+  { chord: "r v", keys: "r v", actionKind: "sheet:revise", action: "Revise sheet" },
+  { chord: "g p", keys: "g p", actionKind: "goto-projects", action: "Go to Projects" },
+  { chord: "g i", keys: "g i", actionKind: "inbox", action: "Go to Inbox" },
+  { chord: "g v", keys: "g v", actionKind: "goto-voices", action: "Go to Voices" },
+  { chord: "g s", keys: "g s", actionKind: "settings", action: "Project settings" },
+  { chord: "c", keys: "c", actionKind: "compare-previous", action: "Compare with previous" },
+  { chord: "h", keys: "h", actionKind: "version-prev", action: "Previous version" },
+  { chord: "l", keys: "l", actionKind: "version-next", action: "Next version" },
   { chord: "mod+z", keys: "⌘Z", actionKind: "undo", action: "Undo" },
   { chord: "mod+shift+z", keys: "⌘⇧Z", actionKind: "redo", action: "Redo" },
-  { chord: "?", keys: "?", actionKind: "cheatsheet", action: "This cheat sheet" },
-  { chord: "j", keys: "J", actionKind: "finding-next", action: "Next finding — Findings list only", scope: "findings" },
-  { chord: "k", keys: "K", actionKind: "finding-prev", action: "Previous finding — Findings list only", scope: "findings" },
-  { chord: "p", keys: "P", actionKind: "finding-apply", action: "Apply finding — Findings list only", scope: "findings" },
-  { chord: "a", keys: "A", actionKind: "finding-disposition:accept", action: "Accept — Findings list only", scope: "findings" },
-  { chord: "d", keys: "D", actionKind: "finding-disposition:adapt", action: "Adapt — Findings list only", scope: "findings" },
-  { chord: "r", keys: "R", actionKind: "finding-disposition:rebut", action: "Rebut — Findings list only", scope: "findings" },
-  { chord: "f", keys: "F", actionKind: "finding-disposition:defer", action: "Defer — Findings list only", scope: "findings" },
-  { chord: "e", keys: "E", actionKind: "finding-disposition:escalate", action: "Escalate — Findings list only", scope: "findings" },
-  { chord: "Enter", keys: "Enter", actionKind: "finding-open", action: "Open finding — Findings list only", scope: "findings" },
-  { chord: "Escape", keys: "Esc", actionKind: "finding-escape", action: "Clear finding focus — Findings list only", scope: "findings" },
-  { chord: "alt+j", keys: "⌥J", actionKind: "finding-anchor-next", action: "Next blocking/major — Findings list only", scope: "findings" },
-  { chord: "alt+k", keys: "⌥K", actionKind: "finding-anchor-prev", action: "Previous blocking/major — Findings list only", scope: "findings" },
+  { chord: "?", keys: "?", actionKind: "cheatsheet", action: "Cheat sheet" },
+  { chord: "j", keys: "J", actionKind: "finding-next", action: "Next finding — findings", scope: "findings" },
+  { chord: "k", keys: "K", actionKind: "finding-prev", action: "Previous finding — findings", scope: "findings" },
+  { chord: "p", keys: "P", actionKind: "finding-apply", action: "Apply finding — findings", scope: "findings" },
+  { chord: "a", keys: "A", actionKind: "finding-disposition:accept", action: "Accept — findings", scope: "findings" },
+  { chord: "d", keys: "D", actionKind: "finding-disposition:adapt", action: "Adapt — findings", scope: "findings" },
+  { chord: "r", keys: "R", actionKind: "finding-disposition:rebut", action: "Rebut — findings", scope: "findings" },
+  { chord: "f", keys: "F", actionKind: "finding-disposition:defer", action: "Defer — findings", scope: "findings" },
+  { chord: "e", keys: "E", actionKind: "finding-disposition:escalate", action: "Escalate — findings", scope: "findings" },
+  { chord: "enter", keys: "Enter", actionKind: "finding-open", action: "Open finding — findings", scope: "findings" },
+  { chord: "escape", keys: "Esc", actionKind: "finding-escape", action: "Clear finding focus — findings", scope: "findings" },
+  { chord: "alt+j", keys: "⌥J", actionKind: "finding-anchor-next", action: "Next blocking/major — findings", scope: "findings" },
+  { chord: "alt+k", keys: "⌥K", actionKind: "finding-anchor-prev", action: "Previous blocking/major — findings", scope: "findings" },
 ];
 
-/** The display glyph a tooltip shows for one action kind (generated from the keymap — REQ-KEYS-2 partial). */
+/** Chords the SSR islands bind OUTSIDE the dispatcher (`client/page.ts`'s save listener) — the
+ *  table every island-bound chord must come from, so the checker sees the whole surface. */
+export const ISLAND_CHORDS: readonly IdeBinding[] = [
+  { chord: "mod+s", keys: "⌘S", actionKind: "restore-point", action: "Named restore point" },
+];
+
+// ---- canonical chord matching (REQ-KEYS-1) — the two PURE helpers islands + the checker share.
+// They live here (the keymap module every importer already pulls) so `reserved-chords.ts` —
+// the checker + the rule-set JSON — stays TEST-only and never rides the runtime bundle.
+
+export interface ChordSpec {
+  readonly key: string;
+  readonly metaKey?: boolean;
+  readonly ctrlKey?: boolean;
+  readonly shiftKey?: boolean;
+  readonly altKey?: boolean;
+}
+
+/** Canonicalize a chord descriptor: `mod+shift+t`, `shift+t`, `alt+[`, or the bare key. `mod` = ⌘/Ctrl. */
+export function canonicalChord(c: ChordSpec): string {
+  const parts: string[] = [];
+  if (c.metaKey || c.ctrlKey) parts.push("mod");
+  if (c.altKey) parts.push("alt");
+  if (c.shiftKey) parts.push("shift");
+  parts.push(c.key.toLowerCase()); // key names are case-folded (`Enter` ↔ `enter`)
+  return parts.join("+");
+}
+
+/**
+ * True when a KeyboardEvent-shaped chord matches a canonical chord string (`mod+s`, `shift+t`,
+ * bare `f`). Islands + inline handlers bind through this so no chord literal lives in the
+ * listener (`client/page.ts`'s ⌘S reads `ISLAND_CHORDS`, never a hand-typed `"s"`).
+ */
+export function matchesChord(ev: ChordSpec, canonical: string): boolean {
+  return canonicalChord(ev) === canonical;
+}
+
+/** The display glyph a tooltip shows for one action kind (generated from the keymap — REQ-KEYS-2). */
 export function shortcutFor(actionKind: string): string | null {
   return IDE_KEYMAP.find((b) => b.actionKind === actionKind)?.keys ?? null;
 }
@@ -130,90 +183,119 @@ export function shortcutFor(actionKind: string): string | null {
 export const CHEAT_SHEET: readonly { readonly keys: string; readonly action: string }[] =
   IDE_KEYMAP.map((b) => ({ keys: b.keys, action: b.action }));
 
+/** The second key a pending `g` prefix maps to a go-to action (Rule 3's Linear/GitHub idiom). */
+const GOTO_SECOND: Readonly<Record<string, IdeAction>> = {
+  p: { kind: "goto-projects" },
+  i: { kind: "inbox" },
+  v: { kind: "goto-voices" },
+  s: { kind: "settings" },
+};
+
+/** The second key a pending `r` prefix maps to a run-sheet action. */
+const RUN_SECOND: Readonly<Record<string, IdeAction>> = {
+  d: { kind: "sheet", workflow: "draft" },
+  r: { kind: "sheet", workflow: "review" },
+  v: { kind: "sheet", workflow: "revise" },
+  n: { kind: "run-next" },
+};
+
 /**
  * Dispatch one key event to an IdeAction (or null = let the browser handle it). Callers normalize
- * `key` to lowercase for letters (`e.key.length === 1 ? e.key.toLowerCase() : e.key`) before calling —
- * the map is written against that contract. `mod` = ⌘ on mac / Ctrl elsewhere (the island passes
- * metaKey||ctrlKey; both fields stay on the chord for tests that distinguish them).
+ * `key` to lowercase for letters (`e.key.length === 1 ? e.key.toLowerCase() : e.key`) before
+ * calling — the map is written against that contract. `mod` = ⌘ on mac / Ctrl elsewhere (the
+ * island passes metaKey||ctrlKey; both fields stay on the chord for tests that distinguish them).
+ * `pending` is the armed two-key prefix the caller holds (`g`/`r`), expiring on its own timeout.
  *
- * Rules (§5.12):
- *  - `input` focus: bare keys are inert (typing); ONLY the mod chords that make sense in a field
- *    dispatch (⌘K palette — the rest fall through so the field keeps its own editing).
- *  - `page` focus: the findings chords are INERT — a bare j/k/a/d… while writing must never move a
- *    finding cursor.
- *  - bare findings chords dispatch only in `margin`/`findings` focus.
+ * Rules (§5.12 + REQ-KEYS-1):
+ *  - `input` focus: bare keys are inert (typing); ONLY ⌘K dispatches (the field keeps its editing).
+ *  - `source` focus (Rule 5): the CodeMirror editor's own bindings win — ONLY ⌘S dispatches (the
+ *    buffer's commit mint); everything else returns null so CM/the browser keeps the chord.
+ *  - `page` focus: bare keys + prefixes are inert; the mod chords fire (⌘K is contextual link
+ *    under a selection, ⌘S restores, ⌘⏎ opens the run sheet — the findings chords NEVER fire).
+ *  - bare findings chords dispatch only in `margin`/`findings` focus — and win over the global
+ *    bare-key table there (`r` stays Rebut, `f` stays Defer in the list).
  */
-export function dispatchIdeKey(ev: KeyChord, zone: FocusZone): IdeAction | null {
+export function dispatchIdeKey(ev: KeyChord, zone: FocusZone, pending?: string | null): IdeAction | null {
   const mod = ev.metaKey || ev.ctrlKey;
   const k = ev.key;
 
-  // ---- mod chords (global, with input focus narrowing) ------------------------------------------
+  // ---- mod chords (global, with input narrowing + Rule-5 source precedence) ------------------
   if (mod) {
+    if (zone === "source") {
+      if (k === "s" && !ev.shiftKey) return { kind: "restore-point" };
+      return null;
+    }
     if (zone === "input") {
       // inside a field only the overlay chords fire; everything else belongs to the field.
       if (k === "k" && !ev.shiftKey) return { kind: "palette" };
       return null;
     }
     if (ev.shiftKey) {
-      switch (k) {
-        case "m": return { kind: "view-menu" };
-        case "f": return { kind: "focus-mode" };
-        case "l": return { kind: "paper-theme" };
-        case "t": return { kind: "triage" };
-        case "r": return { kind: "run-next" };
-        case "d": return { kind: "sheet", workflow: "draft" };
-        case "e": return { kind: "sheet", workflow: "review" };
-        case "v": return { kind: "sheet", workflow: "revise" };
-        case "c": return { kind: "compare-previous" };
-        case "z": return { kind: "redo" };
-        default: return null;
-      }
+      if (k === "z") return { kind: "redo" };
+      return null;
     }
     switch (k) {
       case "k": return { kind: "palette" };
-      // REQ-KEYS-1 — ⌘1/⌘2/⌘J are retired (Rule 2's number-key row). The pane chords are
-      // `[` (sidebar) and `]` (Timeline today; the right panel at 229).
       case "s": return { kind: "restore-point" };
-      case "g": return { kind: "goto-approval" };
-      case "i": return { kind: "inbox" };
-      case ",": return { kind: "settings" };
+      case "Enter": return { kind: "run-sheet" };
       case "z": return { kind: "undo" };
       default: return null;
     }
   }
 
-  // ---- bare keys ---------------------------------------------------------------------------------
-  if (zone === "input" || zone === "page") {
+  // ---- bare keys + two-key sequences ----------------------------------------------------------
+  if (zone === "input" || zone === "page" || zone === "source") {
     return null; // typing: every bare key is inert (findings chords NEVER fire in the Page)
   }
 
+  // a pending `g`/`r` prefix consumes the next bare key in the non-typing zones; an unknown
+  // second key lapses the prefix and falls through to normal dispatch (GitHub/Linear behavior).
+  if (pending === "g") {
+    const hit = GOTO_SECOND[k];
+    if (hit) return hit;
+  } else if (pending === "r") {
+    const hit = RUN_SECOND[k];
+    if (hit) return hit;
+  }
+
   if (ev.altKey) {
-    // REQ-KEYS-1 — version stepping moved off `[`/`]` to the provisional ⌥-bracket pair.
-    if (k === "[") return { kind: "version-prev" };
-    if (k === "]") return { kind: "version-next" };
     if (!FINDINGS_ZONES.includes(zone)) return null;
     if (k === "j") return { kind: "finding-anchor-next" };
     if (k === "k") return { kind: "finding-anchor-prev" };
     return null;
   }
 
+  // findings-scoped chords win inside the Margin/Findings zones — `r`/`f` stay Rebut/Defer there
+  // and never arm the global prefixes.
+  if (FINDINGS_ZONES.includes(zone)) {
+    switch (k) {
+      case "j": return { kind: "finding-next" };
+      case "k": return { kind: "finding-prev" };
+      case "p": return { kind: "finding-apply" };
+      case "Enter": return { kind: "finding-open" };
+      case "Escape": return { kind: "finding-escape" };
+      default: {
+        const disp = FINDINGS_DISPOSITIONS[k];
+        if (disp) return { kind: "finding-disposition", disposition: disp };
+      }
+    }
+  }
+
   if (k === "?" || (k === "/" && ev.shiftKey)) return { kind: "cheatsheet" };
-  // REQ-KEYS-1 — the sidebar/panel chords. `]` toggles the right panel (R7PANE.1).
+  // REQ-KEYS-1 — the sidebar/panel chords (R7SHELL.1a). `]` toggles the right panel (R7PANE.1).
   if (k === "[") return { kind: "sidebar" };
   if (k === "]") return { kind: "pane", pane: "panel" };
   if (k === "/") return { kind: "palette" }; // bare / opens the palette in command mode
-
-  if (!FINDINGS_ZONES.includes(zone)) return null;
-
-  switch (k) {
-    case "j": return { kind: "finding-next" };
-    case "k": return { kind: "finding-prev" };
-    case "p": return { kind: "finding-apply" };
-    case "Enter": return { kind: "finding-open" };
-    case "Escape": return { kind: "finding-escape" };
-    default: {
-      const disp = FINDINGS_DISPOSITIONS[k];
-      return disp ? { kind: "finding-disposition", disposition: disp } : null;
-    }
-  }
+  // REQ-KEYS-1 (239) — the re-homed Rule-3 chords: single keys + the `g`/`r` prefix arms.
+  if (k === "v") return { kind: "view-menu" };
+  if (k === "f") return { kind: "focus-mode" };
+  if (k === "t" && ev.shiftKey) return { kind: "paper-theme" };
+  if (k === "t") return { kind: "triage" };
+  if (k === "c") return { kind: "compare-previous" };
+  // version stepping's FINAL home — off `[`/`]` (sidebar/pane) and 226's provisional `⌥[`/`⌥]`.
+  if (k === "h") return { kind: "version-prev" };
+  if (k === "l") return { kind: "version-next" };
+  if (k === "g") return { kind: "prefix", prefix: "g" };
+  if (k === "r") return { kind: "prefix", prefix: "r" };
+  return null;
 }

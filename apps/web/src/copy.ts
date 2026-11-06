@@ -214,7 +214,6 @@ export const COPY = {
     backToList: "All projects",
     backToProject: "Back to the project",
     importCta: "Import a draft",
-    editCta: "Edit source",
     exportCta: "Export",
   },
 
@@ -900,7 +899,7 @@ export const COPY = {
     compare: "Compare",
     comparePrevious: "Compare with previous",
     restorePoints: "Restore points",
-    restoreEmpty: "No restore points yet — ⌘S marks one.",
+    restoreEmpty: "No restore points yet — {chord} marks one.",
     restoreGroup: {
       earlier_today: "Earlier today",
       yesterday: "Yesterday",
@@ -2688,8 +2687,10 @@ export const COPY = {
     /** The Run ▾ menu's trigger + the ⋯ menu's aria-label. */
     runLabel: "Run",
     moreLabel: "More actions",
-    /** The ⋯ menu's Edit-source item (239 replaces it with the Rich text / Source toggle). */
-    editSource: "Edit source",
+    /** REQ-WRITE-5 (239) — the ONE Rich text / Source toggle in the strip (the ⋯ Edit-source
+     *  item and the floating Source chip are both removed — I7). */
+    sourceSource: "Source",
+    sourceRich: "Rich text",
     runDraft: "Draft",
   },
 
