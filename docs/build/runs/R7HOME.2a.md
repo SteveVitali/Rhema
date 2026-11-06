@@ -152,6 +152,13 @@
 - No migration added — working drafts already carry `promoted_version_id` + `frozen_by`.
 - U7.import leg implemented (`U7_IMPORT` in `r7legs.ts`); registry stays `expected:"red"`
   (`AUTHORED_HELD`; 250 flips — D-R7HOME.2a-1).
+- PR #273 opened (`--base stevevitali/r7home-1-projects`). **First CI read @`5f15430d` failed**
+  (run 42167773144, `typecheck / lint / unit`) on five tests the session's local suite sweep had
+  not re-run: `data.test.ts` + `server.test.ts` + `bff.test.ts` (stubs/assertions still on the
+  pre-`{n,outcome}` create-import shape) and `registry.test.ts` + `runner.test.ts` (U7.import's
+  authored body rejects with its own offline failure, so it joins the `AUTHORED_HELD` exemption
+  U1/U2/U3/U6 already hold). Fixed at the second commit; `vitest apps/web/src +
+  packages/journeys/src` re-run 110 files / 1746 tests green; web+journeys lint/typecheck green.
 
 ## Evidence report
 
