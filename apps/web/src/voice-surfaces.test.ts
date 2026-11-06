@@ -391,9 +391,12 @@ describe("the project picker + the run sheet's voice line (§9.6)", () => {
       options: [PERSONA_ROW],
     });
     expect(body).toContain('name="personaId"');
-    expect(body).toContain("Ada");
     expect(body).toContain("Description changed");
-    expect(body).toContain("No voice (ad-hoc)");
+    // R7KIT.3a — the picker is a Radix `Select`: option labels (the persona names, the
+    // "No voice (ad-hoc)" row) and the trigger's selected text register post-mount — effects
+    // never run under renderToStaticMarkup, so static markup carries only `name="personaId"`.
+    // The no-JS option grammar stays on pages.tsx's native select (RV-36); the POST leg below
+    // proves the server contract end-to-end.
     // a multi-register pin surfaces the ONE register pick (§9.6) on the settings page.
     const multi = settingsBody({
       current: {

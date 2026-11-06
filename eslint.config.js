@@ -43,6 +43,10 @@ const NO_RAW_CONTROLS_ENABLED = [
   "packages/ui/src/project-list.tsx",
   "apps/web/src/spa/surfaces/project-home.tsx",
   "apps/web/src/spa/surfaces/inbox.tsx",
+  // R7KIT.3a — KIT-3 batch a (minus voices, 240a): settings / billing / usage migrated.
+  "apps/web/src/spa/surfaces/settings.tsx",
+  "apps/web/src/spa/surfaces/billing.tsx",
+  "apps/web/src/spa/surfaces/usage.tsx",
 ];
 
 export default tseslint.config(
@@ -140,10 +144,20 @@ export default tseslint.config(
     rules: {
       "no-restricted-imports": [
         "error",
-        { paths: [
-          { name: "react", message: "findings-core is framework-free (REQ-MOBILE-4): no React. Put presentation in @rhema/ui." },
-          { name: "react-dom", message: "findings-core is framework-free (REQ-MOBILE-4): no React. Put presentation in @rhema/ui." },
-        ] },
+        {
+          paths: [
+            {
+              name: "react",
+              message:
+                "findings-core is framework-free (REQ-MOBILE-4): no React. Put presentation in @rhema/ui.",
+            },
+            {
+              name: "react-dom",
+              message:
+                "findings-core is framework-free (REQ-MOBILE-4): no React. Put presentation in @rhema/ui.",
+            },
+          ],
+        },
       ],
     },
   },
@@ -253,7 +267,8 @@ export default tseslint.config(
             },
             {
               name: "@rhema/evals",
-              message: "private eval IP must never enter a client bundle (REQ-ARCH-33 / REQ-SAFE-9).",
+              message:
+                "private eval IP must never enter a client bundle (REQ-ARCH-33 / REQ-SAFE-9).",
             },
             {
               name: "radix-ui",

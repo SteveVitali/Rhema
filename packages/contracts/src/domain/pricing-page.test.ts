@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PRICING, planOf } from "./pricing.js";
-import {
-  HERO_HEADLINE,
-  COMPARATIVE_WAVE_MET,
-  lintGrowthCopy,
-} from "../growth-lint.js";
+import { HERO_HEADLINE, COMPARATIVE_WAVE_MET, lintGrowthCopy } from "../growth-lint.js";
 import { assertShowcaseFixture } from "./showcase.js";
 import {
   buildPricingPageData,
@@ -46,13 +42,22 @@ const fixturePricer = (): SurfacePricer => ({
           a.toggles?.fact_check === false
             ? t.unverifiedClaimCredits * mult
             : (PRICING.costPerVerifiedClaim.review?.[a.modelTier] ?? 0);
-        return (t.reading.intercept + t.reading.perWord * w) * mult * rigorMult + cl * perClaim * rigorMult;
+        return (
+          (t.reading.intercept + t.reading.perWord * w) * mult * rigorMult +
+          cl * perClaim * rigorMult
+        );
       }
       case "draft":
         return (t.draft.intercept + t.draft.perWord * w + t.draft.perClaim * cl) * mult;
       case "revise": {
         const moves = Math.round(cl * t.revise.researchedMoveShare);
-        return (t.revise.intercept + t.revise.perWord * w + t.revise.perClaim * cl + moves * t.revise.perResearchedMove) * mult;
+        return (
+          (t.revise.intercept +
+            t.revise.perWord * w +
+            t.revise.perClaim * cl +
+            moves * t.revise.perResearchedMove) *
+          mult
+        );
       }
       case "voice_profile":
         return (t.voiceProfile.intercept + t.voiceProfile.perWord * w) * mult;
@@ -78,7 +83,8 @@ const cardCeil = (n: number) => Math.ceil(n / 10) * 10;
 describe("§15.2 pricing derivation (REQ-GROWTH-6/9)", () => {
   it("a Review's credits recompute from reading terms + per-verified-claim constants", () => {
     const t = PRICING.costCardTerms.reading;
-    const words = 8_000, claims = 40;
+    const words = 8_000,
+      claims = 40;
     for (const tier of ["base", "balanced", "frontier"] as const) {
       const expected = cardRound(
         (t.intercept + t.perWord * words) * PRICING.modelTierMultipliers[tier] +
@@ -108,7 +114,9 @@ describe("§15.2 pricing derivation (REQ-GROWTH-6/9)", () => {
         expect(row.range!.low, `${card.key}/${row.key} low`).toBe(cardFloor(baseRaw));
         expect(row.range!.low, `${card.key}/${row.key} low ≤ raw`).toBeLessThanOrEqual(baseRaw);
         expect(row.range!.high, `${card.key}/${row.key} high`).toBe(cardCeil(frontierRaw));
-        expect(row.range!.high, `${card.key}/${row.key} high ≥ raw`).toBeGreaterThanOrEqual(frontierRaw);
+        expect(row.range!.high, `${card.key}/${row.key} high ≥ raw`).toBeGreaterThanOrEqual(
+          frontierRaw,
+        );
       }
       // and the full-round row IS the per-tier sum, not a hand-typed total.
       expect(card.fullRoundByTier.base).toBe(
@@ -116,8 +124,12 @@ describe("§15.2 pricing derivation (REQ-GROWTH-6/9)", () => {
           reviewCardCredits(PRICE, shape.words, shape.claims, "base")! +
           reviseCardCredits(PRICE, shape.words, shape.claims, "base")!,
       );
-      expect(card.rows.find((r) => r.key === "full_round")!.range!.low).toBe(card.fullRoundByTier.base);
-      expect(card.rows.find((r) => r.key === "full_round")!.range!.high).toBe(card.fullRoundByTier.frontier);
+      expect(card.rows.find((r) => r.key === "full_round")!.range!.low).toBe(
+        card.fullRoundByTier.base,
+      );
+      expect(card.rows.find((r) => r.key === "full_round")!.range!.high).toBe(
+        card.fullRoundByTier.frontier,
+      );
     }
   });
 
@@ -135,13 +147,18 @@ describe("§15.2 pricing derivation (REQ-GROWTH-6/9)", () => {
     for (const plan of data.plans.filter((p) => !p.waitlist && p.tier !== "free")) {
       const p0 = planOf(plan.tier);
       expect(plan.annualMonthlyUsd).toBe(p0.annualMonthlyUsd);
-      expect(plan.annualSavingsUsdPerYear).toBeCloseTo((p0.monthlyUsd - p0.annualMonthlyUsd!) * 12, 6);
+      expect(plan.annualSavingsUsdPerYear).toBeCloseTo(
+        (p0.monthlyUsd - p0.annualMonthlyUsd!) * 12,
+        6,
+      );
       // the saving is real dollars, not a rounded zero
       expect(plan.annualSavingsUsdPerYear!).toBeGreaterThan(0);
     }
     // Team (waitlist) + Free carry no annual price.
     expect(data.plans.find((p) => p.tier === "team")!.annualSavingsUsdPerYear).toBeNull();
-    expect(data.plans.find((p) => p.tier === "free")!.annualMonthlyUsd).toBe(planOf("free").annualMonthlyUsd);
+    expect(data.plans.find((p) => p.tier === "free")!.annualMonthlyUsd).toBe(
+      planOf("free").annualMonthlyUsd,
+    );
   });
 
   it("credits convert at the published $0.01 rate — a rate change moves every dollar figure", () => {
@@ -182,13 +199,19 @@ describe("§15.2 pricing derivation (REQ-GROWTH-6/9)", () => {
     const reviewBase = reviewCardCredits(PRICE, academic.words, academic.claims, "base")!;
     expect(q.q).toContain(`$${Math.round(cardCreditsToUsd(reviewBase))}`);
     expect(q.a).toContain(reviewBase.toLocaleString("en-US"));
-    expect(q.a).toContain(reviewNoFactCheckCredits(PRICE, academic.words, academic.claims, "base")!.toLocaleString("en-US"));
+    expect(q.a).toContain(
+      reviewNoFactCheckCredits(PRICE, academic.words, academic.claims, "base")!.toLocaleString(
+        "en-US",
+      ),
+    );
   });
 
   it("the FAQ's trial-pocket figure is DERIVED from PRICING.trial.pocketCredits — no literal", () => {
     const faq = pricingFaq(PRICE);
     const q = faq.find((f) => f.q === "What if I run out of credits?")!;
-    expect(q.a).toContain(`${PRICING.trial.pocketCredits.toLocaleString("en-US")}-credit trial pocket`);
+    expect(q.a).toContain(
+      `${PRICING.trial.pocketCredits.toLocaleString("en-US")}-credit trial pocket`,
+    );
     // no other digit-claim slips in — every figure the answer carries traces to a constant
     expect(q.a).toContain(`${PRICING.topUp.expiryMonths} months`);
   });
@@ -211,7 +234,9 @@ describe("§15.2 pricing derivation (REQ-GROWTH-6/9)", () => {
 
   it("the matrix's cells are the plan specs' — including the waitlist + per-seat rows", () => {
     const m = pricingMatrix();
-    expect(m.columns).toEqual(["free", "writer", "studio", "studio_max", "team"].map((t) => planOf(t).display));
+    expect(m.columns).toEqual(
+      ["free", "writer", "studio", "studio_max", "team"].map((t) => planOf(t).display),
+    );
     const priceRow = m.rows.find((r) => r.label === "Price (monthly)")!;
     expect(priceRow.cells[0]).toBe("$0");
     expect(priceRow.cells[4]).toContain("/seat");
@@ -241,9 +266,11 @@ describe("R6MNY.1 — 'what it covers' never over-promises (GD-BL13.R6)", () => 
     for (const tier of gatedTiers) {
       const line = planCoverageLine(tier, PRICE)!;
       expect(line, `${tier} computes`).not.toBeNull();
-      const printed = [...line.matchAll(/≈([\d.]+)/g)].map((m) => parseFloat(m[1]!));
       const p = planOf(tier);
-      expect(printed.length).toBe(p.modelTiers.length);
+      // REQ-KIT-4 (D8/RV-28): the line is one part per allowed tier — an "≈N" floored figure
+      // for a ratio ≥ 1, "less than 1 a month" below it. Every part is verifiably within budget.
+      const parts = line.split(" · ");
+      expect(parts.length).toBe(p.modelTiers.length);
       for (const [i, mt] of p.modelTiers.entries()) {
         const raw = PRICE.estimate({
           workflow: "review",
@@ -251,15 +278,55 @@ describe("R6MNY.1 — 'what it covers' never over-promises (GD-BL13.R6)", () => 
           modelTier: mt,
           inputs: { words: essay.words, claims: essay.claims },
         })!;
+        const ratio = p.includedCreditsMonthly / raw;
+        if (ratio < 1) {
+          expect(parts[i], `${tier}/${mt}`).toMatch(/^less than 1 /);
+          expect(raw, `${tier}/${mt}: one full review exceeds the bundle`).toBeGreaterThan(
+            p.includedCreditsMonthly,
+          );
+          continue;
+        }
+        const printed = parseFloat(parts[i]!.match(/≈([\d.]+)/)![1]!);
         // floored-to-0.1 ⇒ printed ≤ true ratio ⇒ printed × raw ≤ included, always.
-        expect(printed[i]!, `${tier}/${mt}: ${printed[i]} × ${raw}`).toBeLessThanOrEqual(
-          p.includedCreditsMonthly / raw + 1e-9,
-        );
-        expect(printed[i]! * raw, `${tier}/${mt}`).toBeLessThanOrEqual(
-          p.includedCreditsMonthly + 1e-9,
-        );
+        expect(printed, `${tier}/${mt}: ${printed} × ${raw}`).toBeLessThanOrEqual(ratio + 1e-9);
+        expect(printed * raw, `${tier}/${mt}`).toBeLessThanOrEqual(p.includedCreditsMonthly + 1e-9);
       }
     }
+  });
+
+  it("a figure below one honest loop prints 'less than 1 …' — the floored truth, not ≈0.x (D8/RV-28)", () => {
+    // 240_R7KIT.3a (REQ-KIT-4; spec §8.2) — Writer's Frontier tier prices at ≈0.7 loops today:
+    // the line must say "less than 1 a month", never "≈0.7" (the audit's rounded-up read).
+    const line = planCoverageLine("writer", PRICE)!;
+    const parts = line.split(" · ");
+    const rawFrontier = PRICE.estimate({
+      workflow: "review",
+      rigor: "standard",
+      modelTier: "frontier",
+      inputs: { words: essay.words, claims: essay.claims },
+    })!;
+    const writer = planOf("writer");
+    if (writer.includedCreditsMonthly / rawFrontier < 1) {
+      expect(parts[2]).toBe("less than 1 a month on Frontier");
+    }
+    // The same truth on a synthetic just-under-one pricer — the wording fires on the <1 ratio,
+    // never on the printed decimal.
+    const justDear: SurfacePricer = {
+      estimate: () => writer.includedCreditsMonthly * 1.5,
+      perVerifiedClaim: () => null,
+    };
+    const under = planCoverageLine("writer", justDear)!;
+    expect(under).toContain("less than 1 essay review a month on Base");
+    expect(under).not.toContain("≈0");
+    expect(under).not.toMatch(/≈0\.\d/);
+    // And a deeply-overpriced pricer prints the same honest words (never hides a gated plan).
+    const wayDear: SurfacePricer = {
+      estimate: () => writer.includedCreditsMonthly * 20,
+      perVerifiedClaim: () => null,
+    };
+    expect(planCoverageLine("writer", wayDear)).toContain(
+      "less than 1 essay review a month on Base",
+    );
   });
 
   it("floors — a true 1.49-loop ratio prints ≈1.4, not ≈1.5 (never the generous rounding)", () => {
@@ -280,13 +347,12 @@ describe("R6MNY.1 — 'what it covers' never over-promises (GD-BL13.R6)", () => 
     );
   });
 
-  it("hides rather than over-promise when the credits buy under one loop", () => {
-    const p = planOf("writer");
-    const tooDear: SurfacePricer = {
-      estimate: () => p.includedCreditsMonthly * 20, // true ratio ≈ 0.05 — below one honest loop
-      perVerifiedClaim: () => null,
-    };
-    expect(planCoverageLine("writer", tooDear)).toBeNull();
+  it("null/non-computable stays hidden — an absent pricer or a non-positive raw never prints", () => {
+    expect(planCoverageLine("writer", undefined)).toBeNull();
+    const dead: SurfacePricer = { estimate: () => null, perVerifiedClaim: () => null };
+    expect(planCoverageLine("writer", dead)).toBeNull();
+    const zero: SurfacePricer = { estimate: () => 0, perVerifiedClaim: () => null };
+    expect(planCoverageLine("writer", zero)).toBeNull();
   });
 
   it("no remembered figure — a pricer returning different numbers changes the rendered line", () => {
@@ -312,25 +378,59 @@ describe("the §15.1 growth lints (REQ-POS-4/5/11/12/13; REQ-GROWTH-5; REQ-EVAL-
   });
 
   it("generation promises fail in the hero/proof zones but not in a neutral key", () => {
-    expect(lint("landing.hero.sub", "Rhēma writes your draft for you").some((v) => v.rule === "generation_promise")).toBe(true);
-    expect(lint("landing.proof.body", "It generates the whole essay").some((v) => v.rule === "generation_promise")).toBe(true);
-    expect(lint("landing.workflow.note", "Rhēma writes your draft for you").some((v) => v.rule === "generation_promise")).toBe(false);
+    expect(
+      lint("landing.hero.sub", "Rhēma writes your draft for you").some(
+        (v) => v.rule === "generation_promise",
+      ),
+    ).toBe(true);
+    expect(
+      lint("landing.proof.body", "It generates the whole essay").some(
+        (v) => v.rule === "generation_promise",
+      ),
+    ).toBe(true);
+    expect(
+      lint("landing.workflow.note", "Rhēma writes your draft for you").some(
+        (v) => v.rule === "generation_promise",
+      ),
+    ).toBe(false);
   });
 
   it("detection-evasion language fails EVERYWHERE — any key", () => {
-    expect(lint("footer.note", "undetectable by any AI detector").some((v) => v.rule === "detection_evasion")).toBe(true);
-    expect(lint("pricing.faq.a", "beats Turnitin scans").some((v) => v.rule === "detection_evasion")).toBe(true);
+    expect(
+      lint("footer.note", "undetectable by any AI detector").some(
+        (v) => v.rule === "detection_evasion",
+      ),
+    ).toBe(true);
+    expect(
+      lint("pricing.faq.a", "beats Turnitin scans").some((v) => v.rule === "detection_evasion"),
+    ).toBe(true);
   });
 
   it("placeholder logos/testimonials fail; unbuilt assets need a forward-looking marker", () => {
-    expect(lint("landing.proof.logos", "As featured in the Times — logos").some((v) => v.rule === "placeholder_logo")).toBe(true);
-    expect(lint("landing.seat.body", "Our mobile app syncs your drafts").some((v) => v.rule === "unbuilt_asset_claim")).toBe(true);
-    expect(lint("pricing.faq.a", "The mobile app is on the roadmap").some((v) => v.rule === "unbuilt_asset_claim")).toBe(false);
+    expect(
+      lint("landing.proof.logos", "As featured in the Times — logos").some(
+        (v) => v.rule === "placeholder_logo",
+      ),
+    ).toBe(true);
+    expect(
+      lint("landing.seat.body", "Our mobile app syncs your drafts").some(
+        (v) => v.rule === "unbuilt_asset_claim",
+      ),
+    ).toBe(true);
+    expect(
+      lint("pricing.faq.a", "The mobile app is on the roadmap").some(
+        (v) => v.rule === "unbuilt_asset_claim",
+      ),
+    ).toBe(false);
   });
 
   it("comparative claims fail until the pre-registered wave flips the gate", () => {
     expect(COMPARATIVE_WAVE_MET).toBe(false);
-    expect(lint("landing.proof.body", "Better than Grammarly at finding errors").some((v) => v.rule === "comparative_claim")).toBe(true);
+    expect(
+      lint("landing.proof.body", "Better than Grammarly at finding errors").some(
+        (v) => v.rule === "comparative_claim",
+      ),
+    ).toBe(true);
     expect(lint("landing.proof.body", "Better than Grammarly at finding errors", true)).toEqual([]);
   });
 
@@ -341,17 +441,25 @@ describe("the §15.1 growth lints (REQ-POS-4/5/11/12/13; REQ-GROWTH-5; REQ-EVAL-
 
 describe("the Showcase fixture contract (§15.4; REQ-POS-3)", () => {
   it("passes with a contradicted Tier-1 claim + fetched URL; fails every honest shape otherwise", () => {
-    const good = { claims: [{ tier: 1, verdict: "contradicted", sources: [{ url: "https://x.test/a" }] }] };
+    const good = {
+      claims: [{ tier: 1, verdict: "contradicted", sources: [{ url: "https://x.test/a" }] }],
+    };
     expect(() => assertShowcaseFixture(good)).not.toThrow();
     expect(() => assertShowcaseFixture({ claims: [] })).toThrow(/contradicted tier-1/);
     expect(() =>
       assertShowcaseFixture({ claims: [{ tier: 1, verdict: "contradicted", sources: [] }] }),
     ).toThrow(); // contradicted but no fetched URL
     expect(() =>
-      assertShowcaseFixture({ claims: [{ tier: 2, verdict: "contradicted", sources: [{ url: "https://x.test" }] }] }),
+      assertShowcaseFixture({
+        claims: [{ tier: 2, verdict: "contradicted", sources: [{ url: "https://x.test" }] }],
+      }),
     ).toThrow(); // tier-2 does not satisfy the tier-1 rule
     expect(() =>
-      assertShowcaseFixture({ claims: [{ tier: 1, verdict: "substantially_accurate", sources: [{ url: "https://x.test" }] }] }),
+      assertShowcaseFixture({
+        claims: [
+          { tier: 1, verdict: "substantially_accurate", sources: [{ url: "https://x.test" }] },
+        ],
+      }),
     ).toThrow(); // accurate does not satisfy the contradicted rule
   });
 });
