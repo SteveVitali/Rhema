@@ -343,7 +343,7 @@ export function ProjectPageSurface({ data, compact, search }: EditorSurfaceProps
             compact,
             readOnlyReason: ro?.reason ?? null,
             ...(ro != null ? { notice: <ReadOnlyNotice reason={ro.reason} slug={slug} /> } : {}),
-            editSourceToggle: true,
+            onEditSource: () => document.querySelector("[data-page-root] [data-source-toggle]")?.click(),
             onProposalAccept: seams.accept,
             onProposalReject: seams.reject,
           })
@@ -443,7 +443,7 @@ export function VersionPageSurface({
             compact,
             readOnlyReason: ro?.reason ?? null,
             ...(ro != null ? { notice: <ReadOnlyNotice reason={ro.reason} slug={slug} /> } : {}),
-            editSourceToggle: true,
+            onEditSource: () => document.querySelector("[data-page-root] [data-source-toggle]")?.click(),
             onProposalAccept: seams.accept,
             onProposalReject: seams.reject,
           })

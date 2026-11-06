@@ -213,13 +213,6 @@ export interface PageChromeProps {
  * `usePageData()`'s `page` bag) and the SPA Page leaves (which publish it through
  * `IdeChromeData.pageHeader`). Emitted inside `.ide-page` above `.paper`.
  */
-/** The ⋯ menu's Edit-source seam: the mount's `[data-source-toggle]` chip lives inside
- *  `[data-page-root]`; a DOM click keeps ONE source-mode owner (239 replaces it with the
- *  Rich text / Source toggle). Defined here — `spa/` sources are copy-contained. */
-function selectSourceToggle(): void {
-  document.querySelector<HTMLElement>("[data-page-root] [data-source-toggle]")?.click();
-}
-
 export function pageStripFor(
   page: PageChromeBag,
   opts: {
@@ -229,9 +222,10 @@ export function pageStripFor(
     readonly notice?: ReactNode;
     readonly onProposalAccept?: (p: PageProposalView) => void;
     readonly onProposalReject?: (id: string) => void;
-    /** SPA leaves pass `true`: the ⋯ item activates the mounted source-mode toggle. Absent ⇒ the
-     *  item stays the SSR `/v/working` link (239 replaces it). */
-    readonly editSourceToggle?: boolean;
+    /** the Edit-source seam (SPA): the ⋯ item calls this — the leaf wires it to the mounted
+     *  `[data-source-toggle]` chip (239 replaces it with the Rich text / Source toggle). Absent ⇒
+     *  the item stays the SSR `/v/working` link. */
+    readonly onEditSource?: () => void;
     /** estimator-rendered run-item hints (keyed by workflow label; the one estimator's output). */
     readonly runHints?: Readonly<Record<string, string>>;
   } = {},
@@ -251,8 +245,8 @@ export function pageStripFor(
     { label: COPY.pageStrip.runDraft, href: `${base}/run?workflow=draft`, ...(opts.runHints?.["draft"] ? { hint: opts.runHints["draft"] } : {}) },
   ];
   const moreItems = [
-    ...(opts.editSourceToggle === true
-      ? [{ label: COPY.pageStrip.editSource, onSelect: selectSourceToggle }]
+    ...(opts.onEditSource
+      ? [{ label: COPY.pageStrip.editSource, onSelect: opts.onEditSource }]
       : [{ label: COPY.pageStrip.editSource, href: `${base}/v/working` }]),
     { label: COPY.project.importCta, href: `${base}/import` },
   ];
