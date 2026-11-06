@@ -110,6 +110,8 @@ interface DraftRow {
   promoted_version_id: string | null;
   live_doc_id: string | null;
   base_draft_id: string | null;
+  /** 0062 (R7WRITE.1b) — a discarded head refuses saves: nothing edits a discarded version. */
+  discarded_at: Date | string | null;
 }
 
 /**
@@ -188,12 +190,16 @@ export async function saveManualRevision(
   //    (the child would collide with the index), so the save must route to that head whether or not
   //    it descends directly from this base (a `duplicate` head, a deep lineage's open grandchild).
   const draftRes = await exec.query(
-    `select id, project_id, n, origin, state, promoted_version_id, live_doc_id, base_draft_id
+    `select id, project_id, n, origin, state, promoted_version_id, live_doc_id, base_draft_id, discarded_at
        from drafts where id = $1 and project_id = $2 for update`,
     [args.draftId, args.projectId],
   );
   const draft = draftRes.rows[0] as DraftRow | undefined;
   if (!draft) return { ok: false, reason: "draft_not_found" };
+  // R7WRITE.1b — a discarded head is a sealed record ("v(N+1) · discarded"): a stale binding must
+  // never fork off it nor write it; the caller re-resolves (collab auth refuses it with the
+  // frozen_fork payload back to the parent; the HTTP save reports a refusal).
+  if (draft.discarded_at != null) return { ok: false, reason: "not_editable" };
 
   let headId: string;
   let headN: number;

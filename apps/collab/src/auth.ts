@@ -55,6 +55,8 @@ export interface DraftBinding {
   /** §15.4 — the workspace's read-only worked example (the HTTP guard 409s its saves; the WSS leg
    *  attaches read-only so no keystroke ever forks the seeded head). */
   readonly showcase: boolean;
+  /** R7WRITE.1b — a discarded head refuses attaches with the fork payload back to the head. */
+  readonly discarded: boolean;
 }
 
 interface DraftRow {
@@ -66,6 +68,7 @@ interface DraftRow {
   live_doc_id: string | null;
   workspace_id: string;
   showcase: boolean;
+  discarded: boolean;
 }
 
 /** The §6.3 lock read (same shape as the api's editorLock — HOLDING_STATES + editorLockForRuns). */
@@ -97,7 +100,8 @@ export async function resolveDraftBinding(
 ): Promise<DraftBinding | undefined> {
   const row = (
     await exec.query(
-      `select d.id, d.project_id, d.n, d.origin, d.state, d.live_doc_id, p.workspace_id, p.showcase
+      `select d.id, d.project_id, d.n, d.origin, d.state, d.live_doc_id, p.workspace_id, p.showcase,
+              (d.discarded_at is not null) as discarded
          from drafts d join projects p on p.id = d.project_id
         where d.id = $1`,
       [draftId],
@@ -115,6 +119,7 @@ export async function resolveDraftBinding(
     liveDocId: row.live_doc_id,
     lock,
     showcase: row.showcase === true,
+    discarded: row.discarded === true,
   };
 }
 
@@ -158,6 +163,25 @@ export async function authenticateConnection(
   const ctx = await deps.db.scoped(principal.workspaceId, async (tx): Promise<CollabContext> => {
     const binding = await resolveDraftBinding(tx, principal.workspaceId, draftId);
     if (!binding) throw new AuthRefusal("not_found");
+
+    // R7WRITE.1b (REQ-WRITE-7) — a discarded head refuses every attach: the same `frozen_fork`
+    // payload the client already rekeys on carries the RESOLVED head (the project's working head
+    // when one stands, else the highest-n non-discarded draft — the discarded fork's parent).
+    // A second open session thus rekeys back to the parent and no write lands on the discarded row.
+    if (binding.discarded) {
+      const head = (
+        await tx.query(
+          `select id, n from drafts
+             where project_id = $1 and discarded_at is null
+             order by (state = 'working') desc, n desc limit 1`,
+          [binding.projectId],
+        )
+      ).rows[0] as { id: string; n: number } | undefined;
+      if (!head) throw new AuthRefusal("not_found");
+      throw new AuthRefusal(
+        JSON.stringify({ code: FORK_REASON_CODE, draftId: head.id, draftN: head.n }),
+      );
+    }
 
     // A run holds the head (§6.3) — attach read-only; the framework refuses the connection's updates.
     if (binding.lock) {

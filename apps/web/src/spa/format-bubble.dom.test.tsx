@@ -274,3 +274,50 @@ describe("R7WRITE.1a — the format bubble (REQ-WRITE-1)", () => {
     void COPY;
   });
 });
+
+describe("R7WRITE.1b — the Comment bubble item (REQ-WRITE-2; UXC-23, I5)", () => {
+  it("Comment is the bubble's FIRST item; its click opens the anchored composer (never a POST)", async () => {
+    await mount(<div data-pane="page" />);
+    selectInPage({ top: 300, bottom: 340, left: 200, right: 500 });
+    await mouseUp();
+    const bubble = document.querySelector<HTMLElement>("[data-format-bubble]");
+    expect(bubble).not.toBeNull();
+    const first = bubble?.querySelector<HTMLElement>("[data-format-item]");
+    expect(first?.dataset["formatItem"]).toBe("comment");
+    await act(async () => {
+      first!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    // the composer box: textarea + Post inside the bubble's own chrome.
+    const composer = document.querySelector<HTMLElement>("[data-comment-composer]");
+    expect(composer).not.toBeNull();
+    expect(document.querySelector("[data-comment-submit]")).not.toBeNull();
+  });
+
+  it("Post emits rhema:comment-submit with the text — the mount POSTs the anchored note", async () => {
+    await mount(<div data-pane="page" />);
+    selectInPage({ top: 300, bottom: 340, left: 200, right: 500 });
+    await mouseUp();
+    const seen: string[] = [];
+    window.addEventListener("rhema:comment-submit", (ev) => {
+      seen.push((ev as CustomEvent<{ text?: string }>).detail?.text ?? "");
+    });
+    const comment = document.querySelector<HTMLElement>('[data-format-item="comment"]')!;
+    await act(async () => {
+      comment.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    const input = document.querySelector<HTMLTextAreaElement>("[data-comment-input]")!;
+    await act(async () => {
+      input.value = "tighten this claim";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      document
+        .querySelector<HTMLElement>("[data-comment-submit]")!
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(seen).toEqual(["tighten this claim"]);
+    // the composer closed — the selection keeps focus (no bubble left hanging).
+    expect(document.querySelector("[data-comment-composer]")).toBeNull();
+    expect(document.querySelector("[data-format-bubble]")).toBeNull();
+  });
+});

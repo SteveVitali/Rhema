@@ -880,6 +880,7 @@ export const COPY = {
     outline: "Outline",
     workingLabel: "working draft",
     frozenTitle: "frozen — read-only",
+    discardedLabel: "discarded",
     reviewedFlag: "review ✓",
     answeredFlag: "answered",
     claimsPending: "claims pending verification",
@@ -1019,6 +1020,16 @@ export const COPY = {
     sourceAriaLabel: "Markdown source",
     sourceStaleNote:
       "This draft changed elsewhere while you edited — your pending text applies where you changed it.",
+    // R7WRITE.1b (REQ-WRITE-2/7) — the Comment bubble + the frozen-fork Undo toast.
+    commentLabel: "Comment",
+    commentPlaceholder: "Comment…",
+    commentSubmit: "Post",
+    forkToastFmt: "You're editing a reviewed version, so this starts v{n}",
+    forkUndo: "Undo",
+    forkUndoDoneFmt: "Back on v{n} — the new version was discarded.",
+    forkRefusedEdits: "Can't undo — the new version already has more edits.",
+    forkRefusedRun: "Can't undo — a run already read the new version.",
+    forkRefused: "Can't undo — this isn't a fresh revision.",
   },
 
   // PRB.10 — Quick Voice (§9.2–§9.6): the creation sheet, the library list, the detail page (seed editor +

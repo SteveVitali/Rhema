@@ -26,10 +26,11 @@
 //     pagehide/visibility flushes, the frozen-fork `rhema.fork` → `registry.rekey` rebase.
 
 import { useRouter } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from "react";
 import type { EditorView } from "prosemirror-view";
 import { acceptProposalTr, markdownToDoc, type EditOrigin, type FindingForDecoration, type Proposal } from "@rhema/editor";
-import { CompareView, ToastProvider, useToast, WhatChangedView } from "@rhema/ui";
+import { CompareView, ToastProvider, useToast, WhatChangedView, type IdeShellProps } from "@rhema/ui";
 import { COPY } from "../../copy.js";
 import { rewriteDemoDocLinks } from "../../demo-markers.js";
 import { deleteHold, getHold } from "../../client/hold-store.js";
@@ -43,7 +44,7 @@ import {
   whatChangedLabels,
   type PageChromeBag,
 } from "../../page-chrome.js";
-import { BffError } from "../bff.js";
+import { BffError, bffFetch } from "../bff.js";
 import { useDwell } from "../dwell.js";
 import type { IdeChromeData, IdeTwinShell } from "../ide/chrome-data.js";
 import { useShellChrome } from "../ide/chrome-data.js";
@@ -119,6 +120,130 @@ function ImportToast({
     }
   }, [imported, pn, toast]);
   return null;
+}
+
+/** R7WRITE.1b (REQ-WRITE-7; B18) — the mount-side event bridge: `rhema:fork-toast` (the collab
+ *  wire's frozen fork) becomes a Toast-queue toast with an Undo action that POSTs the guarded
+ *  `discard-fork` mutation; `rhema:comment-added` (the bubble's Comment POST) invalidates the
+ *  twin so the margin card lands without a reload. No document navigation on either arm — the
+ *  discard leaves the project head's `doc.draftId` at the parent and PageMount remounts there
+ *  (the discarded head's session is released, its Y.Doc never rebinds — a real undo). */
+function EditorEventBridge({ slug }: { readonly slug: string }): ReactNode {
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    const invalidate = (): void => {
+      void queryClient.invalidateQueries({ queryKey: ["bff"] });
+    };
+    const onCommentAdded = (): void => invalidate();
+    const onForkToast = (ev: Event): void => {
+      const detail = (ev as CustomEvent<{ draftId: string; draftN: number; baseN: number }>).detail;
+      if (detail?.draftN == null) return;
+      const n = detail.draftN;
+      toast.push({
+        title: COPY.editor.forkToastFmt
+          .replace("{n}", String(n)),
+        tone: "ok",
+        action: (
+          <button
+            type="button"
+            data-fork-undo="true"
+            className="ui-toast-action"
+            onClick={() => {
+              void bffFetch<{ ok: true; data?: { parentN?: number } }>(
+                `/p/${slug}/drafts/${n}/discard-fork`,
+                { method: "POST" },
+              )
+                .then((env) => {
+                  const parent = env.data?.parentN;
+                  invalidate();
+                  toast.push({
+                    title: COPY.editor.forkUndoDoneFmt
+                      .replace("{n}", String(parent ?? n - 1)),
+                    tone: "ok",
+                  });
+                })
+                .catch((err: unknown) => {
+                  const code = err instanceof BffError ? err.code : "";
+                  toast.push({
+                    title:
+                      code === "fork_has_edits"
+                        ? COPY.editor.forkRefusedEdits
+                        : code === "fork_read_by_run"
+                          ? COPY.editor.forkRefusedRun
+                          : COPY.editor.forkRefused,
+                    tone: "attention",
+                  });
+                });
+            }}
+          >
+            {COPY.editor.forkUndo}
+          </button>
+        ),
+      });
+    };
+    window.addEventListener("rhema:fork-toast", onForkToast);
+    window.addEventListener("rhema:comment-added", onCommentAdded);
+    return () => {
+      window.removeEventListener("rhema:fork-toast", onForkToast);
+      window.removeEventListener("rhema:comment-added", onCommentAdded);
+    };
+  }, [toast, slug, queryClient]);
+  return null;
+}
+
+/** R7WRITE.1b (REQ-WRITE-2) — the Page's margin: the twin's comment rows render as margin cards
+ *  (`data-comment-card`, keyed to `data-anchor-block`) after the verbatim finding cards; a comment
+ *  also projects into the shell `findings` ticks so the margin opens when comments alone exist. */
+function useCommentMargin(
+  page: PageChromeBag | undefined,
+  ideFindings: IdeTwinShell["ide"]["findings"],
+): {
+  readonly marginBody?: ReactNode;
+  readonly findings?: NonNullable<IdeShellProps["findings"]>;
+} {
+  return useMemo(() => {
+    const comments = page?.doc.comments ?? [];
+    const tickFindings =
+      comments.length > 0
+        ? [
+            ...(ideFindings ?? []),
+            ...comments.map((cm) => ({ id: cm.id, severity: "minor", kind: "comment", excerpt: cm.text })),
+          ]
+        : ideFindings;
+    if (comments.length === 0) return { ...(tickFindings != null ? { findings: tickFindings } : {}) };
+    const blockOf = (a: unknown): string =>
+      a != null && typeof a === "object" && "blockId" in a ? String((a as { blockId: unknown }).blockId) : "";
+    return {
+      findings: tickFindings ?? [],
+      marginBody: (
+        <>
+          {(ideFindings ?? []).map((f) => (
+            <div
+              key={`card-${f.id}`}
+              id={`finding-${f.id}`}
+              data-finding-id={f.id}
+              className="ide-fcard"
+              style={{ borderLeftColor: `var(--sev-${f.severity})` }}
+            >
+              {f.excerpt}
+            </div>
+          ))}
+          {comments.map((cm) => (
+            <div
+              key={`comment-${cm.id}`}
+              id={`finding-${cm.id}`}
+              data-comment-card={cm.id}
+              data-anchor-block={blockOf(cm.anchor)}
+              className="ide-fcard"
+            >
+              {cm.text}
+            </div>
+          ))}
+        </>
+      ),
+    };
+  }, [page?.doc.comments, ideFindings]);
 }
 
 function HeldConsumedMarker({ token }: { readonly token: string }): ReactNode {
@@ -281,10 +406,14 @@ function useEditorChrome(
   compact: boolean,
   readOnlyTitle?: string | null,
   pageHeader?: ReactNode,
+  margin?: { readonly marginBody?: ReactNode; readonly findings?: IdeChromeData["findings"] },
 ): void {
   const extras = useMemo<IdeChromeData>(
     () => ({
       ...(pageHeader != null ? { pageHeader } : {}),
+      // R7WRITE.1b — the comment margin cards + ticks merge over the twin's findings.
+      ...(margin?.marginBody != null ? { marginBody: margin.marginBody } : {}),
+      ...(margin?.findings != null ? { findings: margin.findings } : {}),
       ...(shell.ide.timelineView != null
         ? {
             timelineLabels,
@@ -297,7 +426,7 @@ function useEditorChrome(
         : {}),
       ...(shell.ide.chat != null ? { chatBody: chatPanel(shell.ide.chat, slug, shell.ide, compact, readOnlyTitle) } : {}),
     }),
-    [shell.ide, slug, compact, readOnlyTitle, pageHeader],
+    [shell.ide, slug, compact, readOnlyTitle, pageHeader, margin],
   );
   useShellChrome(shell, extras);
 }
@@ -350,12 +479,15 @@ export function ProjectPageSurface({ data, compact, search }: EditorSurfaceProps
         : undefined,
     [pageView, data.project.title, compact, ro, slug, seams.accept, seams.reject],
   );
+  // R7WRITE.1b — the comment margin cards + ticks on the working head too (REQ-WRITE-2).
+  const margin = useCommentMargin(page, data.ide.findings);
   useEditorChrome(
     data,
     slug,
     compact,
     ro != null && ro.reason !== "run_lock" ? readOnlyReasonText(ro.reason) : null,
     strip,
+    margin,
   );
 
   // ---- the URL echoes (the document's `c.req.query` reads verbatim — never payload) ----
@@ -450,12 +582,15 @@ export function VersionPageSurface({
         : undefined,
     [pageView, data.project?.title, compact, ro, slug, seams.accept, seams.reject],
   );
+  // R7WRITE.1b — the comment margin cards + ticks (REQ-WRITE-2).
+  const margin = useCommentMargin(page, data.ide.findings);
   useEditorChrome(
     data,
     slug,
     compact,
     ro != null && ro.reason !== "run_lock" ? readOnlyReasonText(ro.reason) : null,
     strip,
+    margin,
   );
   const onSubmit = useMemo(() => delegatedSubmitHandler({ router, write }), [router, write]);
 
@@ -463,6 +598,8 @@ export function VersionPageSurface({
   return (
     <ToastProvider dismissLabel={COPY.projectHome.undoLabel} viewportLabel={data.page.slug}>
       <ImportToast imported={search["imported"]} pn={search["pn"]} />
+      {/* R7WRITE.1b — the frozen-fork Undo toast + the comment-added invalidate (REQ-WRITE-7/2). */}
+      <EditorEventBridge slug={slug} />
       <div data-spa-surface onSubmit={onSubmit} aria-busy={pending || undefined}>
         {search["hc"] ? <HeldConsumedMarker token={search["hc"]} /> : null}
       <PageChrome

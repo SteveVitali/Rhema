@@ -199,10 +199,14 @@ function form(fields: Record<string, string>): { body: string; headers: Record<s
  *  and every surviving SSR document is the §10.1-compact phone variant, which withholds the rail
  *  wholesale). The rail's markup is pinned at the shared component the SSR `PageChrome` and the
  *  SPA leaf both mount — same props the server feeds it. */
-function railMarkup(props: { preview?: RestorePreviewData; restoredN?: number } = {}): string {
+function railMarkup(props: {
+  preview?: RestorePreviewData;
+  restoredN?: number;
+  versions?: VersionRailDto["drafts"];
+} = {}): string {
   return renderToStaticMarkup(
     createElement(VersionRail, {
-      versions: RAIL.drafts,
+      versions: props.versions ?? RAIL.drafts,
       outline: RAIL.outline,
       chip: RAIL.chip,
       currentN: 2,
@@ -441,5 +445,26 @@ describe("P1.08 — the Files pane (§5.13, REQ-IDE-35/36/37, REQ-VIS-3)", () =>
     const app = createWebApp(makeDeps());
     const res = await app.request(`/p/${SLUG}/a/art_hidden`, PHONE);
     expect(res.status).toBe(404);
+  });
+});
+
+describe("R7WRITE.1b — the '· discarded' rail marker (REQ-SYNC-4)", () => {
+  it("a discarded draft renders 'vN · discarded' with the number kept (append-only)", () => {
+    const html = railMarkup({
+      versions: [
+        ...RAIL.drafts,
+        {
+          draftId: "d_3", n: 3, origin: "human_revision", state: "frozen", frozen: true,
+          frozenAt: "2026-08-04T00:00:00Z", createdAt: "2026-08-03T12:00:00Z", words: 940,
+          reviewed: false, answered: false, claimsPendingVerification: false, discarded: true,
+          obligations: { open: 0, addressed: 0 },
+        },
+      ],
+    });
+    expect(html).toContain('data-version-chip="3"');
+    expect(html).toContain("data-discarded");
+    expect(html).toContain("· discarded");
+    // a non-discarded row carries no marker.
+    expect((html.match(/data-discarded/g) ?? []).length).toBe(1);
   });
 });

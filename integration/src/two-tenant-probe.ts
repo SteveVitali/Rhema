@@ -516,6 +516,54 @@ export async function runDeterministicProbe(): Promise<ProbeReport> {
       }
     }
 
+    // ---- R7WRITE.1b (REQ-SPEC-30) — the discard-fork WRITE leg: POST
+    // /projects/<foreign>/drafts/1/discard-fork as each tenant must 404 — `ownProject` hides the
+    // row before the fork logic runs — and must echo no foreign marker beyond the supplied id.
+    // The own-project POST is the sanity: the route is mounted (409 `not_a_fork` on the seeded
+    // working draft — fail-closed ≠ dead).
+    for (const [as, foreign, tag] of [
+      [a, b, "a"],
+      [b, a, "b"],
+    ] as const) {
+      const res = await requestAs(as, `/projects/${foreign.projectId}/drafts/1/discard-fork`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: "{}",
+      });
+      writesProbed++;
+      if (res.status !== 404) {
+        findings.push({
+          route: "POST /projects/:id/drafts/:n/discard-fork",
+          asTenant: tag,
+          status: res.status,
+          leaked: ["a foreign project resolved — the discard-fork write must 404"],
+        });
+      }
+      const body = await res.text().catch(() => "");
+      const hits = scanForMarkers(body, foreign.all).filter((m) => m !== foreign.projectId);
+      if (hits.length) {
+        findings.push({
+          route: "POST /projects/:id/drafts/:n/discard-fork",
+          asTenant: tag,
+          status: res.status,
+          leaked: hits,
+        });
+      }
+    }
+    {
+      const own = await requestAs(a, `/projects/${a.projectId}/drafts/1/discard-fork`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: "{}",
+      });
+      writesProbed++;
+      if (own.status !== 409) {
+        ownDataSanity.push(
+          `a: own seeded (non-fork) head did not refuse discard-fork with 409 (status ${own.status})`,
+        );
+      }
+    }
+
     // ---- the mint leg (R6UCD.1; REQ-POST-7; ADR-113; invariant 13): `GET /usercontent/sign`
     // must never sign a key under a foreign tenant's prefix — foreign `quarantine/<ws>/<id>` +
     // `converted/<ws>/<id>.json` queries answer 404 with NO url and the signer is never even

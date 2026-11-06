@@ -504,6 +504,14 @@ export function PageMount(props: PageMountProps): ReactNode {
           draftN = fork.draftN;
           root.dataset["draftN"] = String(draftN);
           showForkBanner(draftN, baseN);
+          // R7WRITE.1b (REQ-WRITE-7; B18) — the frozen-fork toast: "You're editing a reviewed
+          // version, so this starts v(N+1) · Undo". The toast queue lives in React (the leaf's
+          // ForkToastBridge renders + Undo-wires it); the mount emits the fact.
+          window.dispatchEvent(
+            new CustomEvent("rhema:fork-toast", {
+              detail: { draftId: fork.draftId, draftN: fork.draftN, baseN },
+            }),
+          );
         },
         onReadOnly: () => {
           // the server attached us read-only (a run lock or a non-editable head) — no local edits.
@@ -537,6 +545,47 @@ export function PageMount(props: PageMountProps): ReactNode {
         }
       };
       window.addEventListener("rhema:format-command", onFormatCommand);
+
+      // R7WRITE.1b (REQ-WRITE-2) — the bubble's Comment composer hands its text here: the mount
+      // derives the selection's §11.3 anchor from the live view (blockId/quote/offsets) and POSTs
+      // the anchored note through the same-origin JSON mutation — the margin card lands on the
+      // twin's refetch (the leaf invalidates ["bff"]). Read-only/locked mounts never submit.
+      const onCommentSubmit = (ev: Event): void => {
+        if (!editableRef.current) return;
+        const text = (ev as CustomEvent<{ text?: string }>).detail?.text?.trim();
+        if (!text) return;
+        const { from, to } = view.state.selection;
+        const $from = view.state.doc.resolve(from);
+        const blockNode = $from.node($from.depth > 0 ? 1 : 0);
+        const blockId =
+          String(
+            (blockNode.attrs as Record<string, unknown> | undefined)?.["blockId"] ??
+              $from.node($from.depth)?.attrs?.["blockId"] ??
+              `block-${$from.index(0)}`,
+          ) || `block-0`;
+        const anchor = {
+          blockId,
+          quote: view.state.doc.textBetween(from, to, " "),
+          startOffset: from,
+          endOffset: to,
+          confidence: 1,
+        };
+        const noteUrl = docUrl.replace(/\/doc$/, "/note");
+        void fetch(noteUrl, {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "content-type": "application/json", accept: "application/json" },
+          body: JSON.stringify({ text, anchors: [anchor] }),
+        })
+          .then(async (res) => {
+            if (!res.ok) return;
+            window.dispatchEvent(
+              new CustomEvent("rhema:comment-added", { detail: { anchor } }),
+            );
+          })
+          .catch(() => undefined);
+      };
+      window.addEventListener("rhema:comment-submit", onCommentSubmit);
 
       // ⌘S — the named restore point (the ONLY manual save verb; REQ-ED-7's exactly-one path):
       // the window keydown mints in `input` focus or with no IDE chrome mounted; every other zone
@@ -607,6 +656,7 @@ export function PageMount(props: PageMountProps): ReactNode {
         wire?.setChrome(null);
         window.removeEventListener("keydown", onKeydown);
         window.removeEventListener("rhema:format-command", onFormatCommand);
+        window.removeEventListener("rhema:comment-submit", onCommentSubmit);
         window.removeEventListener("rhema:restore-point", mintRestorePoint);
         document.removeEventListener("visibilitychange", onVisibility);
         window.removeEventListener("pagehide", onPageHide);

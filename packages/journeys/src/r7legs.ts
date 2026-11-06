@@ -1320,6 +1320,83 @@ const U7_IMPORT: StepFn = async (ctx) => {
   assertBundleParity(ctx);
 };
 
+/**
+ * U5.write (R7WRITE.1b; REQ-DACC-7 U5 + REQ-WRITE-2/6/7) — the real `U5.write` body: a new project
+ * creates a blank editable Page (no dialog, the inline title focused), typing commits through the
+ * collab wire, the format bubble appears ABOVE the selection with Comment as its first item, the
+ * comment POSTs anchored Guidance and the margin card renders at its anchor, ⌘⇧F enters focus
+ * mode and Esc exits it, and the Rich text/Source toggle soft-wraps prose. Held `ready-to-flip` —
+ * the registry keeps `expected:"red"`; 250_R7DEP.2 flips it at the R7b phase preview
+ * (D-R7WRITE.1b-1).
+ */
+const U5_WRITE: StepFn = async (ctx) => {
+  const { page } = await ctx.returningUser("a");
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await gotoOk(page, `${ctx.webBaseUrl}/app?src=jrn`, ctx);
+  // new project — the sidebar's create affordance lands on a blank Page (no dialog) with the
+  // inline title focused (REQ-WRITE-6's focused-title entry).
+  await page.locator("[data-shell-new-project]").first().click();
+  const title = page.locator("[data-inline-title]").first();
+  await title.waitFor({ timeout: 30_000 });
+  if ((await page.locator("dialog[open]").count()) > 0) {
+    throw new Error("new project opened a dialog — the blank Page must mount directly");
+  }
+  if (!(await title.evaluate((el) => document.activeElement === el))) {
+    throw new Error("the inline title was not focused on the blank Page");
+  }
+  await title.fill(ctx.marker("U5 draft"));
+
+  // type commits — the collab wire's debounced materialization window.
+  const editor = page.locator(".ProseMirror").first();
+  await editor.waitFor({ timeout: 30_000 });
+  await editor.click();
+  await page.keyboard.type(`${ctx.marker("U5 body")} sentence one.`);
+  await page.waitForTimeout(6_000);
+
+  // the format bubble ABOVE the selection — Comment is the first item (REQ-WRITE-2/6).
+  await editor.selectText();
+  const bubble = page.locator("[data-format-bubble]").first();
+  await bubble.waitFor({ timeout: 10_000 });
+  if ((await bubble.getAttribute("data-placed")) !== "above") {
+    throw new Error(`the format bubble placed ${await bubble.getAttribute("data-placed")} — want above`);
+  }
+  const commentItem = page.locator('[data-format-item="comment"]').first();
+  if ((await commentItem.count()) === 0) throw new Error("the bubble's Comment item is missing");
+  if ((await bubble.locator("[data-format-item]").first().getAttribute("data-format-item")) !== "comment") {
+    throw new Error("Comment is not the bubble's first item (UXC-23/I5)");
+  }
+  await commentItem.click();
+  const composer = page.locator("[data-comment-input]").first();
+  await composer.waitFor({ timeout: 10_000 });
+  await composer.fill(ctx.marker("U5 note"));
+  await page.locator("[data-comment-submit]").first().click();
+  // the anchored Guidance lands a margin card on the twin's refetch (no reload).
+  await page.locator("[data-comment-card]").first().waitFor({ timeout: 30_000 });
+  await page.screenshot({ path: join(ctx.outDir, "u5-comment.png"), fullPage: true });
+
+  // focus mode enters on ⌘⇧F and Esc exits it (one Esc, one layer).
+  await page.keyboard.press("ControlOrMeta+Shift+F");
+  if ((await page.locator(".ide").first().getAttribute("data-view")) !== "focus") {
+    throw new Error("⌘⇧F did not enter focus mode");
+  }
+  await page.keyboard.press("Escape");
+  if ((await page.locator(".ide").first().getAttribute("data-view")) === "focus") {
+    throw new Error("Esc did not exit focus mode");
+  }
+
+  // the single Rich text/Source toggle soft-wraps prose (REQ-WRITE-5's stopgap view).
+  const toggle = page.locator("[data-source-toggle]").first();
+  await toggle.waitFor({ timeout: 10_000 });
+  await toggle.click();
+  await page.locator("[data-source-host]").first().waitFor({ timeout: 30_000 });
+  if ((await toggle.getAttribute("aria-pressed")) !== "true") {
+    throw new Error("the Source toggle did not flip aria-pressed");
+  }
+  await page.screenshot({ path: join(ctx.outDir, "u5-source.png"), fullPage: true });
+  await toggle.click();
+  assertBundleParity(ctx);
+};
+
 const REAL_BODIES: Readonly<Record<string, StepFn>> = {
   "D1.hub": D1_HUB,
   "U1.shell": U1_SHELL,
@@ -1328,6 +1405,7 @@ const REAL_BODIES: Readonly<Record<string, StepFn>> = {
   "R8.showcase.spa": R8_SHOWCASE_SPA,
   "U3.stopgap": U3_STOPGAP,
   "U3.occlusion": U3_OCCLUSION,
+  "U5.write": U5_WRITE,
   "U6.chat": U6_CHAT,
   "U7.import": U7_IMPORT,
   "R11.demo": R11_DEMO,

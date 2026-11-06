@@ -114,6 +114,7 @@ describe("collectFiles — the base selection", () => {
       "packages/db/migrations/0059_live_docs_y_epoch.sql",
       "packages/db/migrations/0060_stripe_event_redrive.sql",
       "packages/db/migrations/0061_demo_events.sql",
+      "packages/db/migrations/0062_drafts_discard.sql",
     ]);
   });
 

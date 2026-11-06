@@ -19,6 +19,7 @@ import type {
   BibliographyDto,
   BibliographyImportDto,
   EditorSaveDto,
+  DiscardForkDto,
   EditorNoteDto,
   EditorCancelRunDto,
   EditorReviseDto,
@@ -532,7 +533,15 @@ export interface DataSource {
     projectId: string,
     draftId: string,
     text: string,
+    /** R7WRITE.1b (REQ-WRITE-2) — the Comment bubble's selection anchor. */
+    anchors?: readonly unknown[],
   ): Promise<EditorNoteDto>;
+  /** R7WRITE.1b (REQ-WRITE-7) — the fork toast's Undo: discard the just-created head. */
+  discardFork(
+    session: SessionHeaders,
+    projectId: string,
+    n: number,
+  ): Promise<DiscardForkDto>;
   /** PRB.07 — the banner's "Cancel run to edit" release (§6.3). */
   cancelEditorRun(
     session: SessionHeaders,
@@ -1501,12 +1510,16 @@ export function apiDataSource(
         markdown,
         { meta },
       ),
-    postEditorNote: (session, projectId, draftId, text) =>
+    postEditorNote: (session, projectId, draftId, text, anchors) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).postEditorNote(
         projectId,
         draftId,
         text,
+        undefined,
+        anchors,
       ),
+    discardFork: (session, projectId, n) =>
+      createApiClient({ baseUrl, fetch: f, headers: session }).discardFork(projectId, n),
     cancelEditorRun: (session, projectId, draftId) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).cancelEditorRun(projectId, draftId),
     reviseWithEdits: (session, projectId, draftId) =>
