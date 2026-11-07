@@ -1134,6 +1134,43 @@ export interface DossierDto {
 }
 
 // ---------------------------------------------------------------------------------------------------------
+// R7TALK.1b (REQ-TALK-4; R5 B17) — `GET /projects/:id/review/latest`: the right panel's
+// Findings/Claims tabs read the project's LATEST delivered review, whatever version is open.
+// A slim sibling of `DossierDto` — the same delivered rows, none of the letter/rubric/card weight.
+// ---------------------------------------------------------------------------------------------------------
+
+/** The latest delivered review the right panel's Findings/Claims tabs render (REQ-TALK-4). */
+export interface LatestReviewDto {
+  readonly runId: string;
+  /** the reviewed version (→ "From Review of vN"); null only when the draft row is gone. */
+  readonly draftN: number | null;
+  readonly deliveredAt: string;
+  /** REQ-SYNC-2 — the ONE count rule (`deliveredRecordCounts`): strengths are never findings. */
+  readonly counts: { readonly findings: number; readonly strengths: number; readonly claims: number };
+  readonly findings: readonly {
+    readonly id: string;
+    readonly ordinal: number;
+    readonly severity: string;
+    readonly kind: string;
+    readonly excerpt: string;
+    /** the live disposition kind, or "open" when undecided. */
+    readonly status: string;
+    /** the version this finding was filed on — labels "on vM" when it differs from `draftN`. */
+    readonly draftN?: number;
+  }[];
+  /** the claim-ledger rows (the dossier's `Claim[]` shape — `claimUrlViews` consumes them). */
+  readonly claims: readonly Claim[];
+  /** cited⇒fetched join sources, verbatim the dossier read's. */
+  readonly fetchLog: readonly string[];
+  readonly searchResultLog: readonly string[];
+}
+
+export interface LatestReviewEnvelopeDto {
+  /** null ⇒ the project never delivered a review — the tab empty states render only then. */
+  readonly latestReview: LatestReviewDto | null;
+}
+
+// ---------------------------------------------------------------------------------------------------------
 // PRB.07 — the source editor (§5.4/§6.3; REQ-BETA-21, REQ-DATA-24/26/41). The CodeMirror stopgap's wire
 // shapes: document + run lock + projected findings rail; the debounced autosave; the note→Guidance field;
 // Cancel-run; and "Revise using your edits" (REQ-DATA-26). There is no Save button — `saveEditorDraft` is
@@ -3135,6 +3172,9 @@ export interface ApiClient {
   dismissExplainer(name: string, init?: RequestInitLite): Promise<{ ok: true }>;
   /** The delivered-review dossier (§5.7; PRB.04's live binding) — assembled server-side from delivered rows. */
   getDossier(projectId: string, runId: string, init?: RequestInitLite): Promise<DossierDto>;
+  /** R7TALK.1b (REQ-TALK-4) — the project's latest delivered review for the right panel's
+   *  Findings/Claims tabs (`null` when none was ever delivered). */
+  getLatestReview(projectId: string, init?: RequestInitLite): Promise<LatestReviewEnvelopeDto>;
   /** The server-joined What-changed read for a delivered response (§5.8; PRB.06). */
   getWhatChanged(
     projectId: string,
@@ -4277,6 +4317,12 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async getDossier(projectId, runId, init): Promise<DossierDto> {
       return json<DossierDto>(
         `/projects/${encodeURIComponent(projectId)}/review/${encodeURIComponent(runId)}/dossier`,
+        { method: "GET", headers: init?.headers as Record<string, string> | undefined },
+      );
+    },
+    async getLatestReview(projectId, init): Promise<LatestReviewEnvelopeDto> {
+      return json<LatestReviewEnvelopeDto>(
+        `/projects/${encodeURIComponent(projectId)}/review/latest`,
         { method: "GET", headers: init?.headers as Record<string, string> | undefined },
       );
     },

@@ -73,7 +73,7 @@ import {
   type FindingView,
   type ObligationState,
 } from "@rhema/contracts";
-import type { BulkPreviewDto, GateCardDto } from "@rhema/api-client";
+import type { BulkPreviewDto, GateCardDto, LatestReviewDto } from "@rhema/api-client";
 import { COPY } from "./copy.js";
 import { decisionLine, dispositionLabels, gateCardFor } from "./gate-card.js";
 
@@ -721,6 +721,108 @@ export function dossierSurfaces(data: {
             : {}
           : { bulkActions: dossierBulkActions(dossier.slug, dossier.runId, visible) })}
       />
+    ),
+  };
+}
+
+// ---- R7TALK.1b (REQ-TALK-4; R5 B17) — the right panel's Findings/Claims tab bodies ----
+
+/**
+ * The ONE builder both renderers share (`IdeFrame` SSR + `useShellChrome` SPA): the panel's
+ * Findings/Claims tabs render the project's LATEST delivered review (`ide.latestReview`), never
+ * the open version — B17's "No findings yet." beside a delivered claim ledger was the
+ * version-scoped read. The header line names the source ("From Review of vN" — the same
+ * follow-text the Margin's projection labels carry) and links the dossier; a finding filed on a
+ * different version tags "on vM". Counts come pre-computed from `deliveredRecordCounts`
+ * (REQ-SYNC-2). Absent `latestReview` ⇒ the tabs keep their empty states (never-delivered only).
+ */
+export function reviewPanelBodies(
+  review: LatestReviewDto,
+  slug: string,
+): { deskFindingsBody: ReactNode; deskClaimsBody: ReactNode } {
+  const P = COPY.ide.panel;
+  const dossierHref = `/p/${slug}/review/${review.runId}`;
+  const n = review.draftN ?? 0;
+  const sourceLine = (
+    <p data-review-source={review.runId} style={{ fontSize: "12px", margin: "0 0 8px" }}>
+      <a href={dossierHref} style={{ color: "var(--accent)" }}>
+        {fmt(P.reviewFromFmt, { n })}
+      </a>
+      <span style={{ color: "var(--shell-fg-faint)" }}>
+        {" "}
+        · {review.counts.findings} findings
+        {review.counts.strengths > 0 ? ` · ${review.counts.strengths} strengths` : ""}
+        {review.counts.claims > 0 ? ` · ${review.counts.claims} claims` : ""}
+        {" · "}
+        {P.openDossier}
+      </span>
+    </p>
+  );
+  const fetchLog = fetchLogFromRows(review.fetchLog.map((normalizedUrl) => ({ normalizedUrl })));
+  const searchOnly = fetchLogFromRows(
+    (review.searchResultLog ?? []).map((normalizedUrl) => ({ normalizedUrl })),
+  );
+  const claimRows: ClaimTableRow[] = review.claims.map((c) => ({
+    ordinal: c.ordinal,
+    text: c.text,
+    tier: c.tier,
+    verdict: c.verdict,
+    verdictLabel: R.verdictLabel[c.verdict] ?? c.verdict,
+    ...(c.kind ? { kind: c.kind } : {}),
+    checkable: checkable(c.kind),
+    ...(c.note ? { note: c.note } : {}),
+    urls: claimUrlViews(c, fetchLog, searchOnly),
+  }));
+  return {
+    deskFindingsBody: (
+      <div data-review-panel="findings">
+        {sourceLine}
+        {review.findings.length === 0 ? (
+          <p data-findings-empty="true" style={{ fontSize: 13, color: "var(--shell-fg-muted)" }}>
+            {R.findingsEmpty}
+          </p>
+        ) : (
+          <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 13 }}>
+            <thead>
+              <tr style={{ textAlign: "left", color: "var(--shell-fg-muted)" }}>
+                <th scope="col">{P.findingsTable.finding}</th>
+                <th scope="col">{P.findingsTable.severity}</th>
+                <th scope="col">{P.findingsTable.kind}</th>
+                <th scope="col">{P.findingsTable.status}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {review.findings.map((f) => (
+                <tr key={f.id} data-review-finding={f.id}>
+                  <td>
+                    <a href={`${dossierHref}#finding-${f.id}`} style={{ color: "inherit" }}>
+                      {f.excerpt}
+                    </a>
+                  </td>
+                  <td>{R.severityLabel[f.severity] ?? f.severity}</td>
+                  <td>{R.findingKindLabel[f.kind] ?? f.kind}</td>
+                  <td>
+                    {R.dispositionPast[f.status] ?? f.status}
+                    {f.draftN != null && f.draftN !== n
+                      ? ` · ${fmt(P.onVersionFmt, { n: f.draftN })}`
+                      : ""}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    ),
+    deskClaimsBody: (
+      <div data-review-panel="claims">
+        {sourceLine}
+        {claimRows.length === 0 ? (
+          <p style={{ fontSize: 13, color: "var(--shell-fg-muted)" }}>{P.emptyClaims}</p>
+        ) : (
+          <ClaimsTable rows={claimRows} labels={claimsLabels} />
+        )}
+      </div>
     ),
   };
 }

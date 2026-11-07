@@ -39,6 +39,7 @@ import {
   timelineHrefs,
   feedLabels,
   dossierSurfaces,
+  reviewPanelBodies,
 } from "./dossier-view.js";
 import { chatPanel } from "./chat-pane.js";
 // SPA.23 — the Page surface + project overview bodies hoisted to ./page-chrome.js so the `editor`
@@ -102,6 +103,9 @@ export function IdeFrame({ children }: { children: ReactNode }): ReactNode {
       {...(data.theme?.pref ? { appTheme: data.theme.pref } : {})}
       {...(ide.initialView ? { initialView: ide.initialView } : {})}
       {...(ide.findings ? { findings: ide.findings, hasFindings: true } : {})}
+      {...(ide.latestReview
+        ? reviewPanelBodies(ide.latestReview, slug)
+        : {})}
       {...(ide.timeline ? { timeline: ide.timeline } : {})}
       {...(ide.timelineView
         ? {

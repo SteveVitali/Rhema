@@ -25,6 +25,7 @@ import type {
   GateCardDto,
   InboxItemDto,
   IntegrationsSettingsDto,
+  LatestReviewDto,
   OutlinePromotionDto,
   NotificationPrefsDto,
   PreferencesSettingsDto,
@@ -454,6 +455,9 @@ export interface BffIdeBag {
   readonly activeRun?: { readonly runId: string; readonly state: string } | null;
   readonly inboxCount?: number;
   readonly findings?: readonly { readonly id: string; readonly severity: string; readonly kind: string; readonly excerpt: string }[];
+  /** R7TALK.1b (REQ-TALK-4) — the latest delivered review the Findings/Claims tabs render;
+   *  absent ⇒ the project never delivered one (the empty states render only then). */
+  readonly latestReview?: LatestReviewDto;
   readonly timeline?: readonly { readonly id: string; readonly label: string; readonly state: string; readonly href?: string }[];
   readonly timelineView?: TimelineDto;
   readonly feed?: {

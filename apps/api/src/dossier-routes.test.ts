@@ -404,3 +404,92 @@ describe("GET /projects/:id/review/:runId/dossier — the delivered-review read 
     expect(dto.letterSections.length).toBeGreaterThan(0);
   });
 });
+
+describe("GET /projects/:id/review/latest — the panel tabs' latest delivered review (REQ-TALK-4)", () => {
+  const getLatest = (projectId: string) => app.request(`/projects/${projectId}/review/latest`);
+
+  it("returns the latest delivered review's slim DTO — counts by the ONE rule (REQ-SYNC-2)", async () => {
+    await seedDeliveredReview();
+    const res = await getLatest(seed.projectId);
+    expect(res.status).toBe(200);
+    const dto = (await res.json()) as {
+      latestReview: {
+        runId: string;
+        draftN: number | null;
+        deliveredAt: string;
+        counts: { findings: number; strengths: number; claims: number };
+        findings: { id: string; severity: string; kind: string; excerpt: string; status: string; draftN?: number }[];
+        claims: { ordinal: number; text: string; verdict: string }[];
+        fetchLog: string[];
+        searchResultLog: string[];
+      };
+    };
+    const r = dto.latestReview;
+    expect(r.runId).toBe(RUN);
+    expect(r.draftN).toBe(1); // the review was delivered on v1 — "From Review of v1"
+    expect(r.counts).toEqual({ findings: 2, strengths: 0, claims: 1 });
+    expect(r.findings.map((f) => f.id)).toEqual(["fnd_1", "fnd_2"]);
+    expect(r.findings[0]!.status).toBe("accept"); // the live disposition, never "open"
+    expect(r.findings[0]!.draftN).toBe(1);
+    expect(r.claims).toHaveLength(1);
+    // the cited⇒fetched join rides along so the claim chip is honest
+    expect(r.fetchLog).toContain("https://example.com/stat");
+  });
+
+  it("latest == delivered_at newest: a second review supersedes the first", async () => {
+    await seedDeliveredReview();
+    await seedRun(db, {
+      runId: "run_second",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      workflow: "review",
+      state: "completed",
+    });
+    await db.txRunner.run(seed.workspaceId, async (tx) => {
+      await tx.query(
+        `insert into correspondence_items(id, project_id, kind, draft_id, run_id, ordinal, delivered_at, artifact_ids)
+         values ('corr_second',$1,'review',$2,'run_second',2, now() + interval '1 day','{}')`,
+        [seed.projectId, seed.draftId],
+      );
+      await tx.query(
+        `insert into findings(id, correspondence_id, draft_id, ordinal, kind, severity, origin, title, body)
+         values ('fnd_s1','corr_second',$1,0,'argument','major','editor','new round','body')`,
+        [seed.draftId],
+      );
+    });
+    const dto = (await (await getLatest(seed.projectId)).json()) as {
+      latestReview: { runId: string; counts: { findings: number }; findings: { id: string }[] };
+    };
+    expect(dto.latestReview.runId).toBe("run_second");
+    expect(dto.latestReview.findings.map((f) => f.id)).toEqual(["fnd_s1"]);
+  });
+
+  it("null when the project never delivered a review (the tabs' empty states)", async () => {
+    const dto = (await (await getLatest(seed.projectId)).json()) as { latestReview: null };
+    expect(dto.latestReview).toBeNull();
+  });
+
+  it("cross-tenant: a foreign workspace's project answers null, never its review (STB.2)", async () => {
+    const foreign = await seedProject(db, {
+      userId: "usr_other2",
+      billingAccountId: "ba_other2",
+      workspaceId: "ws_other2",
+      projectId: "prj_other2",
+      draftN: 1,
+    });
+    await seedRun(db, {
+      runId: "run_foreign2",
+      workspaceId: foreign.workspaceId,
+      projectId: foreign.projectId,
+      workflow: "review",
+      state: "completed",
+    });
+    await db.pg.query(
+      `insert into correspondence_items(id, project_id, kind, draft_id, run_id, ordinal, delivered_at, artifact_ids)
+       values ('corr_foreign2',$1,'review',$2,'run_foreign2',1,now(),'{}')`,
+      [foreign.projectId, foreign.draftId],
+    );
+    const dto = (await (await getLatest(foreign.projectId)).json()) as { latestReview: null };
+    expect(dto.latestReview).toBeNull();
+  });
+});

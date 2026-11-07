@@ -1428,7 +1428,7 @@ export function createWebApp(deps: WebDeps): Hono {
       };
     } = {},
   ): Promise<Pick<PageData, "theme" | "paperTheme" | "ide" | "compact">> => {
-    const [principal, theme, files, chat] = await Promise.all([
+    const [principal, theme, files, chat, latestReviewEnvelope] = await Promise.all([
       Promise.resolve()
         .then(() => deps.dataSource.getSessionPrincipal?.(session))
         .catch(() => null),
@@ -1442,6 +1442,12 @@ export function createWebApp(deps: WebDeps): Hono {
       // P1.11 — the Desk Chat read (best-effort: a missing seam degrades to the tab's placeholder).
       Promise.resolve()
         .then(() => deps.dataSource.getChat?.(session, row.id))
+        .catch(() => undefined),
+      // R7TALK.1b (REQ-TALK-4) — the Findings/Claims tabs' latest delivered review (best-effort:
+      // a missing seam keeps the tabs' empty states). Version-agnostic by design — the tabs read
+      // the project's delivered record, never the open version (R5 B17).
+      Promise.resolve()
+        .then(() => deps.dataSource.getLatestReview?.(session, row.id))
         .catch(() => undefined),
     ]);
     // P1.06 (§5.12; REQ-CHAT-28) — the ⌘K palette's embedded PaletteData: the state function's next
@@ -1540,6 +1546,9 @@ export function createWebApp(deps: WebDeps): Hono {
           : { themeUrl: "/ide/theme", paperThemeUrl: `/p/${row.slug}/paper-theme` }),
         ...(files ? { files } : {}),
         ...(chat ? { chat } : {}),
+        ...(latestReviewEnvelope?.latestReview
+          ? { latestReview: latestReviewEnvelope.latestReview }
+          : {}),
       },
     };
   };

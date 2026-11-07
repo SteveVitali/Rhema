@@ -598,5 +598,155 @@ export function createDossierRoutes(deps: DossierApiDeps): Hono {
     return c.json(dto);
   });
 
+  // R7TALK.1b (REQ-TALK-4; R5 B17) — the right panel's Findings/Claims tabs read the project's
+  // LATEST delivered review, whatever version is open (a version-scoped read is the B17 bug:
+  // "No findings yet." beside a delivered claim ledger). This is the SLIM sibling of the dossier
+  // read — same delivered rows (`correspondence_items`, `findings`+`dispositions`,
+  // `claims`+`claim_sources`, the run's `fetch_log` retrieval join), none of the letter/rubric/
+  // card/access-report weight the reading surface needs. Counts come from the ONE rule
+  // (`deliveredRecordCounts`, REQ-SYNC-2). `draftN` is the reviewed version (→ "From Review of
+  // vN"); each finding also carries its own `draftN` so a row filed on another version labels
+  // "on vM". A project that never delivered a review answers `{ latestReview: null }` — the
+  // empty states render only then.
+  app.get("/projects/:id/review/latest", async (c) => {
+    const principal = deps.principal(c);
+    if (!principal) return c.json({ error: "unauthenticated" }, 401);
+    const projectId = c.req.param("id");
+
+    const dto = await deps.txRunner.run(principal.workspaceId, async (tx: SqlClient) => {
+      // The `p.workspace_id` predicate is the tenancy boundary IN SQL, not just RLS (STB.2).
+      const corr = (
+        await tx.query(
+          `select ci.id, ci.draft_id, ci.run_id, ci.delivered_at, d.n draft_n
+             from correspondence_items ci
+             join projects p on p.id = ci.project_id
+             left join drafts d on d.id = ci.draft_id
+            where ci.project_id = $1 and ci.kind = 'review' and p.workspace_id = $2
+            order by ci.delivered_at desc
+            limit 1`,
+          [projectId, principal.workspaceId],
+        )
+      ).rows[0] as
+        | {
+            id: string;
+            draft_id: string;
+            run_id: string;
+            delivered_at: string | Date;
+            draft_n: number | null;
+          }
+        | undefined;
+      if (!corr) return { latestReview: null };
+
+      const findingRows = (
+        await tx.query(
+          `select f.id, f.correspondence_id, f.draft_id, f.ordinal, f.kind, f.severity, f.origin,
+                  f.reconciliation, f.anchor, f.title, f.body, f.evidence, f.suggestion,
+                  f.rubric_dims, f.letter_section, d.n finding_draft_n
+             from findings f
+             left join drafts d on d.id = f.draft_id
+            where f.correspondence_id = $1 order by f.ordinal`,
+          [corr.id],
+        )
+      ).rows as (FindingRow & { finding_draft_n: number | null })[];
+      const dispositions = (
+        await tx.query(
+          `select d.id, d.finding_id, d.kind, d.rationale, d.adapted_text, d.reason_code, d.applied,
+                  d.by_actor, d.move_ordinal, d.frozen_at, d.created_at
+             from dispositions d join findings f on f.id = d.finding_id
+            where f.correspondence_id = $1 and d.response_id is null
+            order by d.created_at desc`,
+          [corr.id],
+        )
+      ).rows as DispositionRow[];
+      const latestDispo = new Map<string, DispositionState>();
+      for (const d of dispositions) {
+        if (!latestDispo.has(d.finding_id)) latestDispo.set(d.finding_id, toDispositionState(d));
+      }
+
+      const claimRows = (
+        await tx.query(
+          `select id, correspondence_id, draft_id, ordinal, text, tier, verdict, kind, url, normalized_url,
+                  accessed_at, note, source_check, anchor, human_added, figure_id, extra
+             from claims where correspondence_id = $1 order by ordinal`,
+          [corr.id],
+        )
+      ).rows as ClaimRow[];
+      const sourceRows = (
+        await tx.query(
+          `select cs.claim_id, cs.ordinal, cs.url, cs.normalized_url, cs.accessed_at, cs.stance, cs.note
+             from claim_sources cs join claims cl on cl.id = cs.claim_id
+            where cl.correspondence_id = $1 order by cs.claim_id, cs.ordinal`,
+          [corr.id],
+        )
+      ).rows as {
+        claim_id: string;
+        url: string;
+        normalized_url: string;
+        accessed_at: string;
+        stance: ClaimSource["stance"];
+        note: string | null;
+      }[];
+      const sourcesByClaim = new Map<string, ClaimSource[]>();
+      for (const s of sourceRows) {
+        const list = sourcesByClaim.get(s.claim_id) ?? [];
+        list.push({
+          url: s.url,
+          normalizedUrl: s.normalized_url,
+          accessedAt: s.accessed_at,
+          stance: s.stance,
+          ...(s.note != null ? { note: s.note } : {}),
+        });
+        sourcesByClaim.set(s.claim_id, list);
+      }
+      const claims = claimRows.map((r) => toClaim(r, sourcesByClaim.get(r.id) ?? []));
+
+      // The cited⇒fetched join, verbatim the dossier read's (honest "fetched"/"Search result" chips).
+      const retrievalRows = (
+        await tx.query(
+          `select distinct normalized_url, kind from fetch_log
+            where run_id = $1 and kind in ('fetch','search') and decision = 'allow'
+              and normalized_url is not null
+            order by normalized_url`,
+          [corr.run_id],
+        )
+      ).rows as { normalized_url: string; kind: string }[];
+      const fetchLog = retrievalRows.map((r) => r.normalized_url);
+      const fetchedSet = new Set(
+        retrievalRows.filter((r) => r.kind === "fetch").map((r) => r.normalized_url),
+      );
+      const searchResultLog = retrievalRows
+        .filter((r) => r.kind === "search" && !fetchedSet.has(r.normalized_url))
+        .map((r) => r.normalized_url);
+
+      return {
+        latestReview: {
+          runId: corr.run_id,
+          draftN: corr.draft_n,
+          deliveredAt: new Date(corr.delivered_at).toISOString(),
+          counts: deliveredRecordCounts({
+            findings: findingRows.map((f): DeliveredFindingFact => ({
+              letterSection: f.letter_section,
+            })),
+            claims: claimRows.length,
+          }),
+          findings: findingRows.map((f) => ({
+            id: f.id,
+            ordinal: f.ordinal,
+            severity: f.severity,
+            kind: f.kind,
+            excerpt: f.title,
+            status: latestDispo.get(f.id)?.kind ?? "open",
+            ...(f.finding_draft_n != null ? { draftN: f.finding_draft_n } : {}),
+          })),
+          claims,
+          fetchLog,
+          searchResultLog,
+        },
+      };
+    });
+
+    return c.json(dto);
+  });
+
   return app;
 }

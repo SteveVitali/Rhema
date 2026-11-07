@@ -94,6 +94,7 @@ import type {
   VersionRailDto,
   VersionDiffDto,
   FilesDto,
+  LatestReviewEnvelopeDto,
   RestorePointsDto,
   RestorePreviewDto,
   RestoreApplyDto,
@@ -484,6 +485,10 @@ export interface DataSource {
   /** the §5.13 Files pane (typed sections; default rows carry no I/H kinds). Optional seam — a
    *  fixture without it renders the Files strip unchanged. */
   getFiles?(session: SessionHeaders, projectId: string): Promise<FilesDto>;
+  /** R7TALK.1b (REQ-TALK-4) — the project's latest delivered review for the right panel's
+   *  Findings/Claims tabs (`latestReview: null` when none was ever delivered). Optional seam —
+   *  absent ⇒ the tabs keep their empty states. */
+  getLatestReview?(session: SessionHeaders, projectId: string): Promise<LatestReviewEnvelopeDto>;
   /** the §5.8-grouped restore points for a draft's live doc. */
   listRestorePoints?(
     session: SessionHeaders,
@@ -1755,6 +1760,8 @@ export function apiDataSource(
     getRunEvents: (session, runId) => client(session).getRunEvents(runId),
     streamRunEvents: (session, runId, opts) => client(session).streamRunEvents(runId, opts),
     presignImportUpload: (session) => client(session).presignImportUpload(),
+    // R7TALK.1b — the panel tabs' latest-delivered-review read (session-forwarded).
+    getLatestReview: (session, projectId) => client(session).getLatestReview(projectId),
     // P1.11 — the Assistant chat surface (every call session-forwarded; the api owns the rules).
     getChat: (session, projectId, opts) => client(session).getChat(projectId, opts),
     createChatThread: (session, projectId, req) => client(session).createChatThread(projectId, req),

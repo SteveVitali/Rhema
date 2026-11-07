@@ -319,6 +319,24 @@ describe("handleProxyRequest — cap enforcement (AC2)", () => {
     expect(h2.usageWriter.rows).toHaveLength(0);
     expect(h2.fetchLogWriter.rows.some((r) => r.decision === "deny" && r.denyReason === "cap")).toBe(true);
   });
+
+  it("R5 B6 reproduction — a chat turn at cap 5 admits the crossing request and meters 16", async () => {
+    // REQ-SYNC-6 (R7TALK.1b): the audit's "16 / 5 cr" turn is the documented §12.4 bound — the
+    // cap-crossing request is SERVED and metered; the NEXT request refuses. The ledger's clamp
+    // (pinned in packages/ledger/src/chat-turn-burn.test.ts) makes the overshoot absorbed COGS.
+    const shared = new InMemoryCapAccountant();
+    const context = ctx({ capCredits: 5 });
+    const h1 = harness({ context, capAccountant: shared });
+    const first = await handleProxyRequest(request(), h1);
+    expect(first.status).toBe(200);
+    // each opus response meters 4200 platform credits — spend lands ~16× the turn's cap… no:
+    // the REQUEST is the overshoot unit: one admitted call burns its full metered cost over cap.
+    expect(shared.spentCredits("run_1")).toBeGreaterThan(5);
+    const h2 = harness({ context, capAccountant: shared });
+    const second = await handleProxyRequest(request(), h2);
+    expect(second.status).toBe(402);
+    expect(JSON.parse(second.body).error.type).toBe("budget");
+  });
 });
 
 describe("handleProxyRequest — outbound-channel limits (AC4)", () => {
