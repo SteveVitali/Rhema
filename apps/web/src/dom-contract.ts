@@ -1489,6 +1489,20 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
   // ---- /p/:p, /v/:n, /a/:artifactId, /revisions/:cid, /v/:n/diff/:m — the Page + version rail ----
   editor: [
     a("data-page-root", "required", "ui/page-editor.tsx", "page island mount sentinel"),
+    // R7WRITE.1a (REQ-WRITE-6) — the page header strip above `.paper`: crumb, version chip
+    // (frozen/working badge), the moved sync pill, the ReadOnlyProject notice, Run ▾/Export/⋯.
+    a("data-page-strip", "conditional", "ui/page-strip.tsx", "the header strip above the paper (R7WRITE.1a)"),
+    a("data-version-state", "conditional", "ui/page-strip.tsx", "frozen|working — the version chip's state"),
+    a("data-version-badge", "conditional", "ui/page-strip.tsx", "the chip's frozen|working badge"),
+    a("data-page-actions", "conditional", "ui/page-strip.tsx", "the strip's action group (withheld read-only)"),
+    a("data-run-menu", "conditional", "ui/page-strip.tsx", "the Run ▾ menu trigger (a real menu — B8)"),
+    a("data-more-menu", "conditional", "ui/page-strip.tsx", "the ⋯ menu trigger (Edit source lives here until 239)"),
+    a("data-export-link", "conditional", "ui/page-strip.tsx", "the Export action"),
+    // R7WRITE.1a (REQ-WRITE-1) — the format bubble above a Page selection.
+    a("data-format-bubble", "conditional", "spa/ide/controller.ts", "the floating format bubble (above-selection placement)"),
+    a("data-format-item", "conditional", "spa/ide/controller.ts", "one bubble item — format action | agent verb"),
+    a("data-format-link-input", "conditional", "spa/ide/controller.ts", "the contextual-⌘K link URL field"),
+    a("data-format-link-apply", "conditional", "spa/ide/controller.ts", "the link form's apply control"),
     a(
       "data-page-session",
       "conditional",

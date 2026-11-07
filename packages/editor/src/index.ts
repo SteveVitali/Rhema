@@ -39,5 +39,7 @@ export {
   yPersistentUndoPlugin,
 } from "./plugins.js";
 export { PAGE_FRAGMENT, pageFragment, markdownToUpdate, replaceDocContent, docToCanonicalMarkdown } from "./ydoc.js";
+export type { FormatAction } from "./format-commands.js";
+export { FORMAT_ACTIONS, formatCommand, linkCommand } from "./format-commands.js";
 export type { SourceEditRun } from "./source-mode.js";
 export { SOURCE_EDIT_META, diffTopBlocks, applySourceMarkdown } from "./source-mode.js";

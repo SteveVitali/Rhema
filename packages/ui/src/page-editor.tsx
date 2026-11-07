@@ -319,20 +319,8 @@ export function PmPreview({ docJson, ctx }: { docJson: unknown; ctx?: PmPreviewC
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// the Page chrome
+// the Page chrome (R7WRITE.1a: the strip's banners/pill/proposals live in page-strip.tsx now)
 // ---------------------------------------------------------------------------------------------------------------------
-
-const bannerStyle: CSSProperties = {
-  border: "1px solid var(--shell-border)",
-  borderRadius: "8px",
-  padding: "10px 14px",
-  marginBottom: "14px",
-  fontSize: "13px",
-  display: "flex",
-  gap: "12px",
-  alignItems: "center",
-  justifyContent: "space-between",
-};
 
 export function PageEditor(props: PageEditorProps): ReactNode {
   const L = props.labels;
@@ -341,9 +329,6 @@ export function PageEditor(props: PageEditorProps): ReactNode {
   // the banner tells the user). Read-only means: an artifact read (explicit), a held run lock,
   // or a ReadOnlyProject reason (R7RO.1).
   const readOnly = props.readOnly === true || locked || props.readOnlyReason != null;
-  // The write controls the reason withholds (proposal accept/reject, the Revise form).
-  const withholdWrites = props.readOnly === true || locked || props.readOnlyReason != null;
-  const tip = props.readOnlyTooltip;
   return (
     <div
       data-page-root="1"
@@ -356,103 +341,10 @@ export function PageEditor(props: PageEditorProps): ReactNode {
       data-readonly={readOnly ? "1" : "0"}
       {...(props.focusFindingId ? { "data-focus-finding": props.focusFindingId } : {})}
     >
-      {/* the ONE sync indicator (EDIT.1/ADR-049 — the shell's status bar carries no second,
-          unfed one). §5.10's vocabulary: synced ✓ / syncing… / offline · n changes queued /
-          read-only. A live region so the state changes announce. No Save button, ever.
-          UX.2 (ADR-069; REQ-IDE-43 amended) — the pill renders IN FLOW at the paper's head: a fixed
-          float can never not overlap something (body text at phone width; the Desk's composer or
-          the status bar at desktop). The island finds it by attribute — placement-agnostic. */}
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "10px" }}>
-        <div data-sync-pill role="status" aria-live="polite"
-             data-label-synced={L.sync.synced} data-label-syncing={L.sync.syncing}
-             data-label-offline={L.sync.offline} data-label-readonly={L.sync.readOnly}
-             data-label-queued={L.sync.queued} data-label-locked={L.sync.locked}
-             style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "2px 10px", borderRadius: "999px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", fontSize: "12px", color: "var(--shell-fg-muted)", whiteSpace: "nowrap" }}>
-          {L.sync.synced}
-        </div>
-      </div>
-
-      {/* the version / fork / lock banners — an explicit readOnly read (an artifact page) shows the
-          plain read-only note, not the frozen-draft fork copy. */}
-      {props.readOnly !== true && (props.baseDraftN != null || props.state === "frozen") ? (
-        <div data-page-banner="version" style={{ ...bannerStyle, borderColor: "var(--sev-note, var(--shell-border))" }}>
-          <span>
-            {props.state === "frozen"
-              ? L.frozenBanner(props.draftN)
-              : L.versionLabel(props.draftN, props.baseDraftN)}
-          </span>
-          {props.origin === "human_revision" && props.reviseUrl ? (
-            withholdWrites ? (
-              <button type="button" disabled title={tip} style={{ fontSize: "12px" }}>
-                {L.revise}
-              </button>
-            ) : (
-            <form method="post" action={props.reviseUrl} style={{ margin: 0 }}>
-              <button type="submit" style={{ fontSize: "12px" }}>{L.revise}</button>
-            </form>
-            )
-          ) : null}
-        </div>
-      ) : null}
-      {/* SPA.24 — the lock banner (and its writer/reader templates) emits unconditionally: the §6.3
-          poll can grab a lock mid-session on a page that MOUNTED unlocked, and the mount's
-          `setLockBanner` reads the `data-{writer,reader}-text` templates + toggles display verbatim.
-          (Previously `props.lock`-gated — a mid-session lock had no banner node to write into.) */}
-      <div
-        data-page-banner="lock"
-        style={{ ...bannerStyle, display: locked ? "flex" : "none", borderColor: "var(--sev-major)" }}
-        data-writer-text={L.writerLockText("{workflow}")}
-        data-reader-text={L.readerLockText("{workflow}")}
-      >
-        <span data-page-banner-text>
-          {props.lock ? (props.lock.kind === "writer" ? L.writerLockText(props.lock.workflow) : L.readerLockText(props.lock.workflow)) : ""}
-        </span>
-        <form method="post" action={props.cancelUrl} style={{ margin: 0 }}>
-          <button type="submit" style={{ fontSize: "12px" }}>{L.cancelRun}</button>
-        </form>
-      </div>
-      {props.readOnly === true && !locked ? (
-        <div data-page-banner="readonly" style={bannerStyle}>
-          <span>{L.readOnlyNote}</span>
-        </div>
-      ) : null}
-
-      {/* proposal cards — agent-origin in-place changes awaiting accept/reject (REQ-IDE-45 amended) */}
-      {props.proposals.length > 0 ? (
-        <div data-proposals-rail style={{ marginBottom: "14px" }}>
-          <h2 style={{ fontSize: "13px", fontWeight: 600, margin: "0 0 8px" }}>{L.proposalsHeading}</h2>
-          {props.proposals.map((p) => (
-            <div key={p.id} data-proposal-card={p.id} data-proposal-md={p.markdown} data-proposal-kind={p.kind}
-                 data-proposal-from={p.from} data-proposal-to={p.to} data-proposal-origin={p.origin}
-                 style={{ ...bannerStyle, borderColor: "var(--sev-major)" }}>
-              <div>
-                <div style={{ fontWeight: 600 }}>{p.label}</div>
-                <pre style={{ ...SPAN_STYLE, margin: "6px 0 0", whiteSpace: "pre-wrap" }}>{p.markdown}</pre>
-              </div>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <button
-                  type="button"
-                  data-proposal-accept={p.id}
-                  {...(withholdWrites ? { disabled: true, title: tip } : {})}
-                  {...(props.onProposalAccept && !withholdWrites ? { onClick: () => props.onProposalAccept?.(p) } : {})}
-                  style={{ fontSize: "12px" }}
-                >
-                  {L.accept}
-                </button>
-                <button
-                  type="button"
-                  data-proposal-reject={p.id}
-                  {...(withholdWrites ? { disabled: true, title: tip } : {})}
-                  {...(props.onProposalReject && !withholdWrites ? { onClick: () => props.onProposalReject?.(p.id) } : {})}
-                  style={{ fontSize: "12px" }}
-                >
-                  {L.reject}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : null}
+      {/* R7WRITE.1a (REQ-WRITE-6) — the sync pill, the version/lock/readonly banners and the
+          proposal cards moved OUT of the paper into the page header strip (`page-strip.tsx`,
+          emitted by the `.ide-page` slot). `.paper` now holds only the document, the findings
+          rail and the note form — no banner, pill or proposal card. */}
 
       {/* the doc — SSR static render; the island mounts ProseMirror over the same JSON. SPA.23:
           `props.host` replaces this block wholesale — the SPA's PageMount owns the host div +

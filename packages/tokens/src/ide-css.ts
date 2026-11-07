@@ -25,11 +25,27 @@ export function ideCss(): string {
 
     // ---- Page + Margin ----
     ".ide-center { flex: 1; display: flex; min-width: 0; }",
-    ".ide-page { flex: 1; min-width: 0; overflow: auto; display: flex; justify-content: center; padding: var(--s6) var(--s4); }",
+    // R7WRITE.1a (REQ-WRITE-6) — the page column now stacks: the header strip above the paper,
+    // both clamped to the page measure. `.paper`'s old `flex: 0 1 68ch` would have sized the
+    // HEIGHT under column layout — the width rules carry the measure now.
+    ".ide-page { flex: 1; min-width: 0; overflow: auto; display: flex; flex-direction: column; align-items: center; padding: var(--s6) var(--s4); }",
     // the paper sheet: measure clamped [45ch, 80ch] at the 68ch target (REQ-IDE-9); pinned light inside the
     // dark shell it reads as a sheet — inset with a 1-px rule border and a soft shadow (§5.9 theme policy).
-    `.ide-page .paper { flex: 0 1 ${TYPOGRAPHY.measureCh}ch; width: ${TYPOGRAPHY.measureCh}ch; min-width: min(${TYPOGRAPHY.measureMinCh}ch, 100%); max-width: ${TYPOGRAPHY.measureMaxCh}ch; padding: var(--s8) var(--s8); border: 1px solid var(--paper-rule); border-radius: var(--radius-2); box-shadow: 0 1px 3px rgba(0,0,0,0.24), 0 4px 16px rgba(0,0,0,0.16); height: fit-content; min-height: 60%; }`,
+    `.ide-page .paper { flex: 0 0 auto; width: ${TYPOGRAPHY.measureCh}ch; min-width: min(${TYPOGRAPHY.measureMinCh}ch, 100%); max-width: ${TYPOGRAPHY.measureMaxCh}ch; padding: var(--s8) var(--s8); border: 1px solid var(--paper-rule); border-radius: var(--radius-2); box-shadow: 0 1px 3px rgba(0,0,0,0.24), 0 4px 16px rgba(0,0,0,0.16); height: fit-content; min-height: 60%; }`,
     `[data-theme="light"] .ide-page .paper { box-shadow: 0 1px 2px rgba(30,34,40,0.08), 0 4px 14px rgba(30,34,40,0.07); }`,
+    // R7WRITE.1a — the page header strip: same measure as the paper, shell chrome (never a card —
+    // B11's card-in-card rule). Banner lines get a quiet left rule (B5 — never input-like).
+    `.ide-page .page-strip { flex: 0 0 auto; width: ${TYPOGRAPHY.measureCh}ch; min-width: min(${TYPOGRAPHY.measureMinCh}ch, 100%); max-width: ${TYPOGRAPHY.measureMaxCh}ch; margin-bottom: var(--s4); font-family: var(--font-shell); }`,
+    ".ide[data-view='focus'] .page-strip { display: none; }",
+    ".page-strip .page-strip-btn { display: inline-flex; align-items: center; min-height: 24px; padding: 2px 10px; border: 1px solid var(--shell-border); border-radius: var(--radius-1); background: none; color: var(--shell-fg); font-size: 12px; cursor: pointer; text-decoration: none; }",
+    ".page-strip .page-strip-btn:hover { background: var(--shell-raised); }",
+    // R7WRITE.1a (REQ-WRITE-1) — the format bubble over a selection: same chrome as the cmdmenu.
+    ".ide-fmt-bubble { position: absolute; z-index: 40; display: flex; align-items: center; gap: 2px; background: var(--shell-raised); border: 1px solid var(--shell-border); border-radius: var(--radius-2); box-shadow: 0 8px 24px rgba(0,0,0,0.35); padding: 4px; }",
+    ".ide-fmt-bubble .ide-fmt-item { display: inline-flex; align-items: center; min-height: 24px; padding: 2px 8px; border: none; background: none; color: var(--shell-fg); font-size: 12px; border-radius: var(--radius-1); cursor: pointer; white-space: nowrap; }",
+    ".ide-fmt-bubble .ide-fmt-item:hover, .ide-fmt-bubble .ide-fmt-item:focus-visible { background: var(--shell-surface); }",
+    ".ide-fmt-bubble .ide-fmt-sep { width: 1px; align-self: stretch; margin: 2px 4px; background: var(--shell-border); }",
+    ".ide-fmt-bubble .ide-fmt-hint { font-size: 11px; color: var(--shell-fg-faint); margin-left: 6px; }",
+    ".ide-fmt-bubble .ide-fmt-link-input { border: 1px solid var(--shell-border); border-radius: var(--radius-1); background: var(--shell-bg); color: var(--shell-fg); font-size: 12px; padding: 2px 8px; min-width: 180px; }",
     `.ide-margin { flex: 0 0 ${B.marginPx}px; width: ${B.marginPx}px; border-left: 1px solid var(--shell-border); overflow: auto; padding: var(--s3); transition: flex-basis var(--dur-pane) ease, width var(--dur-pane) ease; }`,
     ".ide[data-margin='ticks'] .ide-margin, .ide-margin[data-mode='ticks'] { flex-basis: 36px; width: 36px; padding: var(--s3) 6px; }",
     // View › Finding cards collapses the surface to ticks-only (§5.7) — the cards hide, the tick echo stays.

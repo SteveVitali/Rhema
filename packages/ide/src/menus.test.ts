@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseCommand, resolveCommand } from "@rhema/commands";
-import { contextMenuItems, selectionMenuItems } from "./menus.js";
+import { contextMenuItems, selectionMenuItems, selectionMenuModel } from "./menus.js";
 import { paletteModel } from "./palette.js";
 
 const CTX = { projectSlug: "demo" };
@@ -10,32 +10,60 @@ const resolve = (command: string) => {
   return resolveCommand(r.command, CTX);
 };
 
-describe("the §7.4 selection popover (REQ-CHAT-21/22)", () => {
-  it("offers Ask · Visualize · Fact-check · Review this section; Line edit/Cut resolve disabled (1.x)", () => {
-    const items = selectionMenuItems().filter((i) => !i.separator);
-    expect(items.map((i) => i.label)).toEqual([
+describe("the §7.4 format bubble (REQ-WRITE-1; R7WRITE.1a)", () => {
+  it("group 1 is Bold/Italic/Link/H2/H3/Quote/Bulleted/Numbered — local format actions, never commands", () => {
+    const { format } = selectionMenuModel();
+    expect(format.map((i) => i.label)).toEqual([
+      "Bold",
+      "Italic",
+      "Link",
+      "H2",
+      "H3",
+      "Quote",
+      "Bulleted",
+      "Numbered",
+    ]);
+    for (const item of format) {
+      expect(item.format).toBeDefined();
+      expect(item.command).toBeUndefined();
+    }
+  });
+
+  it("group 2 carries the agent verbs; each resolves to the run sheet (no POST) with an optional cost hint", () => {
+    const { agent } = selectionMenuModel({ costHints: { review: "≈ 560 cr" } });
+    expect(agent.map((i) => i.label)).toEqual([
       "Ask",
       "Visualize",
       "Fact-check",
       "Review this section",
-      "Line edit",
-      "Cut to length",
     ]);
-    // Ask is the free composer action — never a command, never a run.
-    expect(items[0]!.action).toBe("ask");
-    expect(items[0]!.command).toBeUndefined();
-    for (const item of items.slice(1, 4)) {
+    expect(agent[0]!.action).toBe("ask");
+    expect(agent[0]!.command).toBeUndefined();
+    for (const item of agent.slice(1)) {
       const r = resolve(item.command!);
       expect(r.kind).toBe("sheet");
-      // P1.13 — Visualize owns its dedicated §7.5 sheet route; the other verbs take the generic one.
       if (r.kind === "sheet") expect(r.path).toMatch(/\/p\/demo\/(run|visualize)\?/);
     }
-    for (const item of items.slice(4)) {
-      expect(resolve(item.command!).kind).toBe("disabled");
+    expect(agent.find((i) => i.label === "Review this section")!.hint).toBe("≈ 560 cr");
+  });
+
+  it("no 'not available yet' item renders — Line edit / Cut to length are removed, not disabled (I6)", () => {
+    const labels = selectionMenuItems().map((i) => i.label);
+    expect(labels).not.toContain("Line edit");
+    expect(labels).not.toContain("Cut to length");
+    // and no item resolves disabled-with-reason — every row is actionable.
+    for (const item of selectionMenuItems().filter((i) => i.command)) {
+      expect(resolve(item.command!).kind).not.toBe("disabled");
     }
   });
 
-  it("the popover's commands resolve byte-identically to the same string typed in the palette", () => {
+  it("the leading Comment slot is reserved for 238 — null today, nothing renders for it", () => {
+    const model = selectionMenuModel();
+    expect(model.comment).toBeNull();
+    expect(selectionMenuItems()[0]!.format).toBe("bold"); // no dead first row
+  });
+
+  it("the bubble's agent commands resolve byte-identically to the same string typed in the palette", () => {
     const review = selectionMenuItems().find((i) => i.label === "Review this section")!;
     const typed = paletteModel({ projectSlug: "demo" }, review.command!).commandRow?.resolution;
     expect(resolve(review.command!)).toEqual(typed);

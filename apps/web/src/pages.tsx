@@ -49,8 +49,10 @@ import {
   PageChrome,
   ProjectOverviewBody,
   compareLabels,
+  pageStripFor,
   whatChangedLabels,
 } from "./page-chrome.js";
+import type { ReadOnlyReason } from "@rhema/contracts";
 
 // The beta's flat pages. Every string comes from COPY (lint-checked). Progressive enhancement: forms POST and
 // links navigate — no client JS is required.
@@ -94,8 +96,33 @@ export function IdeFrame({ children }: { children: ReactNode }): ReactNode {
   const data = usePageData();
   const ide = data.ide ?? {};
   const slug = data.project?.slug ?? "";
+  // R7WRITE.1a (REQ-WRITE-6) — the page header strip above `.paper`; the SSR documents feed it
+  // the same `page` bag PageChrome renders. `run_lock` keeps no notice here (the lock banner IS
+  // the notice verbatim); demo/showcase render the reason's one notice.
+  const ro = (data.project as { readOnlyProject?: { reason?: string } | null } | undefined)
+    ?.readOnlyProject?.reason;
+  const roReason: ReadOnlyReason | null =
+    ro === "demo" || ro === "showcase" || ro === "run_lock" ? ro : null;
+  const strip =
+    data.page != null
+      ? pageStripFor(data.page, {
+          ...(data.project?.title != null ? { projectTitle: data.project.title } : {}),
+          ...(data.compact != null ? { compact: data.compact } : {}),
+          readOnlyReason: roReason,
+          ...(roReason === "demo" || roReason === "showcase"
+            ? {
+                notice: (
+                  <span data-readonly-notice={roReason} style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+                    {roReason === "demo" ? COPY.readOnly.demoNotice : COPY.readOnly.reason.showcase}
+                  </span>
+                ),
+              }
+            : {}),
+        })
+      : undefined;
   return (
     <IdeShell
+      {...(strip != null ? { pageHeader: strip } : {})}
       project={{ slug, title: data.project?.title ?? "", ...(data.project?.pill ? { pill: data.project.pill } : {}) }}
       {...(ide.userId ? { userId: ide.userId } : {})}
       {...(ide.projectId ? { projectId: ide.projectId } : {})}

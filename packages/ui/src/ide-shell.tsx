@@ -166,6 +166,12 @@ export interface IdeShellProps {
    * the feed tail can never construct (the island's `isDemo()` gate is the second wall).
    */
   readonly demo?: boolean;
+  /**
+   * R7WRITE.1a (REQ-WRITE-6) — the page header strip, rendered inside `.ide-page` ABOVE `.paper`
+   * (the breadcrumb/version chip/sync pill/ReadOnlyProject notice/actions + the banners and
+   * proposal cards that used to typeset inside the card). Absent ⇒ the paper starts at the top.
+   */
+  readonly pageHeader?: ReactNode;
   /** the Page region's content — the surface this route owns. */
   readonly children?: ReactNode;
 }
@@ -236,6 +242,7 @@ export function IdeShell(props: IdeShellProps): ReactNode {
           {/* id+tabIndex: the REQ-UX-16 skip link's focus target — programmatic focus only,
               never route-driven (the Page is never auto-focused). */}
           <main id="ide-page" className="ide-page" data-pane="page" aria-label={project.title} tabIndex={-1}>
+            {props.pageHeader}
             <div className="paper" data-paper-surface>
               {props.children}
             </div>

@@ -20,6 +20,7 @@ import { type ReactNode } from "react";
 import {
   EmptyProject,
   PageEditor,
+  PageStrip,
   PageTitle,
   VersionRail,
   WhatChangedView,
@@ -205,6 +206,90 @@ export interface PageChromeProps {
   /** SPA.23 — the proposal cards' click seam (the leaf dispatches `acceptProposalTr`). */
   readonly onProposalAccept?: (p: PageProposalView) => void;
   readonly onProposalReject?: (id: string) => void;
+}
+
+/**
+ * R7WRITE.1a (REQ-WRITE-6) — the page header strip, shared by the SSR `IdeFrame` (which feeds it
+ * `usePageData()`'s `page` bag) and the SPA Page leaves (which publish it through
+ * `IdeChromeData.pageHeader`). Emitted inside `.ide-page` above `.paper`.
+ */
+export function pageStripFor(
+  page: PageChromeBag,
+  opts: {
+    readonly projectTitle?: string;
+    readonly compact?: boolean;
+    readonly readOnlyReason?: ReadOnlyReason | null;
+    readonly notice?: ReactNode;
+    readonly onProposalAccept?: (p: PageProposalView) => void;
+    readonly onProposalReject?: (id: string) => void;
+    /** the Edit-source seam (SPA): the ⋯ item calls this — the leaf wires it to the mounted
+     *  `[data-source-toggle]` chip (239 replaces it with the Rich text / Source toggle). Absent ⇒
+     *  the item stays the SSR `/v/working` link. */
+    readonly onEditSource?: () => void;
+    /** estimator-rendered run-item hints (keyed by workflow label; the one estimator's output). */
+    readonly runHints?: Readonly<Record<string, string>>;
+  } = {},
+): ReactNode {
+  const { slug, doc } = page;
+  const ro = opts.readOnlyReason ?? null;
+  const withhold = ro === "demo" || ro === "showcase" || ro === "run_lock" || opts.compact === true;
+  const base = `/p/${slug}`;
+  const artifact = doc.artifactKind != null;
+  const crumbs = [
+    { label: opts.projectTitle ?? slug, href: base },
+    { label: artifact ? COPY.pageStrip.artifactCrumb : COPY.pageStrip.pageCrumb },
+  ];
+  const runItems = [
+    { label: COPY.runSheet.runReview, href: `${base}/run?workflow=review`, ...(opts.runHints?.["review"] ? { hint: opts.runHints["review"] } : {}) },
+    { label: COPY.runSheet.runRevise, href: `${base}/run?workflow=revise`, ...(opts.runHints?.["revise"] ? { hint: opts.runHints["revise"] } : {}) },
+    { label: COPY.pageStrip.runDraft, href: `${base}/run?workflow=draft`, ...(opts.runHints?.["draft"] ? { hint: opts.runHints["draft"] } : {}) },
+  ];
+  const moreItems = [
+    ...(opts.onEditSource
+      ? [{ label: COPY.pageStrip.editSource, onSelect: opts.onEditSource }]
+      : [{ label: COPY.pageStrip.editSource, href: `${base}/v/working` }]),
+    { label: COPY.project.importCta, href: `${base}/import` },
+  ];
+  return (
+    <PageStrip
+      crumbs={crumbs}
+      draftN={doc.draftN}
+      baseDraftN={doc.baseDraftN}
+      origin={doc.origin}
+      state={doc.state}
+      lock={doc.lock}
+      proposals={(doc.proposals ?? []).map((p) => ({
+        id: p.id,
+        label: p.label ?? p.id,
+        markdown: p.markdown,
+        kind: p.kind,
+        from: p.from,
+        to: p.to,
+        origin: p.origin,
+      }))}
+      {...(page.readOnly === true ? { readOnly: true } : {})}
+      {...(ro != null ? { readOnlyReason: ro, readOnlyTooltip: COPY.readOnly.reason[ro] } : {})}
+      {...(opts.notice != null ? { notice: opts.notice } : {})}
+      actions={
+        withhold
+          ? null
+          : { run: runItems, exportHref: `${base}/export`, more: moreItems }
+      }
+      reviseUrl={`${base}/edit/${doc.draftId}/revise`}
+      cancelUrl={`${base}/edit/${doc.draftId}/cancel-run`}
+      labels={pageLabels}
+      stripLabels={{
+        breadcrumbAria: COPY.pageHeader.breadcrumbAria,
+        separator: COPY.pageHeader.separator,
+        workingBadge: COPY.pageStrip.workingBadge,
+        frozenBadge: COPY.pageStrip.frozenBadge,
+        runLabel: COPY.pageStrip.runLabel,
+        moreLabel: COPY.pageStrip.moreLabel,
+      }}
+      {...(opts.onProposalAccept ? { onProposalAccept: opts.onProposalAccept } : {})}
+      {...(opts.onProposalReject ? { onProposalReject: opts.onProposalReject } : {})}
+    />
+  );
 }
 
 /**
@@ -439,24 +524,9 @@ export function ProjectOverviewBody(props: ProjectOverviewProps): ReactNode {
           {`${COPY.newProject.conversionNotes}: ${project.created.notes.warnings} · ${COPY.newProject.unconvertedNote}`}
         </p>
       ) : null}
-      {project ? (
-        // UX.2 (ADR-067) — `.ide-actions`: ≥24-px targets everywhere; at phone width the surviving
-        // §10.1 navigations render as bordered ≥ 44-px controls (button-styled links — they are
-        // navigations, so `<a>` stays the correct element).
-        <p className="ide-actions" style={{ display: "flex", gap: "16px" }}>
-          {/* P1.19 — §10.1 ✗: import / run start / export are never offered on phone width.
-              R7RO.1 — under a read-only reason the WHOLE row withholds.
-              R7HOME.2b — the "Edit source" `/v/working` link is gone: the mounted Page below IS
-              the head draft. */}
-          {compact === true || withhold ? null : (
-            <>
-              <a href={`/p/${slug}/import`}>{COPY.project.importCta}</a>
-              <a href={`/p/${slug}/run`}>{COPY.runSheet.runReview}</a>
-              <a href={`/p/${slug}/export`}>{COPY.project.exportCta}</a>
-            </>
-          )}
-        </p>
-      ) : null}
+      {/* R7WRITE.1a (REQ-WRITE-6; B4) — the hyperlink action row is gone: the page header strip's
+          actions (Run ▾ / Export / ⋯) replace it. Product chrome no longer typesets inside the
+          document card. */}
       {page ? (
         <div data-page-mount="working" style={{ marginTop: "12px" }}>
           {emptyHead && compact !== true && !withhold ? (

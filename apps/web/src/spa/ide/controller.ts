@@ -23,6 +23,7 @@ import {
   contextMenuItems,
   cyclePaperTheme,
   dispatchIdeKey,
+  formatBubblePlacement,
   paneDrag,
   paneLayout,
   paneStorageKey,
@@ -784,17 +785,165 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
       if (cmdMenu && !cmdMenu.contains(e.target as Node)) closeCmdMenu();
     };
     const pagePane = ide.querySelector<HTMLElement>('[data-pane="page"]');
+
+    // ---- R7WRITE.1a (REQ-WRITE-1; UXC-22, I6) — the FORMAT BUBBLE above the selection --------
+    // Replaces the agent-only popover that opened below and covered the selected lines (I6).
+    // Group 1 = local PM format actions (dispatched as `rhema:format-command` — PageMount's live
+    // view applies them); group 2 = the agent verbs routing to the run sheet (never a POST). The
+    // "not available yet" items are REMOVED from the item model, not disabled.
+    const selectionReadOnly = (): boolean => {
+      if (isDemo()) return true;
+      const root = ide.querySelector<HTMLElement>("[data-page-root]");
+      return root?.dataset["readonly"] === "1" || root?.dataset["locked"] === "1";
+    };
+    const focusPageSelection = (): void => {
+      // Esc's focus return: PM holds the DOM selection inside the view — focusing the view
+      // element puts the caret back on the selected text.
+      pagePane?.querySelector<HTMLElement>("[data-page-view]")?.focus();
+    };
+    /** Above-placement geometry: the bubble sits over the selection's TOP edge and flips under
+     *  it only when there is no room above — it never intersects the selection's client rects
+     *  (they live inside the bounding rect, so bounding-rect placement guarantees it). */
+    const openFormatBubble = (rect: DOMRect, linkMode = false): void => {
+      closeCmdMenu();
+      const model = selectionMenuItems();
+      const menu = document.createElement("div");
+      menu.className = "ide-fmt-bubble";
+      menu.dataset["kind"] = "format-bubble";
+      menu.setAttribute("data-format-bubble", "true");
+      menu.setAttribute("role", "menu");
+      const addBtn = (item: CommandMenuItem): void => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "ide-fmt-item";
+        b.setAttribute("role", "menuitem");
+        b.setAttribute("data-format-item", item.format ?? item.action ?? item.command ?? item.label);
+        b.textContent = item.label;
+        if (item.hint) {
+          const hint = document.createElement("span");
+          hint.className = "ide-fmt-hint";
+          hint.textContent = item.hint;
+          b.appendChild(hint);
+        }
+        b.addEventListener("click", () => {
+          if (item.format === "link") {
+            openLinkForm(rect);
+            return;
+          }
+          if (item.format) {
+            closeCmdMenu();
+            window.dispatchEvent(
+              new CustomEvent("rhema:format-command", { detail: { action: item.format } }),
+            );
+            focusPageSelection();
+            return;
+          }
+          if (item.action === "ask") {
+            closeCmdMenu();
+            commit({ panelOpen: true, panelTab: "chat" });
+            return;
+          }
+          const parsed = item.command ? parseCommand(item.command) : null;
+          const resolution = parsed?.ok ? resolveCommand(parsed.command, { projectSlug: slug }) : null;
+          if (resolution && (resolution.kind === "sheet" || resolution.kind === "navigate")) {
+            closeCmdMenu();
+            latest.current.nav.push(resolution.path); // GET only — the sheet owns the launch POST
+          }
+        });
+        menu.appendChild(b);
+      };
+      const sep = (): void => {
+        const s = document.createElement("div");
+        s.className = "ide-fmt-sep";
+        menu.appendChild(s);
+      };
+      let first = true;
+      for (const item of model) {
+        if (item.separator) sep();
+        else {
+          if (!first) sep();
+          addBtn(item);
+        }
+        first = false;
+      }
+      document.body.appendChild(menu);
+      cmdMenu = menu;
+      // ABOVE the selection; flip below only when there is no room above (the pure rule is
+      // pinned by packages/ide's placement test — REQ-WRITE-1).
+      const place = formatBubblePlacement(
+        rect,
+        { width: menu.offsetWidth, height: menu.offsetHeight },
+        { w: window.innerWidth, h: window.innerHeight },
+      );
+      menu.style.left = `${place.left}px`;
+      menu.style.top = `${place.top}px`;
+      menu.dataset["placed"] = place.placed;
+      if (linkMode) openLinkForm(rect);
+    };
+    /** The Link affordance (bubble item + contextual ⌘K): an inline URL field inside the bubble —
+     *  a real control, never window.prompt. Enter applies the `link` mark over the selection. */
+    const openLinkForm = (rect: DOMRect): void => {
+      closeCmdMenu();
+      const menu = document.createElement("div");
+      menu.className = "ide-fmt-bubble";
+      menu.dataset["kind"] = "format-bubble";
+      menu.setAttribute("data-format-bubble", "true");
+      const input = document.createElement("input");
+      input.type = "url";
+      input.className = "ide-fmt-link-input";
+      input.setAttribute("data-format-link-input", "true");
+      input.placeholder = "https://…";
+      input.setAttribute("aria-label", "Link URL");
+      const apply = document.createElement("button");
+      apply.type = "button";
+      apply.className = "ide-fmt-item";
+      apply.setAttribute("data-format-link-apply", "true");
+      apply.textContent = "Apply";
+      const commitLink = (): void => {
+        window.dispatchEvent(
+          new CustomEvent("rhema:format-command", { detail: { action: "link", href: input.value } }),
+        );
+        closeCmdMenu();
+        focusPageSelection();
+      };
+      apply.addEventListener("click", commitLink);
+      input.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter") commitLink();
+        if (ev.key === "Escape") {
+          closeCmdMenu();
+          focusPageSelection();
+        }
+      });
+      menu.appendChild(input);
+      menu.appendChild(apply);
+      document.body.appendChild(menu);
+      cmdMenu = menu;
+      const place = formatBubblePlacement(
+        rect,
+        { width: menu.offsetWidth, height: menu.offsetHeight },
+        { w: window.innerWidth, h: window.innerHeight },
+      );
+      menu.style.left = `${place.left}px`;
+      menu.style.top = `${place.top}px`;
+      menu.dataset["placed"] = place.placed;
+      input.focus();
+    };
+    const pageSelectionRect = (): DOMRect | null => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || sel.rangeCount === 0 || !pagePane) return null;
+      const range = sel.getRangeAt(0);
+      if (!pagePane.contains(range.commonAncestorContainer)) return null;
+      const rect = range.getBoundingClientRect();
+      if (rect.width === 0 && rect.height === 0) return null;
+      return rect;
+    };
     let selTimer: ReturnType<typeof setTimeout> | undefined;
     const selectionMenu = (): void => {
       if (selTimer) clearTimeout(selTimer);
       selTimer = setTimeout(() => {
-        const sel = window.getSelection();
-        if (!sel || sel.isCollapsed || sel.rangeCount === 0 || !pagePane) return;
-        const range = sel.getRangeAt(0);
-        if (!pagePane.contains(range.commonAncestorContainer)) return;
-        const rect = range.getBoundingClientRect();
-        if (rect.width === 0 && rect.height === 0) return;
-        openCmdMenu(selectionMenuItems(), rect.left + rect.width / 2, rect.bottom + 8, "selection");
+        const rect = pageSelectionRect();
+        if (!rect || selectionReadOnly()) return;
+        openFormatBubble(rect);
       }, 120);
     };
     const onDocMouseUp = (e: MouseEvent): void => {
@@ -807,7 +956,8 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
     };
     const onDocSelectionChange = (): void => {
       const sel = window.getSelection();
-      if (cmdMenu?.dataset["kind"] === "selection" && (!sel || sel.isCollapsed)) closeCmdMenu();
+      const kind = cmdMenu?.dataset["kind"];
+      if ((kind === "selection" || kind === "format-bubble") && (!sel || sel.isCollapsed)) closeCmdMenu();
     };
     const onContextMenu = (e: MouseEvent): void => {
       const pane = (e.target as HTMLElement | null)?.closest('[data-panel-body="timeline"], [data-pane="timeline"]');
@@ -856,6 +1006,7 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
         if (e.key === "Escape") {
           // REQ-PANE-0 / REQ-WRITE-4 — one Esc dismisses one layer: menus/cmdmenu/cheat first,
           // then an open overlay/sheet, then focus view itself.
+          const wasBubble = cmdMenu?.dataset["kind"] === "format-bubble";
           const layeredOpen =
             cmdMenu != null ||
             cheatOpen() ||
@@ -863,6 +1014,8 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
           closeMenus();
           closeCmdMenu();
           closeCheat();
+          // REQ-WRITE-1 — Esc dismisses the format bubble and returns focus to the selection.
+          if (wasBubble) focusPageSelection();
           if (layeredOpen) return;
           if (dismissOverlays()) {
             e.preventDefault();
@@ -877,14 +1030,23 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
       }
       const { nav } = latest.current;
       switch (action.kind) {
-        case "palette":
-          // R7SHELL.1c — the one global palette lives in the AppShell; the IDE's local
-          // commands ride its embedded `data-palette` JSON (REQ-SHELL-7).
+        case "palette": {
+          // REQ-KEYS-1 Rule 4 (REQ-WRITE-1) — contextual ⌘K = Link: inside the Page zone with a
+          // non-collapsed selection the chord opens the link affordance, never the palette.
+          // Everywhere else (and with no selection) it stays the global palette (R7SHELL.1c).
           e.preventDefault();
+          if (e.key === "k" && (e.metaKey || e.ctrlKey) && focusZone() === "page" && !selectionReadOnly()) {
+            const rect = pageSelectionRect();
+            if (rect) {
+              openFormatBubble(rect, true);
+              break;
+            }
+          }
           window.dispatchEvent(new CustomEvent("rhema:palette-open", {
             detail: { toggle: true, ...(e.key === "/" ? { initial: "/" } : {}) },
           }));
           break;
+        }
         case "pane":
           e.preventDefault();
           togglePane("panel");

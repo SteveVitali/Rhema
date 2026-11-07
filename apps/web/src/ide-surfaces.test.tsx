@@ -165,14 +165,15 @@ describe("R7HOME.2b — GET /app/new is a server redirect (the sheet is retired;
 });
 
 describe("UX.2 — the phone project page (REQ-MOBILE-3 amended)", () => {
-  it("the surviving action row is `.ide-actions` (button-styled ≥44 px controls in the phone CSS)", async () => {
+  it("the phone reader mounts the page strip with NO write actions (§10.1 — the compact withhold)", async () => {
     const app = createWebApp(makeDeps());
     const res = await app.request("/p/seed-essay", MOBILE);
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain('class="ide-actions"');
-    // R7HOME.2b — "Edit source" is gone everywhere (the mounted Page IS the head draft); the
-    // phone reader keeps the Page mount while every §10.1 ✗ affordance stays absent.
+    // R7WRITE.1a (REQ-WRITE-6) — the hyperlink action row is gone; the header strip above the
+    // paper carries the crumb/version/sync, and every write action withholds at phone width.
+    expect(html).toContain('data-page-strip="true"');
+    expect(html).not.toContain('data-page-actions');
     expect(html).toContain('data-page-mount="working"');
     expect(html).not.toContain('data-edit-source');
     expect(html).not.toContain('href="/p/seed-essay/import"');
@@ -268,9 +269,13 @@ describe("UX.2 — the sync pill never floats (ADR-069; REQ-IDE-43 amended)", ()
       const pills = html.match(/data-sync-pill/g) ?? [];
       expect(pills).toHaveLength(1);
       // the pill element is in-flow: no fixed positioning on it or its containing row.
+      // R7WRITE.1a — it moved out of `data-page-root` into the page header strip ABOVE `.paper`.
       const rootAt = html.indexOf('data-page-root="1"');
       const pillAt = html.indexOf("data-sync-pill");
-      expect(pillAt).toBeGreaterThan(rootAt);
+      const stripAt = html.indexOf('data-page-strip="true"');
+      expect(stripAt).toBeGreaterThan(-1);
+      expect(pillAt).toBeGreaterThan(stripAt);
+      expect(pillAt).toBeLessThan(rootAt); // above the paper — the strip's row
       const tagStart = html.lastIndexOf("<div", pillAt);
       const pillTag = html.slice(tagStart, html.indexOf(">", pillAt) + 1);
       expect(pillTag).not.toContain("position:fixed");

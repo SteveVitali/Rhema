@@ -35,6 +35,7 @@ import type { Transaction } from "prosemirror-state";
 import {
   createCollabPageState,
   createPageState,
+  formatCommand,
   setDecorationInputs,
   provenanceKey,
   provenanceForSave,
@@ -344,11 +345,25 @@ export function PageMount(props: PageMountProps): ReactNode {
     // flips the banner/lock, resyncs the rail, and honours ⌘S as a no-op mint. Every session
     // call below is `wire?.`-seamed.
     if (root) {
-      const pill = root.querySelector<HTMLElement>("[data-sync-pill]");
-      const lockBanner = root.querySelector<HTMLElement>('[data-page-banner="lock"]');
-      const lockBannerText = lockBanner?.querySelector<HTMLElement>("[data-page-banner-text]");
-      const versionBanner = root.querySelector<HTMLElement>('[data-page-banner="version"]');
-      const versionBannerText = versionBanner?.querySelector<HTMLElement>("span");
+      // R7WRITE.1a (REQ-WRITE-6) — the pill + banners moved OUT of [data-page-root] into the
+      // `.ide-page` header strip: scope the writes to the page region; when the host isn't under
+      // the IDE page pane (the demo mount) fall back to the document — the pill is unique.
+      const pageScope: ParentNode = host.closest("[data-pane='page']") ?? host.ownerDocument ?? document;
+      // R7WRITE.1a — the strip mounts via the leaf's chrome publish, which can land AFTER this
+      // effect runs (a publish→re-render beat). The element refs therefore resolve LAZILY at
+      // write time — a late-mounted strip still receives the pill/banner writes verbatim.
+      const find = (sel: string): HTMLElement | null => pageScope.querySelector(sel) as HTMLElement | null;
+      const pill = () => find("[data-sync-pill]");
+      const lockBanner = () => find('[data-page-banner="lock"]');
+      const lockBannerText = () => {
+        const b = lockBanner();
+        return b?.querySelector("[data-page-banner-text]") as HTMLElement | null ?? null;
+      };
+      const versionBanner = () => find('[data-page-banner="version"]');
+      const versionBannerText = () => {
+        const b = versionBanner();
+        return b?.querySelector("span") as HTMLElement | null ?? null;
+      };
 
       // the island's mount-time locals verbatim — the poll's draft target (`docUrl` follows the
       // fork rebase), the displayed `draftN`, and `lockedOverride` (the poll's §6.3 read — beats
@@ -359,37 +374,42 @@ export function PageMount(props: PageMountProps): ReactNode {
       let docUrl = root.dataset["docUrl"] ?? "";
 
       const setPill = (ev: { readonly state: "synced" | "syncing" | "offline" | "readonly"; readonly queued: number }): void => {
-        if (!pill) return;
+        const el = pill();
+        if (!el) return;
         const state = lockedOverride ? "readonly" : ev.state;
         const label =
           state === "synced"
-            ? pill.dataset["labelSynced"]
+            ? el.dataset["labelSynced"]
             : state === "syncing"
-              ? pill.dataset["labelSyncing"]
+              ? el.dataset["labelSyncing"]
               : state === "readonly"
-                ? pill.dataset["labelReadonly"] ?? pill.dataset["labelLocked"]
-                : (pill.dataset["labelOffline"] ?? pill.dataset["labelQueued"] ?? "").replace(
+                ? el.dataset["labelReadonly"] ?? el.dataset["labelLocked"]
+                : (el.dataset["labelOffline"] ?? el.dataset["labelQueued"] ?? "").replace(
                     "{n}",
                     String(ev.queued),
                   );
-        pill.textContent = label || state;
-        pill.dataset.syncState = state;
+        el.textContent = label || state;
+        el.dataset.syncState = state;
       };
 
       const setLockBanner = (lock: { kind: "writer" | "reader"; workflow: string } | null): void => {
-        if (!lockBanner) return;
-        lockBanner.style.display = lock == null ? "none" : "flex";
+        const banner = lockBanner();
+        if (!banner) return;
+        banner.style.display = lock == null ? "none" : "flex";
         const template =
-          lock == null ? "" : (lockBanner.dataset[lock.kind === "writer" ? "writerText" : "readerText"] ?? "");
-        if (lockBannerText) lockBannerText.textContent = template.replace("{workflow}", lock?.workflow ?? "");
+          lock == null ? "" : (banner.dataset[lock.kind === "writer" ? "writerText" : "readerText"] ?? "");
+        const text = lockBannerText();
+        if (text) text.textContent = template.replace("{workflow}", lock?.workflow ?? "");
       };
 
       /** §5.4's post-fork banner — "Editing vN · findings from vM follow your text". */
       const showForkBanner = (nextN: number, baseN: number): void => {
-        if (!versionBanner || !versionBannerText) return;
+        const banner = versionBanner();
+        const text = versionBannerText();
+        if (!banner || !text) return;
         const fmt = root.dataset["forkFmt"] ?? "Editing v{n} · findings from v{base} follow your text";
-        versionBannerText.textContent = fmt.replace("{n}", String(nextN)).replace("{base}", String(baseN));
-        versionBanner.style.display = "flex";
+        text.textContent = fmt.replace("{n}", String(nextN)).replace("{base}", String(baseN));
+        banner.style.display = "flex";
       };
 
       /** The head-switch every fork/poll path shares: `registry.rekey` runs the wire's `rebind`
@@ -496,6 +516,28 @@ export function PageMount(props: PageMountProps): ReactNode {
       });
       if (wire) setPill(wire.sync);
 
+      // R7WRITE.1a (REQ-WRITE-1) — the format bubble's items dispatch `rhema:format-command`;
+      // this mount's live view applies the PM command on the current selection. A read-only
+      // mount never dispatches (the bubble withholds its items, and this stays a backstop).
+      const onFormatCommand = (ev: Event): void => {
+        if (!editableRef.current) return;
+        const detail = (ev as CustomEvent<{ action?: string; href?: string }>).detail;
+        const action = detail?.action;
+        if (
+          action === "bold" ||
+          action === "italic" ||
+          action === "link" ||
+          action === "h2" ||
+          action === "h3" ||
+          action === "quote" ||
+          action === "bulleted" ||
+          action === "numbered"
+        ) {
+          formatCommand(action, detail?.href)(view.state, view.dispatch, view);
+        }
+      };
+      window.addEventListener("rhema:format-command", onFormatCommand);
+
       // ⌘S — the named restore point (the ONLY manual save verb; REQ-ED-7's exactly-one path):
       // the window keydown mints in `input` focus or with no IDE chrome mounted; every other zone
       // is claimed by the chrome's dispatcher, whose `restore-point` action emits the
@@ -564,6 +606,7 @@ export function PageMount(props: PageMountProps): ReactNode {
       chromeCleanup = () => {
         wire?.setChrome(null);
         window.removeEventListener("keydown", onKeydown);
+        window.removeEventListener("rhema:format-command", onFormatCommand);
         window.removeEventListener("rhema:restore-point", mintRestorePoint);
         document.removeEventListener("visibilitychange", onVisibility);
         window.removeEventListener("pagehide", onPageHide);
