@@ -29,6 +29,7 @@ import type {
   VoiceSampleDto,
   VoiceStatusDto } from "@rhema/api-client";
 import { COPY } from "../copy.js";
+import { errorSentence } from "../error-copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
 import { axeCheck, restoreDocumentNav, SETTLE_TIMEOUT, settled, stubDocumentNav } from "./testkit.js";
@@ -658,7 +659,7 @@ describe("GET /voices/new mounted (REQ-BFF-16)", () => {
     const save = form.querySelector('[name="intent"][value="save"]')!;
     await submit(form, save);
     await vi.waitFor(() =>
-      expect(el()!.querySelector('[role="alert"]')?.textContent).toBe(VC.new.nameRequired),
+      expect(el()!.querySelector('[role="alert"]')?.textContent).toBe(errorSentence("name_required")),
     );
     // Busy state settled — the form is editable again.
     expect(form.getAttribute("aria-busy")).toBeNull();

@@ -26,6 +26,7 @@ import { Fragment, useState, type FormEvent, type ReactNode } from "react";
 import { Button, Checkbox, Chip, MarkdownProse, Select, TextArea, TextField } from "@rhema/ui";
 import { COPY } from "../../copy.js";
 import { BffError, bffFetch } from "../bff.js";
+import { errorMessage } from "../../error-copy.js";
 import { PageBody, PageHeader } from "../page-header.js";
 import type { BffFigureCardTwin, BffFiguresTwin, BffVisualizeTwin } from "../queries.js";
 
@@ -214,11 +215,11 @@ export function FigureCardSurface({ data, saved, notice }: FigureCardSurfaceProp
     },
     onError: (err) => {
       // Only transport/gateway failures land here — the server's handled refusals already ride
-      // `{ok, redirect:"…?notice=<code>"}`. The leaf degrades to the same flash vocabulary the
-      // document would carry (the notice param renders verbatim as `data-notice`).
+      // `{ok, redirect:"…?notice=<copy>"}`. The leaf degrades to the same flash vocabulary the
+      // document now carries — the code's mapped sentence+action, never the raw code.
       if (err instanceof BffError && data != null) {
         void router.navigate({
-          href: `/p/${data.slug}/figures/${data.card.id}?notice=${encodeURIComponent(err.code)}`,
+          href: `/p/${data.slug}/figures/${data.card.id}?notice=${encodeURIComponent(errorMessage(err))}`,
         });
       } else {
         setPostError(COPY.spaError.heading);
@@ -620,22 +621,10 @@ export function VisualizeSurface({ data, contentKey }: VisualizeSurfaceProps): R
       if (env.redirect != null) void router.navigate({ href: env.redirect });
     },
     onError: (err) => {
-      // The document's own refusal text — `detail` carries the server's mapped notice (the 422
-      // `requestRequired` copy); else the status/code maps exactly like the SSR's notice pick
-      // (404 ⇒ `V.notFound`; a stable refusal code renders verbatim; a fault stays honest).
-      if (err instanceof BffError) {
-        setNotice(
-          err.detail != null && err.detail !== ""
-            ? err.detail
-            : err.status === 404
-              ? V.notFound
-              : err.code === "internal_error" || err.code === "upstream_unavailable"
-                ? V.notFound
-                : err.code,
-        );
-      } else {
-        setNotice(V.notFound);
-      }
+      // REQ-COPY-2 — the mapped sentence+action, never the code or the raw `detail` (the sheet's
+      // `data-notice` arm repaints inline; a non-API failure stays honest on the generic line).
+      if (err instanceof BffError) setNotice(errorMessage(err));
+      else setNotice(V.notFound);
     },
     onSettled: (_env, _err, vars) => {
       setFormBusy(vars.form, false);

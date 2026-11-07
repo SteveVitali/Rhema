@@ -22,6 +22,7 @@ import { buildRunCardView } from "@rhema/findings-core";
 import type { GateCardDto, ChatPanelDto } from "@rhema/api-client";
 import { hooksForSurface } from "../dom-contract.js";
 import { COPY } from "../copy.js";
+import { errorSentence } from "../error-copy.js";
 import type { DossierViewData } from "../dossier-view.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
@@ -635,13 +636,40 @@ describe("GET /p/:slug/review/:runId mounted (SPA.21)", () => {
       notice = el()!.querySelector('[data-finding-notice="error"]');
       expect(notice).not.toBeNull();
     });
-    expect(notice!.textContent).toContain("a rationale is required for rebut");
+    // REQ-COPY-2 — the code's mapped sentence+action renders, never the raw code or `detail`.
+    const expected = errorSentence("rationale_required");
+    expect(notice!.textContent).toContain(expected);
+    expect(notice!.textContent).not.toContain("rationale_required");
     // the same message renders under the refused card (the SSR's `triage.dispositionError` arm).
     await waitFor(() =>
-      expect(el()!.querySelector("[data-disposition-error]")?.textContent).toContain(
-        "a rationale is required for rebut",
-      ),
+      expect(el()!.querySelector("[data-disposition-error]")?.textContent).toContain(expected),
     );
+  });
+
+  it("REQ-COPY-2 — a 409 `lock_held` renders a sentence plus action and no code text", async () => {
+    const f = makeFetch({
+      mutations: {
+        [`/p/${SLUG}/review/${RUN}/findings/f_3/disposition`]: {
+          status: 409,
+          body: { error: "lock_held" },
+        },
+      },
+    });
+    await mountAt(`/p/${SLUG}/review/${RUN}`, BOOT, f.impl);
+    const form = await settled<HTMLFormElement>(
+      `form[action="/p/${SLUG}/review/${RUN}/findings/f_3/disposition"]`,
+    );
+    const verb = form.querySelector<HTMLElement>('[data-verb="rebut"]')!;
+    await submit(form, verb);
+    let notice: Element | null = null;
+    await waitFor(() => {
+      notice = el()!.querySelector('[data-finding-notice="error"]');
+      expect(notice).not.toBeNull();
+    });
+    // UXC-27 — the mapped sentence + action; the raw code never reaches the DOM.
+    const expected = errorSentence("lock_held");
+    expect(notice!.textContent).toContain(expected);
+    expect(notice!.textContent).not.toContain("lock_held");
   });
 
   it("REQ-UX-16 — a write marks its form aria-busy + disables controls until settle", async () => {
@@ -817,7 +845,8 @@ describe("GET /p/:slug/obligations/new mounted (SPA.21)", () => {
       alert = el()!.querySelector('[role="alert"]');
       expect(alert).not.toBeNull();
     });
-    expect(alert!.textContent).toBe(COPY.obligation.required);
+    // REQ-COPY-2 — the code's mapped sentence+action lands the same role=alert slot.
+    expect(alert!.textContent).toBe(errorSentence("title_required"));
   });
 });
 
