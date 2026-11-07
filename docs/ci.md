@@ -22,6 +22,23 @@ Thus `integration` and `images` can run in parallel after `contracts`; `public-s
 after the first check job. The job names are stable check interfaces, not a strictly serial
 execution order.
 
+## The four recurrence guards (REQ-GUARD-1…4)
+
+Round 7 added four guards so the defects it fixed cannot quietly return. Each runs in a
+required job on the full path — never only on a deployed stage — and each is pinned by
+`scripts/ci/guards-wiring.test.mjs`:
+
+| Guard                        | What it enforces                                                                                                                                                                                                                                                                            | Job it runs in                                                                                           |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| GUARD-1 — no raw controls    | `rhema/no-raw-controls` is an `error` over `packages/ui/src/**` (except `primitives/**`) and `apps/web/src/**/*.tsx` (test sources excluded); the committed no-JS/SSR exemption list carries a reason per entry and acts inside the rule, so an unlisted raw control fails even beside an exemption | `typecheck / lint / unit` — the `pnpm turbo build lint typecheck` leg                                     |
+| GUARD-2 — no internal keys   | the copy lint (`lintInternalTerms` over the COPY leaf values + the `bannedPatterns` ESLint block seeded from `banned-internal-terms.json`) and the DOM guard (`expectNoInternalKeys` — no `snake_case` workflow/phase/kind key in rendered text outside `data-*`)                                    | `typecheck / lint / unit` — the lint leg and `pnpm test`                                                  |
+| GUARD-3 — no reload          | the no-document-reload walk harness (`packages/journeys/src/noreload.ts`): a scripted in-app walk keeps one document (one navigation entry, the window marker persists), sanctioned document navigations excepted by name; its Stage-A fixture walk is `noreload.local.test.ts`                      | `typecheck / lint / unit` — `pnpm test` after the bundled-Chromium install                                 |
+| GUARD-4 — no occlusion       | `u3ProbePage` + `u3UnscrimmedViolation` at 1440×900, 1280×800, 1024×768, 820×1180 and 390×844 emulated: zero intersection between the Page text column, the dossier letter column or any tour target and an open un-scrimmed panel/overlay/menu, and no main column below 45 ch at ≥768 px; the seeded negative legs prove the assert fires (`u3-occlusion.local.test.ts`) | `typecheck / lint / unit` — `pnpm test` after the bundled-Chromium install                                 |
+
+The browser legs fail hard when the server build or Chromium is absent, so they are never
+silent skips. Their Stage-B twins (`U2.noreload`, `U3.occlusion`) run in the scheduled
+journeys on the deployed revision.
+
 Two limits of the current workflow are relevant to contributors:
 
 - The image job's name mentions scanning, but the checked-in workflow has no container

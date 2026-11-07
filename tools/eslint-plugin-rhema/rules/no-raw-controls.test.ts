@@ -5,11 +5,11 @@ import { fileURLToPath } from "node:url";
 import rule from "./no-raw-controls.js";
 import exemptions from "./no-raw-controls-exemptions.js";
 
-// REQ-GUARD-1 (225a_R7KIT.2b; RV-16) — the `rhema/no-raw-controls` rule, authored OFF. These legs
-// fail if the rule is weakened or removed: raw controls, inline spacing/type/colour/radius
-// literals, the no-JS/SSR exemption list applying only to listed entries, and the per-file
-// enablement mechanism in the real `eslint.config.js` (registered off over the scope; a seeded
-// enabled entry turns it `error`).
+// REQ-GUARD-1 (225a_R7KIT.2b; RV-16) — the `rhema/no-raw-controls` rule, enabled globally at
+// `error` by 249_R7GUARD.1. These legs fail if the rule is weakened or removed: raw controls,
+// inline spacing/type/colour/radius literals, the no-JS/SSR exemption list applying only to
+// listed entries, and the global registration in the real `eslint.config.js` (a sample per glob
+// proves the scope; primitives/** and `*.test.*` stay out; seeded violations fail).
 
 RuleTester.afterAll = afterAll;
 RuleTester.describe = describe;
@@ -154,86 +154,46 @@ const severityOf = (v: unknown): number | string | undefined =>
   Array.isArray(v) ? (v[0] as number | string) : (v as number | string | undefined);
 const isOff = (v: unknown): boolean => severityOf(v) === 0 || severityOf(v) === "off";
 
-describe("registration in the real eslint.config.js (per-file enablement)", () => {
-  it("is `off` over both scope globs, absent for primitives/** and out-of-scope files", async () => {
+describe("registration in the real eslint.config.js (global enablement — 249_R7GUARD.1)", () => {
+  it("is `error` over both scope globs, absent for primitives/**, test files and out-of-scope paths", async () => {
     const eslint = new ESLint({ cwd: REPO_ROOT });
-    for (const file of ["apps/web/src/pages.tsx", "apps/web/src/page-chrome.tsx"]) {
+    // One sample per glob family — calculateConfigForFile proves the SCOPE, so a narrowed glob
+    // or a resurrected per-file list fails here. Exempt files stay `error`-configured: the
+    // committed no-JS/SSR list acts inside the rule, never in the config.
+    for (const file of [
+      "packages/ui/src/chat-panel.tsx",
+      "packages/ui/src/shell.tsx",
+      "packages/ui/src/dossier.tsx",
+      "packages/ui/src/markdown-prose.tsx", // never in a per-batch list — the global block owns it
+      "packages/ui/src/ui-css.ts", // the glob covers .ts too (JSX-bearing helpers)
+      "apps/web/src/spa/surfaces/settings.tsx",
+      "apps/web/src/spa/app-shell.tsx",
+      "apps/web/src/demo-page.tsx",
+      "apps/web/src/pages.tsx", // whole-file exemption — still `error`-configured
+      "apps/web/src/marketing.tsx", // whole-file exemption — still `error`-configured
+    ]) {
       const cfg = await eslint.calculateConfigForFile(file);
       const entry = (cfg.rules as Record<string, unknown>)["rhema/no-raw-controls"];
       expect(entry, `rule configured for ${file}`).toBeDefined();
-      expect(isOff(entry), `rule off for ${file}`).toBe(true);
+      expect(isOff(entry), `rule error for ${file}`).toBe(false);
+      // calculateConfigForFile normalizes to numeric severity — 2 is "error".
+      expect(severityOf(entry), `rule error for ${file}`).toBe(2);
     }
-    // R7TALK.1a enabled the first batch-d file — the rule is ON (never off) for it; R7KIT.3a
-    // enabled batch a's settings/billing/usage and 240a_R7KIT.3a2 completed batch a with voices.
-    // 241_R7KIT.3b enabled batch b's run-sheet / export / onboarding; 242_R7KIT.3c2 enabled
-    // batch c2's outline / figures / outline-sections.
+    // Test sources are out of scope by the config's `*.test.*` ignore — the suite's fixtures
+    // seed raw controls and style literals on purpose and must never trip the guard.
     for (const file of [
-      "packages/ui/src/chat-panel.tsx",
-      "apps/web/src/spa/surfaces/settings.tsx",
-      "apps/web/src/spa/surfaces/billing.tsx",
-      "apps/web/src/spa/surfaces/usage.tsx",
-      "apps/web/src/spa/surfaces/voices.tsx",
-      "apps/web/src/spa/surfaces/run-sheet.tsx",
-      "apps/web/src/spa/surfaces/export.tsx",
-      "apps/web/src/spa/surfaces/onboarding.tsx",
-      "apps/web/src/spa/surfaces/outline.tsx",
-      "apps/web/src/spa/surfaces/figures.tsx",
-      "packages/ui/src/outline-sections.tsx",
-      // 243_R7KIT.3d enabled batch d's IDE surfaces (the dossier files stay 243a's — still off).
-      "packages/ui/src/gate-card.tsx",
-      "packages/ui/src/run-card.tsx",
-      "packages/ui/src/timeline.tsx",
-      "packages/ui/src/findings-desk.tsx",
-      "packages/ui/src/compare.tsx",
-      "packages/ui/src/page-editor.tsx",
-      "packages/ui/src/ide-shell.tsx",
-      "packages/ui/src/run-sheet.tsx",
-      "apps/web/src/approval-settings.tsx",
-      // 243a_R7KIT.3e enabled the dossier composition: the letter/claims/findings/sample-dossier
-      // ui files, the shared dossier-view, and the dossier + obligations-new leaf.
-      "packages/ui/src/dossier.tsx",
-      "packages/ui/src/letter.tsx",
-      "packages/ui/src/claims.tsx",
-      "packages/ui/src/findings.tsx",
-      "apps/web/src/dossier-view.tsx",
-      "apps/web/src/spa/surfaces/dossier.tsx",
-      // 248a_R7KIT.3f enabled all 29 migrate-tail census files.
-      "packages/ui/src/run-report.tsx",
-      "packages/ui/src/what-changed.tsx",
-      "packages/ui/src/page-strip.tsx",
-      "packages/ui/src/version-rail.tsx",
-      "packages/ui/src/ide-states.tsx",
-      "packages/ui/src/conversion.tsx",
-      "packages/ui/src/dispositions.tsx",
-      "packages/ui/src/files-pane.tsx",
-      "packages/ui/src/second-read.tsx",
-      "packages/ui/src/approval-row.tsx",
-      "packages/ui/src/shell.tsx",
-      "packages/ui/src/decisions.tsx",
-      "packages/ui/src/rubric.tsx",
-      "packages/ui/src/chips.tsx",
-      "packages/ui/src/margin.tsx",
-      "apps/web/src/demo-page.tsx",
-      "apps/web/src/demo-markers.tsx",
-      "apps/web/src/legal.tsx",
-      "apps/web/src/chat-pane.tsx",
-      "apps/web/src/gate-card.tsx",
-      "apps/web/src/spa/app-shell.tsx",
-      "apps/web/src/spa/palette.tsx",
-      "apps/web/src/spa/chat-live.tsx",
-      "apps/web/src/spa/read-only.tsx",
-      "apps/web/src/spa/page-header.tsx",
-      "apps/web/src/spa/demo-banner.tsx",
-      "apps/web/src/spa/demo-effects.tsx",
-      "apps/web/src/spa/surfaces/run-report.tsx",
-      "apps/web/src/spa/surfaces/editor.tsx",
+      "apps/web/src/server.test.ts",
+      "apps/web/src/spa/app-shell.dom.test.tsx",
+      "packages/ui/src/ide-shell.test.tsx",
+      "apps/web/src/copy.test.ts",
     ]) {
-      const on = await eslint.calculateConfigForFile(file);
-      const onEntry = (on.rules as Record<string, unknown>)["rhema/no-raw-controls"];
-      expect(onEntry, `rule configured for ${file}`).toBeDefined();
-      expect(isOff(onEntry), `rule on for ${file}`).toBe(false);
+      const cfg = await eslint.calculateConfigForFile(file);
+      expect(
+        (cfg.rules as Record<string, unknown>)["rhema/no-raw-controls"],
+        `rule absent for test file ${file}`,
+      ).toBeUndefined();
     }
-    // primitives/** is out of scope — the rule must not apply there at all.
+    // primitives/** is out of scope — the kit itself authors the styled natives.
     const prim = await eslint.calculateConfigForFile("packages/ui/src/primitives/select.tsx");
     expect((prim.rules as Record<string, unknown>)["rhema/no-raw-controls"]).toBeUndefined();
     // Out-of-scope paths carry no rule config.
@@ -241,132 +201,48 @@ describe("registration in the real eslint.config.js (per-file enablement)", () =
     expect((outside.rules as Record<string, unknown>)["rhema/no-raw-controls"]).toBeUndefined();
   });
 
-  it("a seeded enablement entry turns the rule `error` on the named file only", async () => {
-    const config = (await import("../../../eslint.config.js")).default;
-    const eslint = new ESLint({
-      cwd: REPO_ROOT,
-      overrideConfigFile: true,
-      overrideConfig: [
-        ...config,
-        {
-          files: ["apps/web/src/spa/surfaces/settings.tsx"],
-          rules: { "rhema/no-raw-controls": "error" },
-        },
-      ],
-    });
+  it("seeded violations fail under the global block; listed exemptions still win inside the rule", async () => {
+    const eslint = new ESLint({ cwd: REPO_ROOT });
     const code = `export const x = <button type="submit">Save</button>;`;
-    const [on] = await eslint.lintText(code, {
-      filePath: "apps/web/src/spa/surfaces/settings.tsx",
-    });
-    expect(on.messages.some((m) => m.ruleId === "rhema/no-raw-controls")).toBe(true);
-    // 240a_R7KIT.3a2's seeded leg: a raw <button> in voices.tsx now fails the ENABLED rule
-    // (batch a's enablement covers the file — no override needed for the violation to land).
-    const [voices] = await eslint.lintText(code, {
-      filePath: "apps/web/src/spa/surfaces/voices.tsx",
-    });
-    expect(voices.messages.some((m) => m.ruleId === "rhema/no-raw-controls")).toBe(true);
-    // 241_R7KIT.3b's seeded legs: a raw <button> fails the ENABLED rule on every batch-b file.
+    // A raw <button> fails on sample files across both globs — including files that were never
+    // in a per-batch enablement list (the global block owns the whole scope now).
     for (const file of [
-      "apps/web/src/spa/surfaces/run-sheet.tsx",
-      "apps/web/src/spa/surfaces/export.tsx",
-      "apps/web/src/spa/surfaces/onboarding.tsx",
-    ]) {
-      const [res] = await eslint.lintText(code, { filePath: file });
-      expect(
-        res.messages.some((m) => m.ruleId === "rhema/no-raw-controls"),
-        `seeded raw control fails on ${file}`,
-      ).toBe(true);
-    }
-    // 242_R7KIT.3c2's seeded legs: a raw <button> fails the ENABLED rule on every batch-c2 file.
-    for (const file of [
-      "apps/web/src/spa/surfaces/outline.tsx",
-      "apps/web/src/spa/surfaces/figures.tsx",
-      "packages/ui/src/outline-sections.tsx",
-    ]) {
-      const [res] = await eslint.lintText(code, { filePath: file });
-      expect(
-        res.messages.some((m) => m.ruleId === "rhema/no-raw-controls"),
-        `seeded raw control fails on ${file}`,
-      ).toBe(true);
-    }
-    // 243_R7KIT.3d's seeded legs: a raw <button> fails the ENABLED rule on every batch-d file
-    // (component-scoped exemptions don't rescue a control outside the named component).
-    for (const file of [
-      "packages/ui/src/gate-card.tsx",
-      "packages/ui/src/run-card.tsx",
-      "packages/ui/src/timeline.tsx",
-      "packages/ui/src/findings-desk.tsx",
-      "packages/ui/src/compare.tsx",
-      "packages/ui/src/page-editor.tsx",
-      "packages/ui/src/ide-shell.tsx",
-      "packages/ui/src/run-sheet.tsx",
-      "apps/web/src/approval-settings.tsx",
-      // 243a_R7KIT.3e's seeded legs: a raw <button> fails the ENABLED rule on every dossier file.
-      "packages/ui/src/dossier.tsx",
-      "packages/ui/src/letter.tsx",
-      "packages/ui/src/claims.tsx",
-      "packages/ui/src/findings.tsx",
-      "apps/web/src/dossier-view.tsx",
-      "apps/web/src/spa/surfaces/dossier.tsx",
-      // 248a_R7KIT.3f enabled all 29 migrate-tail census files.
-      "packages/ui/src/run-report.tsx",
-      "packages/ui/src/what-changed.tsx",
-      "packages/ui/src/page-strip.tsx",
-      "packages/ui/src/version-rail.tsx",
-      "packages/ui/src/ide-states.tsx",
-      "packages/ui/src/conversion.tsx",
-      "packages/ui/src/dispositions.tsx",
-      "packages/ui/src/files-pane.tsx",
-      "packages/ui/src/second-read.tsx",
-      "packages/ui/src/approval-row.tsx",
-      "packages/ui/src/shell.tsx",
-      "packages/ui/src/decisions.tsx",
-      "packages/ui/src/rubric.tsx",
-      "packages/ui/src/chips.tsx",
-      "packages/ui/src/margin.tsx",
-      "apps/web/src/demo-page.tsx",
-      "apps/web/src/demo-markers.tsx",
-      "apps/web/src/legal.tsx",
-      "apps/web/src/chat-pane.tsx",
-      "apps/web/src/gate-card.tsx",
+      "packages/ui/src/chat-panel.tsx",
+      "packages/ui/src/markdown-prose.tsx",
+      "apps/web/src/spa/surfaces/settings.tsx",
       "apps/web/src/spa/app-shell.tsx",
-      "apps/web/src/spa/palette.tsx",
-      "apps/web/src/spa/chat-live.tsx",
       "apps/web/src/spa/read-only.tsx",
-      "apps/web/src/spa/page-header.tsx",
-      "apps/web/src/spa/demo-banner.tsx",
-      "apps/web/src/spa/demo-effects.tsx",
-      "apps/web/src/spa/surfaces/run-report.tsx",
-      "apps/web/src/spa/surfaces/editor.tsx",
     ]) {
-      const [res] = await eslint.lintText(`export const x = <button type="submit">Save</button>;`, {
-        filePath: file,
-      });
+      const [res] = await eslint.lintText(code, { filePath: file });
       expect(
         res.messages.some((m) => m.ruleId === "rhema/no-raw-controls"),
         `seeded raw control fails on ${file}`,
       ).toBe(true);
     }
-    // Same code in a not-yet-migrated file: the rule stays off (enablement is per-file).
-    const [off] = await eslint.lintText(code, {
-      filePath: "apps/web/src/pages.tsx",
+    // An inline style literal fails under the same block.
+    const [lit] = await eslint.lintText(`export const y = <div style={{ padding: 8 }} />;`, {
+      filePath: "packages/ui/src/chat-panel.tsx",
     });
-    expect(off.messages.some((m) => m.ruleId === "rhema/no-raw-controls")).toBe(false);
-    // Same code in an exempt file: enabled, but the exemption wins.
-    const exemptEslint = new ESLint({
-      cwd: REPO_ROOT,
-      overrideConfigFile: true,
-      overrideConfig: [
-        ...config,
-        {
-          files: ["apps/web/src/pages.tsx"],
-          rules: { "rhema/no-raw-controls": "error" },
-        },
-      ],
-    });
-    const [exempt] = await exemptEslint.lintText(code, {
-      filePath: "apps/web/src/pages.tsx",
-    });
+    expect(lit.messages.some((m) => m.ruleId === "rhema/no-raw-controls")).toBe(true);
+    // The committed exemption list acts INSIDE the rule: the same raw control in pages.tsx
+    // (a whole-file no-JS/SSR exemption) passes the same `error` config…
+    const [exempt] = await eslint.lintText(code, { filePath: "apps/web/src/pages.tsx" });
     expect(exempt.messages.some((m) => m.ruleId === "rhema/no-raw-controls")).toBe(false);
+    // …and a component-scoped exemption applies only to its named component.
+    const [scoped] = await eslint.lintText(
+      `function HiddenField() { return <input type="hidden" name="id" />; }\n` +
+        `function Other() { return <button type="submit">Save</button>; }`,
+      { filePath: "apps/web/src/spa/surfaces/settings.tsx" },
+    );
+    expect(scoped.messages.some((m) => m.ruleId === "rhema/no-raw-controls")).toBe(true);
+    const [scopedOk] = await eslint.lintText(
+      `function HiddenField() { return <input type="hidden" name="id" />; }`,
+      { filePath: "apps/web/src/spa/surfaces/settings.tsx" },
+    );
+    expect(scopedOk.messages.some((m) => m.ruleId === "rhema/no-raw-controls")).toBe(false);
+    // An unlisted raw control in an exempt-LOOKING file still fails — residue can never hide
+    // behind a neighbouring exemption.
+    const [unlisted] = await eslint.lintText(code, { filePath: "apps/web/src/pages-helper.tsx" });
+    expect(unlisted.messages.some((m) => m.ruleId === "rhema/no-raw-controls")).toBe(true);
   });
 });

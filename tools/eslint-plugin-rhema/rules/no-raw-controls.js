@@ -8,9 +8,9 @@
  * `uiCss()`/tokens. Scope lives in `eslint.config.js` (`packages/ui/src/` except `primitives/`
  * — the kit itself — plus every `apps/web/src` tsx file).
  *
- * Authored OFF: the rule registers `off` over its scope and each KIT-3 batch turns it `error` for
- * its migrated files via the `NO_RAW_CONTROLS_ENABLED` list (232, 234, 240, 240a, 241, 242, 243,
- * 243a); 249_R7GUARD.1 flips it on globally.
+ * Enabled GLOBALLY at `error` since 249_R7GUARD.1: authored `off`, each KIT-3 batch enabled it
+ * per migrated file via the retired `NO_RAW_CONTROLS_ENABLED` list (232, 234, 240, 240a, 241,
+ * 242, 243, 243a, 248a), and 249 collapsed the list into the single global block.
  *
  * Exemptions: the committed no-JS/SSR list in `no-raw-controls-exemptions.js` — `{file,
  * component?, reason}`; `file` suffix-matches the linted path and `component`, when present,
@@ -141,10 +141,7 @@ module.exports = {
     const exemptions = (options.exemptions ?? DEFAULT_EXEMPTIONS).filter(
       (e) => e && typeof e.file === "string" && e.file.length > 0,
     );
-    const filename = String(context.physicalFilename ?? context.filename ?? "").replace(
-      /\\/g,
-      "/",
-    );
+    const filename = String(context.physicalFilename ?? context.filename ?? "").replace(/\\/g, "/");
     const matching = exemptions.filter((e) => filename.endsWith(e.file));
     // A file-level entry exempts the whole file — no visitors needed.
     if (matching.some((e) => e.component == null)) return {};

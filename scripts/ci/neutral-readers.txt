@@ -17,12 +17,14 @@
 #   → 21 test files; each dispositioned by hand. IN = a runtime fs read of a repo `docs/`
 #     path or `.gitleaks.toml`. OUT = string literals / fixture writes into temp repos /
 #     comments / reads of non-neutral paths (`scripts/**` is never fast-path-eligible).
-#   IN (the five below — verified complete):
+#   IN (the five below — verified complete; sixth added 2026-11-08 by 249_R7GUARD.1):
 #     scripts/check-coverage-matrix.test.mjs — reads docs specs, COVERAGE_MATRIX.csv, DEFERRALS.md
 #     scripts/deferral-status-parity.test.mjs — reads DEFERRALS.md + a docs/build/reports census
 #     packages/security-checks/src/observability.test.ts — readdirSync docs/ops/playbooks + slo-review.md
 #     packages/security-checks/src/secrets-manifests.test.ts — reads .gitleaks.toml (+ ci.yml)
 #     packages/journeys/src/registry.test.ts — reads docs/build/planning/2026-09-30_planning-ledger.md
+#     scripts/ci/guards-wiring.test.mjs — reads docs/ci.md (+ ci.yml/eslint.config.js — deploy-neutral
+#       source reads; no workspace imports, so it needs no dep-closure build on fast heads)
 #   OUT (16): voice-update/provenance/registry-adjacent literals, path-kind, work-reader,
 #     voice-routes, apparmor, work-perms, queries, archive, gcs-bytes, seat-tables,
 #     lever-matrix, rls-catalog, system-pool-boundary, cleanup-bl38-residue (reads its own
@@ -38,3 +40,4 @@ scripts/deferral-status-parity.test.mjs
 packages/security-checks/src/observability.test.ts
 packages/security-checks/src/secrets-manifests.test.ts
 packages/journeys/src/registry.test.ts
+scripts/ci/guards-wiring.test.mjs

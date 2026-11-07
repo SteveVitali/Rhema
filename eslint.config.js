@@ -27,91 +27,17 @@ const nodeGlobals = {
   fetch: "readonly",
 };
 
-// REQ-GUARD-1 (225a_R7KIT.2b; RV-16) — the `rhema/no-raw-controls` per-file enablement list.
-// The rule bans raw `<button|input|select|textarea>` and inline spacing/type/colour/radius
-// literals across `packages/ui/src/**` (except `primitives/**` — the kit itself) and
-// `apps/web/src/**/*.tsx`. It is authored OFF: EMPTY here; each KIT-3 batch appends the files it
-// migrated (232 → chat-panel; 234 → batch c1; 240/240a → batch a; 241 → batch b; 242 → batch c2;
-// 243/243a → batch d), and 249_R7GUARD.1 collapses the list into one global `error` block over
-// the scope. The no-JS/SSR exemption list is committed data at
-// `tools/eslint-plugin-rhema/rules/no-raw-controls-exemptions.js` (exposed as
+// REQ-GUARD-1 (225a_R7KIT.2b; RV-16) — `rhema/no-raw-controls` is GLOBAL as of 249_R7GUARD.1:
+// the rule bans raw `<button|input|select|textarea>` and inline spacing/type/colour/radius
+// literals at `error` across `packages/ui/src/**` (except `primitives/**` — the kit itself) and
+// `apps/web/src/**/*.tsx`. The per-file enablement list it replaced carried every KIT-3 batch
+// (232, 234, 240, 240a, 241, 242, 243, 243a, 248a); the batches' record stays in the git
+// history and each batch's run ledger. The no-JS/SSR exemption list is
+// committed data at `tools/eslint-plugin-rhema/rules/no-raw-controls-exemptions.js` (exposed as
 // `rhema.noRawControlsExemptions`); each entry names a file or component and its KIT-1-fallback
-// reason (RV-36).
-const NO_RAW_CONTROLS_ENABLED = [
-  // R7TALK.1a — the first batch-d migration file (chat panel rebuilt on the 225a primitives).
-  "packages/ui/src/chat-panel.tsx",
-  // R7HOME.1 — KIT-3 batch c1: the project list + inbox on the 225a primitives.
-  "packages/ui/src/project-list.tsx",
-  "apps/web/src/spa/surfaces/project-home.tsx",
-  "apps/web/src/spa/surfaces/inbox.tsx",
-  // R7KIT.3a — KIT-3 batch a: settings / billing / usage migrated.
-  "apps/web/src/spa/surfaces/settings.tsx",
-  "apps/web/src/spa/surfaces/billing.tsx",
-  "apps/web/src/spa/surfaces/usage.tsx",
-  // 240a_R7KIT.3a2 — batch a part 2: voices joins batch a; batch a's surfaces are now fully on.
-  "apps/web/src/spa/surfaces/voices.tsx",
-  // 241_R7KIT.3b — KIT-3 batch b: run sheet / export / import + new-project surfaces migrated.
-  "apps/web/src/spa/surfaces/run-sheet.tsx",
-  "apps/web/src/spa/surfaces/export.tsx",
-  "apps/web/src/spa/surfaces/onboarding.tsx",
-  // 242_R7KIT.3c2 — KIT-3 batch c2: outline / figures + the shared outline sections migrated.
-  "apps/web/src/spa/surfaces/outline.tsx",
-  "apps/web/src/spa/surfaces/figures.tsx",
-  "packages/ui/src/outline-sections.tsx",
-  // 243_R7KIT.3d — KIT-3 batch d: the IDE surfaces (gate card, run card + feed, timeline,
-  // findings desk, compare, page-editor + ide-shell chrome, approval-settings) + the ui run
-  // sheet's no-JS disposition (named exemptions; the dossier files are 243a's).
-  "packages/ui/src/gate-card.tsx",
-  "packages/ui/src/run-card.tsx",
-  "packages/ui/src/timeline.tsx",
-  "packages/ui/src/findings-desk.tsx",
-  "packages/ui/src/compare.tsx",
-  "packages/ui/src/page-editor.tsx",
-  "packages/ui/src/ide-shell.tsx",
-  "packages/ui/src/run-sheet.tsx",
-  "apps/web/src/approval-settings.tsx",
-  // 243a_R7KIT.3e — the dossier composition: the letter/claims/findings/sample-dossier ui files,
-  // the shared dossier-view, and the dossier + obligations-new leaf. Named exemptions only for
-  // the no-JS/SSR id carriers (HiddenField, BulkOnlyCheck).
-  "packages/ui/src/dossier.tsx",
-  "packages/ui/src/letter.tsx",
-  "packages/ui/src/claims.tsx",
-  "packages/ui/src/findings.tsx",
-  "apps/web/src/dossier-view.tsx",
-  "apps/web/src/spa/surfaces/dossier.tsx",
-  // 248a_R7KIT.3f — the migrate-tail batch: all 29 census files (the dossier/report content
-  // family, SPA shell/palette/chat-live/read-only/page-header, the demo SSR components, legal,
-  // chat-pane, gate-card, surfaces/editor + surfaces/run-report).
-  "packages/ui/src/run-report.tsx",
-  "packages/ui/src/what-changed.tsx",
-  "packages/ui/src/page-strip.tsx",
-  "packages/ui/src/version-rail.tsx",
-  "packages/ui/src/ide-states.tsx",
-  "packages/ui/src/conversion.tsx",
-  "packages/ui/src/dispositions.tsx",
-  "packages/ui/src/files-pane.tsx",
-  "packages/ui/src/second-read.tsx",
-  "packages/ui/src/approval-row.tsx",
-  "packages/ui/src/shell.tsx",
-  "packages/ui/src/decisions.tsx",
-  "packages/ui/src/rubric.tsx",
-  "packages/ui/src/chips.tsx",
-  "packages/ui/src/margin.tsx",
-  "apps/web/src/demo-page.tsx",
-  "apps/web/src/demo-markers.tsx",
-  "apps/web/src/legal.tsx",
-  "apps/web/src/chat-pane.tsx",
-  "apps/web/src/gate-card.tsx",
-  "apps/web/src/spa/app-shell.tsx",
-  "apps/web/src/spa/palette.tsx",
-  "apps/web/src/spa/chat-live.tsx",
-  "apps/web/src/spa/read-only.tsx",
-  "apps/web/src/spa/page-header.tsx",
-  "apps/web/src/spa/demo-banner.tsx",
-  "apps/web/src/spa/demo-effects.tsx",
-  "apps/web/src/spa/surfaces/run-report.tsx",
-  "apps/web/src/spa/surfaces/editor.tsx",
-];
+// reason (RV-36). Test files stay out of scope — the suite's `*.test.*` sources carry seeded raw
+// controls and style literals as fixtures on purpose; exemptions act INSIDE the rule, so an
+// unlisted raw control fails even in an exempt-looking file.
 
 // REQ-GUARD-2 (R7COPY.1a) — the REQ-COPY-6 banned internal-term list is authored once in
 // `packages/contracts/src/banned-internal-terms.json` and consumed here from SOURCE (createRequire
@@ -424,25 +350,17 @@ export default tseslint.config(
     },
   },
   {
-    // REQ-GUARD-1 (225a_R7KIT.2b; RV-16) — `rhema/no-raw-controls` registered OFF over its whole
-    // scope: `packages/ui/src/**` except `primitives/**`, plus `apps/web/src/**/*.tsx`. The
-    // per-file enablement block below turns it `error` for each migrated file; the rule reads
-    // the committed no-JS/SSR exemption list by default (`options.exemptions` overrides).
+    // REQ-GUARD-1 (225a_R7KIT.2b; RV-16) — `rhema/no-raw-controls` at `error` over its whole
+    // scope (249_R7GUARD.1's global flip): `packages/ui/src/**` except `primitives/**`, plus
+    // `apps/web/src/**/*.tsx`. Test sources stay out of scope — `*.test.*` files carry seeded
+    // raw controls and style literals as fixtures (the rule's own tests, dom-test fixtures).
+    // The rule reads the committed no-JS/SSR exemption list by default
+    // (`options.exemptions` overrides); exemptions act inside the rule, so an unlisted raw
+    // control fails even in an exempt-looking file.
     files: ["packages/ui/src/**", "apps/web/src/**/*.tsx"],
-    ignores: ["packages/ui/src/primitives/**"],
-    rules: { "rhema/no-raw-controls": "off" },
+    ignores: ["packages/ui/src/primitives/**", "**/*.test.{ts,tsx,mts,mjs}"],
+    rules: { "rhema/no-raw-controls": "error" },
   },
-  // The per-file enablement list (empty at authoring — the block appears once the first batch
-  // lands; 249 collapses it into one global `error` block over the scope above).
-  ...(NO_RAW_CONTROLS_ENABLED.length === 0
-    ? []
-    : [
-        {
-          files: NO_RAW_CONTROLS_ENABLED,
-          ignores: ["packages/ui/src/primitives/**"],
-          rules: { "rhema/no-raw-controls": "error" },
-        },
-      ]),
   {
     // `src/spa/env.ts` is the single sanctioned import.meta.env reader (REQ-SAFE-8); process.env
     // stays banned there too.
