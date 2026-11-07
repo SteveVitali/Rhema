@@ -92,7 +92,7 @@
   3. `demo-tour-legs.local` — TWO real regressions the probe surfaced honestly:
      a. the demo dossier SPA crashed — the one-line run header called `creditsLabel(spent, cap)` unconditionally; the replayed demo `runSummary.card` carries `null` meters (the RunCard had a `!= null` guard). Guarded identically; new `dossier-demo.test.tsx` renders the committed demo snapshot through `DossierArticle` + `dossierSurfaces`.
      b. `?tour=…` finding marks couldn't place at 1024 — findings now live in the right panel, which at 1024–1279 is a CLOSED overlay (REQ-PANE-2): the `data-finding` desk row is `display:none` → zero-size target → mark unplaced. The leg now opens the panel + selects the Findings tab via the delegated toggles and re-syncs the mark — the same path a user takes.
-- Repair head `1e076372` — local re-verification: `ui.test` 4/4 · `runner.test` 18/18 · `dossier-demo` 2/2 · `demo-tour-legs` 1/1 (all 11 steps × 3 widths, 127s). Second CI read pending.
+- Repair head `1e076372` — local re-verification: `ui.test` 4/4 · `runner.test` 18/18 · `dossier-demo` 2/2 · `demo-tour-legs` 1/1 (all 11 steps × 3 widths, 127s). Second read `821a0628` red on `registry.test.ts`'s owed-loudly census (`U4.controls` joins AUTHORED_HELD); **third read `ci: pass #283@7a96e41b`** (run 42322192847 — all seven legs + ci-pass anchor).
 
 ## Evidence log
 
