@@ -1253,13 +1253,19 @@ const U2_NORELOAD: StepFn = async (ctx) => {
   const chatTab = page.locator('[data-ide-panel-tab="chat"], [data-ide-desk-tab="chat"]').first();
   await leg("chat-send", async () => {
     if ((await chatTab.count()) > 0) {
-      await chatTab.click();
+      // F-R7DEP.2-1ev — leg-ordering, not a surface defect: the Chat tab lives INSIDE
+      // the right panel, so while the panel is closed it resolves in the DOM
+      // (`aria-selected`) but is legitimately invisible — the unconditional click
+      // could never land. A reader opens the panel first (the `]` chord — the same
+      // on-demand open U3.occlusion's probe takes), waits for the open state, then
+      // clicks the now-visible tab. An unopened panel or an unactionable tab after
+      // it is its own failure — never swallowed.
       const ide2 = page.locator(".ide").first();
       if ((await ide2.getAttribute("data-panel")) !== "open") {
         await page.keyboard.press("]");
         await page.waitForSelector('.ide[data-panel="open"]', { timeout: 5_000 });
       }
-      await chatTab.click().catch(() => undefined);
+      await chatTab.click();
     }
     const input = page.locator('[data-chat-composer] textarea[name="message"]').first();
     if ((await input.count()) > 0 && (await input.isEnabled())) {
@@ -1529,7 +1535,21 @@ const U5_WRITE: StepFn = async (ctx) => {
   await page.waitForTimeout(6_000);
 
   // the format bubble ABOVE the selection — Comment is the first item (REQ-WRITE-2/6).
-  await editor.selectText();
+  // The bubble's arm is a REAL selection gesture: the IDE chrome's `selectionMenu`
+  // fires on a mouseup inside the page pane (or a shift-keyup) with a non-collapsed
+  // range inside `[data-pane="page"]`. Playwright's `selectText()` sets the DOM range
+  // directly — no gesture event — so the arm could never fire (the mount is intact:
+  // the controller binds both listeners and the format-bubble DOM probe greens the
+  // same arm at this head). Drag across the typed line the way a reader does.
+  const typedLine = editor.locator("p", { hasText: "sentence one" }).first();
+  const lineBox = await typedLine.boundingBox();
+  if (!lineBox)
+    throw new Error("the typed paragraph has no box to drag-select across");
+  const lineMidY = lineBox.y + lineBox.height / 2;
+  await page.mouse.move(lineBox.x + 4, lineMidY);
+  await page.mouse.down();
+  await page.mouse.move(lineBox.x + lineBox.width - 2, lineMidY, { steps: 12 });
+  await page.mouse.up();
   const bubble = page.locator("[data-format-bubble]").first();
   await bubble.waitFor({ timeout: 10_000 });
   if ((await bubble.getAttribute("data-placed")) !== "above") {
