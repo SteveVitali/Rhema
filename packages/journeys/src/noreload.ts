@@ -19,6 +19,9 @@ export const GUARD3_MARKER = "__rhemaGuard3Walk";
  * declare `sanctioned:` on. Each entry names the spec fact it covers:
  *  - `demo-entry` / `demo-exit` — S-14: crossing the `/demo*`↔workspace boundary is a document
  *    navigation by predicate (the workspace QueryClient is never shared).
+ *  - `sidebar-demo` — 248 R7TOUR.2: the AppShell sidebar's `data-shell-demo` item, the
+ *    workspace→demo document navigation REQ-TOUR-4's R7b half adds (a `demo-entry` member
+ *    named for the control, so a walk can declare it specifically).
  *  - `logout` — the `/logout` POST (R6 T12): the session's sanctioned exit.
  *  - `stripe-handoff` / `oauth-handoff` — the external-checkout/OAuth document hops (T12).
  *  - `binary-export` — `/p/:p/export`, `/usage.csv`, `/export/ai-use/*` download streams (T12).
@@ -30,6 +33,7 @@ export const GUARD3_MARKER = "__rhemaGuard3Walk";
 export const SANCTIONED_DOCUMENT_NAVIGATIONS = [
   "demo-entry",
   "demo-exit",
+  "sidebar-demo",
   "logout",
   "stripe-handoff",
   "oauth-handoff",

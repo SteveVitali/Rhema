@@ -300,6 +300,10 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-shell-voices", "conditional", "spa/app-shell.tsx"),
     a("data-shell-usage", "conditional", "spa/app-shell.tsx"),
     a("data-shell-settings", "conditional", "spa/app-shell.tsx"),
+    // 248 R7TOUR.2 (REQ-TOUR-4 R7b part, REQ-SHELL-2, S-14) — the sidebar Demo item: a
+    // document navigation (data-spa-native) into the demo namespace, joining the GUARD-3
+    // sanctioned list as "sidebar-demo".
+    a("data-shell-demo", "conditional", "spa/app-shell.tsx"),
     a("data-shell-recent", "conditional", "spa/app-shell.tsx", "recent-project row hook (≤8 + All projects)"),
     a("data-shell-all-projects", "conditional", "spa/app-shell.tsx"),
     a("data-shell-account", "conditional", "spa/app-shell.tsx", "account menu trigger (initials + credits)"),

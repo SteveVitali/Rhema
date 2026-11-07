@@ -8,7 +8,7 @@
 // — plus 248_R7TOUR.2 as D2.tour's sanctioned re-flipper (P4-23, GD-PREVIEW.R7).
 
 import { join } from "node:path";
-import { DEMO_ESSAYS, DEMO_DOCUMENT_ROUTE_IDS, DEMO_HUB_ESSAYS } from "@rhema/contracts";
+import { DEMO_ESSAYS, DEMO_DOCUMENT_ROUTE_IDS, DEMO_HUB_ESSAYS, isDemoNamespacePath } from "@rhema/contracts";
 import type { StepFn } from "./runner.js";
 import { attachDemoRecord, crawlDemo, routeIdMatches } from "./demo-side-effects.js";
 import { assertNoReload, guard3Segment, plantGuard3Marker } from "./noreload.js";
@@ -685,10 +685,14 @@ const TOUR_STEPS: readonly { id: string; route: string; search?: string; target:
   { id: "published", route: "", target: "[data-page-root]" },
   { id: "v1", route: "/v/1", target: "[data-page-host]" },
   { id: "verdict", route: "/review/v1-review", target: '[data-letter-section="verdict"]' },
-  { id: "one-thing", route: "/review/v1-review", target: '[data-finding="The one thing"]' },
+  // 248 R7TOUR.2 — REQ-PANE-5 re-pins: beat 4 is the letter's passage link (the finding lives
+  // in the right panel); beat 5 keeps the Findings-tab row, which the ENGINE opens via its
+  // declared `panelTab` (no leg-side affordance needed at any width); beat 7 is the
+  // imported-image figure card (S-7).
+  { id: "one-thing", route: "/review/v1-review", target: '[data-passage-link="The one thing"]' },
   { id: "two-readers", route: "/review/v1-review", target: '[data-finding="Major 1"]' },
   { id: "claims", route: "/review/v1-review", target: '[data-claim="22"]' },
-  { id: "figure", route: "/figures", target: '[data-figure-row="figure_2_ches_correlations_v2"]' },
+  { id: "figure", route: "/figures", target: '[data-figure-image="figure_2_ches_correlations_v2"]' },
   {
     id: "responses",
     route: "/a/agents--author--ledgers--v1-response-ledger.md",
@@ -770,17 +774,9 @@ const D2_TOUR: StepFn = async (ctx) => {
           ctx,
         );
       }
-      // 243a_R7KIT.3e — findings live in the right panel (REQ-PANE-5); at 1024–1279 that panel is
-      // a closed overlay (REQ-PANE-2), so a finding mark's zero-size target never places. The leg
-      // opens the panel like a user would, then re-syncs the mark with a resize tick.
-      if (w === 1024 && step.target.startsWith("[data-finding")) {
-        // the panel's open affordance at 1024 is the `]` chord / View-menu row — the delegated
-        // `data-ide-panel-toggle` listener binds clicks regardless of the row's menu-hidden state;
-        // the Findings tab body stays `display:none` until its `data-ide-panel-tab` is selected.
-        await page.locator("[data-ide-panel-toggle]").first().dispatchEvent("click");
-        await page.locator('[data-ide-panel-tab="findings"]').first().dispatchEvent("click");
-        await page.evaluate(() => window.dispatchEvent(new Event("resize")));
-      }
+      // 248 R7TOUR.2 — the tour ENGINE owns the panel open now (the step's declared `panelTab`
+      // activates the real `[data-ide-panel-tab]` control at every width — docked, overlay,
+      // sheet), so the leg needs no width-scoped affordance.
       const mark = page.locator(`[data-demo-tour-step="${step.id}"]`);
       try {
         await mark.waitFor({ timeout: 30_000 });
@@ -849,6 +845,43 @@ const D2_TOUR: StepFn = async (ctx) => {
   ];
   if (violations.length > 0) {
     throw new Error(`D2.tour side-effect/fault(s):\n  ${violations.slice(0, 10).join("\n  ")}`);
+  }
+
+  // 248 R7TOUR.2 (REQ-TOUR-4 R7b part, REQ-DWEB-16, S-14) — the sidebar Demo entry: from a
+  // signed-in SPA page the item is a DOCUMENT navigation yielding a fresh document carrying
+  // `boot.demo`; the workspace QueryClient is never shared (the marker the old document held
+  // is gone — the GUARD-3 "sidebar-demo" named arm).
+  {
+    const signed = await ctx.returningUser("a");
+    const sp = signed.page;
+    await sp.goto(`${ctx.webBaseUrl}/app`, { waitUntil: "domcontentloaded" });
+    const demoItem = sp.locator("[data-shell-demo]");
+    await demoItem.first().waitFor({ timeout: 30_000 });
+    if ((await demoItem.first().getAttribute("data-spa-native")) == null) {
+      throw new Error("data-shell-demo is missing data-spa-native — it would share the workspace client");
+    }
+    await sp.evaluate(() => {
+      (window as unknown as { __rhemaTour2Shared?: string }).__rhemaTour2Shared = "held";
+    });
+    await settleDocumentNav(sp, ctx, async () => {
+      await demoItem.first().click();
+    });
+    if (!isDemoNamespacePath(new URL(sp.url()).pathname)) {
+      throw new Error(`the sidebar Demo item landed off-namespace at ${sp.url()}`);
+    }
+    const bootDemo = await sp.evaluate(() => {
+      const raw = document.querySelector("script[data-spa-boot]")?.textContent;
+      const boot = raw != null ? (JSON.parse(raw) as { demo?: { essay?: string } }) : null;
+      return boot?.demo?.essay ?? null;
+    });
+    if (bootDemo == null) throw new Error("the Demo entry yielded a document with no boot.demo");
+    const marker = await sp.evaluate(
+      () => (window as unknown as { __rhemaTour2Shared?: string }).__rhemaTour2Shared ?? null,
+    );
+    if (marker != null) {
+      throw new Error("the workspace QueryClient state survived — not a fresh document");
+    }
+    await sp.screenshot({ path: join(ctx.outDir, "d2-tour-sidebar-demo.png"), fullPage: true });
   }
   assertBundleParity(ctx);
 };

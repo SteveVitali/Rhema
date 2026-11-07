@@ -4,7 +4,7 @@
 
 # Demo side-effect table (regenerated)
 
-- Generated: 2026-11-07T12:00:28.882Z against http://127.0.0.1:43947
+- Generated: 2026-11-07T13:52:41.229Z against http://127.0.0.1:43881
 - Walks: 4 (essay × {logged out, cookie} × {desktop, phone})
 - Violations: 0
 
@@ -17,46 +17,46 @@
 | `GET /assets/fonts/literata-latin-standard-italic.woff2` | font | 56 | GET/HEAD — allowed |
 | `GET /assets/fonts/literata-latin-standard-normal.woff2` | font | 192 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/ClientOnly-CcbOzC0Z.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/_authenticated-q5J0U8le.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/app-shell-BfCcdJ1g.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/chrome-data-ByIvyRTP.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/copy-Dcwz6uWJ.js` | script | 188 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/_authenticated-tywHBjpx.js` | script | 188 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/app-shell-DWu9VtnP.js` | script | 188 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/chrome-data-D1_Znqad.js` | script | 188 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/copy-CZqN-HgX.js` | script | 188 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/demo-D_0jIXZl.js` | script | 188 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/demo-beacon-BbuoPGq5.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/demo-tour-B-0pCPre.js` | script | 188 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/demo-tour-Cr5gdeZt.js` | script | 188 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/dist-BAw7t3No.js` | script | 188 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/dist-CLPV5DHr.js` | script | 188 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/dist-D9_nQrSM.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/dossier-ChKahMOJ.js` | script | 172 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/dossier-ng56mG8u.js` | script | 172 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/dwell-BAOVLGpJ.js` | script | 164 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/editor-CVHevcNa.js` | script | 156 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/error-copy-Bkjk_QJf.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/figures-BAjHp26f.js` | script | 16 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/editor-DVEkHUnt.js` | script | 156 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/error-copy-CMdwVxrl.js` | script | 188 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/figures-BmDV1FN6.js` | script | 16 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/gate-presence-CQ9z-Mj3.js` | script | 172 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/hold-store-rM97zjbO.js` | script | 156 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/lazyRouteComponent-CduZT8Q9.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/main-Cx07X71T.js` | script | 188 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/main-BEarPlFW.js` | script | 188 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/markdown-prose-L4it1Shm.js` | script | 188 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/not-found-i5RsCZif.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project-CQSocN1R.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project.a._artifactId-rFwOmlPi.js` | script | 92 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project.figures-Dd32_Ym9.js` | script | 8 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project.figures_._figureId-CuG-t-wt.js` | script | 8 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project.index-86ZiiP5l.js` | script | 8 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project.r._runId-CR8ZFNB4.js` | script | 8 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project.review._runId-DZ9xzZxu.js` | script | 8 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project.revisions._cid-Cb9NY6Ka.js` | script | 12 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project.v._n.diff._m-DV52aySm.js` | script | 12 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/p._project.v._v-DfkJiPbg.js` | script | 32 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project-9ghNnLaa.js` | script | 188 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project.a._artifactId-PVJqOuUZ.js` | script | 92 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project.figures-Bvr2tK-_.js` | script | 8 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project.figures_._figureId-Bs8gX9mU.js` | script | 8 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project.index-BXfvW6lI.js` | script | 8 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project.r._runId-ClVlEnTX.js` | script | 8 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project.review._runId-bpg33T8b.js` | script | 8 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project.revisions._cid-DQRNC3jk.js` | script | 12 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project.v._n.diff._m-V6NGBkOP.js` | script | 12 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/p._project.v._v-CHkR5zYW.js` | script | 32 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/search-CLc2JOVt.js` | script | 188 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/select-CC4k5UGA.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/states-DjL5BqRJ.js` | script | 188 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/states-CPHsr_Rb.js` | script | 188 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/theme-CARgOwx6.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/toast-DYUBXRca.js` | script | 156 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/toggles-C2T5V94B.js` | script | 16 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/toast-AYRuopyL.js` | script | 156 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/toggles-BLSclXJ_.js` | script | 16 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/useMutation-DZFJRcX6.js` | script | 188 | GET/HEAD — allowed |
 | `GET /assets/spa/assets/useSelector-CP4_woLD.js` | script | 188 | GET/HEAD — allowed |
-| `GET /assets/spa/assets/write-paths-BAVsUc-y.js` | script | 188 | GET/HEAD — allowed |
+| `GET /assets/spa/assets/write-paths-D9xxlXim.js` | script | 188 | GET/HEAD — allowed |
 | `GET /bff/demo/asset/the-borrowed-commons/drafts/figures/figure_1_signal_map.png` | image | 36 | GET/HEAD — allowed |
 | `GET /bff/demo/asset/the-borrowed-commons/drafts/figures/figure_2_load_curve.png` | image | 12 | GET/HEAD — allowed |
 | `GET /bff/demo/feed-labels` | fetch | 188 | GET/HEAD — allowed |

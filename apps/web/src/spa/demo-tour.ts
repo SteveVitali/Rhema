@@ -54,8 +54,14 @@ export interface DemoTourStep {
   /** The COPY.demo.tour.steps leaf the coach mark renders (≤ 2 sentences). */
   readonly copyKey: TourCopyId;
   /** How the step completes — "next" unlocks the Next hop; "click-target" is reserved for
-   *  R7TOUR.2's re-pin (no current step uses it). */
+   *  a later step (no current step uses it). */
   readonly advance: "next" | "click-target";
+  /** 248 R7TOUR.2 (REQ-PANE-2/4) — a right-panel tab the step opens before locating its
+   *  target, when the target lives inside a tab body (REQ-PANE-5 moved findings there).
+   *  The engine activates the same `[data-ide-panel-tab]` control a user would — the
+   *  controller's delegated handler opens the panel (docked, scrimmed overlay, or sheet at
+   *  the current width) and selects the tab, so the mark never points at a hidden node. */
+  readonly panelTab?: "findings" | "claims" | "chat" | "timeline" | "feed";
   /** A secondary hop rendered inside the coach mark (deep link; document nav when it crosses
    *  essays — the interceptor's demo predicate keeps same-essay hops client-side). */
   readonly aside?: {
@@ -101,7 +107,9 @@ export const DEMO_TOUR_STEPS: readonly DemoTourStep[] = [
   {
     id: "one-thing",
     route: "/review/v1-review",
-    target: "data-finding",
+    // REQ-PANE-5 — the finding lives in the right panel now; the beat is the letter's own
+    // directive, so the mark pins the Verdict section's passage link (letter column).
+    target: "data-passage-link",
     targetValue: "The one thing",
     placement: "bottom",
     copyKey: "oneThing",
@@ -112,6 +120,7 @@ export const DEMO_TOUR_STEPS: readonly DemoTourStep[] = [
     route: "/review/v1-review",
     target: "data-finding",
     targetValue: "Major 1",
+    panelTab: "findings",
     placement: "bottom",
     copyKey: "twoReaders",
     advance: "next",
@@ -132,7 +141,8 @@ export const DEMO_TOUR_STEPS: readonly DemoTourStep[] = [
   {
     id: "figure",
     route: "/figures",
-    target: "data-figure-row",
+    // S-7 — the imported-image figure card (the v2 regeneration the review asked for).
+    target: "data-figure-image",
     targetValue: "figure_2_ches_correlations_v2",
     placement: "bottom",
     copyKey: "figure",
@@ -385,6 +395,20 @@ export function mountDemoTour(events?: DemoTourEvents): () => void {
     overlay.appendChild(hint);
   };
 
+  // 248 R7TOUR.2 (REQ-PANE-2/4) — a beat whose target lives in a right-panel tab opens the
+  // panel the way a user does: the delegated `[data-ide-panel-tab]` activation. At docked
+  // widths it commits {tab, open}; in overlay/sheet mode it also arms the session intent —
+  // one mechanism at every breakpoint (the `]` chord and the View row do the same).
+  const ensurePanelTab = (step: DemoTourStep): void => {
+    if (step.panelTab == null) return;
+    const ide = document.querySelector<HTMLElement>(".ide");
+    if (ide == null) return; // not an IDE-framed document — nothing to open
+    if (ide.dataset["panel"] === "open" && ide.dataset["panelTab"] === step.panelTab) return;
+    const btn = ide.querySelector<HTMLElement>(`[data-ide-panel-tab="${step.panelTab}"]`);
+    if (btn == null || btn.hasAttribute("hidden") || btn.hasAttribute("disabled")) return;
+    btn.click();
+  };
+
   const sync = (): void => {
     if (disposed) return;
     const step = stepForLocation();
@@ -393,6 +417,7 @@ export function mountDemoTour(events?: DemoTourEvents): () => void {
       renderedId = null;
       return;
     }
+    ensurePanelTab(step);
     const target = document.querySelector<HTMLElement>(tourTargetSelector(step));
     if (target == null) return; // subtree observer retries when the surface mounts
     if (overlay.hidden) {

@@ -25,6 +25,7 @@ import { useLocation, useRouter } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
   ClipboardCheck,
+  Compass,
   Download,
   FilePlus2,
   FileText,
@@ -580,6 +581,11 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
             <ShellItem hook="data-shell-voices" href="/voices" icon={<Mic size={18} aria-hidden />} label={COPY.appShell.voices} collapsed={collapsed} current={loc.pathname.startsWith("/v") || loc.pathname.startsWith("/voices")} chord={shortcutFor("goto-voices")} />
             <ShellItem hook="data-shell-usage" href="/usage" icon={<Gauge size={18} aria-hidden />} label={COPY.appShell.usage} collapsed={collapsed} current={loc.pathname === "/usage"} />
             <ShellItem hook="data-shell-settings" href="/app/settings/account" icon={<Settings size={18} aria-hidden />} label={COPY.appShell.settings} collapsed={collapsed} current={loc.pathname.startsWith("/app/settings") || loc.pathname === "/settings"} chord={shortcutFor("settings")} />
+            {/* 248 R7TOUR.2 (REQ-TOUR-4 R7b part, REQ-DWEB-16, S-14) — the Demo item: a
+                DOCUMENT navigation into the demo namespace (a fresh document carrying
+                `boot.demo`; the workspace QueryClient is never shared). The target is a
+                demo-shell document — the SSR `/demo` hub carries no `boot.demo`. */}
+            <ShellItem hook="data-shell-demo" href="/demo/structure-of-political-difference" icon={<Compass size={18} aria-hidden />} label={COPY.appShell.demo} collapsed={collapsed} docNav />
           </div>
           {projectSlug != null ? (
             <ProjectSection

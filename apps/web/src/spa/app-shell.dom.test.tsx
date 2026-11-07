@@ -240,10 +240,16 @@ describe("R7SHELL.1a — the AppShell census and mount", () => {
     for (const t of ["dark", "light", "auto"]) {
       expect(document.querySelector(`[data-shell-theme="${t}"]`)).not.toBeNull();
     }
-    // no `href="/"` remains in the SHELL chrome (UXC-3 — leaf headers are 227's), and the
-    // sidebar's Demo entry is withheld (248's data-spa-native link)
+    // no `href="/"` remains in the SHELL chrome (UXC-3 — leaf headers are 227's).
     expect(document.querySelector('[data-app-sidebar] a[href="/"]')).toBeNull();
-    expect(document.querySelector("[data-app-sidebar]")!.innerHTML).not.toContain("/demo");
+    // 248 R7TOUR.2 (REQ-TOUR-4 R7b part, REQ-DWEB-16, S-14) — the sidebar Demo item sits in
+    // the nav group after Settings, a DOCUMENT navigation (data-spa-native — the
+    // interceptor's opt-out guard lets it load a fresh document) into the demo namespace.
+    const demo = document.querySelector<HTMLElement>("[data-shell-demo]");
+    expect(demo, "the sidebar Demo item").not.toBeNull();
+    expect(demo!.getAttribute("data-spa-native")).not.toBeNull();
+    expect(demo!.getAttribute("href")).toBe("/demo/structure-of-political-difference");
+    expect(demo!.textContent).toContain("Demo");
     // R7SHELL.1c — Search renders on every signed-in page (the global palette's reach is the
     // whole workspace shell, not only IDE-framed leaves).
     expect(document.querySelector("[data-shell-search]")).not.toBeNull();
