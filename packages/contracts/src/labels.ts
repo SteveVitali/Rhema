@@ -28,7 +28,7 @@ import type {
   SourceProviderKey,
   WorkflowKey,
 } from "./enums.js";
-import type { AgentTypeKey, ApprovalPolicy } from "./vocab.js";
+import type { ApprovalPolicy } from "./vocab.js";
 import {
   MODEL_TIER_DISPLAY,
   PLAN_DISPLAY,
