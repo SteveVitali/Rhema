@@ -1260,6 +1260,9 @@ const U2_NORELOAD: StepFn = async (ctx) => {
       // on-demand open U3.occlusion's probe takes), waits for the open state, then
       // clicks the now-visible tab. An unopened panel or an unactionable tab after
       // it is its own failure — never swallowed.
+      // (`]` is a bare chrome chord — inert while a field or the Page holds focus,
+      // so the caret blurs out of any input first, the same arm U5 uses for `f`.)
+      await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
       const ide2 = page.locator(".ide").first();
       if ((await ide2.getAttribute("data-panel")) !== "open") {
         await page.keyboard.press("]");

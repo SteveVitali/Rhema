@@ -15,9 +15,11 @@ leg side, not the surface (`packages/journeys/src/r7legs.ts` only):
 - **`U2.noreload`** — leg-ordering bug: the first `chatTab.click()` ran before the `]`
   panel-open; the Chat tab lives inside the closed right panel (`aria-selected`,
   legitimately invisible), so the click could never land. Re-ordered to the reader's
-  sequence: press `]` → `waitForSelector('.ide[data-panel="open"]')` → real
-  `chatTab.click()` (the `.catch(() => undefined)` swallow is gone — an unactionable
-  tab after a confirmed open is its own failure).
+  sequence: blur any field focus (`]` is a bare chrome chord, inert in
+  `input`/`page`/`source` zones — the same arm U5 uses for `f`) → press `]` →
+  `waitForSelector('.ide[data-panel="open"]')` → real `chatTab.click()` (the
+  `.catch(() => undefined)` swallow is gone — an unactionable tab after a confirmed
+  open is its own failure).
 - **`U5.write`** — the arm was too synthetic, not a mount regression: the format
   bubble's `selectionMenu` fires on a `mouseup` inside `[data-pane="page"]` (or a
   shift-`keyup`) with a non-collapsed range; `editor.selectText()` sets the DOM range
