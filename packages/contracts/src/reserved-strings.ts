@@ -152,9 +152,12 @@ export const STRICTLY_BANNED: string[] = BANNED_STRINGS.filter((b) => !b.except)
 
 // ---------- REQ-COPY-6 (R7COPY.1a) — the banned internal-term list ----------
 // Internal build vocabulary that must never reach user-facing copy, verbatim from the round-7 spec
-// §4.13 REQ-COPY-6 (the list is verbatim — never weaken it to get green). Consumed by
-// `lintInternalTerms` (vocab-lint.ts) and by the ESLint `no-banned-strings` rule's `bannedPatterns`
-// option (eslint.config.js seeds it from this table — one list, two guards).
+// §4.13 REQ-COPY-6 (the list is verbatim — never weaken it to get green). The ONE list lives in
+// `banned-internal-terms.json` beside this file — `lintInternalTerms` (vocab-lint.ts) AND the
+// ESLint `no-banned-strings` rule's `bannedPatterns` option (eslint.config.js requires the same
+// JSON) both consume it: two guards, one source, no build-order dependency.
+
+import bannedInternalTermsJson from "./banned-internal-terms.json" with { type: "json" };
 
 export interface BannedInternalTerm {
   /** Stable id — an allow entry references this. */
@@ -169,78 +172,8 @@ export interface BannedInternalTerm {
   replacement: string;
 }
 
-export const BANNED_INTERNAL_TERMS: readonly BannedInternalTerm[] = [
-  {
-    id: "quiet-bucket",
-    text: "QUIET",
-    pattern: "\\bQUIET\\b",
-    flags: "",
-    replacement: "nothing — the attention bucket is retired (ADR-128)",
-  },
-  {
-    id: "obligations",
-    text: "obligations",
-    pattern: "\\bobligations?\\b",
-    flags: "i",
-    replacement: "open items",
-  },
-  {
-    id: "gate-word",
-    text: "gate",
-    pattern: "\\bgates?\\b",
-    flags: "i",
-    replacement: "approval / spend confirmation",
-  },
-  {
-    id: "coherence-read",
-    text: "the coherence read",
-    pattern: "\\bthe coherence read\\b",
-    flags: "i",
-    replacement: "plain wording (drop the parenthetical)",
-  },
-  {
-    id: "public-funnel",
-    text: "public funnel",
-    pattern: "\\bpublic funnel\\b",
-    flags: "i",
-    replacement: "the sign-up flow",
-  },
-  {
-    id: "sidecar",
-    text: "sidecar",
-    pattern: "\\bsidecars?\\b",
-    flags: "i",
-    replacement: "structured notes",
-  },
-  {
-    id: "partial-phases",
-    text: "partial (0/1 phases)",
-    pattern: "\\bpartial\\s*\\(",
-    flags: "i",
-    replacement: "finished in part — {done} of {total} phases done",
-  },
-  {
-    id: "waiting-call",
-    text: "Waiting on your call",
-    pattern: "\\bwaiting on your call\\b",
-    flags: "i",
-    replacement: "waiting for you",
-  },
-  {
-    id: "invitation-era",
-    text: "Have an invitation?",
-    pattern: "\\bhave an invitation\\?",
-    flags: "i",
-    replacement: "already have an account?",
-  },
-  {
-    id: "session-contract",
-    text: "the shared session contract…",
-    pattern: "\\bthe shared session contract\\b",
-    flags: "i",
-    replacement: "plain wording about the shared sign-in",
-  },
-];
+export const BANNED_INTERNAL_TERMS: readonly BannedInternalTerm[] =
+  bannedInternalTermsJson as readonly BannedInternalTerm[];
 
 /**
  * A temporary, named, dated exemption for a banned internal term in an H15-SIGNED `demo.*` /

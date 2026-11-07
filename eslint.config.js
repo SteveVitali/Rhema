@@ -1,4 +1,5 @@
 // @ts-check
+import { createRequire } from "node:module";
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import rhema from "eslint-plugin-rhema";
@@ -80,17 +81,13 @@ const NO_RAW_CONTROLS_ENABLED = [
   "apps/web/src/spa/surfaces/dossier.tsx",
 ];
 
-// REQ-GUARD-2 (R7COPY.1a) — the copy lint's banned internal-term list is authored once in
-// @rhema/contracts `reserved-strings.ts` (REQ-COPY-6 verbatim) and consumed here through the built
-// dist module — one list feeds `lintInternalTerms` AND this rule. The import fails loudly if the
-// repo isn't built (the guard must never silently pass unarmed).
-const { BANNED_INTERNAL_TERMS } = await import(
-  "./packages/contracts/dist/reserved-strings.js"
-).catch((err) => {
-  throw new Error(
-    `eslint.config.js needs packages/contracts built for REQ-GUARD-2's bannedPatterns — run \`pnpm turbo build --filter=@rhema/contracts\` first (${err instanceof Error ? err.message : err})`,
-  );
-});
+// REQ-GUARD-2 (R7COPY.1a) — the REQ-COPY-6 banned internal-term list is authored once in
+// `packages/contracts/src/banned-internal-terms.json` and consumed here from SOURCE (createRequire
+// — no build-order dependency: a fresh checkout lints fine); `lintInternalTerms` reads the same
+// file through @rhema/contracts — one list, two guards.
+const BANNED_INTERNAL_TERMS = createRequire(import.meta.url)(
+  "./packages/contracts/src/banned-internal-terms.json",
+);
 
 export default tseslint.config(
   {
