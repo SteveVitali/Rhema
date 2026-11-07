@@ -458,6 +458,7 @@ Dispatched **out of order** (`GD-ORDER.R7`): `200_R6WATCH.1` (clock-bound ≥ 20
 | 247 | `247_R7RO.2__phone-reader-island.md` | R7b | phone-UA reader island shrink + REQ-MOBILE-3 entry points + Android tablets (REQ-RELOAD-7) | — |
 | 247a | `247a_HUMAN-H16__ux-review-session.md` | R7b marker | **human** — optional UX review, held in 250's preview window before prod (GD-PREVIEW.R7) | — |
 | 248 | `248_R7TOUR.2__tour-re-pin.md` | R7b | tour re-pin on final surfaces + sidebar Demo entry + DWEB-7 re-run (REQ-TOUR-2/4) | — |
+| 248a | `248a_R7KIT.3f__migrate-tail.md` | R7b | **run-time insert** — migrate the unmigrated GUARD-1 tail (29 files / ~340 diagnostics — the residual no KIT-3 batch covered; 249's bound fired, manifest inv. 17) | — |
 | 249 | `249_R7GUARD.1__recurrence-guards.md` | R7b | no-raw-controls global + occlusion check in CI (REQ-GUARD-1/4, REQ-PANE-4) | — |
 | 249a | `249a_R7PUB.1__landing-pricing-refresh.md` | R7b | signed-in pricing + landing refresh code + recording slot (recording captured in 250's preview) (REQ-PUB-1/2) | — |
 | 250 | `250_R7DEP.2__r7b-deploy.md` | R7b deploy | the ONE R7b preview (walk D*+U*; H16; recording) → golden classification (≤1 rerun) → prod deploy → CDN invalidation → Stage B → U6 paid run (< $10) → provenance → teardown (REQ-DACC-7, REQ-DOPS-6, REQ-SPEED-5) | pre-auth (GD-DEPLOY.R7, GD-UX-PAIDLEG.R7, GD-GOLDEN.R7, GD-PREVIEW.R7) |

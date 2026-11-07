@@ -84,6 +84,7 @@ describe("231 R7RELOAD.1 — the GUARD-3 harness fixture walk", () => {
     expect([...SANCTIONED_DOCUMENT_NAVIGATIONS]).toEqual([
       "demo-entry",
       "demo-exit",
+      "sidebar-demo",
       "logout",
       "stripe-handoff",
       "oauth-handoff",

@@ -7,6 +7,7 @@
 
 import { spawn, type ChildProcess } from "node:child_process";
 import { mkdirSync } from "node:fs";
+import { createServer, type Server } from "node:http";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -19,9 +20,36 @@ const OUT = join(REPO, "docs/build/reports/2026-11-04_r7dem-6a-tour");
 const MAIN = join(REPO, "apps/web/dist/main.js");
 const PORT = 43400 + Math.floor(Math.random() * 400);
 const BASE = `http://127.0.0.1:${PORT}`;
+const API_PORT = 43900 + Math.floor(Math.random() * 400);
+const API_BASE = `http://127.0.0.1:${API_PORT}`;
 
 let server: ChildProcess | undefined;
+let stubApi: Server | undefined;
 let browser: Browser | undefined;
+
+// 248 R7TOUR.2 — the signed-in sidebar arm needs ONE real signed-in SPA document locally.
+// The demo path never calls the api, but `/app` does (listProjects is load-bearing; the
+// shell's principal/theme reads are best-effort; every /bff optional seam degrades), so a
+// two-endpoint stub stands in: `GET /session` (the principal the boot + session query
+// consume) and `GET /projects` (the empty workspace list — no showcase precedence). Every
+// other path 404s into the server's `swallowDegraded`/best-effort arms.
+function startStubApi(): Promise<void> {
+  stubApi = createServer((req, res) => {
+    const path = new URL(req.url ?? "/", API_BASE).pathname;
+    res.setHeader("content-type", "application/json");
+    if (req.method === "GET" && path === "/session") {
+      res.end(JSON.stringify({ userId: "local-standin", workspaceId: "ws-local", billingAccountId: "ba-local" }));
+    } else if (req.method === "GET" && path === "/projects") {
+      res.end(JSON.stringify({ projects: [] }));
+    } else {
+      res.statusCode = 404;
+      res.end(JSON.stringify({ error: "stub_unbound" }));
+    }
+  });
+  return new Promise((resolvePromise) => {
+    stubApi!.listen(API_PORT, "127.0.0.1", () => resolvePromise());
+  });
+}
 
 async function startServer(): Promise<string | null> {
   try {
@@ -30,7 +58,7 @@ async function startServer(): Promise<string | null> {
       env: {
         ...process.env,
         PORT: String(PORT),
-        API_BASE_URL: "http://127.0.0.1:1",
+        API_BASE_URL: API_BASE,
         RHEMA_BUILD_GIT_SHA: "r7dem6a-local",
       },
       stdio: ["ignore", "pipe", "pipe"],
@@ -105,6 +133,7 @@ function makeCtx(stepId: string): StepCtx {
 describe("222 R7DEM.6a — the D2.tour leg body locally (ready-to-flip)", () => {
   it("walks all 11 steps at three widths against a local demoDataSource server", async () => {
     mkdirSync(OUT, { recursive: true });
+    await startStubApi();
     const base = await startServer();
     if (base == null) {
       if (process.env.CI) throw new Error("local web server did not start (apps/web build missing?)");
@@ -125,6 +154,7 @@ describe("222 R7DEM.6a — the D2.tour leg body locally (ready-to-flip)", () => 
     } finally {
       await browser.close();
       server?.kill();
+      await new Promise((r) => stubApi?.close(() => r(undefined)));
     }
   }, 600_000);
 });

@@ -22,6 +22,7 @@ import {
   demoInternalPath,
   spaRouteFor,
 } from "@rhema/contracts";
+import { IDE_KEYMAP, PANEL_TABS } from "@rhema/ide";
 import { COPY } from "./copy.js";
 import { domContractMatch } from "./dom-contract.js";
 import { DEMO_TOUR_STEPS, tourStepHref, tourTargetSelector } from "./spa/demo-tour.js";
@@ -100,23 +101,38 @@ describe("the step schema is data pinned to the contract (REQ-TOUR-2)", () => {
       const hit = domContractMatch(step.target);
       expect(hit, `${step.id} target ${step.target}`).not.toBeNull();
     }
-    // literal-selector spot pins — the asserted direction's concrete rows.
+    // literal-selector spot pins — the asserted direction's concrete rows (re-pinned R7b:
+    // beat 4 → the letter's passage link; beat 5 → the Findings-tab row; beat 7 → the
+    // imported-image card).
     expect(tourTargetSelector(DEMO_TOUR_STEPS[2]!)).toBe('[data-letter-section="verdict"]');
-    expect(tourTargetSelector(DEMO_TOUR_STEPS[8]!)).toBe('[data-move-card="M2"]');
+    expect(tourTargetSelector(DEMO_TOUR_STEPS[3]!)).toBe('[data-passage-link="The one thing"]');
+    expect(tourTargetSelector(DEMO_TOUR_STEPS[4]!)).toBe('[data-finding="Major 1"]');
     expect(tourTargetSelector(DEMO_TOUR_STEPS[5]!)).toBe('[data-claim="22"]'); // C23a
+    expect(tourTargetSelector(DEMO_TOUR_STEPS[6]!)).toBe(
+      '[data-figure-image="figure_2_ches_correlations_v2"]',
+    );
+    expect(tourTargetSelector(DEMO_TOUR_STEPS[8]!)).toBe('[data-move-card="M2"]');
   });
 
-  it("every copyKey resolves to a ≤2-sentence COPY leaf and advance stays in the enum", () => {
+  it("every copyKey resolves to a ≤2-sentence COPY leaf, advance stays in the enum, and panelTab stays in PANEL_TABS", () => {
     for (const step of DEMO_TOUR_STEPS) {
       const leaf = COPY.demo.tour.steps[step.copyKey];
       expect(typeof leaf, step.copyKey).toBe("string");
       const sentences = leaf.split(/[.!?](?:\s|$)/).filter((s) => s.trim() !== "");
       expect(sentences.length, `${step.copyKey}: ${leaf}`).toBeLessThanOrEqual(2);
       expect(["next", "click-target"]).toContain(step.advance);
+      // 248 — a declared panel tab only (the engine activates its real control).
+      if (step.panelTab != null) {
+        expect(PANEL_TABS).toContain(step.panelTab);
+      }
       if (step.aside != null) {
         expect(COPY.demo.tour.steps[step.aside.copyKey], step.aside.copyKey).toBeTypeOf("string");
       }
     }
+    // a panel-resident target names its tab; no other step may declare one.
+    expect(DEMO_TOUR_STEPS.filter((s) => s.panelTab != null).map((s) => s.id)).toEqual([
+      "two-readers",
+    ]);
   });
 });
 
@@ -178,6 +194,43 @@ describe("verbatim quotes equal the real corpus text at their pins (RV-29)", () 
     ) as { dto: { claims: { id: string; verdict: string; tier: number }[] } };
     const iii16 = gm.dto.claims.find((c) => c.id === "III16")!;
     expect([iii16.verdict, iii16.tier]).toEqual(["contradicted", 1]);
+  });
+});
+
+describe("the tour's keys collide with nothing committed (REQ-TOUR-2, REQ-KEYS-1)", () => {
+  // The engine binds bare ArrowLeft / ArrowRight / Escape only while a step is active and
+  // never inside inputs or with modifiers. The committed chord table + keymap must never
+  // claim those keys — and the tour must never claim the sidebar/panel `[`/`]` keys.
+  it("←/→/Esc appear in no reserved-chords.json row and no keymap arrow binding; `[`/`]` stay the shell's", () => {
+    const chords = JSON.parse(
+      readFileSync(
+        join(HERE, "..", "..", "..", "packages", "ide", "src", "reserved-chords.json"),
+        "utf8",
+      ),
+    ) as Record<string, string[]>;
+    const reserved = Object.entries(chords)
+      .filter(([k]) => k !== "$comment")
+      .flatMap(([, v]) => v);
+    for (const key of ["arrowleft", "arrowright", "escape"]) {
+      expect(reserved, key).not.toContain(key);
+    }
+    // the keymap's only Esc binding is the findings-scoped "finding-escape" — coexistence the
+    // engine documents (its Esc stops propagation when it acts, so one Esc dismisses one
+    // layer); arrows it does not bind at all.
+    const bound = new Set(
+      IDE_KEYMAP.flatMap((b) => [b.chord, b.keys].filter((x): x is string => x != null)).map((c) =>
+        c.toLowerCase(),
+      ),
+    );
+    for (const key of ["arrowleft", "arrowright"]) {
+      expect(bound.has(key), `keymap binds ${key}`).toBe(false);
+    }
+    expect(IDE_KEYMAP.filter((b) => b.chord === "escape").map((b) => b.actionKind)).toEqual([
+      "finding-escape",
+    ]);
+    // and the tour never claims the shell's `[`/`]` — its handled set is exactly the three keys.
+    expect(bound.has("[")).toBe(true);
+    expect(bound.has("]")).toBe(true);
   });
 });
 
