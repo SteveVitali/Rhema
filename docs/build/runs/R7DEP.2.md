@@ -279,3 +279,34 @@ surface), U2.noreload (export affordance absent on read-only showcase), U5.write
 assertion mismatch), U1.shell (reviews-item aria-current). All four are owner dispositions — leg
 re-pins or surface wiring, never this ticket's code. Preview stays UP at `2817ba73` for the
 round-3 re-walk + the real hero capture; tear down at once at $20 measured.
+
+## RESUME — defect boundary round 3 closed by `250c_R7FIX.3` (PR #296, unmerged OPERATOR)
+
+- 2026-11-07T23:xxZ — **250c_R7FIX.3 landed at `60f55777`** (CI pass #296, run `42419889345`;
+  boundary commit **`d372de85`** = composed tip: my Part-B records + all three fix rounds).
+  Fixes: R8.showcase.spa (walk hops through declared `[data-project-item]` hooks + asserts the
+  `/p/<slug>/review/` landing; an unresolved `/p/:slug` fallback now fails as its own defect),
+  U2 (export/settings withhold state asserted GD-class + hops detour over the first writable
+  recent), U5 (`data-inline-title` moved onto the `<input>` — consumers re-pointed), U1
+  (`aria-current` asserted on the item whose route family owns the landed pathname).
+  `stevevitali/r7dep-2-t1-prod` advanced to `d372de85`. H16 re-checked: still
+  **not-dispositioned**. Journeys dist rebuilt (the re-pinned legs are in `dist/`).
+- 2026-11-08T00:xxZ — Cloud Build `b20f71b1` SUCCESS, all-10 @ `d372de85` (`_TAG=r7dep-2-t1c`);
+  digests `logs/r7dep2/pr293-digests-t1c.txt`; guarded `config` re-pins + `up` (11 updates +
+  proxy template replace, 1m33s, zero destructive). **Provenance: web+api `/healthz/` →
+  `d372de85…` — same pr-293 stack, third in-place update.**
+- 2026-11-08T00:xxZ — **T1c re-walk at `d372de85`** (`t1c-u-legs/`, `--expect-sha` match, $0):
+  **U1.shell, U3.occlusion, U4.controls, U6.chat, U7.import all ready-to-flip + R8.showcase.spa
+  PASS** (the ×3-incumbent-regression CLOSED — the `[data-project-item]` re-pin hopped the
+  visible item). Two legs remain, both at deeper layers:
+
+| Leg | T1c state | Root cause for round 4 |
+|---|---|---|
+| U2.noreload | owed — evolved | chat-send: the leg's FIRST `chatTab.click()` runs BEFORE the `]` panel-open (r7legs.ts:~1254) — the Chat tab lives in the closed right panel (`aria-selected` but invisible) → the unconditional first click times out. Re-order: open panel → wait `[data-panel="open"]` → click. |
+| U5.write | owed — evolved | title-focus assert now PASSES (F-3 closed); new layer: `editor.selectText()` never surfaced `[data-format-bubble]` (10s waitFor timeout) — bubble arm vs SPA selection. |
+| R8.showcase.spa | **PASS** | — |
+| U1/U3/U4/U6/U7 | ready-to-flip | — |
+
+**PAUSE — fourth defect-boundary.** `D-R7FIX.1-2`/`D-R7FIX.2-1`/`D-R7FIX.3-1` each verified
+partial; two legs remain (U2 chat-send sequencing, U5 format-bubble arm). Owner round 4. Preview
+stays UP at `d372de85`; ~$11.5 of $20; tear down at once at $20 measured.
