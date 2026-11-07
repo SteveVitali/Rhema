@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type { FindingView } from "@rhema/contracts";
 import type { MarginItem } from "@rhema/findings-core";
 import { severityColor } from "./primitives/chips.js";
@@ -25,7 +25,9 @@ export interface MarginLabels extends FindingCardLabels {
 export interface MarginSurfaceProps {
   readonly items: readonly MarginItem[];
   readonly labels: MarginLabels;
-  readonly obligationFor?: (view: FindingView) => { state: ObligationStateKind; label: string } | undefined;
+  readonly obligationFor?: (
+    view: FindingView,
+  ) => { state: ObligationStateKind; label: string } | undefined;
   /** per-card action slot (the disposition form / Apply button — caller-owned, form-POST progressive). */
   readonly controlsFor?: (view: FindingView) => ReactNode;
   /** the claim-finding evidence block per card (verdict chip + fetched-stamped URLs; REQ-IDE-25). */
@@ -92,27 +94,28 @@ function MarginChip({
   const topLabel = labels.severityLabel(item.topSeverity);
   return (
     <details
-      className="ide-mchip"
+      className="ide-mchip ui-t-r2 ui-d-mb10 ui-t-bp"
       data-margin-chip={item.key}
       data-count={item.count}
       data-severity={item.topSeverity}
       style={{
         borderLeft: `3px solid ${severityColor(item.topSeverity)}`,
-        borderRadius: "8px",
         border: "1px solid var(--paper-rule)",
-        marginBottom: "10px",
-        background: "var(--paper-bg)",
       }}
     >
       <summary
         aria-label={labels.chipAria(item.count)}
-        style={{ padding: "8px 12px", fontSize: "12px", cursor: "pointer", color: "var(--paper-fg)", listStyle: "none" }}
+        className="ui-t-p812 ui-d-fs ui-t-pf"
+        style={{ cursor: "pointer", listStyle: "none" }}
       >
-        <span style={{ fontWeight: 600, color: severityColor(item.topSeverity) }}>
+        <span
+          className="ui-d-b ui-d-sc"
+          style={{ "--d-sev": severityColor(item.topSeverity) } as CSSProperties}
+        >
           {labels.chipLabel(item.counts, topLabel, item.topCount)}
         </span>
       </summary>
-      <div style={{ padding: "0 8px 4px" }}>
+      <div className="ui-t-p084">
         {item.findings.map((v) => (
           <MarginCardBody
             key={v.id}
@@ -130,7 +133,14 @@ function MarginChip({
 }
 
 /** The Margin — ONE MarginItem[] from `marginItems(views)`: cards beside passages, chips for crowds. */
-export function MarginSurface({ items, labels, obligationFor, controlsFor, evidenceFor, selectedId }: MarginSurfaceProps): ReactNode {
+export function MarginSurface({
+  items,
+  labels,
+  obligationFor,
+  controlsFor,
+  evidenceFor,
+  selectedId,
+}: MarginSurfaceProps): ReactNode {
   return (
     <div data-margin-surface="true" role="list" aria-label={labels.chipAria(items.length)}>
       {items.map((item) =>
@@ -171,11 +181,11 @@ export function MarginTicks({
       {findings.map((f) => (
         <a
           key={f.id}
-          className="ide-tick"
+          className="ide-tick ui-d-sev"
           href={`#finding-${f.id}`}
           aria-label={f.excerpt}
           title={f.excerpt}
-          style={{ background: `var(--sev-${f.severity})` }}
+          style={{ "--d-sev": `var(--sev-${f.severity})` } as CSSProperties}
         />
       ))}
     </>

@@ -37,7 +37,12 @@ interface Envelope {
   readonly data?: TurnCreated;
 }
 
-const TERMINAL_EVENTS = new Set(["chat.turn.completed", "run.state_changed", "cost.final", "chat.over_cap"]);
+const TERMINAL_EVENTS = new Set([
+  "chat.turn.completed",
+  "run.state_changed",
+  "cost.final",
+  "chat.over_cap",
+]);
 
 export function ChatPanelLive(props: {
   readonly model: ChatDeskProps["model"];
@@ -190,7 +195,7 @@ export function ChatPanelLive(props: {
       ...(spentLive != null ? { spentLive } : {}),
       ...(demo ? { disabledReason: L.demoReadonly } : {}),
     }),
-    // eslint-disable-next-line
+    //
     [pending, optimistic, progress, error, tier, spentLive, demo, m.activeThreadId, maps.data],
   );
 
@@ -211,7 +216,13 @@ export function ChatPanelLive(props: {
 export function chatPanelLive(
   chat: import("@rhema/api-client").ChatPanelDto,
   slug: string,
-  ide: { readonly chatAskAbout?: { readonly ref: string; readonly version?: number; readonly block?: string } },
+  ide: {
+    readonly chatAskAbout?: {
+      readonly ref: string;
+      readonly version?: number;
+      readonly block?: string;
+    };
+  },
   compact: boolean,
   readOnlyTitle?: string | null,
 ): ReactNode {
@@ -227,7 +238,12 @@ export function chatPanelLive(
     />
   );
   return readOnlyTitle != null ? (
-    <fieldset disabled title={readOnlyTitle} style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
+    <fieldset
+      disabled
+      title={readOnlyTitle}
+      className="ui-c2-m0 ui-d-p0 ui-t-mw0"
+      style={{ border: 0 }}
+    >
       {body}
     </fieldset>
   ) : (

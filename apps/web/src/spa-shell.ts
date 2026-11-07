@@ -32,7 +32,7 @@ import {
   type ReadOnlyProject,
 } from "@rhema/contracts";
 import { themeCss, ideCss, FONT_FACES } from "@rhema/tokens";
-import { uiCss } from "@rhema/ui";
+import { uiCss, uiTailCss } from "@rhema/ui";
 import { docMetaFor, escapeHtml } from "./render.js";
 import { deviceClassFor } from "./device.js";
 import type { SpaBoot } from "./spa-boot.js";
@@ -44,6 +44,7 @@ const IDE_CSS = ideCss();
 // R7KIT.2 (REQ-KIT-2/5; ADR-129) — the component-kit stylesheet, inlined beside theme/ide in every
 // shell document (bound ≤ 24 kB raw, asserted).
 const UI_CSS = uiCss();
+const UI_TAIL_CSS = uiTailCss();
 const BOOT = themeBootScript();
 // R7SYNC.1 (REQ-SPEED-4; R6 UXC-36) — preload the two reading faces (Literata normal + Inter)
 // in the shell document's head, killing the serif FOUT the audit filmed. Italic/mono stay
@@ -69,7 +70,6 @@ export interface SpaShellDeps {
   /** Log seam for the manifest-degrade warn line (default `console.warn`). */
   readonly warn?: (msg: string) => void;
 }
-
 
 /** The `<dir>/.vite/manifest.json` the Vite build emits next to `assets/` (vite.config.ts). */
 export const DEFAULT_SPA_ASSET_ROOT = fileURLToPath(new URL("../public/spa/", import.meta.url));
@@ -155,7 +155,9 @@ export async function loadSpaManifest(
     }
   }
   if (entry == null) {
-    warn(`[rhema] SPA manifest missing or corrupt at ${manifestPath} — shell served without entry tags`);
+    warn(
+      `[rhema] SPA manifest missing or corrupt at ${manifestPath} — shell served without entry tags`,
+    );
     return EMPTY_ENTRY;
   }
   return entry;
@@ -164,7 +166,9 @@ export async function loadSpaManifest(
 /** The h1 the static frame paints — the client's `routeHeading` rule verbatim (doc title
  *  minus the " · Rhēma" suffix). */
 function routeHeading(pathname: string): string {
-  return docMetaFor(pathname, {}).title.replace(/ — [^·]+ · Rhēma$/, "").replace(/ · Rhēma$/, "");
+  return docMetaFor(pathname, {})
+    .title.replace(/ — [^·]+ · Rhēma$/, "")
+    .replace(/ · Rhēma$/, "");
 }
 
 /** `/p/<slug>/…` or `/demo/<essay>/…` → `slug` for the boot's `project` key; anything else ⇒
@@ -285,7 +289,7 @@ export function renderSpaShell(
     `<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon.ico" sizes="any">` +
     `<title>${escapeHtml(doc.title)}</title>${FONT_PRELOADS}` +
     `<script>${BOOT}</script>` +
-    `<style>${THEME_CSS}</style><style>${IDE_CSS}</style><style>${UI_CSS}</style>` +
+    `<style>${THEME_CSS}</style><style>${IDE_CSS}</style><style>${UI_CSS}</style><style>${UI_TAIL_CSS}</style>` +
     entry.preloads.map((f) => `<link rel="modulepreload" href="${assetHref(f)}">`).join("") +
     entry.stylesheets.map((f) => `<link rel="stylesheet" href="${assetHref(f)}">`).join("") +
     `</head>`;
@@ -309,7 +313,10 @@ export function renderSpaShell(
     `</div></aside>` +
     `<div class="app-shell-main"><div class="app-shell-content">` +
     `<main data-spa-surface><h1>${escapeHtml(routeHeading(path))}</h1>` +
-    Array.from({ length: 4 }, (_, i) => `<div class="ide-sk-row" style="width:${88 - i * 14}%"></div>`).join("") +
+    Array.from(
+      { length: 4 },
+      (_, i) => `<div class="ide-sk-row" style="width:${88 - i * 14}%"></div>`,
+    ).join("") +
     `</main></div></div></div>`;
   return (
     `<!doctype html><html ${htmlAttrs}>${head}` +

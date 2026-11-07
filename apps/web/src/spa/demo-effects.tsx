@@ -33,8 +33,7 @@ export function DemoEffects(): ReactNode {
         const { emitDemoEvent } = await import("./demo-beacon.js");
         const { demoBootNow } = await import("./demo.js");
         m.mountDemoTour({
-          onStart: () =>
-            emitDemoEvent("demo.tour_started", { essay: demoBootNow()?.essay }),
+          onStart: () => emitDemoEvent("demo.tour_started", { essay: demoBootNow()?.essay }),
           onCompleteOrCta: () =>
             emitDemoEvent("demo.tour_completed_or_cta", {
               essay: demoBootNow()?.essay,
@@ -72,14 +71,8 @@ export function DemoEffects(): ReactNode {
       role="note"
       data-demo-readonly-notice="true"
       hidden
-      style={{
-        border: "1px solid var(--shell-border)",
-        borderRadius: "10px",
-        padding: "8px 14px",
-        margin: "0 0 12px",
-        background: "var(--shell-raised)",
-        fontSize: "13px",
-      }}
+      className="ui-t-r10 ui-t-p814 ui-t-m03 ui-rs-box ui-d-fd"
+      style={{ border: "1px solid var(--shell-border)" }}
     >
       {COPY.demo.submitReadonlyNotice}
     </div>

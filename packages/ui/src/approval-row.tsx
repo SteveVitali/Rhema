@@ -56,7 +56,15 @@ const summaryStyle: CSSProperties = {
 };
 
 /** The §5.11 approval row + read-before-approve sheet. */
-export function ApprovalRow({ gateId, model, artifact, card, defaultOpen, rowRef, labels }: ApprovalRowProps): ReactNode {
+export function ApprovalRow({
+  gateId,
+  model,
+  artifact,
+  card,
+  defaultOpen,
+  rowRef,
+  labels,
+}: ApprovalRowProps): ReactNode {
   return (
     <details
       {...(rowRef != null ? { ref: rowRef } : {})}
@@ -64,40 +72,38 @@ export function ApprovalRow({ gateId, model, artifact, card, defaultOpen, rowRef
       data-kind={model.kind}
       data-blocking={model.blocking ? "true" : "false"}
       {...(defaultOpen ? { open: true } : {})}
+      className="ui-t-r10 ui-d-mb10 ui-rs-box"
       style={{
         border: "1px solid var(--shell-border)",
         borderLeft: `3px solid ${model.blocking ? "var(--sev-major)" : "var(--shell-border)"}`,
-        borderRadius: "10px",
-        marginBottom: "10px",
-        background: "var(--shell-raised)",
       }}
     >
       <summary style={summaryStyle}>
-        <strong style={{ fontSize: "13px", color: "var(--shell-fg)" }}>{labels.kindLabel(model.kind)}</strong>
+        <strong className="ui-d-fd ui-t-fg">{labels.kindLabel(model.kind)}</strong>
         {artifact ? (
-          <span data-row-artifact="true" style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+          <span data-row-artifact="true" className="ui-d-fs ui-t-mut">
             {artifact.title}
           </span>
         ) : null}
-        <span data-row-deadline="true" style={{ fontSize: "12px", color: "var(--shell-fg-faint)" }}>
+        <span data-row-deadline="true" className="ui-d-i">
           {model.held
             ? labels.waitingLine
             : model.deadline.deadlineAt == null
               ? labels.waitingLine
               : labels.deadlineLine(model.deadline.deadlineAt, "")}
         </span>
-        <span data-row-do-nothing="true" style={{ fontSize: "12px", color: "var(--shell-fg-faint)" }}>
+        <span data-row-do-nothing="true" className="ui-d-i">
           {labels.doNothingLine(model.doNothing)}
         </span>
-        <span data-row-open="true" style={{ marginLeft: "auto", fontSize: "12px", color: "var(--accent)" }}>
+        <span data-row-open="true" className="ui-d-mla ui-d-fs ui-t-acc">
           {labels.openLabel}
         </span>
       </summary>
       {/* the side sheet — read the artifact, then the identical approve-with-deadline card. */}
-      <div data-approval-sheet="true" style={{ padding: "0 12px 12px" }}>
+      <div data-approval-sheet="true" className="ui-t-p01212">
         {artifact?.href && labels.artifactLabel ? (
-          <p style={{ margin: "4px 0 8px", fontSize: "12px" }}>
-            <a href={artifact.href} data-gate-artifact="true" style={{ color: "var(--accent)" }}>
+          <p className="ui-t-m408 ui-d-fs">
+            <a href={artifact.href} data-gate-artifact="true" className="ui-t-acc">
               {labels.artifactLabel}
             </a>
           </p>

@@ -14,40 +14,26 @@ export function DemoBanner({ demo }: { demo: NonNullable<SpaBoot["demo"]> }): Re
     <div
       data-demo-banner
       role="note"
+      className="ui-c2-g3 ui-t-p614 ui-d-fs ui-rs-box ui-t-mut"
       style={{
         display: "flex",
         alignItems: "center",
-        gap: "12px",
         flexWrap: "wrap",
-        padding: "6px 14px",
-        fontSize: "12px",
-        background: "var(--shell-raised)",
         borderBottom: "1px solid var(--shell-border)",
-        color: "var(--shell-fg-muted)",
       }}
     >
       <span>{COPY.demo.bannerText}</span>
-      <span style={{ marginLeft: "auto", display: "flex", gap: "12px" }}>
+      <span className="ui-d-mla ui-c2-g3" style={{ display: "flex" }}>
         {demo.signedIn ? (
-          <a href="/app" data-spa-native data-demo-exit="back" style={{ color: "var(--accent)" }}>
+          <a href="/app" data-spa-native data-demo-exit="back" className="ui-t-acc">
             {COPY.demo.exitBackToProjects}
           </a>
         ) : (
           <>
-            <a
-              href="/signup"
-              data-spa-native
-              data-demo-exit="signup"
-              style={{ color: "var(--accent)" }}
-            >
+            <a href="/signup" data-spa-native data-demo-exit="signup" className="ui-t-acc">
               {COPY.demo.exitSignUp}
             </a>
-            <a
-              href="/login"
-              data-spa-native
-              data-demo-exit="signin"
-              style={{ color: "var(--accent)" }}
-            >
+            <a href="/login" data-spa-native data-demo-exit="signin" className="ui-t-acc">
               {COPY.demo.exitSignIn}
             </a>
           </>

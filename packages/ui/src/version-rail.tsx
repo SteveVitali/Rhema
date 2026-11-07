@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { WhatChangedView as WhatChangedViewModel } from "@rhema/findings-core";
 import { WhatChangedView, type WhatChangedLabels } from "./what-changed.js";
+import { Button } from "./primitives/button.js";
 
 // The version rail (§5.8; P1.08; REQ-IDE-32, REQ-OBJ-6, REQ-PROD-11): the chip strip over the Page —
 //   Outline → v1 🔒 → v2 🔒 → v3 ● draft        [Compare ▾] [Restore points ▾]
@@ -107,8 +108,6 @@ export interface VersionRailProps {
   readonly labels: VersionRailLabels;
 }
 
-const muted: CSSProperties = { color: "var(--shell-fg-muted, var(--paper-fg-muted))" };
-
 function Chip({
   v,
   current,
@@ -131,16 +130,15 @@ function Chip({
       <a
         href={href}
         data-version-link={v.n}
-        style={{
-          display: "inline-block",
-          padding: "3px 9px",
-          borderRadius: "999px",
-          border: `1px solid ${current ? "var(--accent)" : "var(--shell-border, var(--paper-rule))"}`,
-          fontSize: "12px",
-          background: current ? "var(--shell-raised, transparent)" : "transparent",
-          textDecoration: "none",
-          color: "var(--shell-fg, var(--paper-fg))",
-        }}
+        className="ui-t-p39 ui-t-rp ui-d-fs ui-d-sev ui-t-fgp"
+        style={
+          {
+            display: "inline-block",
+            border: `1px solid ${current ? "var(--accent)" : "var(--shell-border, var(--paper-rule))"}`,
+            textDecoration: "none",
+            "--d-sev": current ? "var(--shell-raised, transparent)" : "transparent",
+          } as CSSProperties
+        }
       >
         v{v.n}
         {v.discarded === true ? <span data-discarded> · {labels.discardedLabel}</span> : null}
@@ -156,10 +154,7 @@ function Chip({
           </span>
         )}
       </a>
-      <span
-        data-version-meta
-        style={{ display: "block", fontSize: "10.5px", padding: "2px 4px", ...muted }}
-      >
+      <span data-version-meta className="ui-d-s ui-t-p24 ui-t-pm" style={{ display: "block" }}>
         {labels.originLabel(v.origin)}
         {v.reviewed ? <span data-reviewed> · {labels.reviewedFlag}</span> : null}
         {v.answered ? <span data-answered> · {labels.answeredFlag}</span> : null}
@@ -187,29 +182,29 @@ export function VersionRail(props: VersionRailProps): ReactNode {
   return (
     <div
       data-version-rail
+      className="ui-d-g10 ui-t-p80 ui-t-ffs"
       style={{
         display: "flex",
         alignItems: "flex-start",
-        gap: "10px",
         flexWrap: "wrap",
-        padding: "8px 0",
         borderBottom: "1px solid var(--paper-rule)",
-        fontFamily: "var(--shell-font, inherit)",
       }}
     >
       <ul
-        style={{ listStyle: "none", display: "flex", gap: "6px", margin: 0, padding: 0, flexWrap: "wrap" }}
+        className="ui-d-g6 ui-c2-m0 ui-d-p0"
+        style={{ listStyle: "none", display: "flex", flexWrap: "wrap" }}
         aria-label={L.compare}
       >
         {props.outline ? (
           <li data-version-chip="outline" style={{ display: "inline-block" }}>
             <a
               href={props.hrefs.artifact(props.outline.artifactId)}
-              style={{ fontSize: "12px", padding: "3px 9px", textDecoration: "none", color: "var(--shell-fg, var(--paper-fg))" }}
+              className="ui-d-fs ui-t-p39 ui-t-fgp"
+              style={{ textDecoration: "none" }}
             >
               {L.outline}
             </a>
-            <span style={{ ...muted, fontSize: "10.5px", padding: "0 2px" }} aria-hidden="true">
+            <span className="ui-t-pm ui-d-s ui-t-p02" aria-hidden="true">
               →
             </span>
           </li>
@@ -225,43 +220,38 @@ export function VersionRail(props: VersionRailProps): ReactNode {
         ))}
       </ul>
       {props.chip && props.chip.open + props.chip.addressed > 0 ? (
-        <span data-obligations-chip data-open={props.chip.open} style={{ fontSize: "11.5px", ...muted }}>
+        <span data-obligations-chip data-open={props.chip.open} className="ui-d-fs ui-t-pm">
           {L.obligationsFmt(props.chip.open, props.chip.addressed)}
         </span>
       ) : null}
 
-      <span style={{ marginLeft: "auto", display: "inline-flex", gap: "8px", alignItems: "center" }}>
+      <span className="ui-d-mla ui-c2-g2" style={{ display: "inline-flex", alignItems: "center" }}>
         {previous && props.compact !== true ? (
           <a
             href={props.hrefs.diff(previous.n, current!.n)}
             data-compare-previous
-            style={{ fontSize: "12px" }}
+            className="ui-d-fs"
           >
             {L.comparePrevious}
           </a>
         ) : null}
         {props.restore && props.compact !== true ? (
           <details data-restore-menu style={{ position: "relative", display: "inline-block" }}>
-            <summary style={{ fontSize: "12px", cursor: "pointer", listStyle: "none" }}>
+            <summary className="ui-d-fs" style={{ cursor: "pointer", listStyle: "none" }}>
               {L.restorePoints} ▾
             </summary>
             <div
               data-restore-groups
               role="menu"
+              className="ui-t-r0 ui-t-mw240 ui-t-bsp ui-t-r6 ui-t-p60 ui-d-fs"
               style={{
                 position: "absolute",
-                right: 0,
                 zIndex: 20,
-                minWidth: "240px",
-                background: "var(--shell-surface, var(--paper-bg))",
                 border: "1px solid var(--shell-border, var(--paper-rule))",
-                borderRadius: "6px",
-                padding: "6px 0",
-                fontSize: "12px",
               }}
             >
               {props.restore.points.length === 0 ? (
-                <p style={{ margin: "6px 12px", ...muted }}>{L.restoreEmpty}</p>
+                <p className="ui-t-m612 ui-t-pm">{L.restoreEmpty}</p>
               ) : (
                 (["earlier_today", "yesterday", "before_review", "named", "earlier"] as const).map(
                   (g) => {
@@ -275,13 +265,8 @@ export function VersionRail(props: VersionRailProps): ReactNode {
                         {...(advanced ? { "data-tier": "advanced" } : {})}
                       >
                         <div
-                          style={{
-                            padding: "4px 12px 2px",
-                            fontSize: "10.5px",
-                            textTransform: "uppercase",
-                            letterSpacing: "0.05em",
-                            ...muted,
-                          }}
+                          className="ui-t-p4122 ui-d-s ui-t-ls5 ui-t-pm"
+                          style={{ textTransform: "uppercase" }}
                         >
                           {L.restoreGroupLabel(g, pts[0]?.beforeReviewN)}
                         </div>
@@ -292,7 +277,8 @@ export function VersionRail(props: VersionRailProps): ReactNode {
                             href={props.hrefs.restorePreview(p.id)}
                             data-restore-point={p.id}
                             data-cause={p.cause}
-                            style={{ display: "block", padding: "4px 12px", textDecoration: "none", color: "inherit" }}
+                            className="ui-t-p412 ui-d-inh"
+                            style={{ display: "block", textDecoration: "none" }}
                           >
                             {L.restorePointLabel(p)}
                           </a>
@@ -308,7 +294,7 @@ export function VersionRail(props: VersionRailProps): ReactNode {
       </span>
 
       {props.restoredN != null ? (
-        <p data-restored-notice role="status" style={{ width: "100%", margin: "4px 0 0", fontSize: "12px" }}>
+        <p data-restored-notice role="status" className="ui-vc-w ui-t-m10 ui-d-fs">
           {L.restoredNotice(props.restoredN)}
         </p>
       ) : null}
@@ -317,36 +303,41 @@ export function VersionRail(props: VersionRailProps): ReactNode {
         <section
           data-restore-preview
           aria-label={L.restorePreviewHeading}
-          style={{ width: "100%", border: "1px solid var(--paper-rule)", borderRadius: "6px", padding: "10px 12px", marginTop: "8px" }}
+          className="ui-vc-w ui-t-r6 ui-t-p1012 ui-c2-mt"
+          style={{ border: "1px solid var(--paper-rule)" }}
         >
-          <header style={{ display: "flex", gap: "10px", alignItems: "baseline", flexWrap: "wrap" }}>
-            <h4 style={{ margin: 0, fontSize: "13px" }}>{L.restorePreviewHeading}</h4>
-            <span style={{ fontSize: "12px", ...muted }}>
+          <header
+            className="ui-d-g10"
+            style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap" }}
+          >
+            <h4 className="ui-c2-m0 ui-d-fd">{L.restorePreviewHeading}</h4>
+            <span className="ui-d-fs ui-t-pm">
               {L.restorePointLabel(props.restore.preview.point)}
             </span>
             {props.restore.restoreAction ? (
               <form
                 method="post"
                 action={props.restore.restoreAction(props.restore.preview.point.id)}
-                style={{ marginLeft: "auto" }}
+                className="ui-d-mla"
               >
-                <button type="submit" data-restore-apply style={{ fontSize: "12px", padding: "4px 12px" }}>
+                <Button type="submit" data-restore-apply className="ui-d-fs ui-t-p412">
                   {L.restoreApply}
-                </button>
+                </Button>
               </form>
             ) : (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 data-restore-apply
                 disabled
                 title={props.restore.disabledTitle}
-                style={{ marginLeft: "auto", fontSize: "12px", padding: "4px 12px" }}
+                className="ui-d-mla ui-d-fs ui-t-p412"
               >
                 {L.restoreApply}
-              </button>
+              </Button>
             )}
           </header>
-          <p style={{ fontSize: "11.5px", ...muted }}>{L.restoreUndoHint}</p>
+          <p className="ui-d-fs ui-t-pm">{L.restoreUndoHint}</p>
           <WhatChangedView
             view={props.restore.preview.view}
             beforeN={0}

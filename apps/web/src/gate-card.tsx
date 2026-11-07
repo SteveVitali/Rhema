@@ -80,7 +80,8 @@ export const outlineLabels = {
 
 const gateCardLabels: GateCardLabels = {
   kindLabel: (kind) => G.kindLabel[kind] ?? kind,
-  approveLabel: (kind) => (kind === "approve_triage" ? G.approveLabel.approve_triage : G.approveLabel.default),
+  approveLabel: (kind) =>
+    kind === "approve_triage" ? G.approveLabel.approve_triage : G.approveLabel.default,
   approveAutonomousLabel: G.approveAutonomousLabel,
   keepPlanningLabel: G.keepPlanningLabel,
   waitLabel: G.waitLabel,
@@ -93,7 +94,8 @@ const gateCardLabels: GateCardLabels = {
     fmt(G.spendFmt, {
       spent: spent.toLocaleString("en-US"),
       cap: cap.toLocaleString("en-US"),
-      remaining: remaining != null ? fmt(G.remainingFmt, { n: remaining.toLocaleString("en-US") }) : "",
+      remaining:
+        remaining != null ? fmt(G.remainingFmt, { n: remaining.toLocaleString("en-US") }) : "",
     }),
   presenceLine: (countdown) => fmt(G.presenceFmt, { countdown }),
   pausedNote: G.pausedNote,
@@ -130,7 +132,8 @@ const gateCardLabels: GateCardLabels = {
   outline: outlineLabels,
   cutList: {
     heading: G.cutList.heading,
-    targetLine: (targetWords) => fmt(G.cutList.targetFmt, { n: targetWords.toLocaleString("en-US") }),
+    targetLine: (targetWords) =>
+      fmt(G.cutList.targetFmt, { n: targetWords.toLocaleString("en-US") }),
     protectLabel: G.cutList.protectLabel,
     wordsLabel: (words) => fmt(G.cutList.wordsFmt, { n: words.toLocaleString("en-US") }),
   },
@@ -163,7 +166,9 @@ export const approvalRowLabels: ApprovalRowLabels = {
  * spend/refusal kinds get no control; wait-default kinds may ADD a ≥2 h deadline; defaulted kinds may
  * remove (→ wait) or lengthen. `ed.runOverride` posts `"" | "wait" | <ms>`.
  */
-function runOverrideFor(kind: GateKind): { label: string; options: { value: string; label: string }[] } | undefined {
+function runOverrideFor(
+  kind: GateKind,
+): { label: string; options: { value: string; label: string }[] } | undefined {
   const def = GATE_DEFAULTS[kind];
   if (def.neverAutoProceed) return undefined;
   const options: { value: string; label: string }[] = [{ value: "", label: G.thisRunDefault }];
@@ -177,14 +182,16 @@ function runOverrideFor(kind: GateKind): { label: string; options: { value: stri
     options.push({ value: "wait", label: G.thisRunWait });
     options.push({
       value: String(def.deadlineMs * 2),
-      label: fmt(COPY.approvals.overrideHoursFmt, { n: Math.round((def.deadlineMs * 2) / 3600000) }),
+      label: fmt(COPY.approvals.overrideHoursFmt, {
+        n: Math.round((def.deadlineMs * 2) / 3600000),
+      }),
     });
   }
   return { label: G.thisRunLabel, options };
 }
 
 const triageLedgerLabels: TriageLedgerLabels = {
-  dispositionLabel: (kind) => (kind ? T.verbLabel[kind] ?? kind : G.undecidedLabel),
+  dispositionLabel: (kind) => (kind ? (T.verbLabel[kind] ?? kind) : G.undecidedLabel),
   userActorLabel: G.userActorLabel,
   severityLabel: (s) => R.severityLabel[s] ?? s,
 };
@@ -269,7 +276,9 @@ export function gateCardFor(
       model={model}
       compact={compact}
       formAction={`/p/${slug}/gates/${gate.id}`}
-      {...(opts?.presenceScript === false ? {} : { activityUrl: `/p/${slug}/gates/${gate.id}/activity` })}
+      {...(opts?.presenceScript === false
+        ? {}
+        : { activityUrl: `/p/${slug}/gates/${gate.id}/activity` })}
       labels={labels}
       {...(gate.artifactTitle != null
         ? {
@@ -283,7 +292,9 @@ export function gateCardFor(
       hasEscalations={hasEscalations}
       {...(gate.structured != null ? { structured: gate.structured } : {})}
       {...(opts?.decisions != null ? { decisions: opts.decisions } : {})}
-      {...(opts?.explainer ? { explainerDismissAction: `/p/${slug}/explainers/approvals/dismiss` } : {})}
+      {...(opts?.explainer
+        ? { explainerDismissAction: `/p/${slug}/explainers/approvals/dismiss` }
+        : {})}
       {...(runOverride ? { runOverride } : {})}
     >
       {rows != null ? (
@@ -301,8 +312,11 @@ export function gateCardFor(
               {...(row.disposition
                 ? {
                     current: {
-                      kind: row.disposition.kind as "accept" | "adapt" | "rebut" | "defer" | "escalate",
-                      ...(row.disposition.rationale != null ? { rationale: row.disposition.rationale } : {}),
+                      kind: row.disposition.kind as
+                        "accept" | "adapt" | "rebut" | "defer" | "escalate",
+                      ...(row.disposition.rationale != null
+                        ? { rationale: row.disposition.rationale }
+                        : {}),
                     },
                   }
                 : {})}
@@ -315,7 +329,12 @@ export function gateCardFor(
   // R7RO.1 — a disabled fieldset withholds every control the card carries (the decide form AND
   // the ledger's per-row dispositions) with the reason tooltip — no request is ever issued.
   return opts?.readOnlyTitle != null ? (
-    <fieldset disabled title={opts.readOnlyTitle} style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
+    <fieldset
+      disabled
+      title={opts.readOnlyTitle}
+      className="ui-c2-m0 ui-d-p0 ui-t-mw0"
+      style={{ border: 0 }}
+    >
       {card}
     </fieldset>
   ) : (

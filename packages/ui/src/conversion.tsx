@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import { Button } from "./primitives/button.js";
 import { severityColor } from "./primitives/chips.js";
 import { MarkdownProse } from "./markdown-prose.js";
 
@@ -64,63 +65,68 @@ const convertedStyle = {
   lineHeight: 1.6,
 };
 
+/** The no-JS conversion post's hidden carriers (RV-36 — prior batches' named-exemption shape). */
+function HiddenField({ name, value }: { name: string; value: string }): ReactNode {
+  return <input type="hidden" name={name} value={value} />;
+}
+
 export function ConversionPreview(props: ConversionPreviewProps): ReactNode {
   return (
     <div>
-      <p style={{ color: "var(--shell-fg-muted)", fontSize: "13px", fontVariantNumeric: "tabular-nums" }}>
+      <p className="ui-t-mut ui-d-fd" style={{ fontVariantNumeric: "tabular-nums" }}>
         {props.countLine}
       </p>
-      <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+      <div className="ui-t-g16" style={{ display: "flex", flexWrap: "wrap" }}>
         <section style={paneStyle} aria-label={props.labels.sourceHeading}>
-          <h2 style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--shell-fg-muted)", marginTop: 0 }}>
+          <h2 className="ui-d-fs ui-t-ls6 ui-t-mut ui-t-mt0" style={{ textTransform: "uppercase" }}>
             {props.labels.sourceHeading} · {props.sourceLabel}
           </h2>
           <pre style={preStyle}>{props.sourceText}</pre>
         </section>
         <section style={paneStyle} aria-label={props.labels.convertedHeading}>
-          <h2 style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--shell-fg-muted)", marginTop: 0 }}>
+          <h2 className="ui-d-fs ui-t-ls6 ui-t-mut ui-t-mt0" style={{ textTransform: "uppercase" }}>
             {props.labels.convertedHeading}
           </h2>
           {props.title ? (
-            <p data-conversion-title style={{ margin: "0 0 8px", fontSize: "15px", fontWeight: 600, color: "var(--shell-fg)", fontFamily: "var(--font-paper, var(--font-shell))" }}>
+            <p data-conversion-title className="ui-c2-mb ui-t-f16 ui-d-b ui-t-fg ui-t-ffp">
               {props.title}
             </p>
           ) : null}
-          <div data-converted-pane style={convertedStyle}><MarkdownProse text={props.convertedMarkdown} /></div>
+          <div data-converted-pane style={convertedStyle}>
+            <MarkdownProse text={props.convertedMarkdown} />
+          </div>
         </section>
       </div>
 
-      <ConversionNotesCard warnings={props.warnings} heading={props.labels.warningsHeading} empty={props.labels.noWarnings} />
+      <ConversionNotesCard
+        warnings={props.warnings}
+        heading={props.labels.warningsHeading}
+        empty={props.labels.noWarnings}
+      />
 
       {/* SPA.6 — renderer-agnostic hooks (REQ-VFY-4): journeys locate the create surface by
           `data-conversion-form`/`data-conversion-action`, never the POST action string. */}
-      <form method="post" action={props.actions.formAction} data-conversion-form="true" style={{ marginTop: "16px", display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center" }}>
+      <form
+        method="post"
+        action={props.actions.formAction}
+        data-conversion-form="true"
+        className="ui-c2-mt4 ui-c2-g3"
+        style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}
+      >
         {Object.entries(props.actions.hiddenFields ?? {}).map(([name, value]) => (
-          <input key={name} type="hidden" name={name} value={value} />
+          <HiddenField key={name} name={name} value={value} />
         ))}
-        <button
-          type="submit"
-          name="action"
-          value="create"
-          data-conversion-action="create"
-          style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}
-        >
+        <Button type="submit" name="action" value="create" data-conversion-action="create">
           {props.warnings.length === 0
             ? (props.actions.createCleanLabel ?? props.actions.createLabel)
             : props.actions.createLabel}
-        </button>
+        </Button>
         {props.warnings.length > 0 ? (
           <>
-            <button
-              type="submit"
-              name="action"
-              value="fix_now"
-              data-conversion-action="fix_now"
-              style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", color: "var(--shell-fg)", fontSize: "14px", cursor: "pointer" }}
-            >
+            <Button type="submit" name="action" value="fix_now" data-conversion-action="fix_now">
               {props.actions.fixNowLabel}
-            </button>
-            <span style={{ color: "var(--shell-fg-faint)", fontSize: "12px" }}>{props.labels.fixNowNote}</span>
+            </Button>
+            <span className="ui-t-fnt ui-d-fs">{props.labels.fixNowNote}</span>
           </>
         ) : null}
       </form>
@@ -141,20 +147,25 @@ export function ConversionNotesCard({
   return (
     <section
       aria-label={heading}
-      style={{ marginTop: "16px", border: "1px solid var(--shell-border)", borderRadius: "8px", padding: "12px", background: "var(--shell-surface)" }}
+      className="ui-c2-mt4 ui-t-r2 ui-t-p12 ui-d-rc"
+      style={{ border: "1px solid var(--shell-border)" }}
     >
-      <h3 style={{ fontSize: "13px", margin: "0 0 8px", color: "var(--shell-fg)" }}>{heading}</h3>
+      <h3 className="ui-d-fd ui-c2-mb ui-t-fg">{heading}</h3>
       {warnings.length === 0 ? (
-        <p style={{ color: "var(--state-ready)", fontSize: "13px", margin: 0 }}>{empty}</p>
+        <p className="ui-set-t--ok ui-d-fd ui-c2-m0">{empty}</p>
       ) : (
-        <ul style={{ margin: 0, paddingLeft: "18px" }}>
+        <ul className="ui-c2-m0 ui-t-pl18">
           {warnings.map((w, i) => (
-            <li key={i} style={{ fontSize: "13px", color: "var(--shell-fg-muted)", marginBottom: "4px" }}>
-              <span aria-hidden="true" style={{ color: severityColor("minor"), marginRight: "6px" }}>
+            <li key={i} className="ui-d-fd ui-t-mut ui-t-mb4">
+              <span
+                aria-hidden="true"
+                className="ui-d-sc ui-t-mr6"
+                style={{ "--d-sev": severityColor("minor") } as CSSProperties}
+              >
                 •
               </span>
               {w.message}
-              {w.blockId ? <span style={{ color: "var(--shell-fg-faint)" }}> ({w.blockId})</span> : null}
+              {w.blockId ? <span className="ui-t-fnt"> ({w.blockId})</span> : null}
             </li>
           ))}
         </ul>
