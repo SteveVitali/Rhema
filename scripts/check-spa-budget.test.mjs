@@ -79,11 +79,11 @@ describe("check:spa-budget (REQ-SAFE-7)", () => {
   });
 
   it("FAILS on a synthetic oversized entry (the engineered AC)", () => {
-    const dir = writeFixture({ "assets/main-abc.js": 260_000, "assets/routes-def.js": 60 });
+    const dir = writeFixture({ "assets/main-abc.js": 320_000, "assets/routes-def.js": 60 });
     writeManifest(dir, baseManifest);
     const r = checkSpaBudget(dir, BUDGET_PATH);
     expect(r.ok).toBe(false);
-    expect(r.violations.join("\n")).toMatch(/entry graph .* > 250\.0 kB/);
+    expect(r.violations.join("\n")).toMatch(/entry graph .* > 300\.0 kB/);
   });
 
   it("fails closed when the manifest/output is absent", () => {
