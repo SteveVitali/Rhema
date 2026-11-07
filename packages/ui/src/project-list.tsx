@@ -1,50 +1,55 @@
-import type { CSSProperties, ReactNode } from "react";
-import { Pill, Chip, ActionLink, type Tone } from "./primitives/chips.js";
+import type { ReactNode } from "react";
+import { Pill, Chip, type Tone } from "./primitives/chips.js";
+import { Badge } from "./primitives/status.js";
+import { IconButton } from "./primitives/button.js";
+import { DropdownMenu, DropdownMenuItem, DropdownMenuSeparator } from "./primitives/menu.js";
+import { Tooltip, TooltipProvider } from "./primitives/tooltip.js";
+import { EmptyState } from "./primitives/surfaces.js";
 
-// The §5.2 project list (P1.04). One row per project — the state icon, title, current version, the
-// ≤120-char status line, the Voice chip (or Unfiled) + staleness pill, the one state-matched primary
-// action, and the "…" row menu. The caller derives every state fact from `projectState` over the row
-// sets (the project table stores no `status` column) and maps it onto these views; this module renders.
+// The §5.2 project list (P1.04), rewritten for REQ-HOME-1 (R7HOME.1; ADR-128): a FLAT,
+// always-expanded list sorted by last edit — "Waiting on you" and "Running" pin above it only
+// when non-empty, and the QUIET/Unfiled/Sheet labels are retired. One row per project — the
+// status dot (with a legend tooltip), title, version + state, protocol, voice (only if set),
+// the status line, last-edited stamp, one hover action (Open) and the ⋯ menu. Styling is the
+// `.ui-*` classes from `uiCss()` — no inline spacing/type/colour/radius literals (REQ-GUARD-1,
+// batch c1). The caller derives every state fact from `projectState` + the shared estimator;
+// this module renders.
 
-/** The state icon's five indicators (§5.2): animated running / amber needs-you / green ready /
- *  grey quiet / red failed. Colour via the §5.9 state tokens; never colour-only (the pill carries it). */
+/** The status dot's five indicators: running / needs-you / ready / quiet / failed. Colour via
+ *  the §5.9 state tokens; never colour-only (the legend tooltip + the state badge carry it). */
 export type RowIndicator = "running" | "needs_you" | "ready" | "quiet" | "failed";
 
-const INDICATOR_COLOR: Record<RowIndicator, string> = {
-  running: "var(--state-running)",
-  needs_you: "var(--state-needs-you)",
-  ready: "var(--state-ready)",
-  quiet: "var(--shell-fg-faint)",
-  failed: "var(--sev-blocking)",
+const INDICATOR_CLASS: Record<RowIndicator, string> = {
+  running: "ui-prow-dot--running",
+  needs_you: "ui-prow-dot--needs",
+  ready: "ui-prow-dot--ready",
+  quiet: "ui-prow-dot--quiet",
+  failed: "ui-prow-dot--failed",
 };
 
-/** A row-menu item: a link (GET) or a small form (POST); disabled items show their reason. */
+/** A row-menu item: a link (GET) or a post (form action); paid items carry their estimate. */
 export interface RowActionView {
   readonly key: string;
   readonly label: string;
   /** GET actions — render as a link. */
   readonly href?: string;
-  /** POST actions — render as a form posting here. */
+  /** POST actions — the surface posts JSON (the no-JS grammar keeps `formAction`). */
   readonly formAction?: string;
-  /** set ⇒ the item renders disabled with this reason (§5.2: "disabled items say why"). */
-  readonly disabledReason?: string;
+  /** set ⇒ a paid item (opens the run sheet; never creates a run itself). */
+  readonly paid?: boolean;
+  /** the shared-estimator label ("est. 4,095 cr") shown beside a paid item. */
+  readonly estimateLabel?: string;
+  /** a destructive item renders in the danger tone (delete). */
+  readonly danger?: boolean;
 }
 
-/** A secondary workflow chip beside the row (e.g. "New review round"); disabled ones say why. */
-export interface SecondaryChipView {
-  readonly key: string;
-  readonly label: string;
-  readonly href?: string;
-  readonly formAction?: string;
-  readonly disabledReason?: string;
-}
-
-/** A Voice-picker option inside the row menu's "Change voice" form. */
-export interface VoiceOptionView {
-  readonly personaId: string;
-  readonly name: string;
-  /** the shared §9.6 status pill label + tone (the picker honors REQ-PERSONA-20's hints). */
-  readonly statusLabel?: string;
+/** The status dot's legend lines, keyed by indicator (from the caller's COPY). */
+export interface StatusDotLegend {
+  readonly running: string;
+  readonly needs_you: string;
+  readonly ready: string;
+  readonly quiet: string;
+  readonly failed: string;
 }
 
 export interface ProjectRowView {
@@ -52,364 +57,186 @@ export interface ProjectRowView {
   readonly title: string;
   /** Canonical project URL (`/p/:slug`). */
   readonly href: string;
-  readonly pill: { readonly label: string; readonly tone?: Tone };
-  /** The one primary action (Suggested next). Absent for terminal/quiet states. */
-  readonly action?: { readonly label: string; readonly href: string };
+  /** The status dot's indicator. */
+  readonly indicator: RowIndicator;
+  /** The state badge's label + tone ("Draft", "Reviewing", …). */
+  readonly stateLabel: string;
+  readonly stateTone?: Tone;
   /** "v3" — the current version label (absent on a draft-less row). */
   readonly versionLabel?: string | null;
-  /** The assembled ≤120-char status line (state · phase · counts). */
+  /** The protocol's display name (absent ⇒ the row shows none). */
+  readonly protocolLabel?: string | null;
+  /** The Voice name — rendered ONLY when set (no "Unfiled" chip; ADR-128). */
+  readonly voiceLabel?: string | null;
+  /** The assembled ≤120-char status line (state + phase + counts). */
   readonly statusLine?: string;
-  /** Absent ⇒ the quiet grey dot (the deprecated flat list's minimal views). */
-  readonly indicator?: RowIndicator;
-  /** The Voice chip — null ⇒ the row renders "Unfiled". */
-  readonly voiceChip?: {
-    readonly label: string;
-    readonly href: string;
-    /** the shared voice-staleness pill (§9.6) — "Voice stale · 3 samples newer" etc. */
-    readonly statusLabel?: string;
-    readonly statusTone?: Tone;
-  } | null;
-  /** The unlinked label the row renders when voiceChip is null. */
-  readonly unfiledLabel?: string;
-  /** The "…" menu's items (all seven §5.2 row actions + disabled reasons). */
-  readonly actions?: readonly RowActionView[];
-  /** Secondary workflow chips + the all-workflows menu's disabled entries. */
-  readonly secondaryChips?: readonly SecondaryChipView[];
-  /** The row menu's "Change voice" select options (empty ⇒ the action renders its disabled reason). */
-  readonly voiceOptions?: readonly VoiceOptionView[];
-  /** Change-voice form target; unset ⇒ no form (disabled-reason action covers it). */
-  readonly voiceFormAction?: string;
-  readonly currentPersonaId?: string | null;
-  /** the no-voice option's label (REQ-PERSONA-20's "No voice"). */
-  readonly noVoiceLabel?: string;
+  /** The "Edited …" label (absent ⇒ no stamp). */
+  readonly editedLabel?: string | null;
+  /** The one hover action's label ("Open"). */
+  readonly openLabel?: string;
+  /** The ⋯ menu's items (hidden disabled items never arrive). */
+  readonly menu: readonly RowActionView[];
+  /** The ⋯ trigger's accessible label (from COPY). */
+  readonly menuTriggerLabel: string;
+  /** The status dot's tooltip legend lines. */
+  readonly statusDotLegend: StatusDotLegend;
 }
 
-const rowMenuSummaryStyle: CSSProperties = {
-  cursor: "pointer",
-  listStyle: "none",
-  color: "var(--shell-fg-muted)",
-  fontSize: "15px",
-  padding: "2px 6px",
-  borderRadius: "6px",
-  userSelect: "none",
-};
-
-const menuItemStyle: CSSProperties = {
-  display: "block",
-  padding: "5px 10px",
-  fontSize: "13px",
-  color: "var(--shell-fg)",
-  textDecoration: "none",
-  whiteSpace: "nowrap",
-};
-
-const menuButtonStyle: CSSProperties = {
-  ...menuItemStyle,
-  background: "none",
-  border: "none",
-  cursor: "pointer",
-  textAlign: "left",
-  width: "100%",
-};
-
-const disabledItemStyle: CSSProperties = {
-  ...menuItemStyle,
-  color: "var(--shell-fg-faint)",
-  cursor: "not-allowed",
-};
-
-function RowMenuItem({ item }: { item: RowActionView }): ReactNode {
-  if (item.disabledReason) {
-    return (
-      <span style={disabledItemStyle} title={item.disabledReason} data-disabled-reason={item.disabledReason}>
-        {item.label}
-      </span>
-    );
-  }
-  if (item.href) {
-    return (
-      <a href={item.href} style={menuItemStyle}>
-        {item.label}
-      </a>
-    );
-  }
-  if (item.formAction) {
-    return (
-      // SPA.6 — `data-menu-form=<key>` is the renderer-agnostic hook (the action URL is SSR detail).
-      <form method="post" action={item.formAction} data-menu-form={item.key} style={{ margin: 0 }}>
-        <button type="submit" data-menu-action={item.key} style={menuButtonStyle}>
-          {item.label}
-        </button>
-      </form>
-    );
-  }
-  return <span style={menuItemStyle}>{item.label}</span>;
+export interface ProjectListLabels {
+  /** `data-menu-action` items post through this handler — the surface wires its mutation. */
+  readonly onMenuAction?: (item: RowActionView, row: ProjectRowView) => void;
 }
 
-function SecondaryChip({ chip }: { chip: SecondaryChipView }): ReactNode {
-  if (chip.disabledReason) {
-    return <Chip label={chip.label} title={chip.disabledReason} />;
-  }
-  if (chip.href) return <Chip label={chip.label} href={chip.href} />;
-  if (chip.formAction) {
-    return (
-      <form method="post" action={chip.formAction} style={{ display: "inline", margin: 0 }}>
-        <button
-          type="submit"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            padding: "1px 8px",
-            borderRadius: "6px",
-            border: "1px solid var(--shell-border)",
-            background: "var(--shell-surface)",
-            color: "var(--shell-fg-muted)",
-            fontSize: "12px",
-            cursor: "pointer",
-          }}
-        >
-          {chip.label}
-        </button>
-      </form>
-    );
-  }
-  return <Chip label={chip.label} />;
-}
-
-export function ProjectRow({ row }: { row: ProjectRowView }): ReactNode {
+function StatusDot({ row }: { row: ProjectRowView }): ReactNode {
   return (
-    <li
-      data-project-row={row.id}
-      data-indicator={row.indicator ?? "quiet"}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "12px",
-        flexWrap: "wrap",
-        padding: "12px 16px",
-        borderBottom: "1px solid var(--shell-border)",
-      }}
-    >
-      {/* the §5.2 state icon — animated (rhema-pulse) on running, amber needs-you, green ready,
-          grey quiet, red failed. */}
+    <Tooltip content={row.statusDotLegend[row.indicator]} side="top">
       <span
-        aria-hidden="true"
-        className={(row.indicator ?? "quiet") === "running" ? "rhema-pulse" : undefined}
-        style={{
-          width: "9px",
-          height: "9px",
-          borderRadius: "999px",
-          flex: "0 0 auto",
-          background: INDICATOR_COLOR[row.indicator ?? "quiet"],
-        }}
+        role="img"
+        aria-label={row.statusDotLegend[row.indicator]}
+        data-status-dot={row.indicator}
+        className={`ui-prow-dot ${INDICATOR_CLASS[row.indicator]}${row.indicator === "running" ? " rhema-pulse" : ""}`}
       />
-      <span style={{ flex: "1 1 220px", minWidth: 0 }}>
-        <a
-          href={row.href}
-          style={{
-            color: "var(--shell-fg)",
-            textDecoration: "none",
-            fontWeight: 500,
-            fontSize: "15px",
-          }}
+    </Tooltip>
+  );
+}
+
+function RowMenu({ row, onMenuAction }: { row: ProjectRowView; onMenuAction?: ProjectListLabels["onMenuAction"] }): ReactNode {
+  const navItems = row.menu.filter((i) => i.href != null && !i.paid);
+  const paidItems = row.menu.filter((i) => i.paid);
+  const postItems = row.menu.filter((i) => i.formAction != null);
+  return (
+    <DropdownMenu
+      align="end"
+      trigger={<IconButton aria-label={row.menuTriggerLabel} data-row-menu={row.id} size="sm">⋯</IconButton>}
+    >
+      {navItems.map((item) => (
+        <DropdownMenuItem key={item.key} asChild data-menu-action={item.key}>
+          <a href={item.href} className="ui-prow-menu-link">{item.label}</a>
+        </DropdownMenuItem>
+      ))}
+      {paidItems.length > 0 ? <DropdownMenuSeparator /> : null}
+      {paidItems.map((item) => (
+        <DropdownMenuItem key={item.key} asChild data-menu-action={item.key} data-menu-est={item.estimateLabel != null ? item.key : undefined}>
+          <a href={item.href} className="ui-prow-menu-link">
+            {item.label}
+            {item.estimateLabel != null ? <span className="ui-prow-menu-est">{item.estimateLabel}</span> : null}
+          </a>
+        </DropdownMenuItem>
+      ))}
+      {postItems.length > 0 ? <DropdownMenuSeparator /> : null}
+      {postItems.map((item) => (
+        <DropdownMenuItem
+          key={item.key}
+          data-menu-action={item.key}
+          data-menu-form={item.key}
+          className={item.danger ? "ui-menu-item--danger" : undefined}
+          onSelect={() => onMenuAction?.(item, row)}
         >
+          {item.label}
+        </DropdownMenuItem>
+      ))}
+    </DropdownMenu>
+  );
+}
+
+export function ProjectRow({
+  row,
+  onMenuAction,
+}: {
+  row: ProjectRowView;
+  onMenuAction?: ProjectListLabels["onMenuAction"];
+}): ReactNode {
+  return (
+    <li data-project-row={row.id} data-indicator={row.indicator} className="ui-prow">
+      <StatusDot row={row} />
+      <span className="ui-prow-main">
+        <a href={row.href} className="ui-prow-title" data-row-open={row.id}>
           {row.title}
         </a>
-        {row.versionLabel ? (
-          <span style={{ color: "var(--shell-fg-faint)", fontSize: "12px", marginLeft: "8px" }} className="tnum">
-            {row.versionLabel}
-          </span>
-        ) : null}
-        {row.statusLine ? (
-          <div style={{ color: "var(--shell-fg-muted)", fontSize: "12px", marginTop: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {row.statusLine}
-          </div>
-        ) : null}
-        {(row.secondaryChips ?? []).length > 0 ? (
-          <div style={{ display: "flex", gap: "6px", marginTop: "6px", flexWrap: "wrap" }}>
-            {(row.secondaryChips ?? []).map((chip) => (
-              <SecondaryChip key={chip.key} chip={chip} />
-            ))}
-          </div>
-        ) : null}
+        {row.versionLabel ? <span className="ui-prow-version tnum">{row.versionLabel}</span> : null}
+        <Badge tone={row.stateTone === "ready" ? "ok" : row.stateTone === "attention" || row.stateTone === "needs_you" ? "attention" : row.indicator === "failed" ? "danger" : "neutral"} data-state-badge="true">
+          {row.stateLabel}
+        </Badge>
+        {row.protocolLabel ? <Chip label={row.protocolLabel} /> : null}
+        {row.voiceLabel ? <Chip label={row.voiceLabel} /> : null}
+        {row.statusLine ? <span className="ui-prow-status">{row.statusLine}</span> : null}
       </span>
-      <Pill label={row.pill.label} tone={row.pill.tone} />
-      {row.voiceChip ? (
-        <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
-          <Chip label={row.voiceChip.label} href={row.voiceChip.href} />
-          {row.voiceChip.statusLabel ? (
-            <Pill label={row.voiceChip.statusLabel} tone={row.voiceChip.statusTone ?? "neutral"} />
-          ) : null}
-        </span>
-      ) : (
-        <Chip label={row.unfiledLabel ?? "Unfiled"} />
-      )}
-      {row.action ? <ActionLink label={row.action.label} href={row.action.href} /> : null}
-      <details style={{ position: "relative" }}>
-        <summary aria-label="Project actions" title="Project actions" style={rowMenuSummaryStyle}>
-          ⋯
-        </summary>
-        <div
-          role="menu"
-          style={{
-            position: "absolute",
-            right: 0,
-            zIndex: 20,
-            minWidth: "190px",
-            marginTop: "4px",
-            padding: "4px",
-            border: "1px solid var(--shell-border)",
-            borderRadius: "8px",
-            background: "var(--shell-raised)",
-            boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
-          }}
-        >
-          {(row.actions ?? []).map((item) => (
-            <RowMenuItem key={item.key} item={item} />
-          ))}
-          {row.voiceFormAction && row.voiceOptions ? (
-            <form method="post" action={row.voiceFormAction} style={{ margin: 0, padding: "5px 10px" }}>
-              <select
-                name="personaId"
-                defaultValue={row.currentPersonaId ?? ""}
-                aria-label="Change voice"
-                style={{ fontSize: "12px", maxWidth: "100%" }}
-              >
-                <option value="">{row.noVoiceLabel ?? "No voice"}</option>
-                {row.voiceOptions.map((o) => (
-                  <option key={o.personaId} value={o.personaId}>
-                    {o.name}
-                  </option>
-                ))}
-              </select>
-              <button type="submit" style={{ ...menuButtonStyle, padding: "4px 0 0" }}>
-                Change voice
-              </button>
-            </form>
-          ) : null}
-        </div>
-      </details>
+      {row.editedLabel ? <span className="ui-prow-edited" data-edited="true">{row.editedLabel}</span> : null}
+      {row.openLabel ? (
+        <a href={row.href} className="ui-prow-open" data-open={row.id}>{row.openLabel}</a>
+      ) : null}
+      <RowMenu row={row} onMenuAction={onMenuAction} />
     </li>
   );
 }
 
-// ---- §5.2 attention grouping ----
-
-export type ProjectGroupKey = "needs_you" | "running" | "ready_to_read" | "quiet";
-
-export interface ProjectGroupView {
-  readonly key: ProjectGroupKey;
-  readonly label: string;
-  readonly rows: readonly ProjectRowView[];
-  /** Quiet collapses by default (a `<details>`). */
-  readonly collapsed?: boolean;
-  /** The collapsed summary line — Quiet's "N Unfiled · M with a Voice" sub-counts. */
-  readonly summary?: string;
-}
-
-const groupSectionStyle: CSSProperties = { margin: "0 0 18px" };
-const groupHeadingStyle: CSSProperties = {
-  fontSize: "12px",
-  fontWeight: 600,
-  letterSpacing: "0.04em",
-  textTransform: "uppercase",
-  color: "var(--shell-fg-muted)",
-  margin: "0 0 6px",
-};
-const listStyle: CSSProperties = {
-  listStyle: "none",
-  margin: 0,
-  padding: 0,
-  border: "1px solid var(--shell-border)",
-  borderRadius: "12px",
-  overflow: "hidden",
-  background: "var(--shell-surface)",
-};
-
-function RowList({ rows }: { rows: readonly ProjectRowView[] }): ReactNode {
+function RowList({ rows, onMenuAction }: { rows: readonly ProjectRowView[]; onMenuAction?: ProjectListLabels["onMenuAction"] }): ReactNode {
   return (
-    <ul style={listStyle}>
+    <ul className="ui-prow-list">
       {rows.map((row) => (
-        <ProjectRow key={row.id} row={row} />
+        <ProjectRow key={row.id} row={row} onMenuAction={onMenuAction} />
       ))}
     </ul>
   );
 }
 
-/** The attention-grouped list (§5.2): Needs you / Running / Ready to read / Quiet (collapsed). */
-export function ProjectGroupList({
-  groups,
-  emptyLabel,
+// ---- REQ-HOME-1's flat list + non-empty attention sections ----
+
+export interface AttentionSectionView {
+  /** "needs_you" | "running" — the only two pinned sections (ADR-128). */
+  readonly key: string;
+  readonly label: string;
+  readonly rows: readonly ProjectRowView[];
+}
+
+/**
+ * The §5.2-superseding home list (REQ-HOME-1): the non-empty attention sections pinned above a
+ * flat, always-expanded list sorted by last edit. No collapsed group, no QUIET label, no
+ * Unfiled/Sheet chips — a mixed fixture renders every row on load.
+ */
+export function ProjectHomeList({
+  sections,
+  rows,
+  emptyTitle,
+  emptyBody,
+  emptyAction,
+  onMenuAction,
 }: {
-  groups: readonly ProjectGroupView[];
-  emptyLabel: string;
+  readonly sections: readonly AttentionSectionView[];
+  readonly rows: readonly ProjectRowView[];
+  readonly emptyTitle: ReactNode;
+  readonly emptyBody?: ReactNode;
+  readonly emptyAction?: ReactNode;
+  readonly onMenuAction?: ProjectListLabels["onMenuAction"];
 }): ReactNode {
-  const total = groups.reduce((n, g) => n + g.rows.length, 0);
-  if (total === 0) {
-    return <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px" }}>{emptyLabel}</p>;
+  const visible = sections.reduce((n, s) => n + s.rows.length, 0) + rows.length;
+  if (visible === 0) {
+    return <EmptyState title={emptyTitle} body={emptyBody} action={emptyAction} data-project-empty="true" />;
   }
   return (
-    <div>
-      {groups.map((g) => {
-        if (g.rows.length === 0) return null;
-        const body = (
-          <>
-            <h2 style={groupHeadingStyle} data-group={g.key}>
-              {g.label} · {g.rows.length}
+    <TooltipProvider>
+    <div className="ui-prow-home">
+      {sections.map((s) =>
+        s.rows.length === 0 ? null : (
+          <section key={s.key} data-attention={s.key} className="ui-prow-section">
+            <h2 className="ui-prow-heading">
+              {s.label} · {s.rows.length}
             </h2>
-            <RowList rows={g.rows} />
-          </>
-        );
-        if (g.collapsed) {
-          // HOT.1 (REQ-IDE-4) — `listStyle: "none"` suppresses the native disclosure triangle, so the
-          // group looked empty/inert (PR-J5). Ship an explicit affordance instead: the ▸ marker
-          // (rotated open by a theme-css rule on [open]) plus a text Show/Hide cue the same rule swaps.
-          const cueStyle: CSSProperties = {
-            fontWeight: 400,
-            textTransform: "none",
-            letterSpacing: 0,
-            color: "var(--shell-fg-faint)",
-            marginLeft: "8px",
-          };
-          return (
-            <details key={g.key} style={groupSectionStyle} data-collapsed-group={g.key}>
-              <summary style={{ ...groupHeadingStyle, cursor: "pointer", listStyle: "none" }}>
-                <span
-                  aria-hidden="true"
-                  data-collapsed-marker="true"
-                  style={{ display: "inline-block", marginRight: "6px", transition: "transform 0.15s" }}
-                >
-                  ▸
-                </span>
-                {g.label} · {g.rows.length}
-                {g.summary ? (
-                  <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>
-                    {" "}
-                    — {g.summary}
-                  </span>
-                ) : null}
-                <span data-cue-when-closed="true" style={cueStyle}>
-                  {"· Show"}
-                </span>
-                <span data-cue-when-open="true" style={cueStyle}>
-                  {"· Hide"}
-                </span>
-              </summary>
-              <RowList rows={g.rows} />
-            </details>
-          );
-        }
-        return (
-          <section key={g.key} style={groupSectionStyle}>
-            {body}
+            <RowList rows={s.rows} onMenuAction={onMenuAction} />
           </section>
-        );
-      })}
+        ),
+      )}
+      {rows.length > 0 ? (
+        <section data-project-list="true" className="ui-prow-section">
+          <RowList rows={rows} onMenuAction={onMenuAction} />
+        </section>
+      ) : null}
     </div>
+    </TooltipProvider>
   );
 }
 
-// ---- §5.2's alternate grouping — by Voice (Unfiled first; headers count older profiles) ----
+// ---- the opt-in Group-by — by Voice (Unfiled first; headers count older profiles) ----
 
 export interface VoiceGroupView {
   /** the persona id, or "unfiled" for the no-voice group (always rendered first). */
@@ -426,33 +253,37 @@ export interface VoiceGroupView {
 
 export function VoiceGroupList({
   groups,
-  emptyLabel,
+  emptyTitle,
+  emptyBody,
+  onMenuAction,
 }: {
   groups: readonly VoiceGroupView[];
-  emptyLabel: string;
+  emptyTitle: ReactNode;
+  emptyBody?: ReactNode;
+  onMenuAction?: ProjectListLabels["onMenuAction"];
 }): ReactNode {
   const total = groups.reduce((n, g) => n + g.rows.length, 0);
   if (total === 0) {
-    return <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px" }}>{emptyLabel}</p>;
+    return <EmptyState title={emptyTitle} body={emptyBody} data-project-empty="true" />;
   }
   return (
-    <div>
+    <TooltipProvider>
+    <div className="ui-prow-home">
       {groups.map((g) =>
         g.rows.length === 0 ? null : (
-          <section key={g.key} style={groupSectionStyle}>
-            <h2 style={groupHeadingStyle} data-voice-group={g.key}>
+          <section key={g.key} className="ui-prow-section">
+            <h2 className="ui-prow-heading" data-voice-group={g.key}>
               {g.label} · {g.rows.length}
               {g.statusLabel ? (
-                <span style={{ marginLeft: "8px" }}>
+                <span className="ui-prow-heading-pill">
                   <Pill label={g.statusLabel} tone={g.statusTone ?? "neutral"} />
                 </span>
               ) : null}
               {(g.olderProfileCount ?? 0) > 0 ? (
-                <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>
-                  {" "}
-                  —{" "}
+                <span className="ui-prow-heading-note">
+                  {" — "}
                   {g.href ? (
-                    <a href={g.href} style={{ color: "var(--shell-fg-muted)" }}>
+                    <a href={g.href} className="ui-prow-heading-link">
                       {g.olderProfileCount} use an older profile
                     </a>
                   ) : (
@@ -461,24 +292,11 @@ export function VoiceGroupList({
                 </span>
               ) : null}
             </h2>
-            <RowList rows={g.rows} />
+            <RowList rows={g.rows} onMenuAction={onMenuAction} />
           </section>
         ),
       )}
     </div>
+    </TooltipProvider>
   );
-}
-
-/** @deprecated the P1.04 grouped view supersedes the flat list; kept for older callers. */
-export function ProjectList({
-  rows,
-  emptyLabel,
-}: {
-  rows: readonly ProjectRowView[];
-  emptyLabel: string;
-}): ReactNode {
-  if (rows.length === 0) {
-    return <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px" }}>{emptyLabel}</p>;
-  }
-  return <RowList rows={rows} />;
 }

@@ -1,53 +1,49 @@
 import { describe, it, expect } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { themeCss } from "@rhema/tokens";
-import { ProjectGroupList, type ProjectGroupView, type ProjectRowView } from "./project-list.js";
+import { ProjectHomeList, type ProjectRowView } from "./project-list.js";
 
-// HOT.1 (REQ-IDE-4) — the Quiet group ships collapsed by default AND carries a visible affordance:
-// a ▸ marker + a Show/Hide cue (PR-J5's bug was a summary with the native marker suppressed and no
-// replacement, so the group looked empty).
+// R7HOME.1 (REQ-HOME-1; ADR-128) — the flat, always-expanded list: no collapsed group, no
+// QUIET/Unfiled/Sheet labels, attention sections only when non-empty.
 
-const row: ProjectRowView = {
+const LEGEND = { running: "run", needs_you: "needs", ready: "ready", quiet: "quiet", failed: "failed" };
+const row = (over: Partial<ProjectRowView> = {}): ProjectRowView => ({
   id: "p_quiet",
   title: "A quiet project",
   href: "/p/a-quiet-project",
-  pill: { label: "Quiet", tone: "neutral" },
-};
+  indicator: "quiet",
+  stateLabel: "Draft",
+  menuTriggerLabel: "Project actions",
+  statusDotLegend: LEGEND,
+  menu: [],
+  ...over,
+});
 
-const groups: ProjectGroupView[] = [
-  { key: "quiet", label: "Quiet", collapsed: true, summary: "1 Unfiled · 0 with a Voice", rows: [row] },
-];
-
-describe("ProjectGroupList — the collapsed Quiet affordance (HOT.1, REQ-IDE-4)", () => {
-  const html = renderToStaticMarkup(<ProjectGroupList groups={groups} emptyLabel="No projects." />);
-
-  it("renders the group collapsed (a <details> with no open attribute)", () => {
-    expect(html).toContain('data-collapsed-group="quiet"');
-    const details = html.match(/<details[^>]*data-collapsed-group="quiet"[^>]*>/)![0];
-    expect(details).not.toContain("open");
-  });
-
-  it("the summary carries an explicit marker + a Show cue (listStyle:none suppressed the native one)", () => {
-    expect(html).toContain('data-collapsed-marker="true"');
-    expect(html).toContain("▸");
-    expect(html).toContain('data-cue-when-closed="true"');
-    expect(html).toContain("· Show");
-    expect(html).toContain('data-cue-when-open="true"');
-    expect(html).toContain("· Hide");
-    // and the sub-counts summary still renders
-    expect(html).toContain("Quiet · 1");
-    expect(html).toContain("1 Unfiled · 0 with a Voice");
-  });
-
-  it("themeCss carries the open-state rules the marker + cues depend on (no-JS state feedback)", () => {
-    const css = themeCss();
-    expect(css).toContain("[data-collapsed-marker]");
-    expect(css).toContain("[data-cue-when-open]");
-    expect(css).toContain("[data-cue-when-closed]");
-    expect(css).toContain("rotate(90deg)");
-  });
-
-  it("the rows still render inside the collapsed details (hidden by the browser, present for no-JS+a11y)", () => {
+describe("ProjectHomeList — the flat list (REQ-HOME-1)", () => {
+  it("renders every row expanded with no collapsed group and no retired labels", () => {
+    const html = renderToStaticMarkup(
+      <ProjectHomeList
+        sections={[{ key: "needs_you", label: "Waiting on you", rows: [row({ id: "p_n", indicator: "needs_you" })] }]}
+        rows={[row()]}
+        emptyTitle="No projects."
+      />,
+    );
+    expect(html).toContain('data-attention="needs_you"');
+    expect(html).toContain('data-project-list="true"');
+    expect(html).not.toContain("data-collapsed-group");
+    expect(html).not.toContain("QUIET");
+    expect(html).not.toContain("Unfiled");
+    expect(html).toContain("Waiting on you · 1");
     expect(html).toContain("A quiet project");
+  });
+
+  it("an empty attention section is absent (not rendered at all)", () => {
+    const html = renderToStaticMarkup(<ProjectHomeList sections={[]} rows={[row()]} emptyTitle="None." />);
+    expect(html).not.toContain("data-attention");
+  });
+
+  it("the EmptyState renders when there is nothing at all", () => {
+    const html = renderToStaticMarkup(<ProjectHomeList sections={[]} rows={[]} emptyTitle="No projects." />);
+    expect(html).toContain('data-project-empty="true"');
+    expect(html).toContain("No projects.");
   });
 });

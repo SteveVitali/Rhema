@@ -39,6 +39,10 @@ const nodeGlobals = {
 const NO_RAW_CONTROLS_ENABLED = [
   // R7TALK.1a — the first batch-d migration file (chat panel rebuilt on the 225a primitives).
   "packages/ui/src/chat-panel.tsx",
+  // R7HOME.1 — KIT-3 batch c1: the project list + inbox on the 225a primitives.
+  "packages/ui/src/project-list.tsx",
+  "apps/web/src/spa/surfaces/project-home.tsx",
+  "apps/web/src/spa/surfaces/inbox.tsx",
 ];
 
 export default tseslint.config(

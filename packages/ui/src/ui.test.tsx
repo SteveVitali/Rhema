@@ -1,29 +1,33 @@
 import { describe, it, expect } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { ProjectList, type ProjectRowView } from "./project-list.js";
+import { ProjectHomeList, type ProjectRowView } from "./project-list.js";
 import { DossierView, honorsContradictedTierOneRule, type DossierClaim, type DossierLabels } from "./dossier.js";
 
 // Presentational contracts for the beta primitives (SSR markup). The AC-level render assertions (with the
 // app's copy + sample data) live in apps/web; these lock the component behaviour.
 
-describe("ProjectList", () => {
-  it("renders a row's title, pill, and primary action from the view", () => {
+describe("ProjectHomeList", () => {
+  it("renders a row's title, state badge, and status line from the view", () => {
     const rows: ProjectRowView[] = [
       {
+        id: "p1",
         title: "The Politics of Visibility",
         href: "/p/the-politics-of-visibility",
-        pill: { label: "Edited by you", tone: "attention" },
-        action: { label: "Revise using your edits", href: "/p/the-politics-of-visibility" },
+        indicator: "quiet",
+        stateLabel: "Edited by you",
+        statusLine: "Edited by you · v2",
+        menuTriggerLabel: "Project actions",
+        statusDotLegend: { running: "r", needs_you: "n", ready: "y", quiet: "q", failed: "f" },
+        menu: [],
       },
     ];
-    const html = renderToStaticMarkup(<ProjectList rows={rows} emptyLabel="No projects yet" />);
+    const html = renderToStaticMarkup(<ProjectHomeList sections={[]} rows={rows} emptyTitle="No projects yet" />);
     expect(html).toContain("The Politics of Visibility");
     expect(html).toContain("Edited by you");
-    expect(html).toContain("Revise using your edits");
   });
 
   it("shows the empty label with no rows", () => {
-    expect(renderToStaticMarkup(<ProjectList rows={[]} emptyLabel="No projects yet" />)).toContain(
+    expect(renderToStaticMarkup(<ProjectHomeList sections={[]} rows={[]} emptyTitle="No projects yet" />)).toContain(
       "No projects yet",
     );
   });

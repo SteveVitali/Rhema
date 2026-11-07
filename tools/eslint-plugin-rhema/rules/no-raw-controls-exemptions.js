@@ -38,4 +38,16 @@ module.exports = [
     reason:
       "the forced-SSR Page family's no-JS form actions (rename, voice picker, approval overrides — the phone-reader approvals, RV-36).",
   },
+  {
+    file: "apps/web/src/spa/surfaces/project-home.tsx",
+    component: "ProjectHomeInner",
+    reason:
+      "the no-JS submit stays inside <noscript> on the search form (REQ-HOME-1: instant filters, Apply removed — the KIT-1-styled native submit is the SSR fallback, RV-36).",
+  },
+  {
+    file: "apps/web/src/spa/surfaces/inbox.tsx",
+    component: "InboxSurface",
+    reason:
+      "the mark-read form's hidden `item` id is the no-JS post's field — the KIT-1-styled native-form grammar stays (RV-36); every visible control is a primitive.",
+  },
 ];

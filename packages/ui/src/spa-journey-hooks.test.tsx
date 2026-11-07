@@ -1,8 +1,13 @@
+// @vitest-environment happy-dom
+import { StrictMode } from "react";
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+import { fireEvent } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { buildRunSheetView } from "@rhema/run-sheet";
 import { ConversionPreview } from "./conversion.js";
-import { ProjectGroupList, type ProjectGroupView, type ProjectRowView } from "./project-list.js";
+import { ProjectHomeList, type ProjectRowView } from "./project-list.js";
 import { RunSheet, type RunSheetLabels } from "./run-sheet.js";
 
 // SPA.6 — the renderer-agnostic hooks the journey probes key on (REQ-VFY-4; design/27 §probe
@@ -87,20 +92,40 @@ describe("ProjectRow menu — the keyed action hooks (T6/T7 delete)", () => {
     id: "p_1",
     title: "A project",
     href: "/p/a-project",
-    pill: { label: "Draft", tone: "neutral" },
-    actions: [
+    indicator: "quiet",
+    stateLabel: "Draft",
+    menuTriggerLabel: "Project actions",
+    statusDotLegend: { running: "r", needs_you: "n", ready: "y", quiet: "q", failed: "f" },
+    menu: [
       { key: "open", label: "Open", href: "/p/a-project" },
       { key: "delete", label: "Delete", formAction: "/p/a-project/delete" },
     ],
   };
-  const groups: ProjectGroupView[] = [
-    { key: "unfiled", label: "Unfiled", rows: [row] },
-  ];
-  const html = renderToStaticMarkup(<ProjectGroupList groups={groups} emptyLabel="None." />);
-  it("a formAction menu item carries data-menu-form/data-menu-action keyed by the item", () => {
-    expect(html).toContain('data-menu-form="delete"');
-    expect(html).toContain('data-menu-action="delete"');
+  it("a formAction menu item carries data-menu-form/data-menu-action keyed by the item", async () => {
+    globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    const root = createRoot(el);
+    await act(async () => {
+      root.render(
+        <StrictMode>
+          <ProjectHomeList sections={[]} rows={[row]} emptyTitle="None." />
+        </StrictMode>,
+      );
+    });
+    // The Radix menu renders its items in a portal when opened — the hooks ride the items.
+    const trigger = el.querySelector<HTMLElement>("[data-row-menu]")!;
+    await act(async () => {
+      fireEvent.click(trigger);
+      fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    });
+    expect(document.querySelector('[data-menu-form="delete"]')).not.toBeNull();
+    expect(document.querySelector('[data-menu-action="delete"]')).not.toBeNull();
     // link items never claim the form hook
-    expect(html).not.toContain('data-menu-form="open"');
+    expect(document.querySelector('[data-menu-form="open"]')).toBeNull();
+    await act(async () => {
+      root.unmount();
+    });
+    el.remove();
   });
 });

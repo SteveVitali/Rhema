@@ -1,6 +1,10 @@
 import { Hono } from "hono";
 import { projectState, NON_TERMINAL_RUN_STATES } from "@rhema/orchestrator";
 import type { ProjectState, ProjectStateInput } from "@rhema/orchestrator";
+import { resolveSheetConfig, surfaceEstimate } from "@rhema/run-sheet";
+import { durationCells, effectivePlanTier, sizeBandFor } from "@rhema/ledger";
+import { allowedModelTiers, parseUserPrefs } from "@rhema/contracts";
+import type { WorkflowKey } from "@rhema/contracts";
 import {
   deriveVoiceStatus,
   type VoiceCurrentFacts,
@@ -70,6 +74,24 @@ export interface ProjectListRow {
   readonly showcase: boolean;
   /** P1.17 — the latest review correspondence's delivering run (the dossier href) when known. */
   readonly latestReviewRunId: string | null;
+  /**
+   * R7HOME.1 (REQ-HOME-1) — the row's "last edited" stamp: the latest of the project's own
+   * create stamp, any draft's create stamp, and the live doc's materialized-at. Sorts the flat
+   * recent list and renders the row's edited label.
+   */
+  readonly lastEditedAt: string | null;
+  /**
+   * R7HOME.1 (REQ-HOME-1) — the ⋯ menu's paid items carry the shared estimator's figure for
+   * each runnable verb, at the SAME resolved rigor/tier the run sheet opens on (project
+   * defaults → account prefs → plan-clamped notch — EST.1's chain). `null` when the figure is
+   * unavailable (a draft-less row, a degraded read) — the menu renders the bare verb, never a
+   * modelled number. Absent on `?scope=deleted` reads.
+   */
+  readonly estimates: {
+    readonly review: number | null;
+    readonly revise: number | null;
+    readonly factCheck: number | null;
+  } | null;
 }
 
 interface ProjectRowDb {
@@ -86,6 +108,10 @@ interface ProjectRowDb {
   venue: string | null;
   /** P1.17 — the showcase marker (0037). */
   showcase: boolean;
+  /** R7HOME.1 — the sheet-resolution inputs (NULL = inherit the account default live). */
+  rigor_default: string | null;
+  model_tier_default: string | null;
+  created_at: string | Date;
 }
 
 interface DraftRowDb {
@@ -93,6 +119,7 @@ interface DraftRowDb {
   id: string;
   n: number;
   origin: string;
+  created_at: string | Date;
 }
 
 // ---- P1.04 — the §5.2 derivations (pure, deterministic, testable) ----
@@ -341,7 +368,7 @@ export async function listProjectStates(
   // the soft-deleted rows come back. The default list never sees them.
   const projRes = await db.query(
     `select id, slug, title, accepted_draft_id, archived_at, deleted_at, persona_id, persona_profile_snapshot_id,
-            paper_theme, protocol_id, venue, showcase
+            paper_theme, protocol_id, venue, showcase, rigor_default, model_tier_default, created_at
        from projects where workspace_id = $1 and deleted_at is ${opts?.deletedOnly ? "not " : ""}null
        order by created_at desc, id`,
     [principal.workspaceId],
@@ -351,7 +378,7 @@ export async function listProjectStates(
   const ids = projects.map((p) => p.id);
 
   const draftsRes = await db.query(
-    `select project_id, id, n, origin from drafts where project_id = any($1::text[])`,
+    `select project_id, id, n, origin, created_at from drafts where project_id = any($1::text[])`,
     [ids],
   );
   const drafts = draftsRes.rows as DraftRowDb[];
@@ -446,6 +473,99 @@ export async function listProjectStates(
     ),
   );
 
+  // R7HOME.1 — the flat list's "last edited" stamp: the live doc's materialized-at per project
+  // (the head draft's working edits), folded with draft + project create stamps at assembly.
+  const materializedRes = await db.query(
+    `select d.project_id, max(ld.materialized_at) as materialized_at
+       from live_docs ld join drafts d on d.id = ld.draft_id
+      where d.project_id = any($1::text[])
+      group by d.project_id`,
+    [ids],
+  );
+  const materializedByProject = new Map(
+    (materializedRes.rows as { project_id: string; materialized_at: string | Date | null }[]).map(
+      (r) => [r.project_id, r.materialized_at],
+    ),
+  );
+
+  // R7HOME.1 — the ⋯ menu's estimate inputs: the head draft's word count per project (the paid
+  // verbs price over the head draft, exactly like the Timeline's next-step estimate). One batched
+  // read; a missing promoted version answers no count, never an error.
+  const wordsRes = await db.query(
+    `select d.project_id, d.n, av.word_count
+       from drafts d join artifact_versions av on av.id = d.promoted_version_id
+      where d.project_id = any($1::text[])`,
+    [ids],
+  );
+  const headWordsByProject = new Map<string, number>();
+  {
+    const best = new Map<string, { n: number; words: number }>();
+    for (const r of wordsRes.rows as { project_id: string; n: number; word_count: number | null }[]) {
+      const cur = best.get(r.project_id);
+      if (cur == null || r.n > cur.n) best.set(r.project_id, { n: r.n, words: r.word_count ?? 0 });
+    }
+    for (const [pid, b] of best) headWordsByProject.set(pid, b.words);
+  }
+
+  // R7HOME.1 — the EST.1 resolution inputs, read ONCE per list (account prefs + plan tier); the
+  // per-row chain still resolves project defaults → prefs → plan-clamped notch per verb.
+  const prefsRow = (
+    await db
+      .query(`select prefs from "user" where id = $1`, [principal.userId])
+      .catch(() => ({ rows: [] }))
+  ).rows[0] as { prefs: unknown } | undefined;
+  const listPrefs = parseUserPrefs(prefsRow?.prefs);
+  const listPlanTier = await effectivePlanTier(db, principal.billingAccountId).catch(() => null);
+  const listAllowed = listPlanTier != null ? allowedModelTiers(listPlanTier) : undefined;
+  // The calibrated duration cells ride per (workflow, size-band) — memoized for the request.
+  const listDurations = new Map<string, Awaited<ReturnType<typeof durationCells>>>();
+  const durationsFor = async (workflow: string, words: number) => {
+    const band = sizeBandFor({ words });
+    const key = `${workflow}|${band}`;
+    if (!listDurations.has(key)) {
+      listDurations.set(key, await durationCells(db, workflow, band).catch(() => null));
+    }
+    return listDurations.get(key) ?? undefined;
+  };
+
+  const PAID_VERBS = ["review", "revise", "fact_check"] as const;
+  /** The ⋯ menu's shared-estimator figures (R7HOME.1) — fail-soft: an unreadable input omits the
+   *  figure, never a modelled one (the run sheet stays the priced authority). */
+  const menuEstimates = async (
+    p: ProjectRowDb,
+    headWords: number | undefined,
+  ): Promise<ProjectListRow["estimates"]> => {
+    if (opts?.deletedOnly === true || headWords == null || headWords <= 0) return null;
+    const out: { review: number | null; revise: number | null; factCheck: number | null } = {
+      review: null,
+      revise: null,
+      factCheck: null,
+    };
+    for (const verb of PAID_VERBS) {
+      try {
+        const resolved = resolveSheetConfig({
+          workflow: verb as WorkflowKey,
+          projectRigorDefault: p.rigor_default,
+          projectModelTierDefault: p.model_tier_default,
+          prefs: listPrefs,
+          ...(listAllowed ? { allowedModelTiers: listAllowed } : {}),
+        });
+        const durations = await durationsFor(verb, headWords);
+        const est = surfaceEstimate({
+          workflow: verb,
+          rigor: resolved.rigor,
+          modelTier: resolved.modelTier,
+          inputs: { words: headWords },
+          ...(durations ? { durations } : {}),
+        });
+        out[verb === "fact_check" ? "factCheck" : verb] = est.estimateCredits;
+      } catch {
+        /* a decorative figure is omitted, never modelled */
+      }
+    }
+    return out;
+  };
+
   const byProject = <T extends { project_id: string }>(rows: readonly T[], id: string) =>
     rows.filter((r) => r.project_id === id);
 
@@ -453,7 +573,7 @@ export async function listProjectStates(
   const personaIds = [...new Set(projects.map((p) => p.persona_id).filter((x): x is string => x != null))];
   const chips = await loadVoiceChips(db, personaIds);
 
-  return projects.map((p) => {
+  return Promise.all(projects.map(async (p) => {
     const acceptedVersionN =
       p.accepted_draft_id != null ? draftNById.get(p.accepted_draft_id) ?? null : null;
     const projectReviews = byProject(reviews, p.id);
@@ -520,6 +640,14 @@ export async function listProjectStates(
       latestReviewMajors,
       lastRunFailed,
     });
+    // R7HOME.1 — last edited = the freshest of the project's create stamp, any draft's create
+    // stamp, and the live doc's materialized-at. The flat list sorts on it.
+    const editStamps = [p.created_at, ...byProject(drafts, p.id).map((d) => d.created_at), materializedByProject.get(p.id)]
+      .filter((x): x is string | Date => x != null)
+      .map((x) => new Date(x).getTime());
+    const lastEditedAt =
+      editStamps.length > 0 ? new Date(Math.max(...editStamps)).toISOString() : null;
+    const estimates = await menuEstimates(p, headWordsByProject.get(p.id));
     return {
       id: p.id,
       slug: p.slug,
@@ -543,8 +671,10 @@ export async function listProjectStates(
       group,
       showcase: p.showcase === true,
       latestReviewRunId: latestReview?.run_id ?? null,
+      lastEditedAt,
+      estimates,
     };
-  });
+  }));
 }
 
 export interface ShellApiDeps {

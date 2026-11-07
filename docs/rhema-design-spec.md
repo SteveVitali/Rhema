@@ -496,6 +496,19 @@ Widths at 1440 px: Rail 56 · Browser 240 (open) · Page 660 + Margin 280 · Tim
 
 **REQ-IDE-3.** Rows render state, version, summary, voice chip and one primary action; state derives from run/version tables, never stored opinion. **REQ-IDE-6 (amended).** Group-by defaults to Attention; Voice grouping and filtering are available and persisted per user; new projects default to Unfiled. **REQ-PERSONA-21 (amended).** `/app` supports *Group by: Voice* with Unfiled first as the alternate grouping; the design/8 "Flat while ≤1 voice" auto-default is subsumed by the attention default.
 
+> **Amended 2026-11-06 (R7HOME.1 / ADR-128, REQ-HOME-1):** the §5.2 sketch above is superseded —
+> the list is now a flat, always-expanded list sorted by last edit (the "Collapsed by default"
+> QUIET bucket, the ▸ marker + Show/Hide cues, and the "Unfiled (n) · voiced (m)" sub-line are
+> retired). "Waiting on you" and "Running" pin above the flat list only when non-empty; Ready to
+> read stays in the list carrying the green dot; "QUIET", "Unfiled" and "Sheet" never render as
+> labels (the Voice name renders only when set — Unfiled survives solely as the opt-in
+> Group-by: Voice bucket's header and taxonomy concept). Rows keep the status dot (now with a
+> legend tooltip), title, version + state, protocol, voice, status line and a last-edited stamp,
+> one hover action (Open) and a ⋯ menu; paid menu items show the shared estimator's figure and
+> open the run sheet. The toolbar's filters apply instantly (no Apply buttons) and only
+> non-default params reach the URL. REQ-IDE-4's collapsed-Quiet affordance and REQ-IDE-6's
+> attention grouping read as superseded here; the api still derives the group key.
+
 ### 5.3 New-project flow
 
 ```

@@ -19,7 +19,7 @@
 
 import { useState, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { DecisionsList } from "@rhema/ui";
+import { Button, DecisionsList } from "@rhema/ui";
 import type { GateCardDto, InboxItemDto } from "@rhema/api-client";
 import { COPY } from "../../copy.js";
 import { decisionsLabels, gateCardFor, gateCardModel } from "../../gate-card.js";
@@ -35,20 +35,10 @@ function fmt(template: string, vars: Record<string, string | number>): string {
   return template.replace(/\{(\w+)\}/g, (_, k: string) => (k in vars ? String(vars[k]) : `{${k}}`));
 }
 
-const rowStyle = {
-  padding: "10px 14px",
-  border: "1px solid var(--shell-border)",
-  borderRadius: "10px",
-  background: "var(--shell-surface)",
-  marginBottom: "8px",
-} as const;
-
-const metaStyle = { fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 0" } as const;
-
 /** UX.1 — every row names its project; account-level rows legitimately carry none. */
 function projectMeta(it: { projectTitle?: string | null }): ReactNode {
   return it.projectTitle ? (
-    <p style={metaStyle} data-inbox-project="true">
+    <p className="ui-inbox-meta" data-inbox-project="true">
       {it.projectTitle}
     </p>
   ) : null;
@@ -85,27 +75,27 @@ function InboxGateRow({
     autoProceed && slug != null && card != null ? `/p/${slug}/gates/${card.id}/activity` : null,
   );
   return (
-    <details ref={presenceRef} data-inbox-row={item.id} data-inbox-kind="gate" style={rowStyle}>
-      <summary style={{ fontSize: "14px", color: "var(--shell-fg)", cursor: "pointer" }}>
+    <details ref={presenceRef} data-inbox-row={item.id} data-inbox-kind="gate" className="ui-inbox-row">
+      <summary className="ui-inbox-title">
         {item.title}
       </summary>
       {projectMeta(item)}
-      <div style={{ marginTop: "8px" }}>
-        {item.body ? <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 6px" }}>{item.body}</p> : null}
+      <div className="ui-inbox-card">
+        {item.body ? <p className="ui-inbox-body">{item.body}</p> : null}
         {item.gate ? (
-          <p style={metaStyle}>
+          <p className="ui-inbox-meta">
             {item.gate.kind.replace(/_/g, " ")} · {item.gate.workflow.replace(/_/g, " ")}
             {item.gate.deadlineAt ? ` · ${IN.detailsCta} ${item.gate.deadlineAt.slice(0, 16).replace("T", " ")} UTC` : ""}
           </p>
         ) : null}
         {card != null && slug != null ? (
-          <div data-inbox-gate-card={item.gate?.gateId} style={{ margin: "10px 0" }}>
+          <div data-inbox-gate-card={item.gate?.gateId} className="ui-inbox-card">
             {gateCardFor(card, slug, compact, undefined, { presenceScript: false })}
           </div>
         ) : (
-          <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "6px 0" }}>{IN.decideNote}</p>
+          <p className="ui-inbox-meta">{IN.decideNote}</p>
         )}
-        <a href={item.href} data-inbox-open="true" style={{ fontSize: "13px" }}>{IN.openCta}</a>
+        <a href={item.href} data-inbox-open="true" className="ui-inbox-open">{IN.openCta}</a>
       </div>
     </details>
   );
@@ -169,11 +159,11 @@ export function InboxSurface({
         {/* UX.1 — the count IS the rendered waiting rows. The api's badge count stays the nav
             badge's semantics; it can never disagree with this line because this line IS
             `blocked.length`. */}
-        <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0 16px" }} data-inbox-badge="true">
+        <p className="ui-inbox-badge-line" data-inbox-badge="true">
           {fmt(IN.badgeLine, { n: blocked.length })}
         </p>
         {items.length === 0 ? (
-          <p data-inbox-empty="true" style={{ fontSize: "14px", color: "var(--shell-fg-muted)", maxWidth: "68ch" }}>
+          <p data-inbox-empty="true" className="ui-inbox-empty">
             {IN.empty}
           </p>
         ) : null}
@@ -181,7 +171,7 @@ export function InboxSurface({
           <form
             method="post"
             action="/app/inbox/read-all"
-            style={{ margin: "0 0 16px" }}
+            className="ui-inbox-card"
             aria-busy={busy === "all"}
             onSubmit={(e) => {
               e.preventDefault();
@@ -190,15 +180,15 @@ export function InboxSurface({
               markAll.mutate();
             }}
           >
-            <button type="submit" data-inbox-read-all="true" disabled={busy != null} style={{ fontSize: "12px" }}>
+            <Button type="submit" size="sm" data-inbox-read-all="true" disabled={busy != null}>
               {IN.markAllRead}
-            </button>
+            </Button>
           </form>
         ) : null}
 
         {blocked.length > 0 ? (
-          <section data-inbox-section="blocked" style={{ marginBottom: "20px", maxWidth: "72ch" }}>
-            <h2 style={{ fontSize: "14px", fontWeight: 600, margin: "0 0 8px" }}>{IN.needsYouHeading}</h2>
+          <section data-inbox-section="blocked" className="ui-inbox-section">
+            <h2 className="ui-inbox-heading">{IN.needsYouHeading}</h2>
             {blocked.map((it) => {
               const slug = slugOf(it.href);
               if (it.gate) {
@@ -214,10 +204,10 @@ export function InboxSurface({
               }
               if (it.decision && slug) {
                 return (
-                  <div key={it.id} data-inbox-row={it.id} data-inbox-kind="decision" style={rowStyle}>
-                    <p style={{ fontSize: "14px", color: "var(--shell-fg)", margin: "0 0 6px" }}>{it.title}</p>
+                  <div key={it.id} data-inbox-row={it.id} data-inbox-kind="decision" className="ui-inbox-row">
+                    <p className="ui-inbox-title">{it.title}</p>
                     {projectMeta(it)}
-                    <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 8px" }}>{it.decision.text}</p>
+                    <p className="ui-inbox-body">{it.decision.text}</p>
                     <DecisionsList
                       items={[
                         {
@@ -236,10 +226,10 @@ export function InboxSurface({
                 );
               }
               return (
-                <div key={it.id} data-inbox-row={it.id} style={rowStyle}>
-                  <p style={{ fontSize: "14px", color: "var(--shell-fg)", margin: 0 }}>{it.title}</p>
+                <div key={it.id} data-inbox-row={it.id} className="ui-inbox-row">
+                  <p className="ui-inbox-title">{it.title}</p>
                   {projectMeta(it)}
-                  <a href={it.href} style={{ fontSize: "13px" }}>{IN.openCta}</a>
+                  <a href={it.href} className="ui-inbox-open">{IN.openCta}</a>
                 </div>
               );
             })}
@@ -247,22 +237,22 @@ export function InboxSurface({
         ) : null}
 
         {unread.length > 0 ? (
-          <section data-inbox-section="unread" style={{ marginBottom: "20px", maxWidth: "72ch" }}>
-            <h2 style={{ fontSize: "14px", fontWeight: 600, margin: "0 0 8px" }}>{IN.unreadHeading}</h2>
+          <section data-inbox-section="unread" className="ui-inbox-section">
+            <h2 className="ui-inbox-heading">{IN.unreadHeading}</h2>
             {unread.map((it) => (
-              <div key={it.id} data-inbox-row={it.id} data-inbox-type={it.type} style={{ ...rowStyle, borderLeft: "3px solid var(--accent)" }}>
-                <p style={{ fontSize: "14px", color: "var(--shell-fg)", margin: "0 0 4px" }}>{it.title}</p>
+              <div key={it.id} data-inbox-row={it.id} data-inbox-type={it.type} className="ui-inbox-row ui-inbox-row--unread">
+                <p className="ui-inbox-title">{it.title}</p>
                 {projectMeta(it)}
-                {it.body ? <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 6px" }}>{it.body}</p> : null}
+                {it.body ? <p className="ui-inbox-body">{it.body}</p> : null}
                 {/* The form is the flex <p>'s sibling (matching the corrected SSR source — `form`
                     is a p-closing tag, so nesting it would produce a different DOM than served). */}
-                <p style={{ display: "flex", gap: "14px", margin: 0 }}>
-                  <a href={it.href} data-inbox-open="true" style={{ fontSize: "13px" }}>{IN.openCta}</a>
+                <p className="ui-inbox-actions">
+                  <a href={it.href} data-inbox-open="true" className="ui-inbox-open">{IN.openCta}</a>
                 </p>
                 <form
                   method="post"
                   action="/app/inbox/read"
-                  style={{ margin: 0 }}
+                  className="ui-inbox-card"
                   aria-busy={busy === it.id}
                   onSubmit={(e) => {
                     e.preventDefault();
@@ -272,9 +262,9 @@ export function InboxSurface({
                   }}
                 >
                   <input type="hidden" name="item" value={it.id} />
-                  <button type="submit" data-inbox-mark-read="true" disabled={busy != null} style={{ fontSize: "12px", background: "none", border: "none", color: "var(--accent)", cursor: "pointer", padding: 0 }}>
+                  <Button type="submit" variant="ghost" size="sm" data-inbox-mark-read="true" disabled={busy != null}>
                     {IN.markReadCta}
-                  </button>
+                  </Button>
                 </form>
               </div>
             ))}
@@ -282,28 +272,28 @@ export function InboxSurface({
         ) : null}
 
         {read.length > 0 ? (
-          <section data-inbox-section="read" style={{ marginBottom: "20px", maxWidth: "72ch" }}>
-            <h2 style={{ fontSize: "14px", fontWeight: 600, margin: "0 0 8px" }}>{IN.readHeading}</h2>
+          <section data-inbox-section="read" className="ui-inbox-section">
+            <h2 className="ui-inbox-heading">{IN.readHeading}</h2>
             {read.map((it) => (
-              <div key={it.id} data-inbox-row={it.id} data-inbox-type={it.type} style={{ ...rowStyle, opacity: 0.8 }}>
-                <p style={{ fontSize: "14px", color: "var(--shell-fg-muted)", margin: "0 0 4px" }}>{it.title}</p>
+              <div key={it.id} data-inbox-row={it.id} data-inbox-type={it.type} className="ui-inbox-row ui-inbox-row--read">
+                <p className="ui-inbox-title ui-inbox-title--read">{it.title}</p>
                 {projectMeta(it)}
-                {it.body ? <p style={{ fontSize: "13px", color: "var(--shell-fg-faint)", margin: "0 0 6px" }}>{it.body}</p> : null}
-                <a href={it.href} data-inbox-open="true" style={{ fontSize: "13px" }}>{IN.openCta}</a>
+                {it.body ? <p className="ui-inbox-body ui-inbox-body--faint">{it.body}</p> : null}
+                <a href={it.href} data-inbox-open="true" className="ui-inbox-open">{IN.openCta}</a>
               </div>
             ))}
           </section>
         ) : null}
 
         {voices.length > 0 ? (
-          <section data-inbox-section="voices" style={{ marginBottom: "20px", maxWidth: "72ch" }}>
-            <h2 style={{ fontSize: "14px", fontWeight: 600, margin: "0 0 8px" }}>{IN.voicesHeading}</h2>
+          <section data-inbox-section="voices" className="ui-inbox-section">
+            <h2 className="ui-inbox-heading">{IN.voicesHeading}</h2>
             {voices.map((it) => (
-              <div key={it.id} data-inbox-row={it.id} data-inbox-type="voice_stale" style={rowStyle}>
-                <p style={{ fontSize: "14px", color: "var(--shell-fg)", margin: "0 0 4px" }}>{it.title}</p>
+              <div key={it.id} data-inbox-row={it.id} data-inbox-type="voice_stale" className="ui-inbox-row">
+                <p className="ui-inbox-title">{it.title}</p>
                 {projectMeta(it)}
-                {it.body ? <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 6px" }}>{it.body}</p> : null}
-                <a href={it.href} style={{ fontSize: "13px" }}>{IN.openCta}</a>
+                {it.body ? <p className="ui-inbox-body">{it.body}</p> : null}
+                <a href={it.href} className="ui-inbox-open">{IN.openCta}</a>
               </div>
             ))}
           </section>

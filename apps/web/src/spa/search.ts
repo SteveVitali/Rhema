@@ -36,6 +36,13 @@ export const numParam: SearchNarrow = (v) => {
 export const flagParam: SearchNarrow = (v) => (v === "1" || v === 1 ? "1" : undefined);
 
 /**
+ * R7HOME.1 (A11) — a `?archived=1`-style flag that stays NUMERIC through validation so the
+ * router's JSON-shaped serialization re-emits the clean `=1` (a string "1" would re-encode as
+ * `?archived=%221%22`). Leaves compare with `String(param) === "1"`.
+ */
+export const flagIntParam: SearchNarrow = (v) => (v === "1" || v === 1 ? 1 : undefined);
+
+/**
  * Build a route's `validateSearch`: copy every key through (forward-compatible), apply each known
  * key's narrowing, and drop a known key whose value fails its narrowing.
  */
