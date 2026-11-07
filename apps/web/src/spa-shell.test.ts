@@ -95,7 +95,8 @@ describe("renderSpaShell — the document contract (REQ-BND-1/10/12; spec §3.1)
 
   it("carries the mount node, the honest noscript floor, and the boot embed", () => {
     const html = renderSpaShell(ctx, { path: "/p/acme/run", boot, entry });
-    expect(html).toContain('<div id="spa-root" data-spa-root></div>');
+    // R7SYNC.1 (REQ-SPEED-2) — the mount node carries the static pre-JS frame.
+    expect(html).toContain('<div id="spa-root" data-spa-root><div class="app-shell" data-app-shell data-shell-frame');
     expect(html).toContain("<noscript>");
     // REQ-BND-12 — the floor names the surface honestly. SPA.28: no SSR escape link remains —
     // there is no server-rendered document left to land on, so the noscript carries no href at
@@ -291,7 +292,8 @@ describe("the catch-all split (REQ-BND-4/11)", () => {
     const html = await res.text();
     expect(html).toContain('data-renderer="spa"');
     expect(html).toContain('data-project="acme"');
-    expect(html).toContain('<div id="spa-root" data-spa-root></div>');
+    // R7SYNC.1 (REQ-SPEED-2) — the mount node carries the static pre-JS frame.
+    expect(html).toContain('<div id="spa-root" data-spa-root><div class="app-shell" data-app-shell data-shell-frame');
     expect(html).toContain('data-spa-boot');
     expect(html).not.toContain("data-mounted");
   });
@@ -387,7 +389,8 @@ describe("the registered-handler shell serve (spec §4 fixed order)", () => {
     const html = await res.text();
     expect(html).toContain('data-renderer="spa"');
     expect(html).toContain("<title>Usage · Rhēma</title>");
-    expect(html).toContain('<div id="spa-root" data-spa-root></div>');
+    // R7SYNC.1 (REQ-SPEED-2) — the mount node carries the static pre-JS frame.
+    expect(html).toContain('<div id="spa-root" data-spa-root><div class="app-shell" data-app-shell data-shell-frame');
     expect(html).toContain("<noscript>");
     // the manifest-resolved tags, nonce-stamped by the CSP middleware
     expect(html).toMatch(/<script nonce="[^"]+" type="module" src="\/assets\/spa\/assets\/main-abc123\.js">/);
@@ -433,7 +436,8 @@ describe("the registered-handler shell serve (spec §4 fixed order)", () => {
       expect(res.status, path).toBe(200);
       const html = await res.text();
       expect(html).toContain('data-renderer="spa"');
-      expect(html).toContain('<div id="spa-root" data-spa-root></div>');
+      // R7SYNC.1 (REQ-SPEED-2) — the mount node carries the static pre-JS frame.
+    expect(html).toContain('<div id="spa-root" data-spa-root><div class="app-shell" data-app-shell data-shell-frame');
       expect(html).not.toContain('data-renderer="ssr"');
       expect(html).not.toContain("data-mounted");
     }

@@ -3,7 +3,7 @@
 // SPA.23 — the `editor` surface's component contract (REQ-SEQ-9, REQ-VFY-2/6, REQ-TST-2/6/10,
 // REQ-BFF-1/2/3/11/22, REQ-ED-1/2/4/12/14; design/23 §3 the mount + §7 the twins). Mounted through
 // the production router (memory history + a stub fetch) at all five routes:
-//   • `/p/:slug` — the REQ-BFF-22 handoff in `beforeLoad` (the POST + the `?focus=1` suppression +
+//   • `/p/:slug` — the REQ-BFF-22 handoff in the loader, concurrent with the twin GET per REQ-SPEED-1 (the POST + the `?focus=1` suppression +
 //     the owed-href document nav), then the overview's Needs-you + the working-head Page mount.
 //   • `/p/:slug/v/:v` — the rail + the Page chrome (the `working` arm + a numeric draft).
 //   • `/p/:slug/v/:n/diff/:m` — the read-only compare layouts.
@@ -349,7 +349,7 @@ afterEach(() => {
 // ---- /p/:slug — the handoff + the overview mount --------------------------------------------------
 
 describe("GET /p/:slug mounted (SPA.23)", () => {
-  it("REQ-BFF-22 — beforeLoad POSTs the handoff first, then the twin read lands the overview + the working-head Page", async () => {
+  it("REQ-BFF-22 + REQ-SPEED-1 — the loader posts the handoff concurrently with the twin read; the overview + the working-head Page land", async () => {
     const f = makeFetch();
     await mountAt(`/p/${SLUG}`, bootFor(SPA_EDITOR), f.impl);
     expect(f.posts.map((p) => p.url)).toContain(`/bff/p/${SLUG}/handoff`);
@@ -361,7 +361,7 @@ describe("GET /p/:slug mounted (SPA.23)", () => {
     expect(main.querySelector("[data-draft-id='d_7']")).not.toBeNull();
   });
 
-  it("the handoff POST runs BEFORE the twin read — an owed row lands the document nav", async () => {
+  it("R7SYNC.1 (REQ-SPEED-1) — the handoff POST rides IN PARALLEL with the twin read (never serial); an owed row still lands the redirect", async () => {
     const f = makeFetch({ handoff: { href: `/p/${SLUG}/r/run_1`, inboxItemId: "inbox_1" } });
     try {
       await mountAt(`/p/${SLUG}`, bootFor(SPA_EDITOR), f.impl);
@@ -370,7 +370,9 @@ describe("GET /p/:slug mounted (SPA.23)", () => {
       // redirect or a location write; either way the twin read must never fire.
     }
     expect(f.posts.map((p) => p.url)).toContain(`/bff/p/${SLUG}/handoff`);
-    expect(f.gets).not.toContain(`/bff/p/${SLUG}`);
+    // REQ-SPEED-1 — the twin GET fired concurrently (same tick), never behind the write.
+    expect(f.gets).toContain(`/bff/p/${SLUG}`);
+    expect(f.posts.filter((p) => p.url === `/bff/p/${SLUG}/handoff`).length).toBe(1);
   });
 
   it("?focus=1 rides the handoff POST's query — the suppression is server-owned", async () => {

@@ -218,7 +218,11 @@ export function usePaneWrite(opts?: {
     },
     onSettled: (_env, _err, vars) => {
       setFormBusy(vars.form, false);
-      void queryClient.invalidateQueries({ queryKey: ["bff"] });
+      // R7SYNC.1 (REQ-SPEED-3) — scoped invalidation: the write's `/p/:slug/…` action names
+      // its project subtree; workspace-scoped actions (settings/voices) keep `["bff","app"]`
+      // — never the bare `["bff"]` every-twin flush the audit flagged.
+      const slug = /^\/p\/([^/]+)\//.exec(vars.action)?.[1];
+      void queryClient.invalidateQueries({ queryKey: slug != null ? ["bff", "p", slug] : ["bff", "app"] });
     },
   });
   return { pending: mutation.isPending, write: mutation.mutate };

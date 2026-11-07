@@ -17,6 +17,7 @@ import { docMetaFor } from "../doc-meta.js";
 import { AppShell, useInAppShell } from "./app-shell.js";
 import { getSpaBoot, isSpaEnabled } from "./boot.js";
 import { replaceDocument } from "./dom.js";
+import { useProjectChromeFallback } from "./version-picker.js";
 
 /** The h1 word for the current path — the doc title minus the " · Rhēma" suffix (COPY-sourced). */
 function routeHeading(pathname: string): string {
@@ -101,6 +102,10 @@ export function SpaNotFound(): ReactNode {
   // is SPA space: at leaf position the layout's shell already wraps it (InShell), at a position
   // with no mounted layout (the fuzzy root boundary) this component mounts the shell itself.
   const inShell = useInAppShell();
+  // R7SYNC.1 (REQ-SYNC-3; R5 G3) — the in-project 404 publishes the project-scoped chrome
+  // (the versions twin's `ide` bag): the Timeline tab shows the REAL round log here too.
+  const slug = /^\/p\/([^/]+)\//.exec(pathname)?.[1];
+  useProjectChromeFallback(slug != null ? decodeURIComponent(slug) : null);
   const body = (
     <main data-spa-surface>
       <h1>{COPY.notFound.heading}</h1>

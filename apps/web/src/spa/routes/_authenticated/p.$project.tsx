@@ -7,6 +7,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { demoFeedLabelsQuery, feedLabelsQuery } from "../../queries.js";
 import { IdeProjectLayout } from "../../ide/chrome.js";
+import { SpaNotFound } from "../../states.js";
 
 export const Route = createFileRoute("/_authenticated/p/$project")({
   // R7DEM.4b (R3 P2) — the demo warms the same `["feed-labels"]` key from the PUBLIC
@@ -20,4 +21,9 @@ export const Route = createFileRoute("/_authenticated/p/$project")({
     const { project } = Route.useParams();
     return <IdeProjectLayout project={project} />;
   },
+  // R7SYNC.1 (REQ-SYNC-3; R5 G3) — the in-project 404 stays INSIDE the chrome: the boundary
+  // renders at leaf position in this layout (inside `IdeChrome` via the `routeId:null` framed
+  // arm), where `useProjectChromeFallback` publishes the versions twin's `ide` bag — the
+  // Timeline tab shows the real round log, never the route-scoped empty the audit caught.
+  notFoundComponent: SpaNotFound,
 });

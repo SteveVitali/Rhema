@@ -1051,6 +1051,13 @@ export const COPY = {
     body: "That page doesn't exist.",
     home: "Go home",
   },
+  // R7SYNC.1 (REQ-SYNC-4; R5 G4) — the in-shell versions picker for a missing /v/:n.
+  versionPicker: {
+    heading: "Pick a version",
+    missingFmt: "v{n} isn't in this project — pick one of these:",
+    discardedFmt: "v{n} was discarded — pick one of these:",
+    backToPage: "Back to the project",
+  },
 
   // P1.07 — the palette's free-form obligation form (REQ-OBJ-10; `source: 'user'`, standing). The row
   // opens on the project it was created against; the Revise run's sheet lists it like any other debt.
