@@ -227,7 +227,11 @@ export function IdeChrome({ slug, children }: { slug: string; children?: ReactNo
           {...(data.inboxCount != null ? { inboxCount: data.inboxCount } : {})}
           {...(data.status != null ? { status: data.status } : {})}
           labels={IDE_CHROME_LABELS}
-          {...(demo != null ? { demo: true } : {})}
+          // F-R7DEP.2-2 — gate on the flag's VALUE, not its presence: `demo` is a boolean
+          // (`boot?.demo != null`), so `demo != null` was true on EVERY workspace leaf and the
+          // §10.1 demo gate disabled [data-ide-panel-tab=chat] for authenticated tenants too
+          // (U3.occlusion's "not enabled" at 1440×900).
+          {...(demo ? { demo: true } : {})}
           {...(data.pageHeader != null ? { pageHeader: data.pageHeader } : {})}
         >
           {children}

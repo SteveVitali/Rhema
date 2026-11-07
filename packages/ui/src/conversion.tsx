@@ -98,21 +98,23 @@ export function ConversionPreview(props: ConversionPreviewProps): ReactNode {
         </section>
       </div>
 
-      <ConversionNotesCard
-        warnings={props.warnings}
-        heading={props.labels.warningsHeading}
-        empty={props.labels.noWarnings}
-      />
-
       {/* SPA.6 — renderer-agnostic hooks (REQ-VFY-4): journeys locate the create surface by
-          `data-conversion-form`/`data-conversion-action`, never the POST action string. */}
+          `data-conversion-form`/`data-conversion-action`, never the POST action string.
+          F-R7DEP.2-4 — the Conversion-notes card renders INSIDE the form's hook: the
+          `title_extracted` normalization is part of the create surface's text, and the
+          journey reads the notes off `[data-conversion-form]` itself. */}
       <form
         method="post"
         action={props.actions.formAction}
         data-conversion-form="true"
         className="ui-c2-mt4 ui-c2-g3"
-        style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}
       >
+        <ConversionNotesCard
+          warnings={props.warnings}
+          heading={props.labels.warningsHeading}
+          empty={props.labels.noWarnings}
+        />
+        <div className="ui-c2-g3" style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
         {Object.entries(props.actions.hiddenFields ?? {}).map(([name, value]) => (
           <HiddenField key={name} name={name} value={value} />
         ))}
@@ -129,6 +131,7 @@ export function ConversionPreview(props: ConversionPreviewProps): ReactNode {
             <span className="ui-t-fnt ui-d-fs">{props.labels.fixNowNote}</span>
           </>
         ) : null}
+        </div>
       </form>
     </div>
   );

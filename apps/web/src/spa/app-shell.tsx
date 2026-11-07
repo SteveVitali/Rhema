@@ -229,18 +229,24 @@ function ProjectSection(props: {
   // `data?.project?.title` — a degraded/erroneous body must never throw in the sidebar.
   const title = data?.project?.title ?? slug;
   const readOnly = data?.project?.readOnlyProject ?? (demo ? { reason: "demo" as const } : null);
-  // The latest review's run id (the rounds rows carry provenance.runId + workflow); the
-  // Reviews item targets its dossier, else the project overview (the dossier cards' home).
+  // The latest review's run id — the twin's own row fact first (F-R7DEP.2-1: the files
+  // tree's provenance rows do not carry it, so the scan below never resolved and the
+  // Reviews item collapsed to its `/p/:slug` fallback), then the run rows' provenance
+  // (`advancedRows` included — a dossier is advanced-shaped when the sources aren't),
+  // else the project overview (the dossier cards' home).
   const latestReviewRunId = useMemo(() => {
+    if (data?.project?.latestReviewRunId != null) return data.project.latestReviewRunId;
     for (const s of data?.files?.sections ?? []) {
-      for (const r of s.rows ?? []) {
+      for (const r of [...(s.rows ?? []), ...(s.advancedRows ?? [])]) {
         if (r.provenance.runId != null && /review/i.test(r.provenance.workflow ?? "")) {
           return r.provenance.runId;
         }
       }
     }
     for (const s of data?.files?.sections ?? []) {
-      const hit = (s.rows ?? []).find((r) => r.provenance.runId != null);
+      const hit = [...(s.rows ?? []), ...(s.advancedRows ?? [])].find(
+        (r) => r.provenance.runId != null,
+      );
       if (hit?.provenance.runId != null) return hit.provenance.runId;
     }
     return null;

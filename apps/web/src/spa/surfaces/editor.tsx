@@ -595,6 +595,23 @@ export function ProjectPageSurface({
   );
   const onSubmit = useMemo(() => delegatedSubmitHandler({ router, write }), [router, write]);
 
+  // F-R7DEP.2-3 (REQ-HOME-3) — the blank Page's inline title owns entry focus. `autoFocus`
+  // fires on the input's own mount, but the editor's mount (ProseMirror init) and the chrome
+  // publish land in the same commit and claim document focus — create-and-type typed into the
+  // Page body instead of the title. Re-assert after every descendant's mount effect (parent
+  // effects run last), then once more next frame for a later claimer.
+  const scratchEntry = search["created"] === "scratch";
+  useEffect(() => {
+    if (!scratchEntry) return;
+    const el = document.querySelector<HTMLInputElement>("[data-inline-title] input");
+    if (el == null) return;
+    el.focus();
+    const frame = window.requestAnimationFrame(() => {
+      if (el.isConnected && document.activeElement !== el) el.focus();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [scratchEntry]);
+
   return (
     <div data-spa-surface onSubmit={onSubmit} aria-busy={pending || undefined}>
       {search["hc"] ? <HeldConsumedMarker token={search["hc"]} /> : null}

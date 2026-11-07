@@ -6312,6 +6312,11 @@ export function createWebApp(deps: WebDeps): Hono {
             slug,
             headDraftId: row.headDraftId ?? null,
             headDraftN: row.headDraftN ?? null,
+            // F-R7DEP.2-1 — the row fact the sidebar's Reviews item needs: the latest delivered
+            // dossier's run id, so the item carries `/p/:slug/review/:runId` (a visible,
+            // actionable anchor) instead of the `/p/:slug` fallback. The files tree's provenance
+            // rows do not carry it.
+            latestReviewRunId: row.latestReviewRunId ?? null,
             ...(row.showcase === true ? { showcase: true } : {}),
             readOnlyProject:
               row.showcase === true
