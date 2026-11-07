@@ -391,6 +391,82 @@ export const RUN_STATES = [
 export type RunState = (typeof RUN_STATES)[number];
 export const runStateSchema = z.enum(RUN_STATES);
 
+/**
+ * R7COPY.1a (REQ-COPY-1) — every phase key a run's `steps.phase` may carry: the shipped workflow
+ * manifests' keys plus the six retired step-vocab keys still present in older fixtures/records.
+ * These keys reach the UI verbatim in step rows, feed payloads and the AI-use statement (R5 B6/C12,
+ * G6) — they are DTO data, not protocol text (the manifest bodies stay private); the UI renders
+ * `UI_LABELS.phase[key]`, never the raw key. A manifest that adds a phase key must add it here —
+ * the @rhema/orchestrator parity test asserts every manifest `phase.key` is a member.
+ */
+export const PHASE_KEYS = [
+  // shipped workflow-manifest keys (R7COPY.1a census)
+  "answer",
+  "argument",
+  "audit",
+  "bootstrap",
+  "calibration",
+  "caption",
+  "census",
+  "classify",
+  "close_reading",
+  "consolidation",
+  "craft",
+  "data",
+  "deliver",
+  "delivery",
+  "discourse",
+  "distill",
+  "draft",
+  "fetch",
+  "gap_analysis",
+  "gaps",
+  "grounding",
+  "harvest",
+  "intake",
+  "inventory",
+  "letter",
+  "package",
+  "plan",
+  "render",
+  "research",
+  "reseed",
+  "revise",
+  "second_read",
+  "spec",
+  "spine",
+  "substance",
+  "triage",
+  "verification",
+  "verify",
+  "voice",
+  // retired step-vocab keys still present in older fixtures/records (labels keep them readable)
+  "reading_the_piece",
+  "checking_claims",
+  "mapping_the_field",
+  "weighing_the_argument",
+  "editors_letter",
+] as const;
+export type PhaseKey = (typeof PHASE_KEYS)[number];
+export const phaseKeySchema = z.enum(PHASE_KEYS);
+
+/**
+ * R7COPY.1a (REQ-COPY-1) — the ingestion/source provider keys a voice's sources and integrations
+ * carry (`connections.provider`, sample source kinds): the UI renders `UI_LABELS.sourceProvider`
+ * for them (R5 D4 — `substack_export` never renders raw).
+ */
+export const SOURCE_PROVIDER_KEYS = [
+  "substack",
+  "substack_export",
+  "medium",
+  "gdrive",
+  "url",
+  "upload",
+  "paste",
+] as const;
+export type SourceProviderKey = (typeof SOURCE_PROVIDER_KEYS)[number];
+export const sourceProviderKeySchema = z.enum(SOURCE_PROVIDER_KEYS);
+
 export const STEP_STATES = ["pending", "running", "done", "skipped", "failed"] as const;
 export type StepState = (typeof STEP_STATES)[number];
 

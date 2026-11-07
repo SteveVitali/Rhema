@@ -2,6 +2,12 @@
 // table against Appendix D.2 (via @rhema/contracts `lintCopy`), so the canonical vocabulary is enforced from
 // the first screen (REQ-PROD-6 / REQ-BILL-18). Keep ALL user-facing chrome here; editorial CONTENT (the
 // sample dossier's prose) lives in sample-dossier.ts and is not product vocabulary.
+//
+// R7COPY.1a (REQ-COPY-1/6; REQ-GUARD-2) — every enum-keyed label map is a `labelLookup(UI_LABELS.…)`
+// rebind of the ONE contracts label table, never a second authored map; the `lintInternalTerms`
+// banned-term lint (REQ-COPY-6's list verbatim) runs over every leaf in copy.test.ts.
+
+import { UI_LABELS, labelLookup } from "@rhema/contracts";
 
 export const COPY = {
   brand: "Rhēma",
@@ -306,11 +312,7 @@ export const COPY = {
     // P1.06 — the §5.6 collapsed row's editable fields + the §14.3 trial badge + the §7.2 scope pills'
     // whole-draft comparison line.
     approvals: "Approvals",
-    approvalDisplay: {
-      named: "Named approvals",
-      wait_each: "Wait for me at each",
-      run_to_completion: "Run to completion",
-    },
+    approvalDisplay: labelLookup(UI_LABELS.approvalPolicy),
     // P1.09 (§5.6/§6.4) — the per-run autonomous override ("this run only"; the project policy above
     // is untouched; spend/refusal cards still wait — REQ-SPEC-1).
     autoRunLabel: "This run only — run it to completion",
@@ -343,12 +345,7 @@ export const COPY = {
     tierLockedSuffix: "(not on your plan)",
     tierClampedFmt: "{requested} isn't on your plan — priced on {resolved}.",
     estimatingLabel: "Estimate pending — the draft is still being measured.",
-    resolutionLabels: {
-      turn_off_fact_check: "Turn off fact-check",
-      use_base: "Switch to Base",
-      lower_rigor: "Lower the rigor",
-      add_credits: "Add credits",
-    },
+    resolutionLabels: labelLookup(UI_LABELS.resolutionAction),
     // SPA.20 — the two literals the SSR island carried inline (the paywall group's accessible name +
     // the provisional-estimate suffix); the SPA leaf binds them as leaves (REQ-SAFE-10).
     paywallAriaLabel: "Run cost and consent",
@@ -371,26 +368,8 @@ export const COPY = {
     backToProject: "Back to the project",
     heading: "The review",
     notReviewed: "No delivered review yet. Run the Editor to get your dossier.",
-    runStateLabel: {
-      created: "Created",
-      queued: "Queued",
-      provisioning: "Starting",
-      running: "Running",
-      waiting_gate: "Waiting for you",
-      finalizing: "Finishing",
-      completed: "Completed",
-      completed_partial: "Completed in part",
-      failed: "Failed",
-      cancelled: "Cancelled",
-    } as Record<string, string>,
-    phaseLabel: {
-      reading_the_piece: "Reading the piece",
-      checking_claims: "Checking claims",
-      mapping_the_field: "Mapping the field",
-      second_read: "Second read (independent)",
-      weighing_the_argument: "Weighing the argument",
-      editors_letter: "Editor's letter and rubric",
-    } as Record<string, string>,
+    runStateLabel: labelLookup(UI_LABELS.runState),
+    phaseLabel: labelLookup(UI_LABELS.phase),
     offLabel: "off",
     // PRB.08 — the run card's refund line (failed/refused/cancelled, or a silent reconciliation refund).
     refundFmt: "refunded {n} credits; partial results kept",
@@ -402,10 +381,7 @@ export const COPY = {
     deliveryBannerFmt:
       "{label} — research could not check the claims; the research credits were refunded",
     feedHeading: "Live feed",
-    densityLabel: { summary: "Summary", details: "Details", verbose: "Verbose" } as Record<
-      string,
-      string
-    >,
+    densityLabel: labelLookup(UI_LABELS.feedDensity),
     letterTocHeading: "Contents",
     attestationHeading: "The boundary",
     trust: {
@@ -419,48 +395,15 @@ export const COPY = {
     claimsHeading: "Claim ledger",
     fetchedLabel: "fetched",
     searchResultLabel: "Search result",
-    verdictLabel: {
-      verified: "Verified",
-      substantially_accurate: "Substantially accurate",
-      misleading_in_context: "Misleading in context",
-      unsupported: "Unsupported",
-      contradicted: "Contradicted",
-      unverifiable: "Unverifiable",
-      verified_against_user_source: "Verified against your source",
-    } as Record<string, string>,
-    stanceLabel: {
-      supports: "supports",
-      contradicts: "contradicts",
-      contextualizes: "contextualizes",
-    } as Record<string, string>,
-    kindNounLabel: {
-      factual: "factual",
-      statistical: "statistical",
-      quotation: "quotation",
-      interpretive: "interpretive",
-      normative: "normative",
-      predictive: "predictive",
-    } as Record<string, string>,
+    verdictLabel: labelLookup(UI_LABELS.verdict),
+    stanceLabel: labelLookup(UI_LABELS.stance),
+    kindNounLabel: labelLookup(UI_LABELS.claimKind),
     notCheckableFmt: "{kind} — not a matter of verification",
     contradictedTierOneLabel: "Contradicted · Tier 1",
     // P1.13 — the figure-linked Tier-1 claim chip (§7.5; REQ-VIZ-13): links the row to its card.
     figureClaimLabel: "Figure",
     rubricHeading: "Rubric",
-    dimensionLabel: {
-      thesis_contribution: "Thesis and contribution",
-      argument_rigor: "Argument rigor",
-      evidence_accuracy: "Evidence and accuracy",
-      originality_situatedness: "Originality and situatedness",
-      structure: "Structure",
-      prose: "Prose",
-      voice_audience_fit: "Voice and audience fit",
-      intellectual_honesty: "Intellectual honesty",
-      // P1.21 — the protocol-declared swap/add dimensions (§6.7: Op-ed +Timeliness; Memo swaps
-      // Originality → Decision readiness + adds Scope discipline).
-      timeliness: "Timeliness",
-      decision_readiness: "Decision readiness",
-      scope_discipline: "Scope discipline",
-    } as Record<string, string>,
+    dimensionLabel: labelLookup(UI_LABELS.rubricDimension),
     capFmt: "capped at {at} — {reason}",
     secondReadHeading: "Second read",
     corroboratedFmt: "{n} corroborated by both reads",
@@ -469,41 +412,16 @@ export const COPY = {
     promoteLabel: "Address this anyway",
     emptyRejected: "The second read withdrew nothing.",
     findingsHeading: "Findings",
-    severityLabel: { blocking: "Blocking", major: "Major", minor: "Minor", note: "Note" } as Record<
-      string,
-      string
-    >,
-    findingKindLabel: {
-      claim: "claim",
-      discourse: "discourse",
-      argument: "argument",
-      structure: "structure",
-      craft: "craft",
-      voice: "voice",
-      continuity: "continuity",
-    } as Record<string, string>,
+    severityLabel: labelLookup(UI_LABELS.severity),
+    findingKindLabel: labelLookup(UI_LABELS.findingKind),
     provisionalLabel: "streaming…",
-    dispositionPast: {
-      accept: "accepted",
-      adapt: "adapted",
-      rebut: "rebutted",
-      defer: "deferred",
-      escalate: "escalated",
-    } as Record<string, string>,
+    dispositionPast: labelLookup(UI_LABELS.dispositionPast),
     disposedFmt: "You {verb} this",
     appliedLabel: "You applied this suggestion",
     conflictsHeading: "Where you and the second read disagree",
     conflictLineFmt: "You {verb} this; the Editor withdrew it — keep your disposition?",
     obligationSummaryFmt: "⚑ {open} open · {addressed} addressed",
-    obligationStateLabel: {
-      open: "open",
-      addressed: "addressed",
-      discharged: "discharged",
-      rebutted: "rebutted",
-      deferred: "deferred",
-      mooted: "discharged (pending)",
-      reopened: "reopened",
-    } as Record<string, string>,
+    obligationStateLabel: labelLookup(UI_LABELS.obligationState),
     // ---- P1.07 — the findings surface, full (§5.7): Margin chips, shared filters, triage mode,
     // Apply (the free verb), the one-preview bulk actions, and the deep link. ----
     marginChipFmt: "{count} findings{strengths} · {top} {severity}",
@@ -512,11 +430,11 @@ export const COPY = {
     applyLabel: "Apply",
     applyTitle: "Splice the suggestion into the draft — free, no run",
     appliedToast: "Applied — the suggestion is in the draft",
-    addObligationLabel: "Add to obligations",
+    addObligationLabel: "Add to open items",
     // P1.13 — the craft finding's Visualize action (§7.5's fifth entry point): opens the visualize
     // sheet seeded `entry=craft_finding` with the finding's own text as the request.
     visualizeLabel: "Visualize",
-    obligatedToast: "Added to obligations",
+    obligatedToast: "Added to open items",
     promotedToast: "Promoted to the findings list",
     fromReviewFmt: "from Review of v{n}",
     passageLostLabel: "passage changed — still applies?",
@@ -532,10 +450,10 @@ export const COPY = {
       undecided: "undecided",
       hasSuggestion: "has suggestion",
       hasUrl: "has URL",
-      openObligations: "open obligations",
+      openObligations: "open items",
     },
     triageProgressFmt: "{decided} of {total} decided",
-    triageObligationsFmt: "obligations: {n} open",
+    triageObligationsFmt: "open items: {n}",
     triageExit: "Exit triage",
     triageEnter: "Triage mode",
     sectionLabelFmt: "§ {key}",
@@ -563,27 +481,12 @@ export const COPY = {
 
   // PRB.05 — the five-verb triage controls (§5.7; REQ-BETA-6, REQ-MOBILE-11 amended).
   triage: {
-    verbLabel: {
-      accept: "Accept",
-      adapt: "Adapt",
-      rebut: "Rebut",
-      defer: "Defer",
-      escalate: "Escalate",
-    } as Record<string, string>,
+    verbLabel: labelLookup(UI_LABELS.disposition),
     noteLabel: "Note — required for Rebut and Escalate",
     noteRequired: "A note is required for Rebut and Escalate — nothing was saved.",
     notePlaceholder: "Not this round",
     reasonLegend: "Why? (optional)",
-    reasonLabel: {
-      // REQ-BETA-6's `wrong` code — "wrong" is a banned string outside a calibration verdict (Appendix
-      // D.2), so the chip reads "Incorrect".
-      wrong: "Incorrect",
-      stylistic_disagreement: "Stylistic disagreement",
-      already_knew: "Already knew",
-      too_costly: "Too costly",
-      not_this_round: "Not this round",
-      other: "Other",
-    } as Record<string, string>,
+    reasonLabel: labelLookup(UI_LABELS.triageReason),
     adaptLabel: "Proposed edit",
     appliedNote: "applies at revision time",
     pretriageFmt:
@@ -595,20 +498,7 @@ export const COPY = {
   // PRB.05 — the §6.4 gate cards (all beta kinds) on the Needs-you surface.
   gates: {
     heading: "Needs you",
-    kindLabel: {
-      approve_triage: "Approve triage",
-      approve_scope: "Approve scope",
-      approve_sample: "Approve the sample",
-      confirm_cost: "Confirm the cost",
-      spend_overrun: "Spend overrun",
-      resume_partial: "Resume from the partial",
-      refusal: "The run refused",
-      approve_plan: "Approve the plan",
-      approve_outline: "Approve the outline",
-      approve_cutlist: "Approve the cut list",
-      choose_thesis: "Choose a thesis",
-      continue_rounds: "Continue?",
-    } as Record<string, string>,
+    kindLabel: labelLookup(UI_LABELS.gateKind),
     approveLabel: {
       approve_triage: "Approve proposals",
       default: "Approve",
@@ -620,13 +510,7 @@ export const COPY = {
     waitingLine: "Waiting for you — no deadline.",
     deadlineFmt: "Due {absolute} · {remaining}",
     expiredLine: "Overdue — it resolves on the next sweep.",
-    doNothingLine: {
-      proceed_as_proposed: "If you do nothing: it proceeds with the proposals.",
-      proceed_conservative: "If you do nothing: it proceeds conservatively.",
-      cancel: "If you do nothing: the run is cancelled.",
-      accept_partial: "If you do nothing: the partial is accepted.",
-      wait: "If you do nothing: it waits for you.",
-    },
+    doNothingLine: UI_LABELS.gateOnExpiry,
     spendFmt: "Spent {spent} credits · cap {cap}{remaining}",
     remainingFmt: " · ~{n} left on the estimate",
     presenceFmt: "Proposed to proceed in {countdown} unless you say otherwise.",
@@ -646,26 +530,11 @@ export const COPY = {
     optInSave: "Save",
     // ---- P1.09 — the full §6.4 surface: structured fields, decision record, explainer, the row ----
     factsHeading: "The facts",
-    factLabel: {
-      workflow: "Workflow",
-      estimateCredits: "Estimate",
-      capCredits: "Cap",
-      spentCredits: "Spent",
-      modelTier: "Model tier",
-      attempt: "Attempt",
-      reason: "Reason",
-      round: "Round",
-    } as Record<string, string>,
+    factLabel: labelLookup(UI_LABELS.gateFactField),
     exceedsCapLine:
       "The re-priced estimate exceeds the cap you consented to — this approval waits for you.",
     scopeFieldsHeading: "Corrections — applied as guidance",
-    scopeFieldLabel: {
-      stage: "Stage",
-      venue: "Venue",
-      audience: "Audience",
-      concerns: "Concerns",
-      narrow: "Narrow the scope",
-    } as Record<string, string>,
+    scopeFieldLabel: labelLookup(UI_LABELS.scopeField),
     plan: {
       spineHeading: "Spine claims",
       sectionsHeading: "Sections",
@@ -708,12 +577,7 @@ export const COPY = {
       exitLabel: "exit state",
       moveLabel: "→ section",
       unverifiedBadge: "[unverified]",
-      provenanceBadge: {
-        thread: "from thread",
-        source: "from source",
-        user_typed: "you typed",
-        generated: "generated",
-      } as Record<"thread" | "source" | "user_typed" | "generated", string>,
+      provenanceBadge: UI_LABELS.provenanceKind,
       answerLabel: "Answer",
       answerPlaceholder: "your answer lands as a claim",
     },
@@ -729,25 +593,8 @@ export const COPY = {
     thisRun24h: "24 hours",
     thisRun72h: "72 hours",
     decisionsHeading: "Decisions on this run",
-    decisionActorLabel: {
-      user: "you",
-      timeout: "the deadline",
-      policy: "your Run-to-completion policy",
-      trial: "the trial",
-    } as Record<string, string>,
-    decisionActionLabel: {
-      approve: "approved",
-      approve_autonomous: "approved — the rest of this run runs autonomously",
-      keep_planning: "kept planning",
-      edit: "approved with edits",
-      wait: "left waiting",
-      stop: "stopped",
-      proceed_conservative: "proceeded conservatively",
-      proceed_as_proposed: "auto-continued",
-      cancel: "cancelled",
-      accept_partial: "accepted the partial",
-      skipped: "skipped",
-    } as Record<string, string>,
+    decisionActorLabel: labelLookup(UI_LABELS.decisionActor),
+    decisionActionLabel: labelLookup(UI_LABELS.decisionAction),
     decisionLineFmt: "{action} by {actor} at {time}{changes}",
     decisionChangesFmt: " · with {n} changes",
     explainer: {
@@ -764,11 +611,7 @@ export const COPY = {
   approvals: {
     heading: "Approvals",
     policyLegend: "Approval policy",
-    policyLabel: {
-      named: "Named approvals",
-      wait_each: "Wait for me at each",
-      run_to_completion: "Run to completion",
-    } as Record<string, string>,
+    policyLabel: labelLookup(UI_LABELS.approvalPolicy),
     policyNote: {
       named: "The named cards open; each carries its deadline.",
       wait_each: "A card opens and waits after every phase — no deadlines.",
@@ -802,14 +645,9 @@ export const COPY = {
   // PRB.05 — the Decisions list (§5.7; the beta Inbox stand-in; REQ-OBJ-7/8).
   decisions: {
     heading: "Decisions",
-    empty: "Nothing is waiting on your call.",
-    optionLabel: {
-      decide: "Decide",
-      dismiss: "Dismiss",
-      // P1.19 — the horizon/stall rows' real obligation options (§6.8/§11.7; REQ-OBJ-6).
-      "re-defer": "Re-defer",
-      drop: "Drop",
-    } as Record<string, string>,
+    // R7COPY.1a (REQ-COPY-6) — "Waiting on your call" is banned; plain wording.
+    empty: "Nothing is waiting for you.",
+    optionLabel: labelLookup(UI_LABELS.decisionOption),
   },
 
   // P1.19 — §10.1's ✗ column (REQ-SPEC-20; REQ-MOBILE-3 amended): surfaces that never render their
@@ -826,7 +664,8 @@ export const COPY = {
   // P1.19 — the §5.11 Inbox (`/app/inbox`; REQ-IDE-2 amended): needs-you → unread → earlier → voices.
   inbox: {
     heading: "Inbox",
-    badgeLine: "Waiting on your call: {n}",
+    // R7COPY.1a (REQ-COPY-6) — "Waiting on your call" is banned; plain wording.
+    badgeLine: "Waiting for you: {n}",
     markAllRead: "Mark all read",
     needsYouHeading: "Needs you",
     unreadHeading: "New",
@@ -845,23 +684,15 @@ export const COPY = {
     heading: "What changed",
     notFound: "No delivered revision to show yet.",
     versionFmt: "v{before} → v{after}",
-    stripFmt: "{addressed} obligations addressed · {rebutted} rebutted · {stillOpen} still open",
+    // R7COPY.1a (REQ-COPY-6) — "obligations" is banned; "open items" is the plain word.
+    stripFmt: "{addressed} items addressed · {rebutted} rebutted · {stillOpen} still open",
     movesFmt: "{moves} moves · {hunks} changed passages",
     moveHeadingFmt: "Move {ordinal} · {title}",
     findingLineFmt: "F-{ordinal} · {kind}",
     dischargeVerifiedFmt: "discharges {label} {lineage} — verified by {by}",
     dischargePlainFmt: "discharges {label} {lineage} — {state}",
-    verifiedByLabel: {
-      gap_check: "gap check",
-      re_review: "re-review",
-      user: "you (unverified)",
-    } as Record<string, string>,
-    hunkKindLabel: {
-      edited: "Edited",
-      added: "Added",
-      removed: "Removed",
-      mixed: "Changed",
-    } as Record<string, string>,
+    verifiedByLabel: labelLookup(UI_LABELS.verifiedBy),
+    hunkKindLabel: labelLookup(UI_LABELS.hunkKind),
     unlinkedHeading: "Unlinked changes",
     rebuttedHeading: "Rebutted",
     rebutLabel: "Rebutted",
@@ -888,27 +719,12 @@ export const COPY = {
     obligationsFmt: "⚑ {open} open · {addressed} addressed",
     wordsFmt: "{n} words",
     // every drafts.origin value — the caption under the chip.
-    originLabel: {
-      drafted_from_outline: "Drafter",
-      response_to_review: "Drafter",
-      human_revision: "edited by you",
-      human_upload: "you",
-      duplicate: "duplicated",
-      imported: "imported",
-      seeded: "seeded",
-      agent: "Drafter",
-    } as Record<string, string>,
+    originLabel: labelLookup(UI_LABELS.draftOrigin),
     compare: "Compare",
     comparePrevious: "Compare with previous",
     restorePoints: "Restore points",
     restoreEmpty: "No restore points yet — {chord} marks one.",
-    restoreGroup: {
-      earlier_today: "Earlier today",
-      yesterday: "Yesterday",
-      before_review: "Before Review of v{n}",
-      named: "Named",
-      earlier: "Earlier",
-    } as Record<string, string>,
+    restoreGroup: labelLookup(UI_LABELS.restoreGroup),
     restoreTimeFmt: "{time} · {cause}",
     restorePreviewHeading: "Restore preview",
     restoreApply: "Restore this point",
@@ -923,16 +739,13 @@ export const COPY = {
   compare: {
     heading: "Compare",
     versionFmt: "v{before} → v{after}",
-    layouts: {
-      side: "Side-by-side",
-      inline: "Inline",
-      moves: "What changed and why",
-    } as Record<string, string>,
+    layouts: labelLookup(UI_LABELS.compareLayout),
     beforeCol: "Before",
     afterCol: "After",
     unchangedFmt: "{n} unchanged passages",
     unlinkedNote:
-      "No revision answers this pair — every change below is an unlinked edit (the coherence read).",
+      // R7COPY.1a (REQ-COPY-6) — "the coherence read" is banned.
+      "No revision answers this pair — every change below is an unlinked edit.",
     noChanges: "No differences.",
     notFound: "That pair isn't here.",
   },
@@ -942,29 +755,13 @@ export const COPY = {
   files: {
     // R7SHELL.2 (UXC-30) — the tree's aria-label; the "Files" label is COPY-owned.
     heading: "Files",
-    sectionLabel: {
-      outline: "Outline",
-      drafts: "Drafts",
-      rounds: "Rounds",
-      research: "Research",
-      voice: "Voice",
-      assets: "Assets",
-      advanced: "Advanced",
-    } as Record<string, string>,
+    sectionLabel: labelLookup(UI_LABELS.filesSection),
     provenanceYou: "You",
     provenanceSystem: "System",
     provenanceRunFmt: "{seat} · {workflow} run · {phase}",
-    lockTitle: {
-      editable: "Editable",
-      immutable: "Immutable",
-      inspect: "Inspect only",
-    } as Record<string, string>,
+    lockTitle: labelLookup(UI_LABELS.lockTitle),
     // R7SHELL.2 (B10) — the frozen/working Badge text replacing the lock glyphs.
-    lockBadge: {
-      editable: "Working",
-      immutable: "Frozen",
-      inspect: "Inspect only",
-    } as Record<string, string>,
+    lockBadge: labelLookup(UI_LABELS.lockBadge),
     freshnessFmt: "describes v{n}",
     freshnessStaleFmt: "describes v{n} — since edited",
     sealedFmt: "{n} sealed",
@@ -1057,7 +854,7 @@ export const COPY = {
     card: {
       projectsFmt: "{n} projects",
       lastBuiltFmt: "built {d}",
-      tierLabel: { quick: "Quick", full: "Full" } as Record<string, string>,
+      tierLabel: labelLookup(UI_LABELS.voiceCardTier),
       composedFmt: "Composed from {names}",
       forkCta: "Fork — make it yours",
       forkDone: "Forked — this copy is yours.",
@@ -1078,12 +875,7 @@ export const COPY = {
       sampleHint: "One sample is enough for a Quick Voice; a Full Profile needs at least four.",
       sampleTitleLabel: "Sample title (optional)",
       modeLabel: "This voice is",
-      modeOption: {
-        self: "my own writing",
-        house: "a house style",
-        consented: "another writer, with permission",
-        study: "for study",
-      } as Record<string, string>,
+      modeOption: labelLookup(UI_LABELS.personaMode),
       aup: "Build voices only from writing you have the right to use; Rhēma must not be used to pass generated text off as a real person's own.",
       createBuild: "Create and build",
       createOnly: "Just save — build later",
@@ -1103,23 +895,9 @@ export const COPY = {
       // R7KIT.3a (REQ-KIT-4; R5 D4) — the voice source-kind label map: the list's meta line
       // renders "Substack export", never the `substack_export` enum key. Authored here for
       // 240a_R7KIT.3a2, which consumes it on the voices surface.
-      sourceKind: {
-        paste: "Paste",
-        upload: "Upload",
-        url: "URL",
-        substack: "Substack",
-        substack_export: "Substack export",
-        medium: "Medium",
-        gdrive: "Google Drive",
-      } as Record<string, string>,
+      sourceKind: labelLookup(UI_LABELS.sourceProvider),
       // P1.14 — the five tabs (§9.5).
-      tabs: {
-        overview: "Overview",
-        description: "Description",
-        samples: "Samples",
-        profile: "Profile",
-        runs: "Runs",
-      } as Record<string, string>,
+      tabs: labelLookup(UI_LABELS.voiceTab),
       // P1.14 — the diff-of-inputs panel (§9.3): four facts, plain words, never hashes.
       factsHeading: "What changed since the build",
       factsEmpty: "No build yet — the facts appear after the first one.",
@@ -1152,12 +930,7 @@ export const COPY = {
       holdoutRevealedFmt: "★ held out — {title}",
       // P1.14 — the calibration table + the deterministic measures (§9.4 Advanced).
       calibrationHeading: "Calibration",
-      calibrationVerdict: {
-        tested: "tested",
-        untested: "untested",
-        "tested-badly-off": "tested — badly off",
-        pending: "pending",
-      } as Record<string, string>,
+      calibrationVerdict: labelLookup(UI_LABELS.calibrationVerdict),
       calibrationWithinFmt: "{n} of {total} within one band",
       calibrationTable: {
         feature: "Feature",
@@ -1220,25 +993,9 @@ export const COPY = {
       neverSynced: "not synced yet",
       sourceItemsFmt: "{included} of {items} included",
       paywallBadge: "Paywalled — import your export",
-      providerLabel: {
-        substack: "Substack",
-        substack_export: "Substack export",
-        url: "URL",
-      } as Record<string, string>,
-      stateBadge: {
-        new: "New",
-        included: "Included",
-        omitted: "Omitted",
-        removed_remote: "Removed at source",
-        unreadable: "Unreadable",
-      } as Record<string, string>,
-      qualityBadge: {
-        clean: "clean",
-        partial: "partial",
-        empty: "empty",
-        unreadable: "unreadable",
-        reconstructed: "reconstructed",
-      } as Record<string, string>,
+      providerLabel: labelLookup(UI_LABELS.sourceProvider),
+      stateBadge: labelLookup(UI_LABELS.voiceItemState),
+      qualityBadge: labelLookup(UI_LABELS.qualityVerdict),
       viewLabel: "View",
       // P1.15 — the sample drawer: preview + versions + the priced reconstruction.
       drawerHeading: "Sample",
@@ -1263,18 +1020,7 @@ export const COPY = {
       addUrlCta: "Fetch and add",
       runsHeading: "Build history",
       runsEmpty: "No builds yet.",
-      runStateLabel: {
-        created: "Created",
-        queued: "Queued",
-        provisioning: "Starting",
-        running: "Running",
-        waiting_gate: "Waiting for you",
-        finalizing: "Finishing",
-        completed: "Completed",
-        completed_partial: "Completed in part",
-        failed: "Failed",
-        cancelled: "Cancelled",
-      } as Record<string, string>,
+      runStateLabel: labelLookup(UI_LABELS.runState),
       artifactsHeading: "Profile artifacts",
       artifactsEmpty: "No profile artifacts yet.",
       artifactsNote: "Profile artifacts are read-only.",
@@ -1309,24 +1055,24 @@ export const COPY = {
   // P1.07 — the palette's free-form obligation form (REQ-OBJ-10; `source: 'user'`, standing). The row
   // opens on the project it was created against; the Revise run's sheet lists it like any other debt.
   obligation: {
-    heading: "New obligation",
+    heading: "New open item",
     lede: "Track a revision task that isn't a finding — a note to yourself the next Revise round must clear or close.",
     titleLabel: "What must the next revision do?",
     titlePlaceholder: "e.g. Re-check the tenure statistics against the 2024 census release",
     severityLabel: "Severity",
     severityHint:
-      "Pick the weight the obligation carries — blocking holds the verdict, the rest are guidance.",
-    createCta: "Add obligation",
+      "Pick the weight the item carries — blocking holds the verdict, the rest are guidance.",
+    createCta: "Add open item",
     cancel: "Cancel",
-    required: "Give the obligation a title.",
-    failed: "The obligation wasn't added — try again.",
+    required: "Give the item a title.",
+    failed: "The item wasn't added — try again.",
   },
 
   // PRB.11 — the export dialog + the AI-use statement (§13.4, §8.4 REQ-VIS-10). Authorship-legibility
   // framing only (REQ-POS-13): what ran, what you decided, what you added — never anything about detection.
   export: {
     heading: "Export",
-    lede: "Take the manuscript out as Markdown, plain text, Word, HTML, PDF, RTF, or LaTeX. Exports are never blocked — open obligations are listed, not enforced.",
+    lede: "Take the manuscript out as Markdown, plain text, Word, HTML, PDF, RTF, or LaTeX. Exports are never blocked — open items are listed, not enforced.",
     formatLegend: "Format",
     profileLegend: "Markdown flavour",
     profileCanonical: "Canonical (byte-faithful)",
@@ -1387,14 +1133,7 @@ export const COPY = {
     heading: "Settings",
     /** P1.20 — the §14.7 section nav (Team hidden until roles ship — not rendered). */
     sectionsAria: "Settings sections",
-    sectionLabels: {
-      account: "Account",
-      preferences: "Preferences",
-      notifications: "Notifications",
-      integrations: "Integrations",
-      billing: "Billing",
-      data: "Data",
-    } as Record<string, string>,
+    sectionLabels: labelLookup(UI_LABELS.settingsSection),
     privacyHeading: "Privacy",
     /** REQ-PROD-15 carried into Data — the §14.7 verbatim toggle (checked = excluded). */
     analyticsLabel: "Exclude my usage from product analytics",
@@ -1427,7 +1166,7 @@ export const COPY = {
     signInHeading: "Sign-in methods",
     sessionsHeading: "Active sessions",
     sessionsNote:
-      "Revoking kills the token server-side — the shared session contract the mobile app uses too.",
+      "Revoking kills the token server-side — the same sign-in works across devices.",
     sessionThisDevice: "This device",
     // R7KIT.3a (REQ-KIT-4; D3) — the inline marker after the parsed label:
     // "Chrome on macOS · this device".
@@ -1453,7 +1192,7 @@ export const COPY = {
     approvalHeading: "Approval policy default",
     approvalNote: "The policy new projects start on — the project can always pick its own.",
     approvalPolicies: {
-      named: "Named approvals — the run asks at the gates you name.",
+      named: "Named approvals — the run pauses at the approvals you name.",
       wait_each: "Wait for me at each — every approval waits for you.",
       run_to_completion: "Run to completion — no stops mid-run; the letter lists what happened.",
     } as Record<string, string>,
@@ -1477,13 +1216,13 @@ export const COPY = {
     matrixEmailCol: "Email",
     matrixInAppCol: "In app",
     matrixEventCol: "Event",
-    lockedNote: "Always on — spend gates and trial/payment mail can't be turned off.",
+    lockedNote: "Always on — spend confirmations and trial/payment mail can't be turned off.",
     emailNoneNote: "—", // the row never mails (in-app only)
     digestHeading: "Digests",
     digestRunFinishedLabel: 'Batch "run finished" mail into an hourly digest',
     quietHeading: "Quiet hours",
     quietNote:
-      "Run-finished and chat replies hold until the window ends (UTC). Approvals and spend gates always land.",
+      "Run-finished and chat replies hold until the window ends (UTC). Approvals and spend confirmations always land.",
     quietEnable: "On",
     quietStartLabel: "From",
     quietEndLabel: "To",
@@ -1497,21 +1236,7 @@ export const COPY = {
     runProgressHeading: "Run progress — per project",
     runProgressNote: "In-app phase updates — off everywhere by default; opt in per project.",
     runProgressProjectFmt: "{title}",
-    notificationEvents: {
-      approval_waiting: "An approval is waiting on you",
-      spend_gate: "Spend limit",
-      gate_reminder: "Approval deadline reminders",
-      auto_proceeded: "A deadline auto-proceeded",
-      run_finished: "A run finished",
-      run_failed: "A run failed",
-      credits_threshold: "Credit thresholds (50 / 80 / 100 %)",
-      trial_payment: "Trial ending / payment",
-      run_cancelled_recovered: "A run was cancelled or recovered",
-      voice_stale: "A voice went stale (weekly digest)",
-      chat_reply: "The Assistant replied",
-      run_progress: "Run progress (per project)",
-      product_update: "Product updates",
-    } as Record<string, string>,
+    notificationEvents: labelLookup(UI_LABELS.notificationEvent),
     // ---- P1.20 — Integrations (REQ-ACCT-2 — one card component) ----
     integrationsHeading: "Integrations",
     integrationsNote:
@@ -1519,12 +1244,7 @@ export const COPY = {
     integrationPersonaFmt: "feeds {name}",
     integrationItemsFmt: "{items} items discovered · {included} in the voice",
     integrationLastSyncFmt: "last synced {at}",
-    integrationStatusLabels: {
-      connected: "Connected",
-      pending: "Connecting",
-      degraded: "Needs attention",
-      removed: "Disconnected",
-    } as Record<string, string>,
+    integrationStatusLabels: labelLookup(UI_LABELS.integrationStatus),
     integrationDisconnectCta: "Disconnect",
     integrationConnectCta: "Connect on a voice's Samples tab",
     integrationProviders: {
@@ -1554,12 +1274,7 @@ export const COPY = {
       "Active until {at} (UTC) — we can view your projects for support until then.",
     supportAccessLogHeading: "Support access log",
     supportAccessLogEmpty: "No support access on record.",
-    supportAccessActions: {
-      granted: "You granted access",
-      revoked: "You revoked access",
-      accessed: "Staff viewed your projects",
-      expired: "A grant expired",
-    } as Record<string, string>,
+    supportAccessActions: labelLookup(UI_LABELS.supportAccessAction),
     postureHeading: "What happens to your words",
     /** §14.7 verbatim — the training posture + the residual-risk sentence (§12.8); no DPA/SOC 2 badge. */
     trainingPosture:
@@ -1596,19 +1311,10 @@ export const COPY = {
       lengthLabel: "Length target",
       lengthNote: "Override the protocol's default length (its own unit — words, pages…).",
       stageLabel: "Stage",
-      stages: { early: "Early draft", near_final: "Near final", infer: "Infer" } as Record<
-        string,
-        string
-      >,
+      stages: labelLookup(UI_LABELS.projectStage),
       stageNote: "Pick a stage or let the run infer it.",
       phaseDefaultsHeading: "Phase defaults",
-      phaseDefaults: {
-        verification: "Verification",
-        discourse: "Discourse",
-        secondRead: "Second read",
-        grounding: "Grounding",
-        audit: "Fidelity audit",
-      } as Record<string, string>,
+      phaseDefaults: labelLookup(UI_LABELS.phaseDefault),
       phaseOptDefault: "Protocol default",
       phaseOptOn: "On",
       phaseOptOff: "Off",
@@ -1645,59 +1351,18 @@ export const COPY = {
     // 2,000 more") instead of the inverted "4,000 of 2,000". `includedCreditsLine` picks the arm.
     includedOverFmt: "{remaining} credits left — {monthly} monthly plus {extra} more",
     bucketsHeading: "Balance",
-    bucketLabels: {
-      included: "Plan credits",
-      topup: "Top-ups",
-      trial_pocket: "Trial pocket",
-      daily: "Daily",
-      promo: "Promo",
-    } as Record<string, string>,
+    bucketLabels: labelLookup(UI_LABELS.creditBucket),
     expiresFmt: "expires {at}",
     // R7KIT.3a (REQ-KIT-4; D4) — the runs table's enum keys render as labels, never raw
     // workflow/state keys ("completed_partial" → "Partially completed"). Unlisted keys fall
     // back to a humanized form, so a new enum value can never leak snake_case to the page.
-    workflowLabels: {
-      review: "Review",
-      draft: "Draft",
-      revise: "Revise",
-      fact_check: "Fact check",
-      profile_voice: "Voice profile",
-      refresh_voice: "Voice refresh",
-      calibrate_voice: "Voice calibration",
-      research_burst: "Research",
-      chat_turn: "Chat",
-      chat: "Chat",
-      outline: "Outline",
-      figure: "Figure",
-      reseed_charter: "Voice reseed",
-    } as Record<string, string>,
-    stateLabels: {
-      created: "Created",
-      awaiting_consent: "Waiting for you",
-      queued: "Queued",
-      provisioning: "Starting",
-      running: "Running",
-      waiting_gate: "Waiting on approval",
-      cancelling: "Cancelling",
-      orphaned: "Orphaned",
-      finalizing: "Finishing",
-      completed: "Completed",
-      completed_partial: "Partially completed",
-      failed: "Failed",
-      cancelled: "Cancelled",
-      delivered: "Delivered",
-    } as Record<string, string>,
+    workflowLabels: labelLookup(UI_LABELS.workflow),
+    stateLabels: labelLookup(UI_LABELS.runState),
     warningsHeading: "Heads up",
     // R7KIT.3b (REQ-COPY-5; D5) — the expiry line's bucket labels each carry the "credits" noun;
     // `bucketExpiryLine` normalizes so the noun prints exactly once ("4,000 Plan credits expire",
     // never "Plan credits credits").
-    expiryBucketLabels: {
-      included: "Plan credits",
-      topup: "Top-up credits",
-      trial_pocket: "Trial credits",
-      daily: "Daily credits",
-      promo: "Promo credits",
-    } as Record<string, string>,
+    expiryBucketLabels: labelLookup(UI_LABELS.creditBucketExpiry),
     nextExpiryFmt: "{n} {bucket} expire {at}",
     csvCta: "Download CSV",
     projectUsageCta: "Project usage",
@@ -1811,11 +1476,7 @@ export const COPY = {
     heading: "Promote to an outline",
     backToProject: "Back to the project",
     promoteLabel: "Promote",
-    scopeLabel: {
-      thread: "this thread",
-      turn: "this turn",
-      research: "all Assistant research",
-    } as Record<string, string>,
+    scopeLabel: labelLookup(UI_LABELS.promoteScope),
     sourcesFmt: "{n} source notes will copy to your research folder.",
     urlsFmt: "{n} URLs will be re-fetched — a failed fetch lands [unverified].",
     estimateFmt: "Estimate {estimate} credits · cap {cap}",
@@ -1959,7 +1620,7 @@ export const COPY = {
       composerPlaceholder: "Ask about this project…",
       send: "Send",
       tierLabel: "Model tier",
-      tiers: { base: "Base", balanced: "Balanced", frontier: "Frontier" },
+      tiers: UI_LABELS.modelTier,
       strip: {
         creditsFmt: "{n}/{m} credits",
         searchesFmt: "{n}/{m} searches",
@@ -2012,11 +1673,7 @@ export const COPY = {
     },
     viewMenu: {
       heading: "View",
-      views: {
-        write: "Write",
-        read: "Read",
-        focus: "Focus",
-      },
+      views: labelLookup(UI_LABELS.viewName),
       findingCards: "Finding cards",
       suggestionsInline: "Inline suggestions",
       authorship: "Authorship",
@@ -2046,13 +1703,7 @@ export const COPY = {
       dialogLabel: "Command palette",
       placeholder: "Type / for a command, or search…",
       emptyLabel: "Nothing matches.",
-      sectionLabels: {
-        run: "Run",
-        goto: "Go to",
-        recent: "Recent runs",
-        threads: "Threads",
-        settings: "Settings",
-      },
+      sectionLabels: UI_LABELS.paletteSection,
       nextStep: "next step",
     },
     cheatsheet: {
@@ -2093,36 +1744,18 @@ export const COPY = {
   // ---- P1.05 — the Timeline pane's round log, steering, feed rows, and the run report (§5.5/§6.5/§14.5) ----
   timeline: {
     /** the next-step card's verbs (§6.3's suggested action → the card's line; {n} = the head draft). */
-    nextStep: {
-      draft: "Draft v{n}",
-      review: "Review v{n}",
-      revise: "Revise",
-      read_letter: "Read the letter",
-      outline: "Make an outline",
-      export: "Export",
-      archive: "Archive",
-      run: "The run in progress",
-      approval: "A decision is waiting",
-      start: "Start a project",
-      none: "",
-    } as Record<string, string>,
+    nextStep: labelLookup(UI_LABELS.timelineNextStep),
     estimateFmt: "est. {n} cr",
     versionFmt: "v{n}",
     // R7HOME.2b (REQ-HOME-2) — the next-step card's dismiss affordance (per user per project).
     nextStepDismiss: "Dismiss",
     /** the collapsed round summary's workflow names ("v1 → review (49) → revise → v2"). */
-    workflowLabel: {
-      review: "review",
-      fact_check: "fact-check",
-      revise: "revise",
-      draft: "draft",
-      outline: "outline",
-    } as Record<string, string>,
+    workflowLabel: labelLookup(UI_LABELS.workflow),
     countFmt: "({n})",
     arrow: "→",
-    originChip: { outline: "Outline", imported_draft: "Imported draft" },
+    originChip: UI_LABELS.timelineOrigin,
     /** the three verbs in the pane header (§5.5; canonical vocabulary verbatim). */
-    verbs: { draft: "Draft", review: "Review", revise: "Revise" } as Record<string, string>,
+    verbs: labelLookup(UI_LABELS.workflow),
   },
   steer: {
     pause: "Pause after this phase",
@@ -2137,7 +1770,7 @@ export const COPY = {
     queueFmt: "{n} in line — starts when the run ahead finishes",
     estimateLineFmt: "{actual} cr spent · est. {est}",
     pausedFmt: "Paused after phase {done} of {total}",
-    partialFmt: "partial ({done}/{total} phases) — committed work kept",
+    partialFmt: "Finished in part — {done} of {total} phases done; the work so far is kept",
     waitingGateFmt: "Waiting on you — {kind}",
     queuedNotesFmt: "{n} note(s) queued for the next phase",
     // R7COPY.0 (REQ-COPY-4; ADR-130) — the record-composed "What it delivered" (the generated
@@ -2145,11 +1778,7 @@ export const COPY = {
     deliveredHeading: "What it delivered",
     deliveredCountsFmt: "{findings} findings{strengths} · {claims} claims",
     deliveredStrengthsFmt: " · {n} strength{s}",
-    deliveredLinkLabel: {
-      dossier: "Dossier",
-      letter: "Letter",
-      ledger: "Claims ledger",
-    } as Record<string, string>,
+    deliveredLinkLabel: labelLookup(UI_LABELS.deliveredLink),
     deliverableLabel: {
       letter: "Letter",
       response: "Response",
@@ -2229,36 +1858,10 @@ export const COPY = {
       "card.meterProvisional": "≈ {spentCredits} / {capCredits} cr",
     } as Record<string, string>,
     // enum maps the templates resolve through — {kind}, {verdict}, {to}, {passed}, {severity}.
-    gateKind: {
-      approve_triage: "Approve triage",
-      scope_confirm: "Scope check",
-      spend_cap: "Spend cap",
-      publish_ready: "Ready to publish",
-    } as Record<string, string>,
-    artifactKind: {
-      letter: "letter",
-      response: "response",
-      rubric: "rubric",
-      findings: "findings",
-      claims: "claim ledger",
-      draft: "draft",
-      outline: "outline",
-      bibliography: "bibliography",
-      citations_manifest: "citations",
-      usage_report: "usage report",
-      changelog: "changelog",
-      moved_map: "moved map",
-      private: "private working notes",
-    } as Record<string, string>,
-    findingKind: {
-      factual: "factual",
-      statistical: "statistical",
-      quotation: "quotation",
-      interpretive: "interpretive",
-      normative: "normative",
-      predictive: "predictive",
-    } as Record<string, string>,
-    passed: { true: "passed", false: "failed" } as Record<string, string>,
+    gateKind: labelLookup(UI_LABELS.gateKind),
+    artifactKind: labelLookup(UI_LABELS.artifactKind),
+    findingKind: labelLookup(UI_LABELS.claimKind),
+    passed: labelLookup(UI_LABELS.feedPassed),
   },
   report: {
     heading: "Run report",
@@ -2282,13 +1885,7 @@ export const COPY = {
         "The agent's own estimate read {n} cr — the proxy meter is the figure of record.",
     } as Record<string, string>,
     // RPT.1 — refund ledger reasons → readable words (a machine code never renders raw).
-    refundReasonLabel: {
-      metered_over_debit: "the committed figure ran ahead of the meter",
-      reconcile_drift: "a reconciliation correction",
-      platform_fault: "a platform fault",
-      operator: "an operator adjustment",
-      user_window: "requested within your refund window",
-    } as Record<string, string>,
+    refundReasonLabel: labelLookup(UI_LABELS.refundReason),
     workedExample:
       "Worked example — the seeded Showcase run; these are illustrative figures, not your usage.",
     phaseHeading: "Phases",
@@ -2299,43 +1896,19 @@ export const COPY = {
     phaseDetailDurationSecFmt: "{credits} cr · {n} sec",
     phaseDetailDurationUnknownFmt: "{credits} cr · —",
     seatsHeading: "Seats",
-    seatLabel: {
-      // Appendix D.2 seat display names (vocab.ts: 'author' displays as Drafter, 'system' as Rhema).
-      editor: "Editor",
-      author: "Drafter",
-      persona_builder: "Voice builder",
-      assistant: "Assistant",
-      system: "Rhema",
-    } as Record<string, string>,
+    seatLabel: labelLookup(UI_LABELS.seat),
     seatSplitFmt: "{seat} — {credits} cr ({pct}%)",
     flagsHeading: "Flags",
     // RPT.1 — each flag's sentence interpolates ONLY the figures the server computed on it
     // ({pct}/{phase}/{n}/{ratio}); nothing is computed in the UI or asserted by the agent.
-    flagLabel: {
-      fact_check_dominated: "Fact-checking carried {pct}% of the spend ({n} claims verified).",
-      fact_check_dominated_noClaims: "Fact-checking carried {pct}% of the spend.",
-      long_draft: "Drafting carried {pct}% of the spend — a long or heavy piece.",
-      discourse_map: "The discourse map ran in {phase} (a Standard-tier phase).",
-      second_read_model: "The second read in {phase} ran on a different model tier.",
-      over_estimate: "The run came in at {ratio}× its estimate — well under.",
-      under_estimate: "The run ran {ratio}× its estimate — over.",
-      retries: "{n} step(s) needed a retry ({phase}).",
-    } as Record<string, string>,
+    flagLabel: labelLookup(UI_LABELS.reportFlag),
     claimsFmt: "{checked} claims checked · {verified} verified · {per} cr per verified claim",
     claimsNoVerifyFmt: "{checked} claims checked · {verified} verified",
     driversHeading: "What drove it",
     driverPhaseShareFmt: "{phase} — {pct}% of spend",
     driverWithinEstimate: "The run stayed inside its estimate.",
     guidanceHeading: "For the next round",
-    guidanceLabel: {
-      "guidance.fact_check_dominated": "Consider narrowing the claims scope before the next run.",
-      "guidance.long_draft": "Consider a shorter draft or a staged review.",
-      "guidance.discourse_map": "No action needed — the field map already ran.",
-      "guidance.second_read_model": "Check whether the second read needs the heavier tier.",
-      "guidance.over_estimate": "A lighter estimate would fit this workflow.",
-      "guidance.under_estimate": "Raise the estimate or narrow the run's scope.",
-      "guidance.retries": "Retries added cost — check the flagged phase's inputs.",
-    } as Record<string, string>,
+    guidanceLabel: labelLookup(UI_LABELS.reportGuidance),
     advancedHeading: "Advanced — per-request detail",
     advancedColumns: {
       phase: "Phase",
@@ -2588,14 +2161,14 @@ export const COPY = {
     },
     changelog: {
       heading: "Changelog",
-      body: "What's live now: the full editor, the public funnel, and the Showcase.",
+      body: "What's live now: the full editor, the sign-up flow, and the Showcase.",
     },
     faq: {
       heading: "Questions",
       items: [
         {
           q: "Does Rhēma write my essay?",
-          a: "No. The board reviews and proposes; the approval gates keep the pen with you.",
+          a: "No. The board reviews and proposes; every approval keeps the pen with you.",
         },
         {
           q: "Do I pay to look?",
@@ -2614,7 +2187,7 @@ export const COPY = {
       heading: "Bring the draft.",
       body: "The board reads first, quotes what it found, and shows its sources.",
       cta: "Start with a draft",
-      signIn: "Have an invitation? Sign in",
+      signIn: "Already have an account? Sign in",
     },
   },
 

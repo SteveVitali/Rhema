@@ -6,6 +6,8 @@
 export * from "./vocab.js";
 export * from "./reserved-strings.js";
 export * from "./vocab-lint.js";
+// R7COPY.1a (REQ-COPY-1/6, REQ-GUARD-2) — the ONE enum-keyed UI label table
+export * from "./labels.js";
 
 // ids + structural enums
 export * from "./ids.js";

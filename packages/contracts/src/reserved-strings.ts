@@ -149,3 +149,121 @@ export const BANNED_STRINGS: BannedString[] = [
 
 /** The flat list of banned substrings with no context exception — the seed for the strict no-banned-strings lint. */
 export const STRICTLY_BANNED: string[] = BANNED_STRINGS.filter((b) => !b.except).map((b) => b.text);
+
+// ---------- REQ-COPY-6 (R7COPY.1a) — the banned internal-term list ----------
+// Internal build vocabulary that must never reach user-facing copy, verbatim from the round-7 spec
+// §4.13 REQ-COPY-6 (the list is verbatim — never weaken it to get green). Consumed by
+// `lintInternalTerms` (vocab-lint.ts) and by the ESLint `no-banned-strings` rule's `bannedPatterns`
+// option (eslint.config.js seeds it from this table — one list, two guards).
+
+export interface BannedInternalTerm {
+  /** Stable id — an allow entry references this. */
+  id: string;
+  /** The spec §4.13 term verbatim. */
+  text: string;
+  /** Regex source matched against a copy leaf's VALUE (never its key). */
+  pattern: string;
+  /** Regex flags; "" = case-sensitive (the "QUIET" bucket term is uppercase-only on purpose). */
+  flags: string;
+  /** The plain-language replacement the jargon pass applies. */
+  replacement: string;
+}
+
+export const BANNED_INTERNAL_TERMS: readonly BannedInternalTerm[] = [
+  {
+    id: "quiet-bucket",
+    text: "QUIET",
+    pattern: "\\bQUIET\\b",
+    flags: "",
+    replacement: "nothing — the attention bucket is retired (ADR-128)",
+  },
+  {
+    id: "obligations",
+    text: "obligations",
+    pattern: "\\bobligations?\\b",
+    flags: "i",
+    replacement: "open items",
+  },
+  {
+    id: "gate-word",
+    text: "gate",
+    pattern: "\\bgates?\\b",
+    flags: "i",
+    replacement: "approval / spend confirmation",
+  },
+  {
+    id: "coherence-read",
+    text: "the coherence read",
+    pattern: "\\bthe coherence read\\b",
+    flags: "i",
+    replacement: "plain wording (drop the parenthetical)",
+  },
+  {
+    id: "public-funnel",
+    text: "public funnel",
+    pattern: "\\bpublic funnel\\b",
+    flags: "i",
+    replacement: "the sign-up flow",
+  },
+  {
+    id: "sidecar",
+    text: "sidecar",
+    pattern: "\\bsidecars?\\b",
+    flags: "i",
+    replacement: "structured notes",
+  },
+  {
+    id: "partial-phases",
+    text: "partial (0/1 phases)",
+    pattern: "\\bpartial\\s*\\(",
+    flags: "i",
+    replacement: "finished in part — {done} of {total} phases done",
+  },
+  {
+    id: "waiting-call",
+    text: "Waiting on your call",
+    pattern: "\\bwaiting on your call\\b",
+    flags: "i",
+    replacement: "waiting for you",
+  },
+  {
+    id: "invitation-era",
+    text: "Have an invitation?",
+    pattern: "\\bhave an invitation\\?",
+    flags: "i",
+    replacement: "already have an account?",
+  },
+  {
+    id: "session-contract",
+    text: "the shared session contract…",
+    pattern: "\\bthe shared session contract\\b",
+    flags: "i",
+    replacement: "plain wording about the shared sign-in",
+  },
+];
+
+/**
+ * A temporary, named, dated exemption for a banned internal term in an H15-SIGNED `demo.*` /
+ * `demo.tour.*` leaf (Phase-4 P4-24; `GD-TOURSIGN.R7` — the demo script is signed copy, never
+ * silently edited or silently exempted). Each entry must name the leaf + term, carry a D-row key
+ * (`D-<TICKET>-<n>`) that owns its removal, and name the date it was added. `validateInternalTermAllow`
+ * rejects a malformed or stale entry — a seeded allow without a D-row key fails the lint suite.
+ */
+export interface InternalTermAllow {
+  /** The copy-table leaf (must be `demo.*` — H15-signed copy only). */
+  key: string;
+  /** The `BANNED_INTERNAL_TERMS.id` this entry exempts. */
+  termId: string;
+  /** The DEFERRALS row owning removal (e.g. `D-R7COPY.1a-1`). */
+  deferral: string;
+  /** `date -u` day the entry was added (YYYY-MM-DD). */
+  added: string;
+  /** Why the leaf can't be edited here (e.g. "H15-signed tour script — 248's changed-leaf list"). */
+  note: string;
+}
+
+/**
+ * The live allow list. The expected case is EMPTY — a banned term in an H15-signed demo leaf is
+ * routed to `D-R7COPY.1a-1` (owner 248_R7TOUR.2) instead of being edited or silently exempted.
+ */
+export const BANNED_INTERNAL_TERM_ALLOW: readonly InternalTermAllow[] = [];

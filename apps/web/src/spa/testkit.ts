@@ -13,6 +13,7 @@
 
 import { expect, vi } from "vitest";
 import axe from "axe-core";
+import { UI_LABELS } from "@rhema/contracts";
 import type { DomContractEntry, DomContractSurface } from "../dom-contract.js";
 import { hooksForSurface } from "../dom-contract.js";
 import { spaRuntime } from "./dom.js";
@@ -147,6 +148,10 @@ export function expectManifestEmission(
   scope: Element | Document | string,
   entries: readonly DomContractEntry[],
 ): string[] {
+  // REQ-GUARD-2(b) — Element/Document scopes get the no-internal-keys guard on every parity leg
+  // (markup strings may carry essay/data text; spec prose surfaces apply expectNoInternalKeys
+  // directly on the mounted element).
+  if (typeof scope !== "string") expectNoInternalKeys(scope);
   const html = markupOf(scope);
   const checked: string[] = [];
   for (const entry of entries) {
@@ -186,6 +191,51 @@ export function expectSurfaceHooks(
  * the authoritative WCAG 2.2 AA gate — this is the component pre-check that catches the same class
  * of violation before a surface's journey flip.
  */
+// ---- REQ-GUARD-2(b) (R7COPY.1a) — the no-snake_case-keys DOM guard ----
+//
+// Every internal key the UI must label instead of render: the union of all `UI_LABELS` map keys
+// that contain an underscore (workflow / phase / kind / enum keys — `chat_turn`, `research_burst`,
+// `draft_ledger`, `second_read`, `waiting_gate`…). Single-word keys are indistinguishable from
+// words, so the copy lint owns those; this guard catches the machine-token class verbatim.
+const INTERNAL_KEYS: readonly string[] = [
+  ...new Set(
+    Object.values(UI_LABELS).flatMap((m) => Object.keys(m)).filter((k) => k.includes("_")),
+  ),
+];
+const INTERNAL_KEY_RE = new RegExp(
+  `\\b(${INTERNAL_KEYS.map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})\\b`,
+);
+
+/** Subtrees whose text is DATA, not chrome: essay prose (data-pm-host) and any element a spec
+ *  marks `data-copy-guard-exclude` (fixture essay/quota content). */
+const COPY_GUARD_EXCLUDE = "[data-pm-host], [data-copy-guard-exclude], script, style, template";
+
+/**
+ * REQ-GUARD-2(b): assert no `snake_case` workflow/phase/kind key appears in the rendered TEXT of
+ * `scope`. Element/Document scopes are scanned on their text — attributes (data-*) never enter
+ * textContent, so "outside data-*" holds by construction; essay content is data and excluded via
+ * `COPY_GUARD_EXCLUDE` (+ `opts.exclude`). Wired into `expectManifestEmission` for Element|Document
+ * scopes, so every SPA surface render parity leg runs it; a seeded `chat_turn` in a fixture's
+ * rendered text fails.
+ */
+export function expectNoInternalKeys(
+  scope: Element | Document,
+  opts: { extraExcludes?: readonly string[] } = {},
+): void {
+  const root = (scope === document ? document.documentElement : scope) as Element;
+  const clone = root.cloneNode(true) as Element;
+  const selector =
+    COPY_GUARD_EXCLUDE +
+    (opts.extraExcludes?.length ? ", " + opts.extraExcludes.join(", ") : "");
+  for (const el of clone.querySelectorAll(selector)) el.remove();
+  const text = clone.textContent ?? "";
+  const hits = [...new Set([...text.matchAll(new RegExp(INTERNAL_KEY_RE, "g"))].map((m) => m[1]))];
+  expect(
+    hits,
+    `REQ-GUARD-2: snake_case internal keys leaked into rendered text: ${hits.join(", ")}`,
+  ).toEqual([]);
+}
+
 export async function axeCheck(scope: Element | Document = document): Promise<void> {
   const results = await axe.run(scope as axe.ElementContext, {
     rules: {
