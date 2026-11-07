@@ -84,6 +84,16 @@
 | U4: probe authored over 12 surfaces; local pass; AUTHORED_HELD | **Engineered, partial at Stage A** — `U4_SURFACES` names 12; `u4ProbePage`+`U4_CONTROLS` authored; local probe passes on the demo-servable surfaces + the seeded-fail leg; the full-12 deployed walk is owed to 250. The workspace-only surfaces (list/inbox/settings/billing/usage/voices/new/run-sheet/export) cannot be served by a local demo build — honest gap, not a pass claim. | u4-controls.local.test.ts + this table |
 | Stage-B dossier screenshots/provenance | **OPEN — D-R7KIT.3e-1** | deferred by design |
 
+## CI boundary
+
+- First read **red** at `9ebc82ca` (run 42313586539) — three legs:
+  1. `ui.test.tsx` sample-dossier leg still asserted the removed `Contradicted Tier-1` badge text → updated to the REQ-COPY-8 arm (`data-verdict="contradicted"` + `data-contradicted-tier1`, badge text absent).
+  2. `runner.test.ts` — `U4.controls` now carries a real body; its test-harness error isn't the `owed — owner` shape → moved into the same exclusion set as U1/U2/U3/U5/U6/U7 (real-body legs).
+  3. `demo-tour-legs.local` — TWO real regressions the probe surfaced honestly:
+     a. the demo dossier SPA crashed — the one-line run header called `creditsLabel(spent, cap)` unconditionally; the replayed demo `runSummary.card` carries `null` meters (the RunCard had a `!= null` guard). Guarded identically; new `dossier-demo.test.tsx` renders the committed demo snapshot through `DossierArticle` + `dossierSurfaces`.
+     b. `?tour=…` finding marks couldn't place at 1024 — findings now live in the right panel, which at 1024–1279 is a CLOSED overlay (REQ-PANE-2): the `data-finding` desk row is `display:none` → zero-size target → mark unplaced. The leg now opens the panel + selects the Findings tab via the delegated toggles and re-syncs the mark — the same path a user takes.
+- Repair head `1e076372` — local re-verification: `ui.test` 4/4 · `runner.test` 18/18 · `dossier-demo` 2/2 · `demo-tour-legs` 1/1 (all 11 steps × 3 widths, 127s). Second CI read pending.
+
 ## Evidence log
 
 - DOM tests: `dossier.dom.test.tsx` 17/17 — letter vocabulary, TOC attrs, claims-inside-letter, findings-in-panel, minimap absent, run-header, passage-link → desk-row, refused-write `?ferr` parity (pane-write `onPaneError`), bulk preview round-trip, axe.

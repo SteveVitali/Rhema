@@ -49,7 +49,6 @@ import {
   runCardLabels,
   timelineHrefs,
   timelineLabels,
-  visibleDossierFindings,
   type DossierViewState,
 } from "../../dossier-view.js";
 import { chatPanelLive as chatPanel } from "../chat-live.js";
@@ -208,8 +207,8 @@ export function DossierSurface({ data, search, compact }: DossierSurfaceProps): 
 
   // P1.07 — one list powers the Page, the Margin, and the Desk: the leaf re-derives the
   // server-identical filtered set off the raw findings (budget first, then the filters).
-  const visible = useMemo(() => visibleDossierFindings(dossier, filters), [dossier, filters]);
-  void visible; // REQ-PANE-5 — the leaf publishes no margin ticks; the filtered list drives the desk.
+  // REQ-PANE-5 — the leaf publishes no margin ticks at all; `visibleDossierFindings` runs inside
+  // dossierSurfaces (the desk's own body) — nothing derives the filtered list here anymore.
   const panes = useMemo(
     () =>
       dossierSurfaces({
@@ -255,7 +254,7 @@ export function DossierSurface({ data, search, compact }: DossierSurfaceProps): 
           }
         : {}),
     }),
-    [visible, panes, data.ide, slug, compact, busy, onSubmit, onPaneError],
+    [panes, data.ide, slug, compact, busy, onSubmit, onPaneError],
   );
   useShellChrome(data, extras);
 
