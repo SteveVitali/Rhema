@@ -13,9 +13,16 @@ export const chatDeskLabels: ChatDeskLabels = COPY.ide.chatDesk;
 
 /** Map the api's `GET /projects/:id/chat` DTO onto the desk model (turns carry debitedCredits +
  *  userText/reply/refs from R7TALK.1a). */
-export function chatDeskModel(chat: ChatPanelDto, ide: {
-  readonly chatAskAbout?: { readonly ref: string; readonly version?: number; readonly block?: string };
-}): ChatDeskProps["model"] {
+export function chatDeskModel(
+  chat: ChatPanelDto,
+  ide: {
+    readonly chatAskAbout?: {
+      readonly ref: string;
+      readonly version?: number;
+      readonly block?: string;
+    };
+  },
+): ChatDeskProps["model"] {
   return {
     threads: chat.threads.map((t) => ({
       id: t.id,
@@ -97,7 +104,12 @@ export function chatPanel(
     />
   );
   return readOnlyTitle != null ? (
-    <fieldset disabled title={readOnlyTitle} style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
+    <fieldset
+      disabled
+      title={readOnlyTitle}
+      className="ui-c2-m0 ui-d-p0 ui-t-mw0"
+      style={{ border: 0 }}
+    >
       {body}
     </fieldset>
   ) : (

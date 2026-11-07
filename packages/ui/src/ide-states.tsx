@@ -3,7 +3,9 @@
 // paper (loading = shell skeleton rows) and the ONLY blocking modal in the product is CancelRunModal —
 // everything else is a banner, a swap, or a pane state. Text-agnostic: all copy arrives via labels.
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import { Button } from "./primitives/button.js";
+import { TextField } from "./primitives/fields.js";
 
 /** Empty project (§5.9): the Page carries three entry cards + a quiet serif title field. */
 export function EmptyProject({
@@ -15,33 +17,27 @@ export function EmptyProject({
 }): ReactNode {
   return (
     <div data-ide-state="empty-project">
-      <input
+      <TextField
         type="text"
-        className="ide-title-field"
+        className="ide-title-field ui-vc-w ui-fcard--p ui-t-f2e ui-d-b ui-d-inh"
         placeholder={labels.titlePlaceholder}
         aria-label={labels.titlePlaceholder}
         readOnly
-        style={{
-          width: "100%",
-          border: "none",
-          background: "transparent",
-          font: "inherit",
-          fontSize: "2em",
-          fontWeight: 600,
-          color: "inherit",
-          outline: "none",
-        }}
+        style={{ border: "none", font: "inherit", outline: "none" }}
       />
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "var(--s3)", marginTop: "var(--s6)" }}>
+      <div
+        className="ui-c2-g3 ui-set-sec"
+        style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}
+      >
         {labels.cards.map((card, i) => (
           <a
             key={card.title}
             href={paths[i] ?? "#"}
-            className="ide-state"
-            style={{ display: "block", textDecoration: "none", color: "var(--paper-fg)" }}
+            className="ide-state ui-t-pf"
+            style={{ display: "block", textDecoration: "none" }}
           >
-            <div style={{ fontWeight: 600, marginBottom: 4 }}>{card.title}</div>
-            <div style={{ fontSize: "0.85em", color: "var(--paper-fg-muted)" }}>{card.body}</div>
+            <div className="ui-d-b ui-t-mb4">{card.title}</div>
+            <div className="ui-t-f85 ui-t-pm">{card.body}</div>
           </a>
         ))}
       </div>
@@ -52,7 +48,7 @@ export function EmptyProject({
 /** Empty findings (§5.9): the Margin/Desk findings surfaces when a run returned clean. */
 export function EmptyFindings({ label }: { label: string }): ReactNode {
   return (
-    <div data-ide-state="empty-findings" style={{ color: "var(--shell-fg-muted)", fontSize: 13 }}>
+    <div data-ide-state="empty-findings" className="ui-t-mut ui-d-fd">
       {label}
     </div>
   );
@@ -63,20 +59,18 @@ export function ShellSkeleton({ rows = 4 }: { rows?: number }): ReactNode {
   return (
     <div data-ide-state="loading" aria-hidden="true">
       {Array.from({ length: rows }, (_, i) => (
-        <div key={i} className="ide-sk-row" style={{ width: `${88 - i * 14}%` }} />
+        <div
+          key={i}
+          className="ide-sk-row ui-t-wf"
+          style={{ "--d-w2": `${88 - i * 14}%` } as CSSProperties}
+        />
       ))}
     </div>
   );
 }
 
 /** Streaming (§5.9): the paper's streaming blocks fade in + the caret pulses; the counter is live. */
-export function StreamingBlock({
-  text,
-  isLast,
-}: {
-  text: string;
-  isLast?: boolean;
-}): ReactNode {
+export function StreamingBlock({ text, isLast }: { text: string; isLast?: boolean }): ReactNode {
   return (
     <p className="ide-stream-block">
       {text}
@@ -107,21 +101,27 @@ export function RunFailed({
   reason,
   resumeHref,
 }: {
-  labels: { heading: string; refund: string; resume: string; inboxNote: string; phaseLabel: string };
+  labels: {
+    heading: string;
+    refund: string;
+    resume: string;
+    inboxNote: string;
+    phaseLabel: string;
+  };
   phase: string;
   reason: string;
   resumeHref: string;
 }): ReactNode {
   return (
     <div className="ide-state" data-ide-state="run-failed" data-tone="failed" role="status">
-      <div style={{ fontWeight: 600, marginBottom: 4 }}>{labels.heading}</div>
-      <div style={{ fontSize: 13, color: "var(--shell-fg-muted)" }}>
+      <div className="ui-d-b ui-t-mb4">{labels.heading}</div>
+      <div className="ui-d-fd ui-t-mut">
         {labels.phaseLabel} {phase} — {reason}
       </div>
-      <div style={{ fontSize: 12, color: "var(--shell-fg-faint)", marginTop: 4 }}>{labels.refund}</div>
-      <div style={{ marginTop: "var(--s2)", display: "flex", gap: "var(--s3)", alignItems: "center" }}>
+      <div className="ui-d-fs ui-t-fnt ui-os-mr">{labels.refund}</div>
+      <div className="ui-c2-mt ui-c2-g3" style={{ display: "flex", alignItems: "center" }}>
         <a href={resumeHref}>{labels.resume}</a>
-        <span style={{ fontSize: 12, color: "var(--shell-fg-faint)" }}>{labels.inboxNote}</span>
+        <span className="ui-d-fs ui-t-fnt">{labels.inboxNote}</span>
       </div>
     </div>
   );
@@ -130,7 +130,13 @@ export function RunFailed({
 /** Conflict (§5.9): an inline banner — never a modal. */
 export function ConflictBanner({ label }: { label: string }): ReactNode {
   return (
-    <div className="ide-banner" data-tone="conflict" data-ide-state="conflict" role="status" aria-live="polite">
+    <div
+      className="ide-banner"
+      data-tone="conflict"
+      data-ide-state="conflict"
+      role="status"
+      aria-live="polite"
+    >
       {label}
     </div>
   );
@@ -157,10 +163,10 @@ export function InsufficientBalanceSwap({
   return (
     <a
       href={topUpHref}
-      className="ide-banner"
+      className="ide-banner ui-t-fg"
       data-ide-state="insufficient-balance"
       role="alert"
-      style={{ display: "inline-flex", textDecoration: "none", color: "var(--shell-fg)" }}
+      style={{ display: "inline-flex", textDecoration: "none" }}
     >
       {label}
     </a>
@@ -191,13 +197,15 @@ export function CancelRunModal({
   return (
     <div className="ide-modal-backdrop" data-ide-modal="cancel-run">
       <div className="ide-modal" role="alertdialog" aria-modal="true" aria-label={labels.heading}>
-        <div style={{ fontWeight: 600, marginBottom: 6 }}>{labels.heading}</div>
-        <p style={{ margin: "0 0 var(--s3)", fontSize: 13, color: "var(--shell-fg-muted)" }}>{labels.body}</p>
-        <div style={{ display: "flex", gap: "var(--s2)", justifyContent: "flex-end" }}>
-          <button type="button" data-modal-cancel>{labels.keep}</button>
-          <button type="button" data-modal-confirm style={{ color: "var(--sev-blocking)" }}>
+        <div className="ui-d-b ui-t-mb6">{labels.heading}</div>
+        <p className="ui-t-m03 ui-d-fd ui-t-mut">{labels.body}</p>
+        <div className="ui-c2-g2" style={{ display: "flex", justifyContent: "flex-end" }}>
+          <Button type="button" variant="ghost" data-modal-cancel>
+            {labels.keep}
+          </Button>
+          <Button type="button" variant="ghost" data-modal-confirm className="ui-t-blk">
             {labels.confirm}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

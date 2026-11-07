@@ -132,8 +132,7 @@ module.exports = [
   {
     file: "packages/ui/src/run-sheet.tsx",
     component: "AskButton",
-    reason:
-      "the no-JS Assistant submit inside the SSR run sheet's native form (RV-36).",
+    reason: "the no-JS Assistant submit inside the SSR run sheet's native form (RV-36).",
   },
   {
     file: "packages/ui/src/findings-desk.tsx",
@@ -183,5 +182,24 @@ module.exports = [
     component: "HiddenField",
     reason:
       "the obligation sheet's hidden `next` post-carrier — the JSON submit collects the form's fields verbatim (RV-36).",
+  },
+  // ---- 248a_R7KIT.3f (the migrate-tail batch) ----
+  {
+    file: "packages/ui/src/dispositions.tsx",
+    component: "HiddenField",
+    reason:
+      "the no-JS disposition post's hidden `next` carrier — prior batches' named exemption shape for hidden form fields (RV-36).",
+  },
+  {
+    file: "packages/ui/src/dispositions.tsx",
+    component: "ReasonRadio",
+    reason:
+      "the `reason_code` chip radios post through the native no-JS disposition form — a Radix carrier needs client JS, so the KIT-1-styled native radio stays (RV-36); every other field is a TextField/TextArea/Button primitive.",
+  },
+  {
+    file: "packages/ui/src/conversion.tsx",
+    component: "HiddenField",
+    reason:
+      "the no-JS conversion post's hidden carriers — prior batches' named exemption shape for hidden form fields (RV-36).",
   },
 ];

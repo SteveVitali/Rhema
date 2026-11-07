@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { uiCss } from "./ui-css.js";
+import { uiTailCss } from "./ui-tail-css.js";
 import { LAYOUT, MOTION, RADIUS, FONT_SIZE } from "@rhema/tokens";
 
 // R7KIT.2 (REQ-KIT-2/5; ADR-129) — the generated kit stylesheet: bounded raw bytes for the inlined
@@ -86,5 +87,17 @@ describe("uiCss() (REQ-KIT-2/5)", () => {
   it("light and dark resolve through the token layer — no [data-theme] fork needed", () => {
     expect(css).not.toContain('data-theme="light"');
     expect(css).toContain("color-mix(in srgb, var(--shell-bg)");
+  });
+});
+
+// 248a_R7KIT.3f — the migrate-tail block: the residual census' classes ride a SECOND bounded
+// stylesheet so the REQ-KIT-5 uiCss() bound (24 kB, asserted) never moves without a ruling.
+describe("uiTailCss() (248a_R7KIT.3f)", () => {
+  const tail = uiTailCss();
+  it("stays under its own 5 kB raw bound per shell document", () => {
+    expect(tail.length).toBeLessThanOrEqual(5 * 1024);
+  });
+  it("is token-driven: zero hex colour literals", () => {
+    expect(tail.match(/#[0-9a-fA-F]{3,8}\b/)).toBeNull();
   });
 });

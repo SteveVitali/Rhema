@@ -79,6 +79,38 @@ const NO_RAW_CONTROLS_ENABLED = [
   "packages/ui/src/findings.tsx",
   "apps/web/src/dossier-view.tsx",
   "apps/web/src/spa/surfaces/dossier.tsx",
+  // 248a_R7KIT.3f — the migrate-tail batch: all 29 census files (the dossier/report content
+  // family, SPA shell/palette/chat-live/read-only/page-header, the demo SSR components, legal,
+  // chat-pane, gate-card, surfaces/editor + surfaces/run-report).
+  "packages/ui/src/run-report.tsx",
+  "packages/ui/src/what-changed.tsx",
+  "packages/ui/src/page-strip.tsx",
+  "packages/ui/src/version-rail.tsx",
+  "packages/ui/src/ide-states.tsx",
+  "packages/ui/src/conversion.tsx",
+  "packages/ui/src/dispositions.tsx",
+  "packages/ui/src/files-pane.tsx",
+  "packages/ui/src/second-read.tsx",
+  "packages/ui/src/approval-row.tsx",
+  "packages/ui/src/shell.tsx",
+  "packages/ui/src/decisions.tsx",
+  "packages/ui/src/rubric.tsx",
+  "packages/ui/src/chips.tsx",
+  "packages/ui/src/margin.tsx",
+  "apps/web/src/demo-page.tsx",
+  "apps/web/src/demo-markers.tsx",
+  "apps/web/src/legal.tsx",
+  "apps/web/src/chat-pane.tsx",
+  "apps/web/src/gate-card.tsx",
+  "apps/web/src/spa/app-shell.tsx",
+  "apps/web/src/spa/palette.tsx",
+  "apps/web/src/spa/chat-live.tsx",
+  "apps/web/src/spa/read-only.tsx",
+  "apps/web/src/spa/page-header.tsx",
+  "apps/web/src/spa/demo-banner.tsx",
+  "apps/web/src/spa/demo-effects.tsx",
+  "apps/web/src/spa/surfaces/run-report.tsx",
+  "apps/web/src/spa/surfaces/editor.tsx",
 ];
 
 // REQ-GUARD-2 (R7COPY.1a) — the REQ-COPY-6 banned internal-term list is authored once in
@@ -237,7 +269,11 @@ export default tseslint.config(
     // scan on top of the global phrase list: `bannedPatterns` is seeded from @rhema/contracts'
     // BANNED_INTERNAL_TERMS (the verbatim spec §4.13 list — one list, two guards). Quoted property
     // keys are skipped (event-type ids like "gate.opened" are internal, not user copy).
-    files: ["apps/web/src/copy.ts", "apps/web/src/billing-copy.ts", "packages/contracts/src/labels.ts"],
+    files: [
+      "apps/web/src/copy.ts",
+      "apps/web/src/billing-copy.ts",
+      "packages/contracts/src/labels.ts",
+    ],
     rules: {
       "rhema/no-banned-strings": [
         "error",

@@ -23,7 +23,12 @@ import {
 } from "@rhema/contracts";
 import { COPY } from "./copy.js";
 
-const MUTED = { color: "var(--shell-fg-muted)", fontSize: "14px", lineHeight: 1.7, maxWidth: "68ch" } as const;
+const MUTED = {
+  color: "var(--shell-fg-muted)",
+  fontSize: "14px",
+  lineHeight: 1.7,
+  maxWidth: "68ch",
+} as const;
 const SECTION = { marginTop: "32px" } as const;
 const PLACEHOLDER_MARK = {
   background: "var(--state-needs-you)",
@@ -47,14 +52,18 @@ export function publicFooter(): ReactNode {
         {LEGAL_PAGES.map((p, i) => (
           <span key={p.routeId}>
             {i > 0 ? <span aria-hidden="true">{" · "}</span> : null}
-            <a href={p.routeId} style={{ color: "inherit" }}>{p.navLabel}</a>
+            <a href={p.routeId} className="ui-d-inh">
+              {p.navLabel}
+            </a>
           </span>
         ))}
       </nav>
       {/* 222 R7DEM.6a (REQ-TOUR-4; S-14) — the shared footer's /demo entry: a document
           navigation on every public SSR page. */}
       <span aria-hidden="true">{" · "}</span>
-      <a href="/demo" data-spa-native data-demo-entry="footer" style={{ color: "inherit" }}>{COPY.footerDemo}</a>
+      <a href="/demo" data-spa-native data-demo-entry="footer" className="ui-d-inh">
+        {COPY.footerDemo}
+      </a>
     </>
   );
 }
@@ -127,15 +136,8 @@ export function LegalPage({ page }: { page: LegalPageRow }): ReactNode {
           <p
             data-legal-draft
             role="status"
-            style={{
-              border: "1px solid var(--shell-border)",
-              borderRadius: "8px",
-              padding: "10px 14px",
-              background: "var(--shell-raised)",
-              color: "var(--shell-fg)",
-              fontSize: "13px",
-              lineHeight: 1.6,
-            }}
+            className="ui-t-r2 ui-t-p1014 ui-rs-box ui-t-fg ui-d-fd ui-t-lh6"
+            style={{ border: "1px solid var(--shell-border)" }}
           >
             {COPY.legal.draftBanner}
           </p>

@@ -1,4 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
+import { Button } from "./primitives/button.js";
+import { TextField, TextArea } from "./primitives/fields.js";
 import { REASON_CODES, type DispositionKind, type ReasonCode } from "@rhema/contracts";
 import { DEFER_DEFAULT_RATIONALE, DISPOSITION_VERBS } from "@rhema/findings-core";
 
@@ -46,16 +48,16 @@ export interface DispositionControlsProps {
   readonly labels: DispositionControlsLabels;
 }
 
-const verbButton: CSSProperties = {
-  padding: "7px 12px",
-  borderRadius: "7px",
-  border: "1px solid var(--shell-border)",
-  background: "var(--shell-raised)",
-  color: "var(--shell-fg)",
-  fontSize: "13px",
-  fontWeight: 500,
-  cursor: "pointer",
-};
+/** The no-JS post's hidden id carriers (RV-36 — prior batches' named-exemption shape). */
+function HiddenField({ name, value }: { name: string; value: string }): ReactNode {
+  return <input type="hidden" name={name} value={value} />;
+}
+
+/** The reason chip radios post `reason_code` through the native no-JS form (RV-36 — a Radix
+ *  carrier would need client JS; the chip styling lives on the wrapping label). */
+function ReasonRadio(props: React.InputHTMLAttributes<HTMLInputElement>): ReactNode {
+  return <input {...props} />;
+}
 
 const chipLabel: CSSProperties = {
   display: "inline-flex",
@@ -86,82 +88,69 @@ export function DispositionControls({
       action={formAction}
       data-disposition-form="true"
       data-compact={compact ? "true" : "false"}
-      style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+      className="ui-c2-g2"
+      style={{ display: "flex", flexDirection: "column" }}
     >
-      {next != null ? <input type="hidden" name="next" value={next} /> : null}
+      {next != null ? <HiddenField name="next" value={next} /> : null}
       <div
         data-verbs="true"
-        style={{
-          display: "flex",
-          flexDirection: compact ? "column" : "row",
-          gap: "6px",
-          flexWrap: "wrap",
-        }}
+        className="ui-d-g6"
+        style={{ display: "flex", flexDirection: compact ? "column" : "row", flexWrap: "wrap" }}
       >
         {DISPOSITION_VERBS.map((verb) => (
-          <button
+          <Button
             key={verb}
             type="submit"
             name="verb"
             value={verb}
             data-verb={verb}
             data-selected={current?.kind === verb ? "true" : "false"}
-            style={{
-              ...verbButton,
-              borderColor: current?.kind === verb ? "var(--accent)" : "var(--shell-border)",
-              fontWeight: current?.kind === verb ? 600 : 500,
-            }}
+            className="ui-t-bcd ui-t-wd"
+            style={
+              {
+                "--d-sev": current?.kind === verb ? "var(--accent)" : "var(--shell-border)",
+                "--d-w": current?.kind === verb ? 600 : 500,
+              } as CSSProperties
+            }
           >
             {labels.verbLabel(verb)}
-          </button>
+          </Button>
         ))}
       </div>
 
-      <label style={{ display: "block", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+      <label className="ui-d-fs ui-t-mut" style={{ display: "block" }}>
         {labels.noteLabel}
-        <input
+        <TextField
           type="text"
           name="note"
           data-note="true"
           defaultValue={current?.rationale ?? ""}
           placeholder={labels.notePlaceholder}
+          className="ui-vc-w ui-t-mt3 ui-t-p710 ui-t-r7 ui-d-eb ui-t-fg ui-d-fd"
           style={{
             display: "block",
-            width: "100%",
             boxSizing: "border-box",
-            marginTop: "3px",
-            padding: "7px 10px",
-            borderRadius: "7px",
             border: "1px solid var(--shell-border)",
-            background: "var(--shell-bg)",
-            color: "var(--shell-fg)",
-            fontSize: "13px",
           }}
         />
       </label>
 
       {showAdapt ? (
-        <label style={{ display: "block", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+        <label className="ui-d-fs ui-t-mut" style={{ display: "block" }}>
           {labels.adaptLabel}
-          <textarea
+          <TextArea
             name="adapted_text"
             data-adapted-text="true"
             defaultValue={current?.adaptedText ?? suggestion ?? ""}
             rows={3}
+            className="ui-vc-w ui-t-mt3 ui-t-p710 ui-t-r7 ui-d-eb ui-t-fg ui-d-fd"
             style={{
               display: "block",
-              width: "100%",
               boxSizing: "border-box",
-              marginTop: "3px",
-              padding: "7px 10px",
-              borderRadius: "7px",
               border: "1px solid var(--shell-border)",
-              background: "var(--shell-bg)",
-              color: "var(--shell-fg)",
-              fontSize: "13px",
             }}
           />
-          <span data-applied-note="true" style={{ fontSize: "11px", color: "var(--shell-fg-faint)" }}>
+          <span data-applied-note="true" className="ui-d-s ui-t-fnt">
             {labels.appliedNote}
           </span>
         </label>
@@ -169,14 +158,13 @@ export function DispositionControls({
 
       <fieldset
         data-reason-chips="true"
-        style={{ border: "none", padding: 0, margin: 0, display: "flex", gap: "6px", flexWrap: "wrap" }}
+        className="ui-d-p0 ui-c2-m0 ui-d-g6"
+        style={{ border: "none", display: "flex", flexWrap: "wrap" }}
       >
-        <legend style={{ fontSize: "11px", color: "var(--shell-fg-faint)", padding: 0 }}>
-          {labels.reasonLegend}
-        </legend>
+        <legend className="ui-d-s ui-t-fnt ui-d-p0">{labels.reasonLegend}</legend>
         {REASON_CODES.map((code) => (
           <label key={code} style={chipLabel} data-reason-chip={code}>
-            <input
+            <ReasonRadio
               type="radio"
               name="reason_code"
               value={code}
@@ -188,7 +176,7 @@ export function DispositionControls({
       </fieldset>
 
       {error ? (
-        <div role="alert" data-disposition-error="true" style={{ fontSize: "12px", color: "var(--sev-major)" }}>
+        <div role="alert" data-disposition-error="true" className="ui-d-fs ui-set-t--warn">
           {error}
         </div>
       ) : null}

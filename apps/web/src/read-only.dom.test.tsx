@@ -16,10 +16,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { COPY } from "./copy.js";
 import { readSpaBoot, setSpaBoot, getSpaBoot } from "./spa/boot.js";
-import {
-  readOnlyProjectFor,
-  ReadOnlyNotice,
-} from "./spa/read-only.js";
+import { readOnlyProjectFor, ReadOnlyNotice } from "./spa/read-only.js";
 import { gateCardFor } from "./gate-card.js";
 import { findingControlsFor } from "./dossier-view.js";
 import { DecisionsList, PageEditor, PageStrip, VersionRail } from "@rhema/ui";
@@ -37,7 +34,9 @@ describe("R7RO.1 — the ReadOnlyProject carrier + derive", () => {
     };
     // twin carrier beats the boot slot on the same project.
     expect(
-      readOnlyProjectFor(boot, { project: { slug: "demo-project", readOnlyProject: { reason: "run_lock" } } }),
+      readOnlyProjectFor(boot, {
+        project: { slug: "demo-project", readOnlyProject: { reason: "run_lock" } },
+      }),
     ).toEqual({ reason: "run_lock" });
     // the boot slot applies only to the slug that served the shell — an in-app hop to another
     // project never inherits a stale stamp.
@@ -51,7 +50,9 @@ describe("R7RO.1 — the ReadOnlyProject carrier + derive", () => {
     expect(readOnlyProjectFor(boot, null, "demo-project")).toEqual({ reason: "showcase" });
     expect(readOnlyProjectFor(boot, null, "other-project")).toBeNull();
     expect(readOnlyProjectFor(null, null)).toBeNull();
-    expect(readOnlyProjectFor(boot, { project: { readOnlyProject: { reason: "frozen" } as never } })).toBeNull();
+    expect(
+      readOnlyProjectFor(boot, { project: { readOnlyProject: { reason: "frozen" } as never } }),
+    ).toBeNull();
   });
 
   it("the boot parser carries readOnlyProject verbatim and fails closed", () => {
@@ -66,7 +67,11 @@ describe("R7RO.1 — the ReadOnlyProject carrier + derive", () => {
     });
     doc.body.appendChild(el);
     expect(readSpaBoot(doc)?.readOnlyProject).toEqual({ reason: "demo" });
-    el.textContent = JSON.stringify({ deviceClass: "desktop", surfaces: {}, readOnlyProject: { reason: "frozen" } });
+    el.textContent = JSON.stringify({
+      deviceClass: "desktop",
+      surfaces: {},
+      readOnlyProject: { reason: "frozen" },
+    });
     expect(readSpaBoot(doc)?.readOnlyProject).toBeUndefined();
   });
 });
@@ -93,9 +98,13 @@ describe("R7RO.1 — one notice per reason, in the page header area", () => {
     expect(cta).not.toBeNull();
     expect(cta.disabled).toBe(false);
     expect(cta.closest("form")?.getAttribute("action")).toBe("/p/demo-project/duplicate");
-    // C10 — the button is styled (filled primary), not a bare native button.
-    const style = cta.getAttribute("style") ?? "";
-    expect(style).toContain("background");
+    // C10 — the button is styled (filled primary), not a bare native button. 248a_R7KIT.3f moved
+    // the styling onto the kit primitive (the dossier banner's own carrier at dossier-view.tsx),
+    // so the filled-primary contract is the emitted `ui-btn`/`ui-btn--primary` classes, not an
+    // inline literal.
+    const cls = cta.getAttribute("class") ?? "";
+    expect(cls).toContain("ui-btn");
+    expect(cls).toContain("ui-btn--primary");
   });
 
   it("run_lock renders nothing — the Page's §5.4 lock banner IS the notice", () => {
@@ -131,7 +140,11 @@ describe("R7RO.1 — the write-control census withholds before any request", () 
 
   it("gate cards: demo/showcase → disabled fieldset + reason tooltip (run_lock is never fed)", () => {
     const { container } = render(
-      <>{gateCardFor(GATE, "demo-project", false, undefined, { readOnlyTitle: COPY.readOnly.reason.showcase })}</>,
+      <>
+        {gateCardFor(GATE, "demo-project", false, undefined, {
+          readOnlyTitle: COPY.readOnly.reason.showcase,
+        })}
+      </>,
     );
     const fieldset = container.querySelector("fieldset[disabled]") as HTMLElement | null;
     expect(fieldset).not.toBeNull();
@@ -147,7 +160,16 @@ describe("R7RO.1 — the write-control census withholds before any request", () 
   it("DecisionsList: disabledTitle ⇒ every answer button disabled + tooltip, never a submit", () => {
     const { container } = render(
       <DecisionsList
-        items={[{ id: "dcr_1", projectId: "p", obligationId: "o", text: "Escalated finding.", options: ["decide", "dismiss"], createdAt: null }]}
+        items={[
+          {
+            id: "dcr_1",
+            projectId: "p",
+            obligationId: "o",
+            text: "Escalated finding.",
+            options: ["decide", "dismiss"],
+            createdAt: null,
+          },
+        ]}
         formActionFor={(id) => `/p/demo-project/decisions/${id}`}
         labels={{ heading: "Decisions", emptyLabel: "Nothing pending", optionLabel: (o) => o }}
         disabledTitle={COPY.readOnly.reason.demo}
@@ -216,8 +238,18 @@ describe("R7RO.1 — the write-control census withholds before any request", () 
     // entirely (page.readOnly posture); the note form is withheld too.
     const { container } = render(
       <>
-        <PageStrip {...stripBase} readOnly readOnlyReason="showcase" readOnlyTooltip={COPY.readOnly.reason.showcase} />
-        <PageEditor {...editorBase} readOnly readOnlyReason="showcase" readOnlyTooltip={COPY.readOnly.reason.showcase} />
+        <PageStrip
+          {...stripBase}
+          readOnly
+          readOnlyReason="showcase"
+          readOnlyTooltip={COPY.readOnly.reason.showcase}
+        />
+        <PageEditor
+          {...editorBase}
+          readOnly
+          readOnlyReason="showcase"
+          readOnlyTooltip={COPY.readOnly.reason.showcase}
+        />
       </>,
     );
     for (const hook of ["data-proposal-accept", "data-proposal-reject"]) {
@@ -286,7 +318,9 @@ describe("R7RO.1 — the write-control census withholds before any request", () 
     expect(container.querySelector('form[action="/p/demo-project/edit/d_1/note"]')).not.toBeNull();
     expect(container.textContent).toContain("Cancel run to edit");
     // but the Revise verb is a doc write — disabled with the reason tooltip before any request.
-    const revise = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Revise using your edits") as HTMLButtonElement | undefined;
+    const revise = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent === "Revise using your edits",
+    ) as HTMLButtonElement | undefined;
     expect(revise?.disabled).toBe(true);
     expect(revise?.getAttribute("title")).toBe(COPY.readOnly.reason.run_lock);
   });
@@ -303,7 +337,12 @@ describe("R7RO.1 — the write-control census withholds before any request", () 
           disabledTitle: COPY.readOnly.reason.showcase,
           preview: {
             point: { id: "rp_1", label: "auto", createdAt: "t", wordCount: 1, kind: "auto" },
-            view: { strip: { totals: { moves: 0, unlinked: 0, rebutted: 0 }, label: "v0 → v1" }, moves: [], unlinked: { hunks: [], entries: [] }, rebutted: [] },
+            view: {
+              strip: { totals: { moves: 0, unlinked: 0, rebutted: 0 }, label: "v0 → v1" },
+              moves: [],
+              unlinked: { hunks: [], entries: [] },
+              rebutted: [],
+            },
           },
         }}
       />,
@@ -329,7 +368,12 @@ describe("R7RO.1 — the write-control census withholds before any request", () 
       canDismiss: true,
     } as never;
     const { container } = render(
-      <>{findingControlsFor(view, "demo-project", "run_1", false, undefined, { hasObligation: false, readOnly: COPY.readOnly.reason.showcase })}</>,
+      <>
+        {findingControlsFor(view, "demo-project", "run_1", false, undefined, {
+          hasObligation: false,
+          readOnly: COPY.readOnly.reason.showcase,
+        })}
+      </>,
     );
     const marker = container.querySelector("[data-readonly-controls='f_1']");
     expect(marker).not.toBeNull();
@@ -360,9 +404,20 @@ describe("R7RO.1 — request recorder: no non-GET is ever issued from a withheld
 
     const { container } = render(
       <>
-        {gateCardFor(GATE, "demo-project", false, undefined, { readOnlyTitle: COPY.readOnly.reason.showcase })}
+        {gateCardFor(GATE, "demo-project", false, undefined, {
+          readOnlyTitle: COPY.readOnly.reason.showcase,
+        })}
         <DecisionsList
-          items={[{ id: "dcr_1", projectId: "p", obligationId: "o", text: "Escalated finding.", options: ["decide", "dismiss"], createdAt: null }]}
+          items={[
+            {
+              id: "dcr_1",
+              projectId: "p",
+              obligationId: "o",
+              text: "Escalated finding.",
+              options: ["decide", "dismiss"],
+              createdAt: null,
+            },
+          ]}
           formActionFor={(id) => `/p/demo-project/decisions/${id}`}
           labels={{ heading: "Decisions", emptyLabel: "Nothing pending", optionLabel: (o) => o }}
           disabledTitle={COPY.readOnly.reason.showcase}
@@ -371,7 +426,9 @@ describe("R7RO.1 — request recorder: no non-GET is ever issued from a withheld
     );
 
     // every census control a user could reach — disabled or inside the disabled fieldset.
-    const controls = Array.from(container.querySelectorAll("button")).filter((b) => b.closest("fieldset[disabled]") || b.disabled);
+    const controls = Array.from(container.querySelectorAll("button")).filter(
+      (b) => b.closest("fieldset[disabled]") || b.disabled,
+    );
     expect(controls.length).toBeGreaterThan(0);
     for (const b of controls) {
       await user.click(b as HTMLElement);
@@ -396,14 +453,46 @@ describe("R7RO.1 — request recorder: no non-GET is ever issued from a withheld
 
 describe("R7RO.1 — the source-level census pins every remaining write affordance", () => {
   const pins: { file: string; pattern: RegExp; affordance: string }[] = [
-    { file: "src/spa/surfaces/run-report.tsx", pattern: /roTip == null \? \(\s*<form[^]*data-refund-form/, affordance: "run-report refund form" },
-    { file: "src/spa/surfaces/dossier.tsx", pattern: /readOnly: roTip|readOnlyTitle=\{roTip\}/, affordance: "dossier surfaces + timeline gate card" },
-    { file: "src/spa/surfaces/editor.tsx", pattern: /commentFormAction/, affordance: "hunk-comment forms (kept only under run_lock)" },
-    { file: "src/spa/surfaces/editor.tsx", pattern: /readOnlyReason: ro\.reason/, affordance: "Page/rail doc-write family" },
-    { file: "src/chat-pane.tsx", pattern: /readOnlyTitle/, affordance: "chat composer + pane writes" },
-    { file: "src/page-chrome.tsx", pattern: /withhold = props\.readOnly === "demo" \|\| props\.readOnly === "showcase"/, affordance: "overview rename/actions/approvals/voice/gates/decisions" },
-    { file: "src/spa/page-mount.tsx", pattern: /if \(wire == null\) return;/, affordance: "⌘S restore-point mint without a wire" },
-    { file: "src/spa/routes/_authenticated/p.$project.index.tsx", pattern: /readOnlyProjectFor\(context\.boot, null, params\.project\)/, affordance: "the loader's concurrent handoff POST (REQ-SPEED-1)" },
+    {
+      file: "src/spa/surfaces/run-report.tsx",
+      pattern: /roTip == null \? \(\s*<form[^]*data-refund-form/,
+      affordance: "run-report refund form",
+    },
+    {
+      file: "src/spa/surfaces/dossier.tsx",
+      pattern: /readOnly: roTip|readOnlyTitle=\{roTip\}/,
+      affordance: "dossier surfaces + timeline gate card",
+    },
+    {
+      file: "src/spa/surfaces/editor.tsx",
+      pattern: /commentFormAction/,
+      affordance: "hunk-comment forms (kept only under run_lock)",
+    },
+    {
+      file: "src/spa/surfaces/editor.tsx",
+      pattern: /readOnlyReason: ro\.reason/,
+      affordance: "Page/rail doc-write family",
+    },
+    {
+      file: "src/chat-pane.tsx",
+      pattern: /readOnlyTitle/,
+      affordance: "chat composer + pane writes",
+    },
+    {
+      file: "src/page-chrome.tsx",
+      pattern: /withhold = props\.readOnly === "demo" \|\| props\.readOnly === "showcase"/,
+      affordance: "overview rename/actions/approvals/voice/gates/decisions",
+    },
+    {
+      file: "src/spa/page-mount.tsx",
+      pattern: /if \(wire == null\) return;/,
+      affordance: "⌘S restore-point mint without a wire",
+    },
+    {
+      file: "src/spa/routes/_authenticated/p.$project.index.tsx",
+      pattern: /readOnlyProjectFor\(context\.boot, null, params\.project\)/,
+      affordance: "the loader's concurrent handoff POST (REQ-SPEED-1)",
+    },
   ];
   const root = join(process.cwd(), "apps/web");
   for (const { file, pattern, affordance } of pins) {

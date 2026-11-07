@@ -1,4 +1,12 @@
-import { File, FileText, GitCommitHorizontal, Image as ImageIcon, ListTree, Mic, Paperclip } from "lucide-react";
+import {
+  File,
+  FileText,
+  GitCommitHorizontal,
+  Image as ImageIcon,
+  ListTree,
+  Mic,
+  Paperclip,
+} from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import { Badge } from "./primitives/index.js";
 
@@ -106,7 +114,15 @@ function KindIcon({ kind }: { kind: string }): ReactNode {
 
 let tabbableSeen = false;
 
-function Row({ row, hrefs, labels }: { row: FileRowView; hrefs: FilesPaneProps["hrefs"]; labels: FilesPaneLabels }): ReactNode {
+function Row({
+  row,
+  hrefs,
+  labels,
+}: {
+  row: FileRowView;
+  hrefs: FilesPaneProps["hrefs"];
+  labels: FilesPaneLabels;
+}): ReactNode {
   const href = row.draftRef
     ? hrefs.draft(row.draftRef.n)
     : row.figureId != null && hrefs.figure != null
@@ -123,9 +139,16 @@ function Row({ row, hrefs, labels }: { row: FileRowView; hrefs: FilesPaneProps["
       data-level={row.level}
       data-lock={row.lock}
       {...(row.readOnly ? { "data-readonly": "1" } : {})}
-      style={{ padding: "2px 0", fontSize: "12.5px" }}
+      className="ui-t-p20 ui-d-fs"
     >
-      <a href={href} role="treeitem" tabIndex={tabbable ? 0 : -1} data-file-link style={{ color: "inherit", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+      <a
+        href={href}
+        role="treeitem"
+        tabIndex={tabbable ? 0 : -1}
+        data-file-link
+        className="ui-d-inh ui-d-g6"
+        style={{ display: "inline-flex", alignItems: "center" }}
+      >
         <KindIcon kind={row.kind} />
         <span>{row.label}</span>
         {/* B10 — the frozen/working Badge replaces the lock glyph on every row. */}
@@ -143,10 +166,11 @@ function Row({ row, hrefs, labels }: { row: FileRowView; hrefs: FilesPaneProps["
       <span
         data-provenance
         {...(row.provenance.runId ? { "data-run": row.provenance.runId } : {})}
-        style={{ display: "block", fontSize: "10.5px", paddingLeft: "20px", ...muted }}
+        className="ui-d-s ui-t-pl20 ui-t-pm"
+        style={{ display: "block" }}
       >
         {row.provenance.runId ? (
-          <a href={hrefs.run(row.provenance.runId)} style={{ color: "inherit" }} tabIndex={-1}>
+          <a href={hrefs.run(row.provenance.runId)} className="ui-d-inh" tabIndex={-1}>
             {labels.provenanceLabel(row.provenance)}
           </a>
         ) : (
@@ -154,7 +178,12 @@ function Row({ row, hrefs, labels }: { row: FileRowView; hrefs: FilesPaneProps["
         )}
       </span>
       {row.freshness ? (
-        <span data-freshness data-stale={row.freshness.stale ? "1" : "0"} style={{ display: "block", fontSize: "10.5px", paddingLeft: "20px", ...muted }}>
+        <span
+          data-freshness
+          data-stale={row.freshness.stale ? "1" : "0"}
+          className="ui-d-s ui-t-pl20 ui-t-pm"
+          style={{ display: "block" }}
+        >
           {labels.freshnessLabel(row.freshness.subjectDraftN, row.freshness.stale)}
         </span>
       ) : null}
@@ -171,14 +200,20 @@ export function FilesPane({ sections, hrefs, labels }: FilesPaneProps): ReactNod
   const anyRows = sections.some((s) => s.rows.length + s.advancedRows.length > 0);
   tabbableSeen = false; // reset the roving tab stop each render — first treeitem is tabbable
   return (
-    <nav data-files-pane data-project-tree aria-label={labels.heading} style={{ fontSize: "12.5px" }}>
-      {!anyRows ? <p style={{ ...muted, fontSize: 12 }}>{labels.empty}</p> : null}
+    <nav data-files-pane data-project-tree aria-label={labels.heading} className="ui-d-fs">
+      {!anyRows ? <p className="ui-t-pm ui-d-fs">{labels.empty}</p> : null}
       <div role="tree" aria-label={labels.heading} data-files-tree>
         {sections.map((s) => {
-          if (s.rows.length === 0 && s.advancedRows.length === 0 && s.sealedCount === 0) return null;
+          if (s.rows.length === 0 && s.advancedRows.length === 0 && s.sealedCount === 0)
+            return null;
           const advanced = s.key === "advanced";
           const body = (
-            <ul role="group" aria-label={labels.sectionLabel(s.key)} style={{ listStyle: "none", margin: 0, padding: 0 }}>
+            <ul
+              role="group"
+              aria-label={labels.sectionLabel(s.key)}
+              className="ui-c2-m0 ui-d-p0"
+              style={{ listStyle: "none" }}
+            >
               {s.rows.map((r) => (
                 <Row key={r.artifactId} row={r} hrefs={hrefs} labels={labels} />
               ))}
@@ -189,10 +224,18 @@ export function FilesPane({ sections, hrefs, labels }: FilesPaneProps): ReactNod
               {s.advancedRows.length > 0 ? (
                 // I kinds — links only, behind the section's Advanced disclosure (REQ-VIS-3).
                 <div data-tier="advanced" data-files-advanced>
-                  <div style={{ fontSize: "10.5px", textTransform: "uppercase", letterSpacing: "0.05em", padding: "4px 0 0", ...muted }}>
+                  <div
+                    className="ui-d-s ui-t-ls5 ui-t-p400 ui-t-pm"
+                    style={{ textTransform: "uppercase" }}
+                  >
                     {labels.advancedDisclosure}
                   </div>
-                  <ul role="group" aria-label={labels.advancedDisclosure} style={{ listStyle: "none", margin: 0, padding: 0 }}>
+                  <ul
+                    role="group"
+                    aria-label={labels.advancedDisclosure}
+                    className="ui-c2-m0 ui-d-p0"
+                    style={{ listStyle: "none" }}
+                  >
                     {s.advancedRows.map((r) => (
                       <Row key={r.artifactId} row={r} hrefs={hrefs} labels={labels} />
                     ))}
@@ -201,19 +244,20 @@ export function FilesPane({ sections, hrefs, labels }: FilesPaneProps): ReactNod
               ) : null}
               {s.sealedCount > 0 ? (
                 // §5.13's hidden kinds — "sealed as counts" (⛔), never a row or a route.
-                <div data-sealed-count={s.sealedCount} style={{ fontSize: "10.5px", padding: "2px 0", ...muted }}>
+                <div data-sealed-count={s.sealedCount} className="ui-d-s ui-t-p20 ui-t-pm">
                   ⛔ {labels.sealedFmt(s.sealedCount)}
                 </div>
               ) : null}
             </>
           );
           return (
-            <section key={s.key} data-files-section={s.key} style={{ marginBottom: "10px" }}>
+            <section key={s.key} data-files-section={s.key} className="ui-d-mb10">
               {advanced ? (
                 // The Advanced section itself is a disclosure control (§5.13: "Advanced (disclosure)").
                 <details data-tier="advanced" data-files-advanced-section>
                   <summary
-                    style={{ cursor: "pointer", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.06em", ...muted }}
+                    className="ui-d-s ui-t-ls6 ui-t-pm"
+                    style={{ cursor: "pointer", textTransform: "uppercase" }}
                   >
                     {labels.sectionLabel(s.key)}
                   </summary>
@@ -223,7 +267,8 @@ export function FilesPane({ sections, hrefs, labels }: FilesPaneProps): ReactNod
               ) : (
                 <>
                   <div
-                    style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.06em", padding: "4px 0", ...muted }}
+                    className="ui-d-s ui-t-ls6 ui-d-p2 ui-t-pm"
+                    style={{ textTransform: "uppercase" }}
                   >
                     {labels.sectionLabel(s.key)}
                   </div>

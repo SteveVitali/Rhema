@@ -96,7 +96,13 @@ describe("SPA copy containment — no ad-hoc user-facing strings (REQ-SAFE-10)",
       const src = stripComments(readFileSync(file, "utf8"));
       for (const m of src.matchAll(copyRefRe)) {
         const path = m[1].slice(1);
-        if (!leaves.has(path)) missing.push(`${file.slice(SPA_DIR.length + 1)}: COPY.${path}`);
+        // A contiguous String-method chain (`COPY.x.fmt.replace("{n}", …)`) reads as one more
+        // path segment to the regex; strip a single trailing segment and re-check so the leaf
+        // itself — `editor.forkToastFmt` — is what's verified. A genuinely missing leaf still
+        // fails: `COPY.x.nonexistent.replace` strips to `x.nonexistent`, also absent.
+        if (!leaves.has(path) && !leaves.has(path.split(".").slice(0, -1).join("."))) {
+          missing.push(`${file.slice(SPA_DIR.length + 1)}: COPY.${path}`);
+        }
       }
     }
     expect(missing).toEqual([]);

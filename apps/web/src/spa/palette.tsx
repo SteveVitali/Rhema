@@ -25,6 +25,7 @@ import { buildPalette, paletteModel, type PaletteData } from "@rhema/ide";
 import type { WorkspaceSearchResult, WorkspaceSearchTwinResponse } from "@rhema/contracts";
 import { COPY } from "../copy.js";
 import { bffFetch } from "./bff.js";
+import { Button } from "@rhema/ui";
 
 export const PALETTE_OPEN_EVENT = "rhema:palette-open";
 export const APP_THEME_EVENT = "rhema:app-theme";
@@ -60,9 +61,21 @@ function workspaceGroups(): CommandGroupView[] {
       label: w.label,
       keywords: ["workspace", "go to"],
     })),
-    { value: "theme:dark", label: `${COPY.appShell.themeLabel} · ${COPY.appShellThemes.dark}`, keywords: ["theme", "dark"] },
-    { value: "theme:light", label: `${COPY.appShell.themeLabel} · ${COPY.appShellThemes.light}`, keywords: ["theme", "light"] },
-    { value: "theme:auto", label: `${COPY.appShell.themeLabel} · ${COPY.appShellThemes.auto}`, keywords: ["theme", "auto", "system"] },
+    {
+      value: "theme:dark",
+      label: `${COPY.appShell.themeLabel} · ${COPY.appShellThemes.dark}`,
+      keywords: ["theme", "dark"],
+    },
+    {
+      value: "theme:light",
+      label: `${COPY.appShell.themeLabel} · ${COPY.appShellThemes.light}`,
+      keywords: ["theme", "light"],
+    },
+    {
+      value: "theme:auto",
+      label: `${COPY.appShell.themeLabel} · ${COPY.appShellThemes.auto}`,
+      keywords: ["theme", "auto", "system"],
+    },
   ];
   return [{ heading: COPY.palette.groupWorkspace, items }];
 }
@@ -205,7 +218,9 @@ export function GlobalPalette(props: {
       if (value.startsWith("theme:")) {
         // the shell's own theme seam — identical to its account-menu item (the palette issues
         // no write; the shell applies + persists through its existing POST).
-        window.dispatchEvent(new CustomEvent(APP_THEME_EVENT, { detail: { pref: value.slice(6) } }));
+        window.dispatchEvent(
+          new CustomEvent(APP_THEME_EVENT, { detail: { pref: value.slice(6) } }),
+        );
         onClose();
         return;
       }
@@ -260,7 +275,10 @@ export function GlobalPalette(props: {
         {commandRow != null ? (
           <div className="app-palette-cmd" data-palette-cmd>
             <div className="app-palette-chips">
-              {(commandRow.ok && commandRow.chips.length === 0 ? [commandRow.raw] : [...commandRow.chips]).map((chip) => (
+              {(commandRow.ok && commandRow.chips.length === 0
+                ? [commandRow.raw]
+                : [...commandRow.chips]
+              ).map((chip) => (
                 <span key={chip} className="app-palette-chip">
                   {chip}
                 </span>
@@ -284,14 +302,15 @@ export function GlobalPalette(props: {
               onSelect={onSelect}
             />
             {scoped ? (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 className="app-palette-widen"
                 data-palette-search-all
                 onClick={() => setScopeAll(true)}
               >
                 {COPY.palette.searchAllProjects}
-              </button>
+              </Button>
             ) : null}
           </div>
         )}

@@ -29,7 +29,7 @@
 import { useRouter } from "@tanstack/react-router";
 import { useMemo, useState, type ReactNode } from "react";
 import type { TimelineRun } from "@rhema/findings-core";
-import { RunReport } from "@rhema/ui";
+import { RunReport, Button } from "@rhema/ui";
 import { COPY } from "../../copy.js";
 import { chatPanelLive as chatPanel } from "../chat-live.js";
 import { reportLabels, runCardLabels, timelineHrefs, timelineLabels } from "../../dossier-view.js";
@@ -126,7 +126,7 @@ export function RunReportSurface({ data, compact }: RunReportSurfaceProps): Reac
         title={COPY.report.heading}
         crumbs={[{ label: runReport.slug, href: `/p/${slug}` }, { label: COPY.report.heading }]}
       />
-      <div style={{ margin: "16px 0" }}>
+      <div className="ui-t-m40">
         <RunReport
           view={runReport.report.report}
           {...(runReport.report.advancedView ? { advanced: runReport.report.advancedView } : {})}
@@ -138,47 +138,68 @@ export function RunReportSurface({ data, compact }: RunReportSurfaceProps): Reac
           rendered ONLY while the api's `refundWindow` block is present — the flag admitting
           nothing ⇒ no control at all. The form posts through the leaf's JSON leg. */}
       {runReport.report.refundWindow?.state === "eligible" && roTip == null ? (
-        <form method="post" action={`/p/${runReport.slug}/r/${runReport.runId}/refund`} data-refund-form="true" style={{ margin: "0 0 12px" }}>
-          <button
+        <form
+          method="post"
+          action={`/p/${runReport.slug}/r/${runReport.runId}/refund`}
+          data-refund-form="true"
+          className="ui-t-m03"
+        >
+          <Button
             type="submit"
             data-refund-cta="true"
-            style={{ fontSize: "12px", padding: "4px 10px", borderRadius: "4px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", color: "var(--shell-fg)", cursor: "pointer" }}
+            className="ui-d-fs ui-t-p410 ui-t-r1 ui-rs-box ui-t-fg"
+            style={{ border: "1px solid var(--shell-border)", cursor: "pointer" }}
           >
-            {fmt(COPY.report.refundCtaFmt, { n: runReport.report.refundWindow.credits.toLocaleString("en-US") })}
-          </button>
-          <span style={{ fontSize: "12px", color: "var(--shell-fg-faint)", marginLeft: "8px" }}>{COPY.report.refundNote}</span>
+            {fmt(COPY.report.refundCtaFmt, {
+              n: runReport.report.refundWindow.credits.toLocaleString("en-US"),
+            })}
+          </Button>
+          <span className="ui-d-fs ui-t-fnt ui-t-ml8">{COPY.report.refundNote}</span>
         </form>
       ) : null}
       {runReport.report.refundWindow?.state === "eligible" && roTip != null ? (
         // R7RO.1 — the withheld refund control (disabled + reason tooltip, before any request).
-        <button type="button" data-refund-cta="true" disabled title={roTip} style={{ margin: "0 0 12px" }}>
-          {fmt(COPY.report.refundCtaFmt, { n: runReport.report.refundWindow.credits.toLocaleString("en-US") })}
-        </button>
+        <Button
+          type="button"
+          variant="ghost"
+          data-refund-cta="true"
+          disabled
+          title={roTip}
+          className="ui-t-m03"
+        >
+          {fmt(COPY.report.refundCtaFmt, {
+            n: runReport.report.refundWindow.credits.toLocaleString("en-US"),
+          })}
+        </Button>
       ) : null}
       {runReport.report.refundWindow?.state === "refunded" ? (
-        <p data-refund-state="refunded" style={{ fontSize: "12px", color: "var(--state-ready)", margin: "0 0 12px" }}>
-          {fmt(COPY.report.refundedFmt, { n: runReport.report.refundWindow.credits.toLocaleString("en-US") })}
+        <p data-refund-state="refunded" className="ui-d-fs ui-set-t--ok ui-t-m03">
+          {fmt(COPY.report.refundedFmt, {
+            n: runReport.report.refundWindow.credits.toLocaleString("en-US"),
+          })}
         </p>
       ) : null}
       {runReport.report.refundWindow?.state === "pending_review" ? (
-        <p data-refund-state="pending_review" style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "0 0 12px" }}>
-          {fmt(COPY.report.refundReviewFmt, { n: runReport.report.refundWindow.credits.toLocaleString("en-US") })}
+        <p data-refund-state="pending_review" className="ui-d-fs ui-t-mut ui-t-m03">
+          {fmt(COPY.report.refundReviewFmt, {
+            n: runReport.report.refundWindow.credits.toLocaleString("en-US"),
+          })}
         </p>
       ) : null}
       {runReport.report.refundWindow?.state === "denied" ? (
-        <p data-refund-state="denied" style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "0 0 12px" }}>
+        <p data-refund-state="denied" className="ui-d-fs ui-t-mut ui-t-m03">
           {COPY.report.refundDenied}
         </p>
       ) : null}
       {/* REQ-BILL-19 (P1.16) — the report links its frozen rate-table version to the published tables. */}
       {runReport.report.report.rateTableVersion != null ? (
-        <p data-rate-table-link="true" style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "0 0 12px" }}>
+        <p data-rate-table-link="true" className="ui-d-fs ui-t-fnt ui-t-m03">
           {fmt(COPY.report.rateTableFmt, { v: String(runReport.report.report.rateTableVersion) })}{" "}
           <a href="/pricing/rates">{COPY.report.rateTableLink}</a>
         </p>
       ) : null}
       {mutError != null ? (
-        <p role="alert" style={{ fontSize: "12px", color: "var(--sev-major)", margin: "0 0 12px" }}>
+        <p role="alert" className="ui-d-fs ui-set-t--warn ui-t-m03">
           {mutError}
         </p>
       ) : null}
@@ -186,10 +207,10 @@ export function RunReportSurface({ data, compact }: RunReportSurfaceProps): Reac
           the Page (the SSR IdeFrame's `data-phone-chat` section verbatim). */}
       {compact === true && data.ide.chat != null ? (
         <section
-          className="ide-phone-only"
+          className="ide-phone-only ui-set-sec ui-tabs-content"
           data-phone-chat="true"
           aria-label={COPY.ide.panel.tabs.chat}
-          style={{ marginTop: "24px", borderTop: "1px solid var(--paper-rule)", paddingTop: "12px" }}
+          style={{ borderTop: "1px solid var(--paper-rule)" }}
         >
           {chatPanel(data.ide.chat, slug, data.ide, true)}
         </section>

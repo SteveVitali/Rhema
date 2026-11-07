@@ -18,20 +18,10 @@ export function TrustChip({ chip }: { chip: TrustChipModel }): ReactNode {
       data-denied={chip.facts.deniedAttempts}
       data-second-read-scoped={chip.facts.secondReadScoped ? "true" : "false"}
       role="note"
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "8px",
-        padding: "10px 14px",
-        borderRadius: "8px",
-        border: "1px solid var(--state-ready)",
-        background: "var(--shell-surface)",
-        color: "var(--shell-fg)",
-        fontSize: "13px",
-        lineHeight: 1.5,
-      }}
+      className="ui-c2-g2 ui-t-p1014 ui-t-r2 ui-d-rc ui-t-fg ui-d-fd ui-t-lh5"
+      style={{ display: "flex", alignItems: "center", border: "1px solid var(--state-ready)" }}
     >
-      <span aria-hidden="true" style={{ color: "var(--state-ready)", flexShrink: 0 }}>
+      <span aria-hidden="true" className="ui-set-t--ok" style={{ flexShrink: 0 }}>
         ✓
       </span>
       <span>{chip.text}</span>
@@ -41,13 +31,7 @@ export function TrustChip({ chip }: { chip: TrustChipModel }): ReactNode {
 
 /** Obligation states (§11.7). `mooted` renders as discharged-pending until confirmed at the next triage. */
 export type ObligationStateKind =
-  | "open"
-  | "addressed"
-  | "discharged"
-  | "rebutted"
-  | "deferred"
-  | "mooted"
-  | "reopened";
+  "open" | "addressed" | "discharged" | "rebutted" | "deferred" | "mooted" | "reopened";
 
 const OBLIGATION_COLOR: Record<ObligationStateKind, string> = {
   open: "var(--state-needs-you)",
@@ -60,7 +44,13 @@ const OBLIGATION_COLOR: Record<ObligationStateKind, string> = {
 };
 
 /** A single obligation-state chip on a blocking/major finding card (REQ-OBJ-6). */
-export function ObligationChip({ state, label }: { state: ObligationStateKind; label: string }): ReactNode {
+export function ObligationChip({
+  state,
+  label,
+}: {
+  state: ObligationStateKind;
+  label: string;
+}): ReactNode {
   const style: CSSProperties = {
     display: "inline-flex",
     alignItems: "center",
@@ -75,7 +65,11 @@ export function ObligationChip({ state, label }: { state: ObligationStateKind; l
   };
   return (
     <span data-obligation-state={state} style={style}>
-      <span aria-hidden="true" style={{ width: "7px", height: "7px", borderRadius: "999px", background: OBLIGATION_COLOR[state] }} />
+      <span
+        aria-hidden="true"
+        className="ui-t-s7 ui-t-rp ui-d-sev"
+        style={{ "--d-sev": OBLIGATION_COLOR[state] } as CSSProperties}
+      />
       {label}
     </span>
   );
@@ -106,16 +100,11 @@ export function BalanceChip({
       data-spendable={spendableCredits}
       data-held={heldCredits ?? 0}
       title={heldCredits != null && heldCredits > 0 ? heldTitle : undefined}
+      className="ui-c2-g1 ui-t-p210 ui-t-rp ui-rs-box ui-t-fg ui-d-fs"
       style={{
         display: "inline-flex",
         alignItems: "baseline",
-        gap: "4px",
-        padding: "2px 10px",
-        borderRadius: "999px",
         border: "1px solid var(--shell-border)",
-        background: "var(--shell-raised)",
-        color: "var(--shell-fg)",
-        fontSize: "12px",
         fontVariantNumeric: "tabular-nums",
         textDecoration: "none",
         whiteSpace: "nowrap",
@@ -142,16 +131,11 @@ export function VersionObligationChip({
       data-version-obligations="true"
       data-open={open}
       data-addressed={addressed}
+      className="ui-t-g5 ui-t-p210 ui-t-rp ui-rs-box ui-t-fg ui-d-fs"
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: "5px",
-        padding: "2px 10px",
-        borderRadius: "999px",
         border: "1px solid var(--shell-border)",
-        background: "var(--shell-raised)",
-        color: "var(--shell-fg)",
-        fontSize: "12px",
         fontVariantNumeric: "tabular-nums",
       }}
     >
