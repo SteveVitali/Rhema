@@ -1,5 +1,5 @@
 import { Hono, type Context } from "hono";
-import { sha256Hex, type ContentStore } from "@rhema/mirror";
+import { freezeDraft, sha256Hex, type ContentStore } from "@rhema/mirror";
 import {
   presignQuarantinePut,
   parseQuarantineKey,
@@ -46,15 +46,12 @@ export interface CreateImportedDraftDeps {
   readonly db: SqlClient;
   readonly contentStore: ContentStore;
   readonly ids: () => string;
-}
-
-export interface CreatedDraft {
-  readonly draftId: string;
-  readonly versionId: string;
-  readonly artifactId: string;
-  readonly n: number;
-  readonly wordCount: number;
-  readonly contentSha256: string;
+  /**
+   * R7HOME.2a (REQ-DATA-14) — the overwrite/freeze+insert rule runs in ONE tenant transaction.
+   * When unset the writes fall back to sequential `db` calls (the born-working shape is still
+   * correct; the single-tx guarantee needs the runner and every production caller supplies it).
+   */
+  readonly txRunner?: { run<T>(workspaceId: string, fn: (tx: SqlClient) => Promise<T>): Promise<T> };
 }
 
 /**
@@ -97,10 +94,88 @@ export async function writeMarkdownArtifact(
 }
 
 /**
- * Create an imported draft from a ConversionResult: store the normalized markdown bytes (content-addressed),
- * insert the immutable `artifact_versions` row, and create the `drafts` v1 (`origin=human_upload`, frozen to
- * its imported version). The stored markdown is already canonical, so a re-normalize is a no-op (REQ-DATA-9d).
- * `declaredN` (REQ-PROD-8, P1.04) lets a project start at v3 — it wins when ≥ the next free ordinal.
+ * Which REQ-DATA-14 arm the import took (R7HOME.2a): `'created'` — no working head stood (the import is
+ * the project's head); `'overwrote'` — the working head was EMPTY and the import replaced it in place
+ * (same draft row, same `n`); `'superseded'` — the working head had content and froze as vN while the
+ * import landed as working v(N+1). The web's toast names the arm.
+ */
+export type ImportOutcome = "created" | "overwrote" | "superseded";
+
+export interface CreatedDraft {
+  readonly draftId: string;
+  readonly versionId: string;
+  readonly artifactId: string;
+  readonly n: number;
+  readonly wordCount: number;
+  readonly contentSha256: string;
+  readonly outcome: ImportOutcome;
+  /** `'superseded'` only — the frozen head's version number (the toast's "vN was frozen"). */
+  readonly supersededN?: number;
+}
+
+/** The working head an import consults: its own row plus the live-doc emptiness signals. */
+interface WorkingHead {
+  id: string;
+  n: number;
+  origin: string;
+  promoted_version_id: string | null;
+  live_doc_id: string | null;
+  /** `octet_length(live_docs.y_state)` — 0/NULL = no CRDT content has ever landed. */
+  y_bytes: number;
+  /** `live_docs.md_sha256` — the last materialized markdown sha, NULL when never materialized. */
+  md_sha256: string | null;
+}
+
+/**
+ * R7HOME.2a (S-4/REQ-HOME-4, REQ-DATA-14) — the owned definition of an EMPTY working head:
+ * no promoted version AND no committed doc content — `live_doc_id` absent, or the doc carries
+ * neither CRDT bytes nor a materialization (`octet_length(y_state)=0 AND md_sha256 IS NULL`).
+ * A head with ANY committed or typed content is non-empty and freezes; the import never destroys it.
+ */
+function isEmptyWorkingHead(h: WorkingHead): boolean {
+  if (h.promoted_version_id != null) return false;
+  if (h.live_doc_id == null) return true;
+  return h.y_bytes === 0 && h.md_sha256 == null;
+}
+
+/** The head has content but no promoted version — mint one from the materialized markdown so the
+ * freeze's `promoted_version_id` check holds (the bytes are already content-addressed in the store). */
+async function mintVersionFromMaterialization(
+  deps: CreateImportedDraftDeps,
+  tx: SqlClient,
+  head: WorkingHead,
+  args: { projectId: string; workspaceId: string; actor: ImportActor },
+): Promise<string | null> {
+  if (head.md_sha256 == null) return null;
+  const bytes = await deps.contentStore.get(head.md_sha256);
+  if (!bytes) return null;
+  const markdown = Buffer.from(bytes).toString("utf8");
+  const { versionId } = await writeMarkdownArtifact(
+    { db: tx, contentStore: deps.contentStore, ids: deps.ids },
+    {
+      projectId: args.projectId,
+      workspaceId: args.workspaceId,
+      actor: args.actor,
+      markdown,
+      wordCount: markdown.split(/\s+/).filter(Boolean).length,
+      kind: "draft",
+      mirrorPath: `drafts/v${head.n}.md`,
+    },
+  );
+  return versionId;
+}
+
+/**
+ * Create an imported draft from a ConversionResult (R7HOME.2a — S-4 conformance): the import lands as
+ * the project's WORKING head with its imported version promoted (the live doc lazy-seeds from it —
+ * collab's `loadPersistedState` seeds `y_state` from `promoted_version_id` on first connect, so the
+ * first keystroke edits in place, never forks). The REQ-DATA-14 rule runs in ONE transaction under
+ * `one_working_head_per_project`:
+ *   - an EMPTY working head is overwritten in place (same row, same `n`);
+ *   - a non-empty head freezes as vN (`superseded_by_import`, origin unchanged) and the import is
+ *     created as working v(N+1);
+ *   - no head → the import is the head at the next ordinal.
+ * `declaredN` (REQ-PROD-8) still wins when ≥ the next free ordinal (a project may start at v3).
  */
 export async function createImportedDraft(
   deps: CreateImportedDraftDeps,
@@ -109,48 +184,144 @@ export async function createImportedDraft(
     readonly workspaceId: string;
     readonly actor: ImportActor;
     readonly result: ConversionResult;
-    /** the declared version label (a project may start at v3); never renumbers existing drafts. */
     readonly declaredN?: number;
   },
 ): Promise<CreatedDraft> {
-  const { artifactId, versionId, contentSha256 } = await writeMarkdownArtifact(deps, {
-    projectId: args.projectId,
-    workspaceId: args.workspaceId,
-    actor: args.actor,
-    markdown: args.result.markdown,
-    wordCount: args.result.counts.words,
-    kind: "draft",
-    mirrorPath: "drafts/pending.md",
-  });
-  const wordCount = args.result.counts.words;
-  const draftId = deps.ids();
+  const body = async (tx: SqlClient): Promise<CreatedDraft> => {
+    const wordCount = args.result.counts.words;
+    // Serialize concurrent imports/saves on this project — the index is the backstop, the row lock
+    // is the orderer (two racing imports read the SAME head state and the second sees the first's
+    // committed write inside one tx boundary).
+    await tx.query(`select id from projects where id = $1 for update`, [args.projectId]);
+    const head = (
+      await tx.query(
+        `select d.id, d.n, d.origin, d.promoted_version_id, d.live_doc_id,
+                coalesce(octet_length(ld.y_state), 0) as y_bytes, ld.md_sha256
+           from drafts d left join live_docs ld on ld.id = d.live_doc_id
+          where d.project_id = $1 and d.state = 'working'
+          order by d.n desc limit 1 for update of d`,
+        [args.projectId],
+      )
+    ).rows[0] as WorkingHead | undefined;
 
-  // Compute the next draft ordinal and insert; on a concurrent (project_id, n) collision, recompute + retry.
-  let n = 0;
-  for (let attempt = 0; ; attempt++) {
-    const nRes = await deps.db.query(
-      `select coalesce(max(n), 0) + 1 as n from drafts where project_id = $1`,
-      [args.projectId],
+    // The immutable imported artifact lands first (content-addressed; a retried call dedupes on sha).
+    // The pending mirror path is call-unique — two racing imports can both stage their artifact
+    // before the rename (the (project_id, mirror_path) unique index must not eat the loser's write).
+    const { artifactId, versionId, contentSha256 } = await writeMarkdownArtifact(
+      { db: tx, contentStore: deps.contentStore, ids: deps.ids },
+      {
+        projectId: args.projectId,
+        workspaceId: args.workspaceId,
+        actor: args.actor,
+        markdown: args.result.markdown,
+        wordCount,
+        kind: "draft",
+        mirrorPath: `drafts/pending-${deps.ids()}.md`,
+      },
     );
-    const next = Number((nRes.rows[0] as { n: number | string }).n);
-    // REQ-PROD-8 — the declared label wins when it does not collide (importable version labels).
-    n = args.declaredN != null && args.declaredN >= next ? args.declaredN : next;
-    try {
-      await deps.db.query(
-        `insert into drafts (id, project_id, n, origin, state, promoted_version_id)
-           values ($1,$2,$3,'human_upload','frozen',$4)`,
-        [draftId, args.projectId, n, versionId],
-      );
-      break;
-    } catch (e) {
-      const msg = String((e as Error)?.message ?? e);
-      if (attempt < 4 && /unique|duplicate/i.test(msg)) continue; // lost the (project_id, n) race — retry
-      throw e;
-    }
-  }
-  await deps.db.query(`update artifacts set mirror_path = $2 where id = $1`, [artifactId, `drafts/v${n}.md`]);
 
-  return { draftId, versionId, artifactId, n, wordCount, contentSha256 };
+    if (head && isEmptyWorkingHead(head)) {
+      // OVERWRITE — the empty head keeps its row and `n`; the import's content + editable origin are
+      // stamped onto it. `origin` becomes human_upload so the head is the person's editable surface
+      // (an `agent`/seed working head is not a Page-editable origin).
+      await tx.query(
+        `update drafts set origin = 'human_upload', promoted_version_id = $2, live_doc_id = null
+           where id = $1`,
+        [head.id, versionId],
+      );
+      await tx.query(`update artifacts set mirror_path = $2 where id = $1`, [
+        artifactId,
+        `drafts/v${head.n}.md`,
+      ]);
+      return {
+        draftId: head.id,
+        versionId,
+        artifactId,
+        n: head.n,
+        wordCount,
+        contentSha256,
+        outcome: "overwrote",
+      };
+    }
+
+    let supersededN: number | undefined;
+    if (head) {
+      // SUPERSEDE — freeze the head as vN first (its origin unchanged, its cause recorded), then the
+      // import lands as the sole working v(N+1). A head with content but no promoted version mints
+      // one from its materialization; pure typed-never-materialized state refuses honestly.
+      let freezeVersionId = head.promoted_version_id;
+      if (freezeVersionId == null) {
+        freezeVersionId = await mintVersionFromMaterialization(deps, tx, head, {
+          projectId: args.projectId,
+          workspaceId: args.workspaceId,
+          actor: args.actor,
+        });
+      }
+      if (freezeVersionId == null) {
+        throw new ImportHeadUncommittedError(head.id);
+      }
+      await freezeDraft(tx, {
+        draftId: head.id,
+        promotedVersionId: freezeVersionId,
+        cause: "superseded_by_import",
+        frozenBy: { cause: "superseded_by_import", kind: "user", userId: args.actor.userId },
+        at: new Date(),
+      });
+      supersededN = head.n;
+    }
+
+    // Compute the next draft ordinal and insert the import as the WORKING head; on a concurrent
+    // (project_id, n) collision, recompute + retry (the partial unique index forbids two working
+    // heads — a loser rolls the whole tx back rather than coexisting).
+    let n = 0;
+    const draftId = deps.ids();
+    for (let attempt = 0; ; attempt++) {
+      const nRes = await tx.query(
+        `select coalesce(max(n), 0) + 1 as n from drafts where project_id = $1`,
+        [args.projectId],
+      );
+      const next = Number((nRes.rows[0] as { n: number | string }).n);
+      n = args.declaredN != null && args.declaredN >= next ? args.declaredN : next;
+      try {
+        await tx.query(
+          `insert into drafts (id, project_id, n, origin, state, promoted_version_id)
+             values ($1,$2,$3,'human_upload','working',$4)`,
+          [draftId, args.projectId, n, versionId],
+        );
+        break;
+      } catch (e) {
+        const msg = String((e as Error)?.message ?? e);
+        if (attempt < 4 && /unique|duplicate/i.test(msg)) continue;
+        throw e;
+      }
+    }
+    await tx.query(`update artifacts set mirror_path = $2 where id = $1`, [
+      artifactId,
+      `drafts/v${n}.md`,
+    ]);
+    return {
+      draftId,
+      versionId,
+      artifactId,
+      n,
+      wordCount,
+      contentSha256,
+      outcome: supersededN != null ? "superseded" : "created",
+      ...(supersededN != null ? { supersededN } : {}),
+    };
+  };
+
+  if (deps.txRunner) return deps.txRunner.run(args.workspaceId, body);
+  return body(deps.db);
+}
+
+/** A working head with typed-but-never-materialized content cannot freeze honestly (no version and
+ * no materialized markdown to mint one from). The route maps this to 409 `uncommitted_head`. */
+export class ImportHeadUncommittedError extends Error {
+  constructor(readonly headId: string) {
+    super(`working head ${headId} has uncommitted edits — save it before importing`);
+    this.name = "ImportHeadUncommittedError";
+  }
 }
 
 /**
@@ -187,6 +358,8 @@ export interface ImportUploadDeps {
 export interface ImportApiDeps {
   principal(c: { req: { header(name: string): string | undefined } }): Principal | null;
   readonly db: SqlClient;
+  /** R7HOME.2a (REQ-DATA-14) — the import write's one tenant transaction. */
+  readonly txRunner?: { run<T>(workspaceId: string, fn: (tx: SqlClient) => Promise<T>): Promise<T> };
   readonly contentStore: ContentStore;
   readonly converter: Converter;
   readonly ids: () => string;
@@ -311,16 +484,28 @@ export function createImportRoutes(deps: ImportApiDeps): Hono {
     const declaredRaw = (body as { startVersion?: unknown }).startVersion;
     const declaredN =
       typeof declaredRaw === "number" && Number.isInteger(declaredRaw) && declaredRaw >= 1 ? declaredRaw : undefined;
-    const created = await createImportedDraft(
-      { db: deps.db, contentStore: deps.contentStore, ids: deps.ids },
-      {
-        projectId,
-        workspaceId: principal.workspaceId,
-        actor: { kind: "user", userId: principal.userId },
-        result,
-        ...(declaredN != null ? { declaredN } : {}),
-      },
-    );
+    let created;
+    try {
+      created = await createImportedDraft(
+        {
+          db: deps.db,
+          contentStore: deps.contentStore,
+          ids: deps.ids,
+          ...(deps.txRunner ? { txRunner: deps.txRunner } : {}),
+        },
+        {
+          projectId,
+          workspaceId: principal.workspaceId,
+          actor: { kind: "user", userId: principal.userId },
+          result,
+          ...(declaredN != null ? { declaredN } : {}),
+        },
+      );
+    } catch (e) {
+      // R7HOME.2a — the head has typed-never-materialized edits; nothing froze, nothing was lost.
+      if (e instanceof ImportHeadUncommittedError) return c.json({ error: "uncommitted_head" }, 409);
+      throw e;
+    }
     // draft.imported (PRB.12 emission audit — this route owns it): `origin` is the converted source
     // format; `is_new_manuscript` = the import opened the project (its first draft); `venue_set`
     // reports whether the partner had already declared a venue on the project. Post-commit and

@@ -95,6 +95,17 @@ export async function convertBytes(bytes: Uint8Array, opts: ConvertOptions = {})
   const counts = detectCounts(markdown);
 
   const warnings: ConversionWarning[] = [
+    // REQ-HOME-5 — every normalization is listed in Conversion notes: the leading H1 never drops
+    // silently (it became `title`), even on an otherwise clean conversion.
+    ...(titled.title
+      ? [
+          {
+            kind: "title_extracted" as const,
+            message: `The first heading "${titled.title}" became the document title.`,
+            anchor: null,
+          },
+        ]
+      : []),
     ...out.warnings.map((w) => ({
       kind: w.kind,
       message: w.message,

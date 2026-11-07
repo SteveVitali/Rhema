@@ -220,7 +220,7 @@ describe("apiDataSource import — presign → PUT → preview → create (PRB.2
       `http://api.local/projects/${PROJECT.id}/import/create`,
     ]);
     expect(JSON.parse(seen[1]!.init.body as string)).toEqual({ quarantineKey: PRESIGN.key });
-    expect(out).toEqual({ draftId: "d1" });
+    expect(out).toEqual({ draftId: "d1", n: 1, outcome: "created" });
   });
 
   it("surfaces a GCS PUT refusal (over-cap bytes hit the signed range bound)", async () => {

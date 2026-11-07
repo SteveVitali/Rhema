@@ -35,6 +35,9 @@ export const CONVERSION_WARNING_KINDS = [
   "image_dropped",
   "structure_lost",
   "encoding",
+  /** REQ-HOME-5 (R7HOME.2a) — a normalization, not a loss: the document-leading `# H1` moved out of
+   *  the body into `title`. Listed in Conversion notes so the move is never silent. */
+  "title_extracted",
 ] as const;
 export type ConversionWarningKind = (typeof CONVERSION_WARNING_KINDS)[number];
 

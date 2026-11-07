@@ -140,6 +140,14 @@ describe("ONB.1 — faithful imports: the leading H1 and unresolved figures", ()
     expect(normalizeMarkdown(r.markdown)).toBe(r.markdown);
   });
 
+  it("REQ-HOME-5 — the H1→title move is LISTED in Conversion notes (never silent)", async () => {
+    const r = await convertBytes(new TextEncoder().encode("# Scratch essay\n\nBody paragraph.\n"));
+    expect(r.title).toBe("Scratch essay");
+    const note = r.warnings.find((w) => w.kind === "title_extracted");
+    expect(note).toBeDefined();
+    expect(note!.message).toContain("Scratch essay");
+  });
+
   it("an .md whose H1 sits after prose yields NO title (it stays a section heading → H2)", async () => {
     const r = await convertBytes(
       new TextEncoder().encode("Intro paragraph first.\n\n# Later Heading\n\nBody."),

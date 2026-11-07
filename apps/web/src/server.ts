@@ -5121,8 +5121,9 @@ export function createWebApp(deps: WebDeps): Hono {
       return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const input = await importInputFromFields(await bodyFields(c), slug);
+    let created;
     try {
-      await deps.dataSource.createImport(session, input);
+      created = await deps.dataSource.createImport(session, input);
     } catch (e) {
       // PRB.21 — the converted object wasn't there yet (a stale preview page or a slow Job): the api
       // 409s `conversion_pending` — drop back to the converting state; its poll finishes the preview.
@@ -5146,8 +5147,12 @@ export function createWebApp(deps: WebDeps): Hono {
       if (wantsJson(c)) return bffFail(c, e, { msg: "import_create_failed" });
       throw e;
     }
-    // The draft now exists; the flat project view shows it. (Fix-now block editing is PRB.07.)
-    return mutationOutcome(c, { redirect: `/p/${slug}` });
+    // R7HOME.2a (REQ-HOME-4) — the writer lands on the editable Page for the new working head with
+    // the REQ-DATA-14 toast riding the URL flash params (`?imported` + `?pn` on a supersede).
+    const pn = created.supersededN != null ? `&pn=${created.supersededN}` : "";
+    return mutationOutcome(c, {
+      redirect: `/p/${slug}/v/${created.n}?imported=${created.outcome}${pn}`,
+    });
   });
 
   // Auth-gated: the run sheet — the launcher for Review / Revise / Fact-check and the ONLY paywall (§5.6).
@@ -8085,6 +8090,8 @@ function toConversionData(
         ? `(${input.bytes.byteLength} bytes)`
         : "(the uploaded source — already converted)"),
     convertedMarkdown: result.markdown,
+    // REQ-HOME-5 — the title a leading H1 supplied surfaces on the preview (never dropped).
+    ...(result.title ? { title: result.title } : {}),
     countLine: countLine(result.counts),
     warnings: result.warnings.map((w) => ({
       message: w.message,

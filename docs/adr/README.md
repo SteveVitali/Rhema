@@ -141,3 +141,4 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-133](ADR-133-project-scope-sidebar-decisions.md) | R7SHELL.2 project-scope sidebar decisions | 230_R7SHELL.2 (REQ-SHELL-4, REQ-KIT-5) | accepted |
 | [ADR-134](ADR-134-delegated-submit-write-grammar.md) | R7RELOAD.1 delegated submit, write grammar, and outcome census decisions | 231_R7RELOAD.1 (REQ-RELOAD-2, REQ-RELOAD-3, REQ-RELOAD-4, REQ-GUARD-3) | accepted |
 | [ADR-135](ADR-135-chat-json-mutation-debited-charge.md) | The chat panel's JSON mutation contract, the debited-charge field, and the stub-turn fixture | — | accepted — 2026-11-06 (R7TALK.1a) |
+| [ADR-136](ADR-136-import-supersede-freeze-cause.md) | `superseded_by_import`, and the REQ-DATA-14 empty-head definition | 235_R7HOME.2a | Accepted |

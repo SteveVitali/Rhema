@@ -14,11 +14,15 @@ export interface ConversionPreviewProps {
   readonly sourceLabel: string; // e.g. "Original.docx"
   readonly sourceText: string;
   readonly convertedMarkdown: string;
+  /** REQ-HOME-5 — the document title a leading H1 supplied (never silently dropped). */
+  readonly title?: string | null;
   readonly countLine: string;
   readonly warnings: readonly PreviewWarning[];
   readonly actions: {
     readonly formAction: string; // POST target for "Create and fix later"
     readonly createLabel: string;
+    /** REQ-HOME-5 — the single CTA a CLEAN conversion offers (no warnings ⇒ no Fix now). */
+    readonly createCleanLabel?: string;
     readonly fixNowLabel: string;
     /** Hidden inputs the form carries (PRB.20 — the minted quarantine key so create replays it). */
     readonly hiddenFields?: Readonly<Record<string, string>>;
@@ -50,6 +54,14 @@ const preStyle = {
   fontSize: "12px",
   color: "var(--shell-fg)",
 };
+// REQ-HOME-5 — the converted pane is TYPESET in the paper face (the source pane stays the mono
+// byte view; the converted side reads like the Page the draft becomes).
+const convertedStyle = {
+  ...preStyle,
+  fontFamily: "var(--font-paper, var(--font-shell))",
+  fontSize: "15px",
+  lineHeight: 1.6,
+};
 
 export function ConversionPreview(props: ConversionPreviewProps): ReactNode {
   return (
@@ -68,7 +80,12 @@ export function ConversionPreview(props: ConversionPreviewProps): ReactNode {
           <h2 style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--shell-fg-muted)", marginTop: 0 }}>
             {props.labels.convertedHeading}
           </h2>
-          <pre style={preStyle}>{props.convertedMarkdown}</pre>
+          {props.title ? (
+            <p data-conversion-title style={{ margin: "0 0 8px", fontSize: "15px", fontWeight: 600, color: "var(--shell-fg)", fontFamily: "var(--font-paper, var(--font-shell))" }}>
+              {props.title}
+            </p>
+          ) : null}
+          <pre data-converted-pane style={convertedStyle}>{props.convertedMarkdown}</pre>
         </section>
       </div>
 
@@ -87,18 +104,24 @@ export function ConversionPreview(props: ConversionPreviewProps): ReactNode {
           data-conversion-action="create"
           style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}
         >
-          {props.actions.createLabel}
+          {props.warnings.length === 0
+            ? (props.actions.createCleanLabel ?? props.actions.createLabel)
+            : props.actions.createLabel}
         </button>
-        <button
-          type="submit"
-          name="action"
-          value="fix_now"
-          data-conversion-action="fix_now"
-          style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", color: "var(--shell-fg)", fontSize: "14px", cursor: "pointer" }}
-        >
-          {props.actions.fixNowLabel}
-        </button>
-        <span style={{ color: "var(--shell-fg-faint)", fontSize: "12px" }}>{props.labels.fixNowNote}</span>
+        {props.warnings.length > 0 ? (
+          <>
+            <button
+              type="submit"
+              name="action"
+              value="fix_now"
+              data-conversion-action="fix_now"
+              style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", color: "var(--shell-fg)", fontSize: "14px", cursor: "pointer" }}
+            >
+              {props.actions.fixNowLabel}
+            </button>
+            <span style={{ color: "var(--shell-fg-faint)", fontSize: "12px" }}>{props.labels.fixNowNote}</span>
+          </>
+        ) : null}
       </form>
     </div>
   );

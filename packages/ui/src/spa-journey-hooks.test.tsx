@@ -21,7 +21,7 @@ describe("ConversionPreview — the conversion hooks (N3/createDraftProject)", (
       sourceText="# src"
       convertedMarkdown="# converted"
       countLine="3 blocks"
-      warnings={[]}
+      warnings={[{ message: "a table flattened" }]}
       actions={{
         formAction: "/app/new/create",
         createLabel: "Create project",
@@ -44,6 +44,60 @@ describe("ConversionPreview — the conversion hooks (N3/createDraftProject)", (
     // the hidden replay fields still post verbatim
     expect(html).toContain('name="qk"');
     expect(html).toContain('value="quarantine/k"');
+  });
+});
+
+// R7HOME.2a / REQ-HOME-5 — the import-fidelity contract: the converted pane is typeset in the
+// paper face (not monospace), a clean conversion offers ONE "Create draft" CTA, and the H1 title
+// line surfaces on the preview.
+describe("ConversionPreview — REQ-HOME-5 fidelity", () => {
+  const base = {
+    sourceLabel: "Original.md",
+    sourceText: "# Scratch essay\n\nBody.",
+    convertedMarkdown: "Body.",
+    countLine: "1 block",
+    actions: {
+      formAction: "/app/new/create",
+      createLabel: "Create and fix later",
+      createCleanLabel: "Create draft",
+      fixNowLabel: "Fix now",
+      hiddenFields: { qk: "k" },
+    },
+    labels: {
+      sourceHeading: "Source",
+      convertedHeading: "Converted",
+      warningsHeading: "Warnings",
+      noWarnings: "No warnings.",
+      fixNowNote: "note",
+    },
+  };
+
+  it("a CLEAN conversion offers exactly one CTA (create), no Fix now", () => {
+    const html = renderToStaticMarkup(
+      <ConversionPreview {...base} warnings={[]} />,
+    );
+    expect(html).toContain('data-conversion-action="create"');
+    expect(html).not.toContain('data-conversion-action="fix_now"');
+    expect(html).toContain("Create draft");
+  });
+
+  it("a WARNED conversion keeps both verbs + the note", () => {
+    const html = renderToStaticMarkup(
+      <ConversionPreview {...base} warnings={[{ message: "w" }]} />,
+    );
+    expect(html).toContain('data-conversion-action="create"');
+    expect(html).toContain('data-conversion-action="fix_now"');
+  });
+
+  it("the converted pane is TYPESET in the paper face (not mono) + the title line renders", () => {
+    const html = renderToStaticMarkup(
+      <ConversionPreview {...base} warnings={[]} title="Scratch essay" />,
+    );
+    const pane = html.slice(html.indexOf('data-converted-pane'));
+    expect(pane).toContain("font-paper");
+    expect(pane.slice(0, 400)).not.toContain('"JetBrains Mono"'); // the converted pane's own style
+    expect(html).toContain('data-conversion-title');
+    expect(html).toContain("Scratch essay");
   });
 });
 

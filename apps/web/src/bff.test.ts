@@ -1550,7 +1550,7 @@ describe("POST /p/:slug/import/preview + /import/create — the JSON dual-modes 
     expect(body.data.conversion.convertedMarkdown).toBe(CONVERSION.markdown);
   });
 
-  it("create: conversion_pending 409 → {ok,pending,redirect}; success → {ok,redirect:'/p/:slug'}", async () => {
+  it("create: conversion_pending 409 → {ok,pending,redirect}; success → {ok,redirect:'/p/:slug/v/:n?imported'}", async () => {
     const pending = await createWebApp(
       onboardingDeps({
         createImport: async () => { throw new ApiError(409, "/x", "pending", "conversion_pending"); },
@@ -1566,12 +1566,18 @@ describe("POST /p/:slug/import/preview + /import/create — the JSON dual-modes 
     expect(pb.redirect).toBe("/p/the-politics-of-visibility/import/preview?qk=q1&src=paper.docx");
 
     const done = await createWebApp(
-      onboardingDeps({ createImport: async () => ({ draftId: "d1" }) }),
+      onboardingDeps({
+        createImport: async () => ({ draftId: "d1", n: 1, outcome: "created" as const }),
+      }),
     ).request("/p/the-politics-of-visibility/import/create", {
       ...jsonPost,
       body: JSON.stringify({ qk: "q1" }),
     });
-    expect(await done.json()).toEqual({ ok: true, redirect: "/p/the-politics-of-visibility" });
+    // R7HOME.2a — the writer lands on the editable Page with the REQ-DATA-14 toast in the URL.
+    expect(await done.json()).toEqual({
+      ok: true,
+      redirect: "/p/the-politics-of-visibility/v/1?imported=created",
+    });
   });
 
   it("a refused create passes the api's error through verbatim at its status", async () => {

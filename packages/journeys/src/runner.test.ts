@@ -91,15 +91,16 @@ describe("runJourneys — the expected-flag semantics", () => {
     for (const res of r.results) {
       expect(res.outcome, res.id).toBe("owed");
       // R7SHELL.1a authored the real U1.shell body, R7PANE.1 the real U3.occlusion body,
-      // R7RELOAD.1 the real U2.noreload body, and R7TALK.1a the real U6.chat stub-turn body
-      // while the rows stay red — a held authored leg's error is its own offline failure, never
-      // the stub signature; the nightly still classifies it `owed` (the row cannot re-redden or
-      // go green silently).
+      // R7RELOAD.1 the real U2.noreload body, R7TALK.1a the real U6.chat stub-turn body, and
+      // R7HOME.2a the real U7.import paste-import body while the rows stay red — a held authored
+      // leg's error is its own offline failure, never the stub signature; the nightly still
+      // classifies it `owed` (the row cannot re-redden or go green silently).
       if (
         res.id !== "U1.shell" &&
         res.id !== "U2.noreload" &&
         res.id !== "U3.occlusion" &&
-        res.id !== "U6.chat"
+        res.id !== "U6.chat" &&
+        res.id !== "U7.import"
       ) {
         expect(res.error, res.id).toContain(`owed — owner ${res.owner}`);
       } else {

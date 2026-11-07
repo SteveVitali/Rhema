@@ -760,7 +760,7 @@ export async function runDeliveryTransaction(
       draftId: draftId,
       promotedVersionId: args.draftPromotedVersionId!,
       cause: "dossier_ref",
-      frozenBy: args.frozenBy ?? { kind: "system", runId: args.runId },
+      frozenBy: args.frozenBy ?? { cause: "dossier_ref", kind: "system", runId: args.runId },
       at: now,
     });
   }

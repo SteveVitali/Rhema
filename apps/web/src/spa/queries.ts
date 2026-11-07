@@ -510,6 +510,8 @@ export type BffConversion =
       readonly convertedMarkdown: string;
       readonly countLine: string;
       readonly warnings: readonly { readonly message: string; readonly blockId?: string | null }[];
+      /** REQ-HOME-5 — the title a document-leading H1 supplied (never silently dropped). */
+      readonly title?: string | null;
       readonly quarantineKey?: string;
       readonly created?: boolean;
       readonly pending?: false;

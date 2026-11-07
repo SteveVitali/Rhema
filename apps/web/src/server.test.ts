@@ -275,7 +275,7 @@ function makeDeps(
         preview: PREVIEW,
         quarantineKey: "quarantine/ws1/up1",
       }),
-      createImport: async () => ({ draftId: "d_new" }),
+      createImport: async () => ({ draftId: "d_new", n: 1, outcome: "created" as const }),
       createRun: async () => ({ runId: "run_new", state: "queued", deduped: false }),
       getDossier: async () => DOSSIER,
       getBillingBalance: async () => ({
@@ -783,7 +783,7 @@ describe("§5.3 import flow (deliverable 4)", () => {
     );
   });
 
-  it("POST create makes the draft and redirects to the project", async () => {
+  it("POST create makes the draft and redirects to the editable Page with the REQ-DATA-14 toast", async () => {
     const res = await createWebApp(authed()).request(
       "/p/the-politics-of-visibility/import/create",
       {
@@ -792,7 +792,8 @@ describe("§5.3 import flow (deliverable 4)", () => {
       },
     );
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("/p/the-politics-of-visibility");
+    // R7HOME.2a — the writer lands on the working head's Page; `?imported` carries the toast.
+    expect(res.headers.get("location")).toBe("/p/the-politics-of-visibility/v/1?imported=created");
   });
 
   it("import is auth-gated (unauthenticated → /login)", async () => {

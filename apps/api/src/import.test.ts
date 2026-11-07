@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createOrchestratorTestDb, seedProject, type OrchestratorTestDb } from "@rhema/orchestrator/testing";
 import { InMemoryContentStore } from "@rhema/mirror";
 import type { ConversionResult } from "@rhema/contracts";
-import { createImportedDraft, createImportRoutes, type Converter, type ImportUploadDeps } from "./import.js";
+import { createImportedDraft, createImportRoutes, writeMarkdownArtifact, type Converter, type ImportUploadDeps } from "./import.js";
+import { saveManualRevision } from "@rhema/mirror";
 import { quarantineKey, type SignedUrlProvider } from "@rhema/contracts";
 import type { SqlClient } from "./invite.js";
 import type { Principal } from "./run-routes.js";
@@ -37,18 +38,25 @@ beforeEach(async () => {
 afterEach(() => db.close());
 
 describe("createImportedDraft", () => {
-  it("creates v(n) origin=human_upload + an immutable markdown version with the word count", async () => {
+  it("lands as the WORKING head — origin=human_upload, promoted to its imported version", async () => {
     const created = await createImportedDraft(
-      { db: sql, contentStore: store, ids },
+      { db: sql, contentStore: store, ids, txRunner: db.txRunner },
       { projectId: seed.projectId, workspaceId: seed.workspaceId, actor: { kind: "user", userId: seed.userId }, result: RESULT },
     );
-    expect(created.n).toBe(2); // seedProject already made v1
+    // R7HOME.2a — the seeded EMPTY working head (no version, no doc) is overwritten in place.
+    expect(created.outcome).toBe("overwrote");
+    expect(created.n).toBe(1); // the head's own n — no extra version consumed
     expect(created.wordCount).toBe(6);
+    expect(created.draftId).toBe(seed.draftId);
 
     const draft = (await db.pg.query(`select origin, state, promoted_version_id from drafts where id=$1`, [created.draftId])).rows[0] as { origin: string; state: string; promoted_version_id: string };
     expect(draft.origin).toBe("human_upload");
-    expect(draft.state).toBe("frozen");
+    expect(draft.state).toBe("working");
     expect(draft.promoted_version_id).toBe(created.versionId);
+
+    // exactly one working head — the index + the rule agree.
+    const heads = (await db.pg.query(`select count(*)::int c from drafts where project_id=$1 and state='working'`, [seed.projectId])).rows[0] as { c: number };
+    expect(heads.c).toBe(1);
 
     const ver = (await db.pg.query(`select media_type, word_count, immutable, content_sha256, bytes from artifact_versions where id=$1`, [created.versionId])).rows[0] as { media_type: string; word_count: number; immutable: boolean; content_sha256: string; bytes: number };
     expect(ver.media_type).toBe("text/markdown");
@@ -59,6 +67,86 @@ describe("createImportedDraft", () => {
     const bytes = await store.get(created.contentSha256);
     expect(bytes).not.toBeNull();
     expect(new TextDecoder().decode(bytes!)).toBe(RESULT.markdown);
+  });
+
+  it("REQ-DATA-14 — a non-empty working head freezes superseded_by_import; the import is v(N+1)", async () => {
+    // give the seeded head a committed version so it is non-empty.
+    const { artifactId, versionId } = await writeMarkdownArtifact(
+      { db: sql, contentStore: store, ids },
+      { projectId: seed.projectId, workspaceId: seed.workspaceId, actor: { kind: "user", userId: seed.userId }, markdown: "Existing prose.", wordCount: 2, kind: "draft", mirrorPath: "drafts/v1.md" },
+    );
+    void artifactId;
+    await db.pg.query(`update drafts set promoted_version_id=$1 where id=$2`, [versionId, seed.draftId]);
+
+    const created = await createImportedDraft(
+      { db: sql, contentStore: store, ids, txRunner: db.txRunner },
+      { projectId: seed.projectId, workspaceId: seed.workspaceId, actor: { kind: "user", userId: seed.userId }, result: RESULT },
+    );
+    expect(created.outcome).toBe("superseded");
+    expect(created.n).toBe(2);
+    expect(created.supersededN).toBe(1);
+    expect(created.draftId).not.toBe(seed.draftId);
+
+    const head = (await db.pg.query(`select state, origin, frozen_by, promoted_version_id from drafts where id=$1`, [seed.draftId])).rows[0] as
+      { state: string; origin: string; frozen_by: { cause: string }; promoted_version_id: string };
+    expect(head.state).toBe("frozen");
+    expect(head.origin).toBe("agent"); // origin unchanged — the freeze records, not rewrites
+    expect(head.frozen_by.cause).toBe("superseded_by_import");
+    expect(head.promoted_version_id).toBe(versionId);
+
+    const created2 = (await db.pg.query(`select state, origin, promoted_version_id from drafts where id=$1`, [created.draftId])).rows[0] as
+      { state: string; origin: string; promoted_version_id: string };
+    expect(created2.state).toBe("working");
+    expect(created2.origin).toBe("human_upload");
+    expect(created2.promoted_version_id).toBe(created.versionId);
+
+    const heads = (await db.pg.query(`select count(*)::int c from drafts where project_id=$1 and state='working'`, [seed.projectId])).rows[0] as { c: number };
+    expect(heads.c).toBe(1);
+  });
+
+  it("REQ-DATA-14 — a second import supersedes; the unique index forbids two working heads", async () => {
+    const run = () =>
+      createImportedDraft(
+        { db: sql, contentStore: store, ids, txRunner: db.txRunner },
+        { projectId: seed.projectId, workspaceId: seed.workspaceId, actor: { kind: "user", userId: seed.userId }, result: RESULT },
+      );
+    const a = await run(); // overwrites the empty seeded head
+    const b = await run(); // the now-non-empty head freezes; import lands working v2
+    expect(a.outcome).toBe("overwrote");
+    expect(b.outcome).toBe("superseded");
+    expect(b.supersededN).toBe(1);
+    const heads = (await db.pg.query(`select id, n, state from drafts where project_id=$1 and state='working'`, [seed.projectId])).rows as { id: string; n: number }[];
+    expect(heads.length).toBe(1);
+    expect(heads[0]!.id).toBe(b.draftId);
+    // the DB-level guarantee the single tx orders around: a second working head can never exist.
+    await expect(
+      db.pg.query(`insert into drafts(id, project_id, n, origin, state) values ('dft_x',$1,99,'agent','working')`, [seed.projectId]),
+    ).rejects.toThrow(/unique|duplicate|one_working_head/i);
+  });
+
+  it("a save to a freshly imported draft edits in place (no fork)", async () => {
+    const created = await createImportedDraft(
+      { db: sql, contentStore: store, ids, txRunner: db.txRunner },
+      { projectId: seed.projectId, workspaceId: seed.workspaceId, actor: { kind: "user", userId: seed.userId }, result: RESULT },
+    );
+    // the import overwrote the empty seeded head → that row is the working head.
+    const save = await db.txRunner.run(seed.workspaceId, (tx) =>
+      saveManualRevision(tx as unknown as Parameters<typeof saveManualRevision>[0],
+      { store, ids: (p?: string) => `${p ?? "id"}_${++idc}`, clock: { now: () => new Date() }, eventWriter: { append: async () => undefined } },
+      {
+        workspaceId: seed.workspaceId,
+        projectId: seed.projectId,
+        draftId: created.draftId,
+        markdown: `${RESULT.markdown}\nMore text.`,
+        userId: seed.userId,
+      },
+    ));
+    expect(save.ok).toBe(true);
+    if (!save.ok) return;
+    expect(save.forked).toBe(false);
+    expect(save.draftId).toBe(created.draftId);
+    const heads = (await db.pg.query(`select count(*)::int c from drafts where project_id=$1 and state='working'`, [seed.projectId])).rows[0] as { c: number };
+    expect(heads.c).toBe(1);
   });
 });
 
