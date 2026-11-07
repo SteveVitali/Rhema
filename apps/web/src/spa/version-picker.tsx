@@ -24,7 +24,7 @@ export function useProjectChromeFallback(slug: string | null): void {
   // Memoized — a fresh literal each render would re-publish the chrome bag on every commit.
   const shell = useMemo(
     () =>
-      twin != null
+      twin?.project != null
         ? {
             project: { title: twin.project.title, pill: twin.project.pill, slug: slug ?? "" },
             paperTheme: twin.paperTheme,

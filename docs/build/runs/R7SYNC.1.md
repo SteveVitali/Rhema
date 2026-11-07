@@ -63,3 +63,12 @@ the markdown stack — both leaked into the entry chunk. Extracted the six pure 
 `dossier-view` re-exports them for compat and imports back what its internals still use;
 `chrome-data` repointed to `../../dossier-labels.js`. Guard green (only allowed
 Tooltip/DropdownMenu); 98-file sweep 1643/1643.
+
+## Orchestrator note — the spa.dom bad-param CI flake was a real crash vector
+
+`useProjectChromeFallback` dereferenced `twin.project.title` when `twin` was truthy but
+`twin.project` absent — a degraded `/bff/p/:slug/versions` read crashed `SpaNotFound` inside
+`useMemo`, so the 404's error boundary painted "Something didn't load" (the leg's CI-visible
+symptom, twice). Fixed with `twin?.project != null` — a degraded twin lands the degraded bag,
+per the hook's own contract. Never reproduced locally (5× file + full-suite runs); the guard is
+correct regardless of the stub's arrival timing.
