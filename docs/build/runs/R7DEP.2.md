@@ -121,3 +121,62 @@ D-FIX.1-2, D-P1.19-2. Verify-then-disposition: D-P1.17-2 (Lighthouse/axe hero ar
   worktree (run-task image assert will pass), playwright chromium present.
 - 2026-11-07T18:0xZ — pre-state captured (above); pr-259 carry discharged; golden classification
   committed **NOT affecting**; `0062` additive PASS; spend opening read committed → PROCEED.
+- 2026-11-07T18:1xZ — seed commit `f7674618` (ledger + PR body + classification) → pushed →
+  **PR #293** (base `stevevitali/r7pub-1-landing-pricing`) → preview **`pr-293`**.
+- 2026-11-07T18:2xZ — `init` + config (project/region/placeholderImage/deployProxyMig/
+  runTaskAppArmor*/gitSha=`18b79c30`/protocolsVersion `0.4.0+9c2b880dbee74bd8`/
+  googleOauthClientId) + `resend-pull`. `up` converged on **third pass** (198 resources; two
+  known-transient AlertPolicy metric-propagation races — `route_5xx` then `slo_violations`,
+  the same class as R6DEP.1/R7DEP.1).
+- 2026-11-07T18:3xZ — Cloud Build `98c5244a` SUCCESS, all-10 images @ `18b79c30` (~13m32s;
+  `_TAG=r7dep-2`, `_AR=rhema-pr-293`). NOTE: the AR repo is `rhema-pr-293` (resource name
+  `…-images` is the Pulumi name, not the repo id — first submit failed at push on the wrong id).
+  Digests pinned (`logs/r7dep2/pr293-digests-t0.txt`) + `appBaseUrl`/`apiPublicUrl`
+  (web `…web-723313c…`, api `…api-e35a071…` run.app).
+- 2026-11-07T18:5xZ — image-roll `up` (11 changes): 10 services rolled; **api revision failed
+  its startup probe while the schema was absent** (crash-loop pre-migrations — expected order).
+  Migrate Job `rhema-pr-293-migrate-3a1bdcf` exec `6ttcc` applied **62 migrations incl.
+  `0062_drafts_discard.sql`** under the real migration role; `rhema_app_login`/`rhema_collab`
+  LOGIN-enabled. Re-running `up` for the api roll.
+- 2026-11-07T19:0xZ — forced a fresh api revision (`gcloud run services update … --image <digest>`,
+  owned-preview act): the `rhema` db's absence had sent `00002-p9s` terminal pre-migration;
+  `00003-78w` now serves. **Provenance T0: web+api `/healthz/` → `18b79c30…`** (the live route is
+  the trailing-slash `/healthz/`; bare `/healthz` 404s — recorded honestly). Migrations: 62 applied
+  (incl. `0062`), roles LOGIN.
+- **Preview URL:** web `https://rhema-pr-293-web-723313c-tkbl73n3tq-uc.a.run.app` · api
+  `https://rhema-pr-293-api-e35a071-tkbl73n3tq-uc.a.run.app` · invite `prv-293-test` ·
+  digests `logs/r7dep2/pr293-digests-t0.txt` · prod IAP tunnel `127.0.0.1:15433→10.46.0.3:5432`.
+- 2026-11-07T19:1xZ — `seed-invite` exec `z6jq9` succeeded → invite **`prv-293-test`** seeded.
+- 2026-11-07T19:2xZ — **T0 leg walk, U-legs** (`--expect-sha 18b79c30…`, provenance match, $0,
+  `reports/2026-11-07_R7DEP.2/u-legs/`): **FLIP U4.controls, U6.chat** (green, `ready-to-flip`);
+  **owed U1.shell** ("no recent project row to walk into" — a returning-tenant data gap, under
+  investigation: seed vs leg expectation), **owed U2.noreload** (timeout clicking the hidden
+  `/p/showcase/review/` link — element not visible), **owed U3.occlusion** ("panel tab chat
+  @1440×900: not enabled"), **owed U5.write** ("the inline title was not focused on the blank
+  Page"), **owed U7.import** ("Conversion notes do not name the title normalization"). The five
+  owed legs are recorded defects — **never fixed in-ticket** (each becomes `F-R7DEP.2-n` /
+  carries its D-row open with reason).
+- 2026-11-07T19:4xZ — **T0 leg walk, D-legs + smoke** (`reports/2026-11-07_R7DEP.2/d-legs/`):
+  PASS — N10, P1.public, R8.showcase, D1.hub, D2.tour, D3.readonly, P1.demo, R11.demo (the eight
+  incumbent greens re-proven at `18b79c30`). **FAIL R8.showcase.spa** (a GREEN leg — REGRESSION on
+  the R7b surface: `a[href*="/review/"]` resolves but `element is not visible`; same hidden-link
+  class as U2.noreload) and **FAIL U3.stopgap** (expected — the R7a-era ⌘J/`data-ide-desk-tab`
+  asserts are superseded by `U3.occlusion` on R7b per `D-R7PANE.1-1`; needs re-disposition, not a
+  fix).
+
+### F-R7DEP.2 findings (recorded at T0 — never fixed in-ticket)
+
+| # | Leg | Symptom at `18b79c30` | Class |
+|---|---|---|---|
+| F-R7DEP.2-1 | R8.showcase.spa (GREEN→fail) + U2.noreload (red→owed) | the dossier "From Review of vN"/`/review/` link resolves in DOM but `element is not visible` — invisible after the R7b findings-into-panel/layout change | real defect (regression on an existing green leg) |
+| F-R7DEP.2-2 | U3.occlusion (red→owed) | `[data-ide-panel-tab="chat"]` @1440×900 `not enabled` | real defect |
+| F-R7DEP.2-3 | U5.write (red→owed) | the new blank Page's inline title is not focused on open (REQ-HOME-3) | real defect |
+| F-R7DEP.2-4 | U7.import (red→owed) | Conversion notes don't name `title_extracted` (237's convert warning isn't surfacing) | real defect |
+| F-R7DEP.2-5 | U1.shell (red→owed) | "no recent project row to walk into" — the fresh returning tenant's recents list is empty | leg-vs-seed gap under investigation |
+| — | U3.stopgap (GREEN→fail) | R7a-era asserts on a retired surface — superseded by `U3.occlusion` (`D-R7PANE.1-1`) | re-disposition (retire), not a fix |
+
+**PAUSE — the Part A→Part B boundary for owner fixes.** The contract's defect path: these land
+as `F-R7DEP.2-n` findings → owner insert rows on the chain (the R7FIX.2 shape) → re-walk on the
+same preview at the advanced tip. Prod Stage B cannot honestly report green while five held legs
+owe and an existing green regresses. The preview stays UP at T0 within the $20 cap for the H16
+window + remaining deferral captures while the owner fixes land.
