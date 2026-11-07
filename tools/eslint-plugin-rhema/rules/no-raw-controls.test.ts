@@ -158,7 +158,6 @@ describe("registration in the real eslint.config.js (per-file enablement)", () =
   it("is `off` over both scope globs, absent for primitives/** and out-of-scope files", async () => {
     const eslint = new ESLint({ cwd: REPO_ROOT });
     for (const file of [
-      "packages/ui/src/chat-panel.tsx",
       "apps/web/src/spa/surfaces/settings.tsx",
       "apps/web/src/pages.tsx",
     ]) {
@@ -167,6 +166,11 @@ describe("registration in the real eslint.config.js (per-file enablement)", () =
       expect(entry, `rule configured for ${file}`).toBeDefined();
       expect(isOff(entry), `rule off for ${file}`).toBe(true);
     }
+    // R7TALK.1a enabled the first batch-d file — the rule is ON (never off) for it.
+    const on = await eslint.calculateConfigForFile("packages/ui/src/chat-panel.tsx");
+    const onEntry = (on.rules as Record<string, unknown>)["rhema/no-raw-controls"];
+    expect(onEntry, "rule configured for chat-panel.tsx").toBeDefined();
+    expect(isOff(onEntry), "rule on for chat-panel.tsx").toBe(false);
     // primitives/** is out of scope — the rule must not apply there at all.
     const prim = await eslint.calculateConfigForFile("packages/ui/src/primitives/select.tsx");
     expect((prim.rules as Record<string, unknown>)["rhema/no-raw-controls"]).toBeUndefined();

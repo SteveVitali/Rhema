@@ -31,7 +31,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import type { TimelineRun } from "@rhema/findings-core";
 import { RunReport } from "@rhema/ui";
 import { COPY } from "../../copy.js";
-import { chatPanel } from "../../chat-pane.js";
+import { chatPanelLive as chatPanel } from "../chat-live.js";
 import { reportLabels, runCardLabels, timelineHrefs, timelineLabels } from "../../dossier-view.js";
 import { BffError } from "../bff.js";
 import { useReadOnlyProject, readOnlyReasonText, ReadOnlyNotice } from "../read-only.js";

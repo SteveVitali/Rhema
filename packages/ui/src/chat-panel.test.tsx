@@ -50,6 +50,18 @@ const LABELS: ChatDeskLabels = {
   chipGroupLabel: "Start here",
   notesPlaceholder: "Paste your notes…",
   notesSend: "Save notes",
+  threadHeading: "Conversation",
+  memoryPinsHeading: "Memory & pins",
+  retry: "Retry",
+  abort: "Stop",
+  sending: "Sending…",
+  youLabel: "You",
+  assistantLabel: "Assistant",
+  debitedFmt: "{n} credits",
+  aboveCapFmt: "metered {n} credits above the cap — charged {m} (cap-clamped)",
+  progressWorking: "Working…",
+  demoReadonly: "The demo is read-only — sign up to chat about your own project.",
+  sourcesUsed: "Sources",
 };
 
 const ENDPOINTS: ChatDeskProps["endpoints"] = {
@@ -86,15 +98,19 @@ describe("ChatDesk (P1.11; §7.1)", () => {
     expect(html).toContain('action="/p/slug/chat/turns"');
     expect(html).toContain('name="message"');
     expect(html).toContain('value="thr_1"');
+    expect(html).toContain('data-chat-thread-link="thr_1"');
   });
 
   it("renders the tier picker as exactly three notches (REQ-CHAT-14)", () => {
     const html = render();
-    for (const t of ["base", "balanced", "frontier"]) expect(html).toContain(`data-chat-tier="${t}"`);
-    expect(html).not.toContain("data-chat-tier=\"ultra\"");
+    // the Select posts `modelTier` through its hidden native select (the three notches are its
+    // items — SSR emits the trigger + the hidden select, the menu mounts client-side).
+    expect(html).toContain("data-chat-tier");
+    expect(html).toContain('name="modelTier"');
+    expect(html).not.toContain("Ultra");
   });
 
-  it("renders the metered cost strip (credits + searches + fetches vs budget + workspace spend)", () => {
+  it("renders the live credit meter from the strip DTO (REQ-TALK-2: '0 / 40 credits')", () => {
     const html = render({
       strip: {
         spentCredits: 7,
@@ -107,10 +123,11 @@ describe("ChatDesk (P1.11; §7.1)", () => {
         tier: "base",
       },
     });
+    expect(html).toContain("data-chat-strip");
     expect(html).toContain("7/40 credits");
-    expect(html).toContain("2/5 searches");
-    expect(html).toContain("3/10 fetches");
-    expect(html).toContain("workspace 123 credits");
+    // without a strip the meter still renders 0/budget — every number from the DTO.
+    const bare = render();
+    expect(bare).toContain("0/40 credits");
   });
 
   it("renders the §7.6 empty state — the four chips + the notes scratch form", () => {
@@ -125,8 +142,10 @@ describe("ChatDesk (P1.11; §7.1)", () => {
         nextStep: { kind: "sheet", label: "Start with research", href: "/p/slug/sheet?workflow=research_burst" },
       },
     });
+    expect(html).toContain('data-chat-empty');
     for (const id of ["research", "thesis", "interview", "notes"])
       expect(html).toContain(`data-chat-chip="${id}"`);
+    expect(html).toContain('data-chat-notes');
     expect(html).toContain('action="/p/slug/chat/notes"');
     // the research chip links the next-step SHEET — it never launches a run itself.
     expect(html).toContain("research_burst");
@@ -186,6 +205,10 @@ describe("ChatDesk (P1.11; §7.1)", () => {
       ],
     });
     expect(html).toContain("committed artifacts only");
+    expect(html).toContain('data-chat-live-note');
+    expect(html).toContain('data-chat-sources');
+    expect(html).toContain('data-chat-source="agents/assistant/research/sources/a.md"');
+    expect(html).toContain('data-chat-source-chip="agents/assistant/research/sources/b.md"');
     expect(html).toContain("[unverified]");
   });
 
@@ -207,7 +230,104 @@ describe("ChatDesk (P1.11; §7.1)", () => {
       const at = desk.indexOf(`class="${marker}"`);
       if (at >= 0) expect(at).toBeLessThan(composer);
     }
-    // and the composer is the LAST chat-* element — nothing chat-scoped follows it inside .chat-desk.
-    expect(desk.lastIndexOf('class="chat-')).toBe(composer);
+    // and the composer is the LAST element — the desk ends with the composer form's close.
+    expect(desk.trimEnd().endsWith("</form></div>")).toBe(true);
+  });
+});
+
+describe("ChatDesk (R7TALK.1a; REQ-TALK-2)", () => {
+  const turn = {
+    id: "run_t1",
+    state: "completed",
+    createdAt: "2026-11-06T00:00:00Z",
+    spentCredits: 16,
+    capCredits: 5,
+    modelTier: "base",
+    debitedCredits: 5,
+    userText: "What does the draft claim?",
+    reply: "It claims a thesis.\n\nWith a second paragraph.",
+    refs: ["@v1 §I", "agents/assistant/research/sources/a.md"],
+  };
+
+  it("renders user+assistant bubbles, citation chips, and the debited footnote — never burn as the charge", () => {
+    const html = render({ turns: [turn] });
+    expect(html).toContain('data-chat-log');
+    expect(html).toContain('data-chat-bubble="user"');
+    expect(html).toContain("What does the draft claim?");
+    expect(html).toContain('data-chat-bubble="assistant"');
+    expect(html).toContain("It claims a thesis.");
+    expect(html).toContain('data-chat-citations="run_t1"');
+    expect(html).toContain('data-chat-cite="@v1 §I"');
+    // the footnote shows the CAP-CLAMPED DEBIT (5), not the metered burn (16).
+    expect(html).toContain('data-chat-footnote="run_t1"');
+    expect(html).toContain("5 credits");
+    expect(html).not.toContain(">16 credits<");
+    // burn above the cap is labelled truthfully, never hidden.
+    expect(html).toContain('data-chat-overcap="run_t1"');
+    expect(html).toContain("metered 11 credits above the cap — charged 5 (cap-clamped)");
+  });
+
+  it("a failed turn shows inline retry; memory+pins sit in the header disclosure", () => {
+    const html = renderToStaticMarkup(
+      <ChatDesk
+        model={{
+          ...baseModel,
+          turns: [{ ...turn, state: "failed", reply: undefined, debitedCredits: undefined }],
+          pins: { pins: [{ id: "p1", kind: "fact", summary: "pin one" }], footprint: 9, cap: 12 },
+        }}
+        endpoints={ENDPOINTS}
+        labels={LABELS}
+        live={{ onRetry: () => undefined }}
+      />,
+    );
+    expect(html).toContain('data-chat-failed="run_t1"');
+    expect(html).toContain('data-chat-retry="run_t1"');
+    expect(html).toContain('data-chat-remembers');
+    expect(html).toContain('data-chat-pins');
+    expect(html).toContain('data-chat-pin="p1"');
+    expect(html).toContain("Memory &amp; pins");
+    // a pending turn renders the working line, never a status row.
+    const pending = render({ turns: [{ ...turn, state: "running", reply: undefined }] });
+    expect(pending).toContain("Working…");
+    expect(pending).not.toContain("turn ·");
+  });
+
+  it("renderAssistantText escapes markup — the seam renders plain paragraphs, no raw HTML", () => {
+    const html = render({
+      turns: [{ ...turn, spentCredits: 3, capCredits: 40, reply: "<b>bold</b>\n\n<script>x</script>" }],
+    });
+    expect(html).toContain("&lt;b&gt;bold&lt;/b&gt;");
+    expect(html).not.toContain("<b>bold</b>");
+    expect(html).not.toContain("<script>");
+  });
+});
+
+describe("ChatDesk live/read-only hooks (R7TALK.1a)", () => {
+  it("emits the live arm's hooks: progress, error, abort, send, read-only reason", () => {
+    const html = renderToStaticMarkup(
+      <ChatDesk
+        model={baseModel}
+        endpoints={ENDPOINTS}
+        labels={LABELS}
+        live={{
+          onSend: () => undefined,
+          pending: true,
+          onAbort: () => undefined,
+          progress: "Reading the draft",
+          error: "request_failed",
+          optimistic: "typed words",
+        }}
+      />,
+    );
+    expect(html).toContain("data-chat-progress");
+    expect(html).toContain("data-chat-error");
+    expect(html).toContain("data-chat-abort");
+    expect(html).toContain("typed words");
+    const readonly = renderToStaticMarkup(
+      <ChatDesk model={baseModel} endpoints={ENDPOINTS} labels={LABELS} readOnlyReason="read only" />,
+    );
+    expect(readonly).toContain("data-chat-readonly");
+    const sendable = render();
+    expect(sendable).toContain("data-chat-send");
   });
 });

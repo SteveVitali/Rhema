@@ -51,7 +51,7 @@ import {
   visibleDossierFindings,
   type DossierViewState,
 } from "../../dossier-view.js";
-import { chatPanel } from "../../chat-pane.js";
+import { chatPanelLive as chatPanel } from "../chat-live.js";
 import { gateCardFor, gateCardModel } from "../../gate-card.js";
 import { BffError, bffFetch } from "../bff.js";
 import { useGatePresence } from "../gate-presence.js";

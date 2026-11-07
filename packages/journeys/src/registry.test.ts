@@ -135,7 +135,9 @@ describe("the journey step registry", () => {
     // 250): its real body rejects on the stub ctx, never with the owed signature.
     // R7RELOAD.1 authored `U2.noreload` the same way (held ready-to-flip — D-R7RELOAD.1-1, owner
     // 250): the real GUARD-3 walk rejects on the stub ctx, never with the owed signature.
-    const AUTHORED_HELD = new Set(["U1.shell", "U2.noreload", "U3.occlusion"]);
+    // R7TALK.1a authored `U6.chat` the same way (held ready-to-flip — D-R7TALK.1a-1, owner 250):
+    // the real stubbed-turn body rejects on the stub ctx, never with the owed signature.
+    const AUTHORED_HELD = new Set(["U1.shell", "U2.noreload", "U3.occlusion", "U6.chat"]);
     for (const id of R7_IDS) {
       const s = stepById(id);
       expect(s, id).toBeDefined();

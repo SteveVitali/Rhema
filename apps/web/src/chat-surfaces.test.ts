@@ -103,7 +103,10 @@ describe("GET /p/:slug — the Desk Chat tab (§7.1)", () => {
 
     // the desktop desk (the shared component's non-compact render — what the leaf mounts):
     const desk = renderToStaticMarkup(chatPanel(CHAT, "demo", {}, false));
-    for (const t of ["base", "balanced", "frontier"]) expect(desk).toContain(`data-chat-tier="${t}"`);
+    // R7TALK.1a — the tier picker is the Select primitive (one trigger, modelTier posted via the
+    // hidden native select); the three notches are its items.
+    expect(desk).toContain("data-chat-tier");
+    expect(desk).toContain('name="modelTier"');
     expect(desk).toContain("data-chat-composer");
   });
 

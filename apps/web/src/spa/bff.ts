@@ -52,7 +52,7 @@ export function setSessionExpiredHandler(fn: () => void): void {
  */
 export async function bffFetch<T>(
   path: string,
-  init?: { method?: string; json?: unknown; form?: FormData },
+  init?: { method?: string; json?: unknown; form?: FormData; signal?: AbortSignal },
 ): Promise<T> {
   if (!path.startsWith("/") || path.startsWith("//")) {
     throw new BffError(0, "bff_path_must_be_same_origin");
@@ -70,6 +70,7 @@ export async function bffFetch<T>(
     },
     ...(init?.json !== undefined ? { body: JSON.stringify(init.json) } : {}),
     ...(init?.form !== undefined ? { body: init.form } : {}),
+    ...(init?.signal !== undefined ? { signal: init.signal } : {}),
   });
   if (res.status === 401) {
     // The session ended server-side — drop the cached principal and hand the document to /login.

@@ -365,6 +365,54 @@ describe("GET …/turns/:runId — the metered cost strip (REQ-CHAT-11)", () => 
       (await get(`/projects/${seed.projectId}/chat/threads/${tid}/turns/run_nope`)).status,
     ).toBe(404);
   });
+
+  // R7TALK.1a (REQ-TALK-2; RV-21) — `debitedCredits` is the CHARGE: net cap-clamped ledger
+  // debits (debit − refund), never the metered burn in `strip`.
+  it("answers debitedCredits from the ledger (net debits, cap-clamped) beside the metered strip", async () => {
+    const tid = await defaultThreadId();
+    const created = await postJson(`/projects/${seed.projectId}/chat/threads/${tid}/turns`, {
+      message: "turn",
+    });
+    const { runId } = (await created.json()) as { runId: string };
+    for (const [id, kind, credits] of [
+      ["led_d1", "debit", 9],
+      ["led_d2", "debit", 4],
+      ["led_r1", "refund", 3],
+    ] as const) {
+      await db.pg.query(
+        `insert into credit_ledger(id, workspace_id, billing_account_id, kind, credits, bucket, run_id, source, idempotency_key)
+           values ($1,$2,$3,$4,$5,'included',$6,'run',$7)`,
+        [id, seed.workspaceId, seed.billingAccountId, kind, credits, runId, `ik_${id}`],
+      );
+    }
+    const res = await get(`/projects/${seed.projectId}/chat/threads/${tid}/turns/${runId}`);
+    expect(res.status).toBe(200);
+    const dto = (await res.json()) as { debitedCredits?: number };
+    expect(dto.debitedCredits).toBe(10); // 9 + 4 − 3 — the net charge, not the burn
+  });
+
+  // R7TALK.1a — the chat list's turns carry the same charge + the reply facts (sidecar reply +
+  // refs; the user's own words off the -user.md session entry).
+  it("the thread's turns carry debited_credits + user_text alongside the metered strip", async () => {
+    const tid = await defaultThreadId();
+    const created = await postJson(`/projects/${seed.projectId}/chat/threads/${tid}/turns`, {
+      message: "the user's own words",
+    });
+    const { runId } = (await created.json()) as { runId: string };
+    await db.pg.query(
+      `insert into credit_ledger(id, workspace_id, billing_account_id, kind, credits, bucket, run_id, source, idempotency_key)
+         values ('led_x1',$1,$2,'debit',7,'included',$3,'run','ik_led_x1')`,
+      [seed.workspaceId, seed.billingAccountId, runId],
+    );
+    const res = await get(`/projects/${seed.projectId}/chat`);
+    expect(res.status).toBe(200);
+    const dto = (await res.json()) as {
+      turns: { id: string; debited_credits?: number; user_text?: string }[];
+    };
+    const row = dto.turns.find((t) => t.id === runId);
+    expect(row?.debited_credits).toBe(7);
+    expect(row?.user_text).toBe("the user's own words");
+  });
 });
 
 describe("POST …/plan-decision (REQ-CHAT-10)", () => {

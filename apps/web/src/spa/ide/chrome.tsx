@@ -128,6 +128,9 @@ export function IdeChrome({ slug, children }: { slug: string; children?: ReactNo
     ready: published,
     ...(data.palette != null ? { palette: data.palette } : {}),
     nav,
+    // REQ-TALK-1 — the default tab when nothing is remembered: Timeline while a run is active
+    // or unread (its feed is bound), Chat otherwise.
+    defaultPanelTab: data.activeRun != null || data.feed != null ? "timeline" : "chat",
   });
   useIdeFeed({ hostRef, ...(data.feed != null ? { feed: data.feed } : {}), ...(maps.data != null ? { maps: maps.data } : {}), queryClient });
 

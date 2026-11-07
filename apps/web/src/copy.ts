@@ -1872,6 +1872,22 @@ export const COPY = {
       chipGroupLabel: "Start here",
       notesPlaceholder: "Paste your notes…",
       notesSend: "Save notes",
+      // R7TALK.1a (REQ-TALK-2; RV-21) — the thread/composer vocabulary. The footnote names the
+      // CHARGE (cap-clamped debits); burn above the cap is labelled truthfully, never hidden.
+      threadHeading: "Conversation",
+      memoryPinsHeading: "Memory & pins",
+      retry: "Retry",
+      abort: "Stop",
+      sending: "Sending…",
+      youLabel: "You",
+      assistantLabel: "Assistant",
+      debitedFmt: "{n} credits",
+      // The above-cap label — the ticket's owned copy key. Burn is burn: it says so, and it is
+      // never presented as the charge.
+      aboveCapFmt: "metered {n} credits above the cap — charged {m} (cap-clamped)",
+      progressWorking: "Working…",
+      demoReadonly: "The demo is read-only — sign up to chat about your own project.",
+      sourcesUsed: "Sources",
     },
     statusBar: {
       view: "View",
