@@ -235,3 +235,47 @@ R8.showcase.spa + U2 + U5 + U1 green — all four still owe; U3.occlusion + U7.i
 F-1 residual, F-3 residual, F-5 evolved, F-6 + F-7 new → owner insert round 2 (the `250a` shape).
 The preview stays UP at `3d790572` within the $20 cap for fix round 2's re-walk + the deferred
 hero capture; tear down at once if measured spend reaches $20.
+
+## RESUME — defect boundary round 2 closed by `250b_R7FIX.2` (PR #295, unmerged OPERATOR)
+
+- 2026-11-07T22:xxZ — **250b_R7FIX.2 landed at `8608192b`** (CI pass #295 `142caaa`, run
+  `42414115104`; boundary commit **`2817ba73`** = composed tip: my Part-B records + round-2
+  fixes). Fixes: F-1 (`?view=tree` resolves `getLatestReview` in parallel — the correspondence
+  join couldn't see the showcase dossier; U2's substrate picks `[data-shell-recent="showcase"]`
+  explicitly), F-3 (HeadManager's REQ-COPY-7 h1-focus on settle was the claimer — it now yields
+  to `[data-inline-title]` + a MutationObserver belt), F-5 (`OutlineSurface`'s `{outline:null}`
+  arm emitted `PageHeader` without crumbs — same gap pre-closed on Figures/Settings), F-6 (a
+  SECOND `data-ide-panel-tab="chat"` emitter in `page-chrome.tsx` was a raw button → `Button`
+  primitive), F-7 (`hero-capture.ts` reads cookies inside try-before-close + fetches `/healthz/`
+  first). `stevevitali/r7dep-2-t1-prod` advanced to `2817ba73` (the composed tip — records stay
+  continuous on the deployed line). H16 re-checked: still **not-dispositioned**.
+- 2026-11-07T22:xxZ — journeys dist rebuilt (fixed recipe in `dist/hero-capture.js`); Cloud Build
+  `8622f186` all-10 @ `2817ba73` (`_TAG=r7dep-2-t1b`).
+- 2026-11-07T21:5xZ — Cloud Build `8622f186` SUCCESS (~13m); digests
+  `logs/r7dep2/pr293-digests-t1b.txt`; guarded `config` re-pins + `up` (11 updates + proxy
+  template replace, 1m34s, zero destructive). **Provenance: web+api `/healthz/` → `2817ba73…`
+  — same pr-293 stack, second in-place update.**
+- 2026-11-07T21:5xZ — **T1b re-walk at `2817ba73`** (`t1b-u-legs/` + `t1b-d-legs/`, `--expect-sha`
+  match, $0): **12 legs green** — 8 incumbents + **U3.occlusion, U4.controls, U6.chat, U7.import**
+  all ready-to-flip (F-6 verified closed — the panel tab is the `Button` primitive now).
+- 2026-11-07T21:53Z — **hero-capture REHEARSAL at `2817ba73` — recipe verified fixed** (F-7
+  closed): exit 0, `/healthz/` provenance match, clip `13.72s / 763,492B / 1280×720 / no audio`,
+  poster `5,765B`, manifest `violations: []` (raw scratch `/tmp/r7dep2/hero-t1b`; NOT committed —
+  the committed capture runs at the final T1 SHA so the manifest's expectSha IS the deployed tip).
+
+### F-R7DEP.2 findings — status after `250b_R7FIX.2` (T1b re-walk at `2817ba73`)
+
+| # | State | Root-cause diagnosis for round 3 |
+|---|---|---|
+| F-1 (R8.showcase.spa) | **still FAILING (identical ×3).** The leg's `a[href*="/review/"]`.first() resolves the findings-desk filter-Clear `<a class="ui-d-l">` (findings-desk.tsx:141) inside the UNOPENED right panel — legitimately invisible. The dossier-letter review link exists but is not DOM-first. Leg-vs-surface selector mismatch (scope to the letter/sidebar region) or panel must not emit hidden anchors before the letter's. | `t1b-u-legs/` report.json |
+| F-1b (U2.noreload) | **evolved — substrate fix worked** (rides `[data-shell-recent="showcase"]`, the `/p/<slug>/review/` hop passed), now times out on `a[href="/p/showcase/export"]` — the read-only Showcase project exposes no export affordance; the leg's export hop needs a writable project or the surface must carry it. | same |
+| F-3 (U5.write) | **still FAILING (identical ×3)** — "the inline title was not focused". Root cause now precise: `data-inline-title` is emitted on the `<form>` WRAPPER (page-chrome.tsx:492) while the leg asserts `document.activeElement === [data-inline-title]`; focus lands on the inner `<input>` so the check can never pass. Fix = attribute onto the input OR leg asserts `el.contains(document.activeElement)`. | same |
+| F-5 (U1.shell) | **evolved again** — outline crumb verified fixed; new symptom: "the reviews item did not become aria-current after its SPA nav" — sidebar reviews-link active-state wiring misses the `/p/:slug/review/:runId` route. | same |
+| F-2, F-4, F-6, F-7 | **CLOSED** — U3.occlusion + U7.import + U4.controls green at `2817ba73`; hero-capture exit 0 with a clean manifest. | same |
+
+**PAUSE — third defect-boundary.** `D-R7FIX.1-2`/`D-R7FIX.2-1` each partially verified (4 legs
+green of their named set + the recipe proven). Four legs remain: R8.showcase.spa (selector-vs-
+surface), U2.noreload (export affordance absent on read-only showcase), U5.write (attribute-vs-
+assertion mismatch), U1.shell (reviews-item aria-current). All four are owner dispositions — leg
+re-pins or surface wiring, never this ticket's code. Preview stays UP at `2817ba73` for the
+round-3 re-walk + the real hero capture; tear down at once at $20 measured.
