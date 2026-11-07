@@ -1,0 +1,18 @@
+config:
+  gcp:project: rhema-507501
+  gcp:region: us-central1
+  rhema:placeholderImage: us-docker.pkg.dev/cloudrun/container/hello
+  rhema:deployProxyMig: "true"
+  rhema:runTaskAppArmorType: Localhost
+  rhema:runTaskAppArmorLocalhostProfile: rhema-run-task
+  rhema:gitSha: 18b79c30c2b8d730414ce8fbb67d015b6a599611
+  rhema:protocolsVersion: 0.4.0+9c2b880dbee74bd8
+  rhema:googleOauthClientId: 25012989319-ivoppj8l0c456hblt74ji6r7u1mf52n0.apps.googleusercontent.com
+  rhema:resendApiKey:
+    secure: AAABAFnXHaJz3kmzBSxIesrW7qFeiD5pC3t9lEvJeWewDBCgN+iu8fiqiPWxA0La9TDIGUXr4KZe7jNicy8T0Bvav9o=
+  rhema:emailFrom: hello@rhema.tools
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-293/api@sha256:c96709ec3ab14a19b9058ce8200ff9eee40521315ec4cf2ee342edce81c0949f","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-293/web@sha256:f767dd3660d43480cffff13a71c0004dc7ee41ccd465dbc4f3d2c974481a8aa7","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-293/worker@sha256:1bb594ca4a02b3a4e7cc2d9056c48165dbbf0941de8f77fa4775842edda85202","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-293/fetcher@sha256:bad535d67c76bd7517466aaf34b85b0848e044a6c8ab89138d9cd49b76136f71","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-293/convert@sha256:61b94c7dd9e165ef35b433184d727ca37ee8651254f58453ac6bf6447678d144","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-293/export@sha256:ce479bfb60cf936bfd41baffd3013ef1fcb002d4d66f86196a7210a552f79f69","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-293/collab@sha256:b6e96dc78731125f8091ddb7ce846dc4d2bf63e869b914e790a34f0be38d410a","turbo-cache":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-293/turbo-cache@sha256:7601630ae564a429ae1a6b0582f64a125f17711cf13d44dca7e1d8bca1053a8a"}'
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-pr-293/run-task@sha256:4b6f46a86b55f0dd423757d7e8fb3a89cae85fc2e5c463eedf19b5740d4aecaa
+  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-pr-293/egress-proxy@sha256:6cf53b524e3475048073befa6c748d2f0c1f7cee6558c7a8525897328a2bb449
+  rhema:appBaseUrl: https://rhema-pr-293-web-723313c-tkbl73n3tq-uc.a.run.app
+  rhema:apiPublicUrl: https://rhema-pr-293-api-e35a071-tkbl73n3tq-uc.a.run.app
