@@ -1,33 +1,26 @@
-// The IDE client island (P1.01; REQ-IDE-8/9/38/39). Same convention as the landed editor island
-// (editor.ts): the SSR document renders the full §5.1 shell markup with data-* state; this bundle
-// enhances it — pane toggles + drags persist to localStorage (per user × project, NEVER the URL), the
-// View/theme menus are attribute-driven, ⌘1/⌘2/⌘J/⌘⇧F/⌘⇧M/⌘⇧L bind globally, and theme writes POST to
-// the same-origin web routes (the web server forwards the session to the api — the bundle never sees a
-// credential, and no protocol/eval text may reach it, REQ-ARCH-33). `?focus=1` is the ONE shareable pane
-// URL flag: applied, then stripped from the address bar.
+// The phone-UA reader island (R7RO.2; REQ-RELOAD-7, REQ-MOBILE-3 amended, UXC-7). The forced-SSR
+// Page family mounts this bundle on phone requests only — every desktop and tablet surface is the
+// SPA (its controller in spa/ide/controller.ts owns the rest). What this reader keeps:
+//
+//   • the reader stepper + font preset (localStorage-backed --paper-size / data-font),
+//   • theme + paper writes (same-origin JSON POSTs the web routes forward to the api — the bundle
+//     never sees a credential, and no protocol/eval text may reach it, REQ-ARCH-33),
+//   • the §10.1 entry-point disclosures: the phonebar's Timeline/Findings/Chat/Reading anchors are
+//     hash links to <details> sections inside the Page; a deep link (#phone-*, #finding-<id>) opens
+//     the matching disclosure and scrolls it in — the inputs themselves are server-rendered
+//     no-JS-capable forms, and this stays their only enhancement seam,
+//   • the OS-theme listener for the "auto" app-theme pref.
+//
+// Deleted here (SPA-owned since R7PANE.1/R7SHELL.1c): pane toggles and drags, the View/Theme menus,
+// the ⌘K palette, the full keymap dispatcher, the selection popover and Timeline context menu, the
+// findings J/K cursor, the suggestions preview, the authorship toggle, the cheat sheet, and the
+// live-feed SSE tail. Re-adding any of them fails phone-island.test.ts.
 
-import { parseCommand, resolveCommand } from "@rhema/commands";
 import {
-  DEFAULT_PANE_STATE,
-  contextMenuItems,
-  cyclePaperTheme,
-  feedRowVisible,
-  formatFeedRow,
-  paneDrag,
-  paneStorageKey,
   parseAppTheme,
   parsePaperTheme,
-  parsePaneState,
   resolveAppTheme,
-  selectionMenuItems,
-  serializePaneState,
   THEME_STORAGE_KEY,
-  dispatchIdeKey,
-  type CommandMenuItem,
-  type FeedDensityTab,
-  type FeedLabelMaps,
-  type FocusZone,
-  type PaneState,
   type PaperTheme,
 } from "@rhema/ide";
 
@@ -39,212 +32,13 @@ function main(): void {
   if (!ide) return;
   const doc = document.documentElement;
   const slug = ide.dataset["project"] ?? "";
-  const userId = ide.dataset["user"] ?? "local";
-  const projectId = ide.dataset["projectId"] ?? slug;
-  const storageKey = paneStorageKey(userId, projectId);
 
-  // ---- state: stored arrangement wins; ?focus=1 overrides it ONCE and is stripped (never a URL mode). ----
-  let state: PaneState;
-  try {
-    state = parsePaneState(localStorage.getItem(storageKey));
-  } catch {
-    state = { ...DEFAULT_PANE_STATE };
-  }
-  const ssrMargin = ide.dataset["margin"] ?? "auto";
-  const initialView = ide.dataset["view"];
-  if (initialView === "focus") state = { ...state, view: "focus" };
-  try {
-    const url = new URL(window.location.href);
-    if (url.searchParams.get("focus") === "1") {
-      state = { ...state, view: "focus" };
-      url.searchParams.delete("focus");
-      window.history.replaceState(null, "", url.toString());
-    }
-  } catch {
-    /* non-navigable context (tests) */
-  }
-
-  function apply(): void {
-    if (!ide) return;
-    ide.dataset["panel"] = state.panelOpen === true ? "open" : "closed";
-    // R7a hook aliases — the legs resolve on this markup AND prod's R7a markup.
-    ide.dataset["timeline"] = ide.dataset["panel"];
-    ide.dataset["desk"] = ide.dataset["panel"];
-    ide.dataset["deskTab"] = state.panelTab;
-    ide.dataset["panelTab"] = state.panelTab;
-    ide.dataset["view"] = state.view;
-    if (ssrMargin !== "hidden") {
-      ide.dataset["margin"] = state.findingCards ? "auto" : "ticks";
-    }
-    if (state.advanced) ide.dataset["advanced"] = "1";
-    else delete ide.dataset["advanced"];
-    ide.style.setProperty("--panel-w", `${state.panelWidth}px`);
-    // the panel element mirrors the open intent for the overlay/sheet selectors
-    ide.querySelector(".ide-panel")?.toggleAttribute("data-open", state.panelOpen === true);
-    // aria-checked mirrors on the menu radios/checkboxes
-    for (const b of ide.querySelectorAll<HTMLElement>("[data-ide-view]")) {
-      b.setAttribute("aria-checked", String(b.dataset["ideView"] === state.view));
-    }
-    for (const b of ide.querySelectorAll<HTMLElement>("[data-ide-toggle]")) {
-      const id = b.dataset["ideToggle"] as keyof PaneState | undefined;
-      if (id && typeof state[id] === "boolean") b.setAttribute("aria-checked", String(state[id]));
-    }
-    for (const b of ide.querySelectorAll<HTMLElement>("[data-ide-panel-tab], [data-ide-desk-tab]")) {
-      b.setAttribute("aria-selected", String((b.dataset["idePanelTab"] ?? b.dataset["ideDeskTab"]) === state.panelTab));
-    }
-    applySuggestions(state.suggestionsInline === true);
-  }
-
-  // ---- P1.07 — View › Show suggestions inline (§5.7): a suggestion-bearing finding's replacement
-  // renders as a read-only preview beside the passage. The Page's finding spans carry
-  // `data-suggestion-replacement`; the preview is a DOM-only insert — the document bytes never change
-  // (Apply owns the write). ----
-  const suggestionNodes: HTMLElement[] = [];
-  function applySuggestions(on: boolean): void {
-    if (!ide) return;
-    for (const n of suggestionNodes) n.remove();
-    suggestionNodes.length = 0;
-    for (const span of ide.querySelectorAll<HTMLElement>(".rm-finding[data-suggestion-replacement]")) {
-      span.classList.toggle("rm-suggestion-preview", on);
-      if (on) {
-        const ins = document.createElement("span");
-        ins.className = "rm-suggestion-replacement";
-        ins.setAttribute("aria-hidden", "true");
-        ins.textContent = ` ${span.dataset["suggestionReplacement"] ?? ""}`;
-        span.insertAdjacentElement("afterend", ins);
-        suggestionNodes.push(ins);
-      }
-    }
-  }
-
-  function setState(next: Partial<PaneState>): void {
-    state = { ...state, ...next };
-    apply();
-    try {
-      localStorage.setItem(storageKey, serializePaneState(state));
-    } catch {
-      /* private mode — arrangement falls back to session-only */
-    }
-  }
-
-  // ---- pane toggles ------------------------------------------------
-  const on = (sel: string, fn: () => void) => {
-    ide.querySelectorAll<HTMLElement>(sel).forEach((el) =>
-      el.addEventListener("click", (e) => {
-        e.preventDefault();
-        fn();
-      }),
-    );
-  };
-  on("[data-ide-timeline-toggle]", () => setState({ panelOpen: state.panelOpen !== true }));
-  on("[data-ide-panel-toggle]", () => setState({ panelOpen: state.panelOpen !== true }));
-  on("[data-ide-desk-toggle]", () => setState({ panelOpen: state.panelOpen !== true }));
-  ide.querySelectorAll<HTMLElement>("[data-ide-panel-tab], [data-ide-desk-tab]").forEach((el) =>
-    el.addEventListener("click", () => {
-      const tab = (el.dataset["idePanelTab"] ?? el.dataset["ideDeskTab"]) as PaneState["panelTab"];
-      setState({ panelTab: tab, panelOpen: true });
-    }),
-  );
-
-  // P1.05 — a run card's "Live feed" action opens the Desk on the feed tab (the same affordance the
-  // desk's own tab buttons use).
-  ide.querySelectorAll<HTMLElement>("[data-ide-open-feed]").forEach((el) =>
-    el.addEventListener("click", (e) => {
-      e.preventDefault();
-      setState({ panelTab: "feed", panelOpen: true });
-    }),
-  );
-
-  // ---- menus (View + Theme) ------------------------------------------
-  const menus = new Map<string, HTMLElement>();
-  for (const m of ide.querySelectorAll<HTMLElement>("[data-ide-menu]")) {
-    menus.set(m.dataset["ideMenu"] ?? "", m);
-  }
-  function closeMenus(): void {
-    for (const m of menus.values()) m.hidden = true;
-    for (const t of ide?.querySelectorAll<HTMLElement>("[aria-haspopup='menu']") ?? []) {
-      t.setAttribute("aria-expanded", "false");
-    }
-  }
-  function openMenu(name: string, anchor: HTMLElement): void {
-    const m = menus.get(name);
-    if (!m) return;
-    const wasOpen = !m.hidden;
-    closeMenus();
-    if (wasOpen) return;
-    m.hidden = false;
-    anchor.setAttribute("aria-expanded", "true");
-    // position beside the anchor (rail bottom / status bar right)
-    const r = anchor.getBoundingClientRect();
-    m.style.left = `${Math.min(r.left, window.innerWidth - 240)}px`;
-    m.style.bottom = `${Math.max(8, window.innerHeight - r.top + 6)}px`;
-    m.style.top = "auto";
-    m.querySelector<HTMLElement>("[role='menuitemradio'], .ide-menu-row")?.focus();
-  }
-  ide.querySelector<HTMLElement>("[data-ide-view-menu]")?.addEventListener("click", (e) => {
-    e.preventDefault();
-    openMenu("view", e.currentTarget as HTMLElement);
-  });
-  ide.querySelector<HTMLElement>("[data-ide-theme-menu]")?.addEventListener("click", (e) => {
-    e.preventDefault();
-    openMenu("theme", e.currentTarget as HTMLElement);
-  });
-  document.addEventListener("click", (e) => {
-    const t = e.target as HTMLElement | null;
-    if (t && ide.contains(t) && (t.closest("[data-ide-menu]") || t.closest("[aria-haspopup='menu']"))) return;
-    closeMenus();
-  });
-
-  // ---- view modes + toggles -------------------------------------------
-  ide.querySelectorAll<HTMLElement>("[data-ide-view]").forEach((el) =>
-    el.addEventListener("click", () => {
-      setState({ view: el.dataset["ideView"] as PaneState["view"] });
-      closeMenus();
-    }),
-  );
-
-  // P1.02 — the Authorship overlay toggle: read-only decorations over the Page's blocks (NOT pane
-  // state — it persists on its own key and the page.js island listens for the change event).
-  const AUTHORSHIP_KEY = `rhema:authorship:v1:${projectId}`;
-  let authorship = false;
-  try {
-    authorship = localStorage.getItem(AUTHORSHIP_KEY) === "1";
-  } catch {
-    /* private mode — session-only */
-  }
-  const applyAuthorship = (): void => {
-    if (authorship) ide.dataset["authorship"] = "1";
-    else delete ide.dataset["authorship"];
-    for (const b of ide.querySelectorAll<HTMLElement>('[data-ide-toggle="authorship"]')) {
-      b.setAttribute("aria-checked", String(authorship));
-    }
-    window.dispatchEvent(new CustomEvent("rhema:authorship", { detail: { on: authorship } }));
-  };
-  ide.querySelectorAll<HTMLElement>("[data-ide-toggle]").forEach((el) =>
-    el.addEventListener("click", () => {
-      const id = el.dataset["ideToggle"] as keyof PaneState | "authorship";
-      if (id === "findingCards" || id === "suggestionsInline" || id === "advanced") {
-        setState({ [id]: !state[id] } as Partial<PaneState>);
-      } else if (id === "authorship") {
-        authorship = !authorship;
-        try {
-          localStorage.setItem(AUTHORSHIP_KEY, authorship ? "1" : "0");
-        } catch {
-          /* ignore */
-        }
-        applyAuthorship();
-      }
-      closeMenus();
-    }),
-  );
-  applyAuthorship();
-
-  // ---- typography: font preset + reader stepper (localStorage-backed) --
+  // ---- typography: font preset + reader stepper (localStorage-backed) ----
   let readerStep = 0;
   try {
     readerStep = Math.min(3, Math.max(0, parseInt(localStorage.getItem(STEP_KEY) ?? "0", 10) || 0));
   } catch {
-    /* ignore */
+    /* private mode — session-only */
   }
   function applyFont(): void {
     const sans = doc.getAttribute("data-font") === "sans";
@@ -265,7 +59,6 @@ function main(): void {
         /* ignore */
       }
       applyFont();
-      closeMenus();
     }),
   );
   ide.querySelectorAll<HTMLElement>("[data-ide-reader]").forEach((el) =>
@@ -317,7 +110,6 @@ function main(): void {
       const pref = el.dataset["ideTheme"] ?? "dark";
       applyAppTheme(pref);
       post(ide.dataset["themeUrl"], { appTheme: pref });
-      closeMenus();
     }),
   );
   ide.querySelectorAll<HTMLElement>("[data-ide-paper]").forEach((el) =>
@@ -325,596 +117,46 @@ function main(): void {
       const p = parsePaperTheme(el.dataset["idePaper"]);
       applyPaper(p);
       post(ide.dataset["paperUrl"], { paperTheme: p });
-      closeMenus();
     }),
   );
 
-  // ---- drag handles: live width preview + the collapse-on-violate commit (REQ-IDE-9) ----
-  for (const handle of ide.querySelectorAll<HTMLElement>("[data-ide-handle]")) {
-    const pane = "panel" as const;
-    handle.addEventListener("pointerdown", (e) => {
-      e.preventDefault();
-      handle.setPointerCapture(e.pointerId);
-      const onMove = (ev: PointerEvent) => {
-        const rect = ide.getBoundingClientRect();
-        const px = rect.right - ev.clientX;
-        ide.style.setProperty("--panel-w", `${Math.max(0, px)}px`);
-      };
-      const onUp = (ev: PointerEvent) => {
-        handle.removeEventListener("pointermove", onMove);
-        handle.removeEventListener("pointerup", onUp);
-        const rect = ide.getBoundingClientRect();
-        const px = rect.right - ev.clientX;
-        setState(paneDrag(state, pane, px, window.innerWidth));
-      };
-      handle.addEventListener("pointermove", onMove);
-      handle.addEventListener("pointerup", onUp);
-    });
+  // ---- the §10.1 entry-point disclosures (REQ-MOBILE-3; F4) ----
+  // The phonebar links are plain hash anchors — without JS they land on the closed disclosure's
+  // summary (never a dead end); the island opens the matching <details> and scrolls it in.
+  // `#finding-<id>` deep links (the Page's finding marks + email/notification links) open the
+  // findings disclosure and light the row — the reader-scoped echo of §5.7's linked selection.
+  function openDisclosure(): void {
+    const hash = window.location.hash;
+    const sectionMatch = /^#(phone-timeline|phone-findings|phone-chat|phone-reading)$/.exec(hash);
+    const findingId = /^#finding-(.+)$/.exec(hash)?.[1];
+    let el: HTMLElement | null = null;
+    if (sectionMatch) {
+      el = ide?.querySelector<HTMLElement>(`#${sectionMatch[1]}`) ?? null;
+    }
+    if (el == null && findingId != null) {
+      const esc =
+        typeof CSS !== "undefined" && CSS.escape ? CSS.escape(findingId) : findingId.replace(/"/g, "");
+      el = ide?.querySelector<HTMLElement>(`#finding-${esc}, [data-review-finding="${esc}"]`) ?? null;
+    }
+    if (el == null) return;
+    // open the whole disclosure chain (a finding row can sit inside the findings <details>)
+    for (let d: HTMLElement | null = el; d != null; d = d.parentElement) {
+      if (d instanceof HTMLDetailsElement) d.open = true;
+    }
+    if (el instanceof HTMLDetailsElement) el.open = true;
+    if (findingId != null) {
+      for (const other of ide?.querySelectorAll<HTMLElement>("[data-selected='true']") ?? []) {
+        other.removeAttribute("data-selected");
+      }
+      el.setAttribute("data-selected", "true");
+    }
+    el.scrollIntoView({ block: "start" });
   }
+  openDisclosure();
+  window.addEventListener("hashchange", openDisclosure);
 
-  // the `?` cheat sheet survives the palette retirement (R7SHELL.1c — ⌘K is the AppShell's;
-  // SSR documents keep their `?` sheet).
-  const cheatEl = ide.querySelector<HTMLElement>("[data-ide-cheatsheet]");
-  ide.querySelector<HTMLElement>("[data-ide-cheatsheet-close]")?.addEventListener("click", () => {
-    if (cheatEl) cheatEl.hidden = true;
-  });
-  cheatEl?.addEventListener("click", (e) => {
-    if (e.target === cheatEl) cheatEl.hidden = true;
-  });
-  const toggleCheat = (): void => {
-    if (cheatEl) cheatEl.hidden = !cheatEl.hidden;
-  };
-  const cheatOpen = (): boolean => cheatEl != null && !cheatEl.hidden;
-
-  // ---- findings focus (§5.12's inert-while-typing chords + §5.7's linked selection): the finding
-  // cursor walks the ONE finding list — Margin cards AND Desk rows dedupe by finding id (the Margin
-  // card wins the focus since it carries the controls). J/K walk, ⌥J/⌥K hop major-or-blocking, Enter
-  // opens, Esc releases, P applies, A D R F E write dispositions — all inert while the caret is in the
-  // Page (the dispatcher enforces the zone). ----
-  interface FindingEl { id: string; el: HTMLElement }
-  const findingEls = (): FindingEl[] => {
-    const seen = new Set<string>();
-    const out: FindingEl[] = [];
-    for (const el of ide.querySelectorAll<HTMLElement>("[data-margin-card], [data-desk-row], .ide-fcard")) {
-      const id = el.dataset["findingId"] ?? el.dataset["deskRow"] ?? "";
-      if (id === "" || seen.has(id)) continue;
-      seen.add(id);
-      out.push({ id, el });
-    }
-    return out;
-  };
-  const fcards = (): HTMLElement[] => findingEls().map((f) => f.el);
-  let findingIx = -1;
-
-  /** §5.7 linked selection — one finding id lights up on every surface at once (Margin card, Desk
-   *  row, the Page's underline span) and its passage scrolls into view. */
-  function selectFinding(id: string): void {
-    if (!ide) return;
-    for (const other of ide.querySelectorAll<HTMLElement>("[data-selected='true']")) {
-      other.removeAttribute("data-selected");
-    }
-    if (id === "") return;
-    const esc = typeof CSS !== "undefined" && CSS.escape ? CSS.escape(id) : id.replace(/"/g, "");
-    for (const sel of ide.querySelectorAll<HTMLElement>(`[data-finding-id="${esc}"], [data-desk-row="${esc}"]`)) {
-      sel.setAttribute("data-selected", "true");
-    }
-    ide
-      .querySelector<HTMLElement>(`.ide-page [data-finding-id="${esc}"], .rm-page-host [data-finding-id="${esc}"]`)
-      ?.scrollIntoView({ block: "center" });
-  }
-
-  function focusFinding(ix: number): void {
-    const items = findingEls();
-    if (items.length === 0) return;
-    findingIx = Math.max(0, Math.min(items.length - 1, ix));
-    const item = items[findingIx];
-    if (!item) return;
-    // a card inside a crowded-paragraph chip expands the stack on focus (§5.7 clustering).
-    const det = item.el.closest("details");
-    if (det instanceof HTMLDetailsElement) det.open = true;
-    selectFinding(item.id);
-    item.el.tabIndex = -1;
-    item.el.focus();
-  }
-
-  function findingAction(action: string): void {
-    const item = findingEls()[findingIx];
-    if (!item) return;
-    const card = item.el;
-    card.dispatchEvent(new CustomEvent("rhema:finding-action", { bubbles: true, detail: { action, findingId: item.id } }));
-    if (action === "apply") {
-      // P → the card's Apply form posts (the free verb writes accept·applied through the server).
-      card.querySelector<HTMLElement>("[data-apply]")?.click();
-      return;
-    }
-    // the five verbs → the card's disposition form. rebut/escalate need a rationale — focus the note
-    // field rather than posting a write the server would bounce (the card explains the rule).
-    if (action === "rebut" || action === "escalate") {
-      card.querySelector<HTMLElement>("textarea, input[type='text']")?.focus();
-      card.querySelector<HTMLElement>(`[data-verb="${action}"]`)?.setAttribute("data-armed", "true");
-      return;
-    }
-    card.querySelector<HTMLElement>(`[data-verb="${action}"]`)?.click();
-  }
-
-  function focusZone(): FocusZone {
-    const el = document.activeElement as HTMLElement | null;
-    if (!el || el === document.body) return "none";
-    if (el.closest("[data-app-palette]") || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName)) return "input";
-    // REQ-KEYS-1 Rule 5 (239) — the Source host's zone: CodeMirror's bindings win while focused.
-    if (el.closest("[data-source-host]") || el.closest(".cm-editor")) return "source";
-    if (el.isContentEditable || el.closest(".ProseMirror") || el.closest("[data-page-host]")) return "page";
-    if (el.closest("[data-margin-card]") || el.closest(".ide-fcard") || el.closest(".ide-margin")) return "margin";
-    if (el.closest("[data-desk-row]") || el.closest("[data-findings-desk]")) return "findings";
-    return "none";
-  }
-
-  // clicking a finding on ANY surface joins the selection (§5.7) + syncs the cursor for J/K.
-  ide.addEventListener("click", (e) => {
-    const target = (e.target as HTMLElement | null)?.closest?.("[data-margin-card], [data-desk-row], .ide-fcard") as HTMLElement | null;
-    if (!target) return;
-    const id = target.dataset["findingId"] ?? target.dataset["deskRow"] ?? "";
-    if (id === "") return;
-    const ix = findingEls().findIndex((it) => it.id === id);
-    if (ix >= 0) findingIx = ix;
-    selectFinding(id);
-  });
-
-  // ---- the §5.12 keymap dispatcher (239: ⌘K palette · [ ] panes · f/t/v/c/h/l + g/r sequences ·
-  //      j/k + P A D R F E findings · ? cheat sheet · ⌘S restore · ⌘⏎ run sheet · Rule-5 source) ----
-  let pendingPrefix: "g" | "r" | null = null;
-  let prefixTimer: ReturnType<typeof setTimeout> | undefined;
-  window.addEventListener("keydown", (e) => {
-    const action = dispatchIdeKey(
-      {
-        key: e.key.length === 1 ? e.key.toLowerCase() : e.key,
-        metaKey: e.metaKey,
-        ctrlKey: e.ctrlKey,
-        shiftKey: e.shiftKey,
-        altKey: e.altKey,
-      },
-      focusZone(),
-      pendingPrefix,
-    );
-    if (action?.kind === "prefix") {
-      e.preventDefault();
-      pendingPrefix = action.prefix;
-      if (prefixTimer) clearTimeout(prefixTimer);
-      prefixTimer = setTimeout(() => {
-        pendingPrefix = null;
-      }, 1200);
-      return;
-    }
-    pendingPrefix = null;
-    if (!action) {
-      if (e.key === "Escape") {
-        closeMenus();
-        closeCmdMenu();
-        if (cheatEl && !cheatEl.hidden) cheatEl.hidden = true;
-      }
-      return;
-    }
-    switch (action.kind) {
-      case "palette":
-        // R7SHELL.1c — ⌘K is inert on SSR documents: the one palette lives in the AppShell
-        // (SPA); an SSR Page has no shell palette and issues no search request.
-        break;
-      case "pane":
-        e.preventDefault();
-        setState({ panelOpen: state.panelOpen !== true });
-        break;
-      case "focus-mode":
-        e.preventDefault();
-        setState({ view: state.view === "focus" ? "write" : "focus" });
-        break;
-      case "paper-theme": {
-        e.preventDefault();
-        const next = cyclePaperTheme(parsePaperTheme(doc.getAttribute("data-paper") ?? "light"));
-        applyPaper(next);
-        post(ide.dataset["paperUrl"], { paperTheme: next });
-        break;
-      }
-      case "view-menu": {
-        e.preventDefault();
-        const anchor = ide.querySelector<HTMLElement>("[data-ide-view-menu]");
-        if (anchor) openMenu("view", anchor);
-        break;
-      }
-      case "sheet":
-        // ⌘⇧D/E/V open the run sheet (GET) for the workflow — the sheet still owns the launch POST.
-        e.preventDefault();
-        window.location.assign(`/p/${slug}/run?workflow=${action.workflow}`);
-        break;
-      case "run-next": {
-        const href = ide.dataset["runNext"];
-        if (href) {
-          e.preventDefault();
-          window.location.assign(href);
-        }
-        break;
-      }
-      case "goto-projects":
-        e.preventDefault();
-        window.location.assign("/app");
-        break;
-      case "goto-voices":
-        e.preventDefault();
-        window.location.assign("/voices");
-        break;
-      case "run-sheet":
-        e.preventDefault();
-        if (slug) window.location.assign(`/p/${slug}/run`); // ⌘⏎ — Rule 4's run sheet
-        break;
-      case "inbox":
-        e.preventDefault();
-        window.location.assign("/app/inbox"); // P1.19 — the §5.11 Inbox is the rail's surface
-        break;
-      case "settings":
-        e.preventDefault();
-        // P1.20 — ⌘, lands on the §14.7 settings tree (Account is the default section).
-        window.location.assign("/app/settings/account");
-        break;
-      case "version-next":
-      case "version-prev": {
-        e.preventDefault();
-        const m = /\/v\/(\d+)/.exec(window.location.pathname);
-        if (m) {
-          const n = Number.parseInt(m[1] ?? "1", 10) + (action.kind === "version-next" ? 1 : -1);
-          if (n >= 1) window.location.assign(window.location.pathname.replace(/\/v\/\d+/, `/v/${n}`));
-        }
-        break;
-      }
-      case "compare-previous": {
-        e.preventDefault();
-        // P1.08 (§5.8) — on a versioned Page the rail stamps the compare-previous link; follow it
-        // (the /v/:prev/diff/:n route). Elsewhere the palette's /compare verb stays the fallback.
-        const link = document.querySelector<HTMLAnchorElement>("[data-compare-previous]");
-        if (link?.href) window.location.assign(link.href);
-        /* the /compare fallback now lives in the AppShell palette (R7SHELL.1c) */
-        break;
-      }
-      case "triage": {
-        e.preventDefault();
-        // §5.7 triage mode (⌘⇧T): on a dossier the sectioned queue is the server-rendered
-        // `?triage=1` view — decisions persist per-verb, so entering/exiting is a navigation.
-        // Elsewhere the chord opens the Desk's findings tab and starts the cursor.
-        if (/\/p\/[^/]+\/review\/[^/]+/.test(window.location.pathname)) {
-          const url = new URL(window.location.href);
-          if (url.searchParams.get("triage") === "1") url.searchParams.delete("triage");
-          else url.searchParams.set("triage", "1");
-          window.location.assign(url.toString());
-        } else {
-          if (state.panelOpen !== true) setState({ panelOpen: true, panelTab: "findings" });
-          focusFinding(0);
-        }
-        break;
-      }
-      case "finding-next":
-        e.preventDefault();
-        focusFinding(findingIx + 1);
-        break;
-      case "finding-prev":
-        e.preventDefault();
-        focusFinding(findingIx - 1);
-        break;
-      case "finding-anchor-next":
-      case "finding-anchor-prev": {
-        e.preventDefault();
-        // ⌥J/⌥K — the §5.12 severity walk: hop the next/previous MAJOR-OR-BLOCKING finding
-        // (wrapping), not every row.
-        const items = findingEls();
-        const severe = items.filter((it) => {
-          const sev = it.el.dataset["severity"];
-          return sev === "blocking" || sev === "major";
-        });
-        if (severe.length === 0) break;
-        const curId = items[findingIx]?.id;
-        const cur = severe.findIndex((it) => it.id === curId);
-        const step = action.kind === "finding-anchor-next" ? 1 : -1;
-        const next = severe[(cur + step + severe.length) % severe.length];
-        const ix = items.findIndex((it) => it.id === next!.id);
-        focusFinding(ix);
-        break;
-      }
-      case "finding-open": {
-        e.preventDefault();
-        const card = fcards()[findingIx];
-        card?.querySelector<HTMLElement>("a, button")?.click();
-        break;
-      }
-      case "finding-escape":
-        e.preventDefault();
-        findingIx = -1;
-        (document.activeElement as HTMLElement | null)?.blur();
-        closeMenus();
-        break;
-      case "finding-apply":
-      case "finding-disposition":
-        e.preventDefault();
-        findingAction(action.kind === "finding-disposition" ? action.disposition : "apply");
-        break;
-      case "restore-point":
-        e.preventDefault();
-        // ⌘S names a restore point — the Page island (page.ts) owns the save; the event lets any
-        // other surface bind it later.
-        ide.dispatchEvent(new CustomEvent("rhema:restore-point", { bubbles: true }));
-        break;
-      case "cheatsheet":
-        e.preventDefault();
-        toggleCheat();
-        break;
-      case "undo":
-      case "redo":
-        // ⌘Z/⌘⇧Z belong to the focused surface (the editor handles its own); in chrome focus they
-        // stay inert rather than hijacking the browser.
-        break;
-      default:
-        break;
-    }
-    if (cheatOpen() && action.kind !== "cheatsheet" && cheatEl) {
-      // any other chord dismisses the cheat sheet (it never swallows input)
-      cheatEl.hidden = true;
-    }
-  });
-
-  // ---- P1.06 — the selection popover + the Timeline context menu (§7.2/§7.4; REQ-CHAT-21/22) ----
-  // The third and fourth surfaces over the ONE grammar: `selectionMenuItems`/`contextMenuItems` are
-  // the pure models; each item's `command` parses + resolves through the same path as a typed
-  // palette command — the byte-identical-sheet invariant. No item ever POSTs — the sheet remains
-  // the only launcher (REQ-CHAT-25); 1.x verbs render disabled-with-reason, never guessed.
-  let cmdMenu: HTMLElement | null = null;
-  const closeCmdMenu = (): void => {
-    cmdMenu?.remove();
-    cmdMenu = null;
-  };
-  function openCmdMenu(items: readonly CommandMenuItem[], x: number, y: number, kind: string): void {
-    closeCmdMenu();
-    const menu = document.createElement("div");
-    menu.className = "ide-cmdmenu";
-    menu.dataset["kind"] = kind;
-    menu.setAttribute("role", "menu");
-    for (const item of items) {
-      if (item.separator) {
-        const sep = document.createElement("div");
-        sep.className = "ide-cmdmenu-sep";
-        menu.appendChild(sep);
-        continue;
-      }
-      const parsed = item.command ? parseCommand(item.command) : null;
-      const resolution = parsed?.ok ? resolveCommand(parsed.command, { projectSlug: slug }) : null;
-      const disabledReason =
-        resolution?.kind === "disabled"
-          ? resolution.reason
-          : parsed && !parsed.ok
-            ? (parsed.error ?? "Unparsable command.")
-            : null;
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "ide-pal-row";
-      b.setAttribute("role", "menuitem");
-      const label = document.createElement("span");
-      label.textContent = item.label;
-      b.appendChild(label);
-      if (disabledReason) {
-        b.dataset["disabled"] = "";
-        b.setAttribute("aria-disabled", "true");
-        const hint = document.createElement("span");
-        hint.className = "ide-pal-hint";
-        hint.textContent = disabledReason;
-        b.appendChild(hint);
-      } else {
-        if (item.hint) {
-          const hint = document.createElement("span");
-          hint.className = "ide-pal-hint";
-          hint.textContent = item.hint;
-          b.appendChild(hint);
-        }
-        b.addEventListener("click", () => {
-          closeCmdMenu();
-          if (item.action === "ask") {
-            // §7.4 — Ask opens the composer (the Desk's chat tab; the anchored-composer prefill is
-            // P1.11's seam — it consumes this same grammar).
-            setState({ panelOpen: true, panelTab: "chat" });
-          } else if (resolution && (resolution.kind === "sheet" || resolution.kind === "navigate")) {
-            window.location.assign(resolution.path); // GET only — the sheet owns the launch POST
-          }
-        });
-      }
-      menu.appendChild(b);
-    }
-    document.body.appendChild(menu);
-    cmdMenu = menu;
-    // clamp inside the viewport so a bottom-edge selection still shows the whole menu
-    const w = menu.offsetWidth;
-    const h = menu.offsetHeight;
-    menu.style.left = `${Math.max(8, Math.min(x, window.innerWidth - w - 8))}px`;
-    menu.style.top = `${Math.max(8, Math.min(y, window.innerHeight - h - 8))}px`;
-  }
-  document.addEventListener("mousedown", (e) => {
-    if (cmdMenu && !cmdMenu.contains(e.target as Node)) closeCmdMenu();
-  });
-
-  // the §7.4 selection popover — a non-collapsed selection inside the Page offers
-  // Ask · Visualize · Fact-check · Review this section (Line-edit/Cut are 1.x, marked).
-  const pagePane = ide.querySelector<HTMLElement>('[data-pane="page"]');
-  let selTimer: ReturnType<typeof setTimeout> | undefined;
-  const selectionMenu = (): void => {
-    if (selTimer) clearTimeout(selTimer);
-    selTimer = setTimeout(() => {
-      const sel = window.getSelection();
-      if (!sel || sel.isCollapsed || sel.rangeCount === 0 || !pagePane) return;
-      const range = sel.getRangeAt(0);
-      if (!pagePane.contains(range.commonAncestorContainer)) return;
-      const rect = range.getBoundingClientRect();
-      if (rect.width === 0 && rect.height === 0) return;
-      openCmdMenu(selectionMenuItems(), rect.left + rect.width / 2, rect.bottom + 8, "selection");
-    }, 120); // let a drag/double-click settle before measuring the range
-  };
-  document.addEventListener("mouseup", (e) => {
-    if (cmdMenu?.contains(e.target as Node)) return; // a click inside the menu isn't a new selection
-    if (pagePane?.contains(e.target as Node)) selectionMenu();
-    else closeCmdMenu();
-  });
-  document.addEventListener("keyup", (e) => {
-    if (e.shiftKey || e.key === "Shift") selectionMenu(); // shift-selection has no mouseup
-  });
-  document.addEventListener("selectionchange", () => {
-    const sel = window.getSelection();
-    if (cmdMenu?.dataset["kind"] === "selection" && (!sel || sel.isCollapsed)) closeCmdMenu();
-  });
-
-  // the artifact/Timeline context menu — a right-click on a round scopes the verbs to its subject
-  // version (@vN off data-round); outside a round the bare verbs apply to the current head.
-  ide.querySelector<HTMLElement>('[data-panel-body="timeline"], [data-pane="timeline"]')?.addEventListener("contextmenu", (e) => {
-    e.preventDefault();
-    const round = (e.target as HTMLElement).closest<HTMLElement>("[data-round]");
-    const n = round?.dataset["round"];
-    openCmdMenu(contextMenuItems(n != null ? Number(n) : undefined), e.clientX, e.clientY, "context");
-  });
-
-  // ---- P1.05 — the Desk's Live feed (§5.5; REQ-IDE-14): density tabs + the same-origin SSE tail ----
-  // SSR rendered the replayed rows at the default density; the island re-shows/hides rows on the tabs
-  // and appends live events through the SAME label maps (data-feed-labels — copy stays server-owned).
-  const feedPanel = ide.querySelector<HTMLElement>("[data-feed-run]");
-  if (feedPanel) {
-    const feedSection = feedPanel.querySelector<HTMLElement>("[data-live-feed]");
-    const rowsUl = feedPanel.querySelector<HTMLElement>("[data-feed-rows]");
-    let feedDensity: FeedDensityTab =
-      (feedSection?.dataset["density"] as FeedDensityTab | undefined) ?? "details";
-    let feedMaps: FeedLabelMaps = { t: {}, enums: {} };
-    try {
-      feedMaps = JSON.parse(feedPanel.dataset["feedLabels"] ?? "{}") as FeedLabelMaps;
-    } catch {
-      /* a malformed map drops live rows — SSR rows still stand */
-    }
-    let lastSeq = Number.parseInt(feedPanel.dataset["feedLastSeq"] ?? "0", 10) || 0;
-
-    const setFeedDensity = (d: FeedDensityTab): void => {
-      feedDensity = d;
-      if (feedSection) feedSection.dataset["density"] = d;
-      feedPanel.querySelectorAll<HTMLElement>("[data-feed-density]").forEach((b) =>
-        b.setAttribute("aria-pressed", String(b.dataset["feedDensity"] === d)),
-      );
-      // contract densities summary|normal|verbose map onto the tabs; hidden rows re-show on widen.
-      feedPanel.querySelectorAll<HTMLElement>("[data-feed-density-row]").forEach((row) => {
-        row.hidden = !feedRowVisible(row.dataset["feedDensityRow"] ?? "summary", d);
-      });
-    };
-    feedPanel.querySelectorAll<HTMLElement>("[data-feed-density]").forEach((el) =>
-      el.addEventListener("click", () => setFeedDensity((el.dataset["feedDensity"] as FeedDensityTab) ?? "details")),
-    );
-    // re-filter once at boot so the SSR rows obey the stored/selected density.
-    setFeedDensity(feedDensity);
-
-    const appendRow = (ev: { seq?: number; type?: string; payload?: unknown; density?: string }): void => {
-      if (!rowsUl || typeof ev.type !== "string") return;
-      if (typeof ev.seq === "number") lastSeq = Math.max(lastSeq, ev.seq);
-      const density = typeof ev.density === "string" ? ev.density : "summary";
-      if (!feedRowVisible(density, feedDensity)) return;
-      // RPT.1 — a provisional usage tick renders its ≈ template (provisional is never ambiguous).
-      const key =
-        ev.type === "usage.tick" &&
-        typeof ev.payload === "object" &&
-        ev.payload != null &&
-        (ev.payload as Record<string, unknown>)["provisional"] === true
-          ? "usage.tick.provisional"
-          : ev.type;
-      const text = formatFeedRow(key, ev.payload, feedMaps);
-      if (!text) return; // fail-closed: no template ⇒ no row
-      const li = document.createElement("li");
-      li.dataset["feedEvent"] = ev.type;
-      li.dataset["feedDensityRow"] = density;
-      li.style.display = "flex";
-      li.style.gap = "10px";
-      li.style.padding = "4px 0";
-      li.style.fontSize = "13px";
-      const label = document.createElement("span");
-      label.textContent = text.label;
-      li.appendChild(label);
-      if (text.detail) {
-        const d = document.createElement("span");
-        d.textContent = text.detail;
-        li.appendChild(d);
-      }
-      rowsUl.appendChild(li);
-      while (rowsUl.childElementCount > 400) rowsUl.firstElementChild?.remove(); // bound the DOM
-    };
-
-    // RPT.1 (REQ-IDE-11 meter half) — the run card moves WITH the feed's events, not just at SSR:
-    // `usage.tick`/`cost.final` re-render the meter's text (through the same server-owned
-    // `card.meter`/`card.meterProvisional` templates — no client-authored copy) + fill and toggle the
-    // provisional marker; `step.started`/`step.finished` flip the phase row's status + glyph. The card
-    // is `[data-run-card="<feed run>"]` in the Timeline pane; the glyphs mirror ui's GLYPH map
-    // (mechanical symbols, not copy).
-    const PHASE_GLYPH: Record<string, string> = { done: "✓", running: "◐", pending: "○", skipped: "○", off: "○" };
-    const cardRunId = feedPanel.dataset["feedRun"] ?? "";
-    const cardEl = cardRunId !== "" ? ide.querySelector<HTMLElement>(`[data-run-card="${cardRunId}"]`) : null;
-    const patchCard = (ev: { type?: string; payload?: unknown }): void => {
-      if (cardEl == null || typeof ev.type !== "string") return;
-      const p = typeof ev.payload === "object" && ev.payload != null ? (ev.payload as Record<string, unknown>) : {};
-      if (ev.type === "usage.tick" || ev.type === "cost.final") {
-        const spent = Number(p["spentCredits"]);
-        const cap = Number(p["capCredits"]);
-        if (!Number.isFinite(spent) || !Number.isFinite(cap)) return;
-        const provisional = ev.type === "usage.tick" && p["provisional"] === true;
-        const creditsEl = cardEl.querySelector<HTMLElement>("[data-credits]");
-        if (creditsEl) {
-          const key = provisional ? "card.meterProvisional" : "card.meter";
-          const rendered = formatFeedRow(
-            key,
-            { spentCredits: spent.toLocaleString("en-US"), capCredits: cap.toLocaleString("en-US") },
-            feedMaps,
-          );
-          if (rendered) creditsEl.textContent = rendered.label;
-          if (provisional) creditsEl.setAttribute("data-provisional", "true");
-          else creditsEl.removeAttribute("data-provisional");
-        }
-        const meter = cardEl.querySelector<HTMLElement>("[data-credit-meter]");
-        if (meter && cap > 0) meter.style.width = `${Math.min(100, Math.max(0, Math.round((spent / cap) * 100)))}%`;
-      }
-      if (ev.type === "step.started" || ev.type === "step.finished") {
-        const phase = typeof p["phase"] === "string" ? p["phase"] : null;
-        const li = phase != null ? cardEl.querySelector<HTMLElement>(`[data-phase="${phase}"]`) : null;
-        if (li) {
-          const status = ev.type === "step.started" ? "running" : "done";
-          li.setAttribute("data-phase-status", status);
-          const glyph = li.querySelector("span");
-          if (glyph) {
-            glyph.textContent = PHASE_GLYPH[status] ?? "○";
-            glyph.style.color = status === "running" ? "var(--state-running)" : "var(--state-ready)";
-          }
-        }
-      }
-    };
-
-    // The SSE tail — the same-origin web route proxies the api's stream (the browser never holds a
-    // credential; REQ-ARCH-33). `?after` resumes past the SSR replay; reconnects carry Last-Event-ID.
-    const eventsUrl = feedPanel.dataset["feedEvents"];
-    if (eventsUrl && typeof EventSource !== "undefined") {
-      const src = new EventSource(`${eventsUrl}${eventsUrl.includes("?") ? "&" : "?"}after=${lastSeq}`);
-      // The stream's events are NAMED (event: <type>) — EventSource dispatches each to a per-type
-      // listener; the label maps' keys are exactly the types worth listening for (fail-closed).
-      const onEvent = (m: Event): void => {
-        try {
-          const ev = JSON.parse((m as MessageEvent).data as string) as { type?: string; payload?: unknown };
-          patchCard(ev);
-          appendRow(ev);
-        } catch {
-          /* a malformed frame is dropped */
-        }
-      };
-      for (const type of Object.keys(feedMaps.t)) {
-        if (type.startsWith("card.")) continue; // pseudo-keys (RPT.1 meter copy) aren't event types
-        src.addEventListener(type, onEvent);
-      }
-      src.onerror = () => {
-        /* EventSource auto-reconnects; Last-Event-ID resumes exactly-once (§12.5) */
-      };
-    }
-  }
-
-  // The app theme menu's "auto" also needs a live OS-change listener — the boot script installs it when
-  // the boot pref is auto; when the user switches to auto mid-session we subscribe here.
+  // The app theme menu's "auto" also needs a live OS-change listener — the boot script installs it
+  // when the boot pref is auto; when the user switches to auto mid-session we subscribe here.
   if (window.matchMedia) {
     const q = window.matchMedia("(prefers-color-scheme: light)");
     const onChange = (ev: MediaQueryListEvent) => {
@@ -925,12 +167,6 @@ function main(): void {
     if (q.addEventListener) q.addEventListener("change", onChange);
     else if (q.addListener) q.addListener(onChange);
   }
-
-  // P1.07 — a deep link (`#finding-<id>`) lands with the linked selection lit on every surface.
-  const initialHash = /^#finding-(.+)$/.exec(window.location.hash)?.[1];
-  if (initialHash) selectFinding(initialHash);
-
-  apply();
 }
 
 if (document.readyState === "loading") {
