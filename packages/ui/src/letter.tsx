@@ -5,6 +5,12 @@ import { TrustChip } from "./chips.js";
 // The Editor's letter view (§5.7; REQ-IDE-31, REQ-PROD-2). Read-mode rendering with a sticky mini-TOC; every
 // passage reference resolves to a finding link; the attestation section is REPLACED by the runtime trust chip.
 // Text-agnostic — the letter prose + labels come in as props (editorial content, not product vocabulary).
+//
+// 243a_R7KIT.3e (REQ-PANE-5; C7/F1/F3): the letter IS the dossier's main column — the cream card
+// chrome is gone (the `.paper` sheet owns the surface), the mini-TOC is a sticky IN-COLUMN outline
+// shown only at ≥1440 (`.ui-letter-toc` + the uiCss media rule; attributes stay emitted at every
+// width for SSR↔SPA parity), and the claim ledger renders INSIDE the column as `claims` — a
+// section of the letter, not a parallel rail.
 
 export interface LetterFindingRef {
   readonly findingId: string;
@@ -25,6 +31,8 @@ export interface LetterViewLabels {
   readonly attestationHeading: string;
   /** the id → anchor href for a finding card, defaults to `#finding-<id>`. */
   readonly findingHref?: (findingId: string) => string;
+  /** the TOC entry for the claim-ledger section (only when `claims` renders — REQ-PANE-5). */
+  readonly claimsTocLabel?: string;
 }
 
 export interface LetterViewProps {
@@ -33,31 +41,34 @@ export interface LetterViewProps {
   /** `null` = the record carries no access report (the demo's replayed dossier — "not
    *  recorded"); the attestation heading stays and the chip simply does not render. */
   readonly trustChip: TrustChipModel | null;
+  /**
+   * REQ-PANE-5 — the claim ledger, rendered as a section of the letter column (the caller
+   * passes the `<section id="claims">` block). Its TOC entry rides `claimsTocLabel`.
+   */
+  readonly claims?: ReactNode;
   readonly labels: LetterViewLabels;
 }
 
-/** The Editor's letter (§5.7): Read mode, sticky mini-TOC, passage links, and the runtime trust chip. */
-export function LetterView({ title, sections, trustChip, labels }: LetterViewProps): ReactNode {
+/** The Editor's letter (§5.7): Read mode, sticky in-column outline at ≥1440, passage links,
+ *  the runtime trust chip, and the claim-ledger section inside the column. */
+export function LetterView({ title, sections, trustChip, claims, labels }: LetterViewProps): ReactNode {
   const href = labels.findingHref ?? ((id: string) => `#finding-${id}`);
   return (
-    <article
-      data-letter-view="true"
-      style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 220px", gap: "24px", background: "var(--paper-bg)", color: "var(--paper-fg)", borderRadius: "12px", padding: "24px", border: "1px solid var(--paper-rule)" }}
-    >
+    <article data-letter-view="true" className="ui-letter-grid">
       <div>
-        <h2 style={{ fontSize: "22px", fontWeight: 600, margin: "0 0 16px" }}>{title}</h2>
+        <h2 className="ui-d-h ui-d-mb16">{title}</h2>
         {sections.map((s) => (
-          <section key={s.id} id={`letter-${s.id}`} data-letter-section={s.id} style={{ marginBottom: "24px", scrollMarginTop: "16px" }}>
-            <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--paper-fg-muted)" }}>{s.title}</h3>
+          <section key={s.id} id={`letter-${s.id}`} data-letter-section={s.id} className="ui-d-mb16" style={{ scrollMarginTop: "16px" }}>
+            <h3 className="ui-d-cap ui-d-s ui-d-cm">{s.title}</h3>
             {s.paragraphs.map((p, i) => (
-              <p key={i} style={{ fontSize: "16px", lineHeight: 1.55, margin: "0 0 12px", maxWidth: "68ch" }}>
+              <p key={i} className="ui-letter-p">
                 {p}
               </p>
             ))}
             {s.findingRefs && s.findingRefs.length > 0 ? (
-              <p style={{ display: "flex", gap: "10px", flexWrap: "wrap", margin: "4px 0 0" }}>
+              <p className="ui-d-acts" style={{ flexWrap: "wrap" }}>
                 {s.findingRefs.map((r) => (
-                  <a key={r.findingId} data-passage-link={r.findingId} href={href(r.findingId)} style={{ fontSize: "13px", color: "var(--accent)" }}>
+                  <a key={r.findingId} data-passage-link={r.findingId} href={href(r.findingId)} className="ui-vc-acc ui-d-fd">
                     {r.label}
                   </a>
                 ))}
@@ -66,27 +77,37 @@ export function LetterView({ title, sections, trustChip, labels }: LetterViewPro
           </section>
         ))}
 
-        <section id="letter-attestation" data-letter-section="attestation" style={{ marginTop: "16px" }}>
-          <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--paper-fg-muted)" }}>{labels.attestationHeading}</h3>
+        <section id="letter-attestation" data-letter-section="attestation" className="ui-d-mb16" style={{ scrollMarginTop: "16px" }}>
+          <h3 className="ui-d-cap ui-d-s ui-d-cm">{labels.attestationHeading}</h3>
           {trustChip != null ? <TrustChip chip={trustChip} /> : null}
         </section>
+
+        {/* REQ-PANE-5 — the claim ledger is a section of the letter column. */}
+        {claims}
       </div>
 
-      <nav data-letter-toc="true" aria-label={labels.tocHeading} style={{ position: "sticky", top: "16px", alignSelf: "start", fontSize: "13px" }}>
-        <h3 style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--shell-fg-muted)" }}>{labels.tocHeading}</h3>
-        <ul style={{ listStyle: "none", margin: "8px 0 0", padding: 0 }}>
+      <nav data-letter-toc="true" aria-label={labels.tocHeading} className="ui-letter-toc ui-d-fd">
+        <h3 className="ui-d-cap ui-d-s ui-d-t">{labels.tocHeading}</h3>
+        <ul className="ui-d-p0 ui-d-l0" style={{ listStyle: "none" }}>
           {sections.map((s) => (
-            <li key={s.id} style={{ padding: "3px 0" }}>
-              <a data-toc-link={s.id} href={`#letter-${s.id}`} style={{ color: "var(--shell-fg-muted)", textDecoration: "none" }}>
+            <li key={s.id} className="ui-d-p2">
+              <a data-toc-link={s.id} href={`#letter-${s.id}`} className="ui-d-t">
                 {s.title}
               </a>
             </li>
           ))}
-          <li style={{ padding: "3px 0" }}>
-            <a data-toc-link="attestation" href="#letter-attestation" style={{ color: "var(--shell-fg-muted)", textDecoration: "none" }}>
+          <li className="ui-d-p2">
+            <a data-toc-link="attestation" href="#letter-attestation" className="ui-d-t">
               {labels.attestationHeading}
             </a>
           </li>
+          {claims != null && labels.claimsTocLabel != null ? (
+            <li className="ui-d-p2">
+              <a data-toc-link="claims" href="#claims" className="ui-d-t">
+                {labels.claimsTocLabel}
+              </a>
+            </li>
+          ) : null}
         </ul>
       </nav>
     </article>

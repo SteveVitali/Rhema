@@ -20,6 +20,7 @@ import {
   IPHONE_USER_AGENT,
 } from "./steps.js";
 import { u3ProbePage } from "./u3-probe.js";
+import { U4_SURFACES, assertU4Clean, u4ProbePage } from "./u4-probe.js";
 import { assertActionable } from "./occlusion.js";
 
 // R7DEM.4b — helpers shared by the two demo legs. Assertions derive every expectation from
@@ -769,6 +770,17 @@ const D2_TOUR: StepFn = async (ctx) => {
           ctx,
         );
       }
+      // 243a_R7KIT.3e — findings live in the right panel (REQ-PANE-5); at 1024–1279 that panel is
+      // a closed overlay (REQ-PANE-2), so a finding mark's zero-size target never places. The leg
+      // opens the panel like a user would, then re-syncs the mark with a resize tick.
+      if (w === 1024 && step.target.startsWith("[data-finding")) {
+        // the panel's open affordance at 1024 is the `]` chord / View-menu row — the delegated
+        // `data-ide-panel-toggle` listener binds clicks regardless of the row's menu-hidden state;
+        // the Findings tab body stays `display:none` until its `data-ide-panel-tab` is selected.
+        await page.locator("[data-ide-panel-toggle]").first().dispatchEvent("click");
+        await page.locator('[data-ide-panel-tab="findings"]').first().dispatchEvent("click");
+        await page.evaluate(() => window.dispatchEvent(new Event("resize")));
+      }
       const mark = page.locator(`[data-demo-tour-step="${step.id}"]`);
       try {
         await mark.waitFor({ timeout: 30_000 });
@@ -1406,6 +1418,61 @@ const U5_WRITE: StepFn = async (ctx) => {
   assertBundleParity(ctx);
 };
 
+/* 243a_R7KIT.3e (REQ-GUARD-1, REQ-DACC-7) — the real `U4.controls` body (AUTHORED_HELD): the
+ * computed-style probe walks the 12 migrated surfaces under `returningUser('a')` and fails on
+ * any visible native-styled control outside the named no-JS/SSR exemption containers. The row
+ * stays `expected:"red"` — a leg body in the tree is not deployed proof; the 250 phase preview
+ * runs this against the deployed SHA (`--expect-sha` + provenance) and performs the flip. */
+const U4_CONTROLS: StepFn = async (ctx) => {
+  const { page } = await ctx.returningUser("a");
+  await gotoOk(page, `${ctx.webBaseUrl}/app?src=jrn`, ctx);
+  const projectLink = page.locator("[data-shell-project] a, [data-shell-recent]").first();
+  if ((await projectLink.count()) === 0) throw new Error("no project entry in the sidebar");
+  const href = (await projectLink.getAttribute("href")) ?? "";
+  const slug = /\/p\/([^/]+)/.exec(href)?.[1] ?? "";
+  if (slug === "") throw new Error(`the project entry's href ${href} is not a /p/<slug> link`);
+  // the dossier's run id rides the project's own twin (harness-side discovery, not a page emission).
+  let runId = "";
+  try {
+    const r = await fetch(`${ctx.webBaseUrl}/bff/p/${slug}/timeline`, {
+      headers: { accept: "application/json" },
+    });
+    if (r.ok) {
+      const twin = (await r.json()) as { runs?: { runId?: string; state?: string }[] };
+      runId = twin.runs?.find((run) => run.state === "completed")?.runId ?? twin.runs?.[0]?.runId ?? "";
+    }
+  } catch {
+    runId = "";
+  }
+  const failures: string[] = [];
+  for (const surface of U4_SURFACES) {
+    const path = surface.path.replace(":p", slug).replace(":runId", runId);
+    if (path.includes(":runId")) {
+      failures.push(`${surface.id}: no dossier run id discoverable — the leg owes a seeded run`);
+      continue;
+    }
+    try {
+      await gotoOk(page, `${ctx.webBaseUrl}${path}?src=jrn`, ctx);
+      await page
+        .locator("[data-spa-root], [data-ide], [data-app-shell]")
+        .first()
+        .waitFor({ state: "attached", timeout: 30_000 });
+      const findings = await u4ProbePage(page, surface);
+      await page.screenshot({
+        path: join(ctx.outDir, `u4-controls-${surface.id}.png`),
+        fullPage: true,
+      });
+      assertU4Clean(surface.id, findings);
+    } catch (e) {
+      failures.push(`${surface.id} (${path}): ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+  if (failures.length > 0) {
+    throw new Error(`U4.controls — ${failures.length} surface failure(s):\n${failures.join("\n")}`);
+  }
+  assertBundleParity(ctx);
+};
+
 const REAL_BODIES: Readonly<Record<string, StepFn>> = {
   "D1.hub": D1_HUB,
   "U1.shell": U1_SHELL,
@@ -1417,6 +1484,7 @@ const REAL_BODIES: Readonly<Record<string, StepFn>> = {
   "U5.write": U5_WRITE,
   "U6.chat": U6_CHAT,
   "U7.import": U7_IMPORT,
+  "U4.controls": U4_CONTROLS,
   "R11.demo": R11_DEMO,
   "P1.demo": P1_DEMO,
   "D3.readonly": D3_READONLY,

@@ -794,10 +794,13 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     paid: false,
   },
   {
+    // 243a_R7KIT.3e — the leg body is authored (r7legs.ts `U4_CONTROLS` + u4-probe.ts's
+    // `U4_SURFACES`) but stays AUTHORED_HELD: the phase preview (250_R7DEP.2) runs it at the
+    // deployed SHA with `--expect-sha` and performs the flip — never this PR.
     id: "U4.controls",
     journey: "returning",
     asserts:
-      "the computed-style probe finds zero native-styled buttons/inputs/selects/textareas on the 12 migrated surfaces (REQ-GUARD-1, REQ-DACC-7)",
+      "the computed-style probe finds zero native-styled buttons/inputs/selects/textareas on the 12 migrated surfaces — /app, /app/inbox, /app/settings, /app/settings/billing, /app/usage, /app/voices, /app/new, /p/:p (the IDE Page + right panel), /p/:p/run, /p/:p/export, /p/:p/outline (the outline+figures sheet family), /p/:p/review/:runId — outside the named no-JS/SSR exemption containers (REQ-GUARD-1, REQ-DACC-7)",
     owner: "R7KIT.3e",
     expected: "red",
     paid: false,
