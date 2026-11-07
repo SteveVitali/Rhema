@@ -141,7 +141,10 @@ describe("the journey step registry", () => {
     // 250): the real paste-import walk rejects on the stub ctx, never with the owed signature.
     // R7WRITE.1b authored `U5.write` the same way (held ready-to-flip — D-R7WRITE.1b-1, owner
     // 250): the real write-path walk rejects on the stub ctx, never with the owed signature.
-    const AUTHORED_HELD = new Set(["U1.shell", "U2.noreload", "U3.occlusion", "U5.write", "U6.chat", "U7.import"]);
+    // R7KIT.3e authored `U4.controls` the same way (held ready-to-flip — D-R7KIT.3e-1, owner
+    // 250): the real 12-surface computed-style probe rejects on the stub ctx (`ctx.returningUser`
+    // isn't on the fake), never with the owed signature.
+    const AUTHORED_HELD = new Set(["U1.shell", "U2.noreload", "U3.occlusion", "U4.controls", "U5.write", "U6.chat", "U7.import"]);
     for (const id of R7_IDS) {
       const s = stepById(id);
       expect(s, id).toBeDefined();
