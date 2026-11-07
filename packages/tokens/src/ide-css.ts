@@ -215,6 +215,18 @@ export function ideCss(): string {
     ".ide-phonebar .ide-badge { position: relative; margin-left: auto; color: var(--shell-fg-muted); text-decoration: none; }",
     ".ide-phonebar .ide-badge[data-count]:not([data-count='0'])::after { content: attr(data-count); position: absolute; top: -6px; right: -8px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--state-needs-you); color: var(--shell-bg); font-size: 11px; font-weight: 600; line-height: 16px; text-align: center; font-variant-numeric: tabular-nums; }",
     ".ide-phone-only { display: none; }",
+    // R7RO.2 (REQ-MOBILE-3; F4) — the §10.1 entry-point disclosures inside the Page: a native
+    // <details>/<summary> per section (no-JS), its summary a ≥44-px tappable header, plus the
+    // phone status line that carries the hidden status bar's meters.
+    ".ide .ide-phone-status { margin: var(--s3) 0 0; font-size: 12px; color: var(--shell-fg-muted); }",
+    ".ide .ide-phone-section { margin-top: var(--s4); border-top: 1px solid var(--paper-rule, var(--shell-border)); }",
+    ".ide .ide-phone-section > summary { display: flex; align-items: center; min-height: 44px; font-family: var(--font-shell); font-size: 15px; font-weight: 600; cursor: pointer; list-style: none; }",
+    ".ide .ide-phone-section > summary::after { content: '▸'; margin-left: auto; color: var(--shell-fg-muted); }",
+    ".ide .ide-phone-section[open] > summary::after { content: '▾'; }",
+    ".ide .ide-phone-section > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }",
+    ".ide .ide-phone-controls { display: flex; flex-wrap: wrap; gap: var(--s2); padding: var(--s2) 0; align-items: center; }",
+    ".ide .ide-phone-controls button { min-height: 44px; padding: 0 var(--s3); border: 1px solid var(--shell-border); border-radius: var(--radius-2); background: var(--shell-raised); color: var(--shell-fg); font-size: 15px; }",
+    ".ide .ide-phone-controls button[aria-checked='true'] { border-color: var(--accent); color: var(--accent); }",
 
     // ---- View menu + disclosure popovers ----
     ".ide-menu { position: absolute; z-index: 40; min-width: 220px; background: var(--shell-raised); border: 1px solid var(--shell-border); border-radius: var(--radius-2); box-shadow: 0 8px 24px rgba(0,0,0,0.35); padding: var(--s2); }",

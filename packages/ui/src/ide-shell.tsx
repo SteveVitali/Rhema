@@ -173,6 +173,21 @@ export interface IdeShellProps {
    * proposal cards that used to typeset inside the card). Absent ⇒ the paper starts at the top.
    */
   readonly pageHeader?: ReactNode;
+  /**
+   * R7RO.2 (REQ-RELOAD-7; REQ-MOBILE-3 amended; RV-22) — the phone-UA reader verdict. When true
+   * the desktop-only subtrees NEVER enter the DOM (frontend-spa-spec §216 — CSS hiding is a
+   * contract violation): the right panel, the Margin, the status bar, the drag handle, the
+   * scrim, the View/Theme menus, the cheat sheet and the focus-exit pill are all omitted. The
+   * reader keeps the phonebar + the Page + `phoneSections` (the §10.1 disclosures the caller
+   * mounts inside `.paper`).
+   */
+  readonly compact?: boolean;
+  /**
+   * R7RO.2 — the phonebar's §10.1 entry links (Timeline/Findings/Chat/Reading anchors into the
+   * document's own phone sections). The caller emits one row per rendered section — a nav link
+   * to a section that does not exist is a dead end and is never emitted.
+   */
+  readonly phoneNav?: readonly { readonly label: string; readonly href: string }[];
   /** the Page region's content — the surface this route owns. */
   readonly children?: ReactNode;
 }
@@ -186,8 +201,11 @@ export function IdeShell(props: IdeShellProps): ReactNode {
   const view: ViewMode = props.initialView ?? "write";
   const findings = props.findings ?? [];
   const hasFindings = props.hasFindings ?? findings.length > 0;
-  const marginMode = !hasFindings ? "hidden" : "auto"; // findingCards toggle flips auto↔ticks client-side
-  const panelOpen = props.activeRun != null; // a live run auto-opens the panel on Live feed (§5.1)
+  const compact = props.compact === true;
+  // R7RO.2 — on the phone reader the Margin/panel are never in the DOM: stamp the honest
+  // closed/hidden facts rather than a capability the document does not carry.
+  const marginMode = compact || !hasFindings ? "hidden" : "auto"; // findingCards toggle flips auto↔ticks client-side
+  const panelOpen = !compact && props.activeRun != null; // a live run auto-opens the panel on Live feed (§5.1)
 
   return (
     <div
@@ -230,6 +248,11 @@ export function IdeShell(props: IdeShellProps): ReactNode {
         <div className="ide-phonebar">
           <a href="/app" aria-label={L.rail.home}>← {L.rail.home}</a>
           <strong>{project.title}</strong>
+          {/* R7RO.2 (REQ-MOBILE-3) — the §10.1 entry points, one link per rendered phone
+              section (never a dead-end href). */}
+          {(props.phoneNav ?? []).map((n) => (
+            <a key={n.href} href={n.href}>{n.label}</a>
+          ))}
           <a href="/app/inbox" className="ide-badge" data-count={props.inboxCount ?? 0}
              title={L.rail.inbox} aria-label={L.rail.inbox}>◎</a>
         </div>
@@ -248,7 +271,9 @@ export function IdeShell(props: IdeShellProps): ReactNode {
               {props.children}
             </div>
           </main>
-          {/* Margin — findings beside the Page; an ARIA landmark (REQ-IDE-42). */}
+          {/* Margin — findings beside the Page; an ARIA landmark (REQ-IDE-42).
+              R7RO.2 — omitted on the phone reader (never CSS-hidden: not emitted at all). */}
+          {compact ? null : (
           <aside className="ide-margin" data-pane="margin" aria-label={L.margin.heading} role="complementary">
             <span className="sr-only">{L.margin.ticksLabel}</span>
             {findings.map((f) => (
@@ -262,20 +287,27 @@ export function IdeShell(props: IdeShellProps): ReactNode {
                 </div>
               ))}
           </aside>
+          )}
         </div>
 
-        {/* The right panel's drag handle — a real `separator` with keyboard resize (UXC-26). */}
+        {/* The right panel's drag handle — a real `separator` with keyboard resize (UXC-26).
+            R7RO.2 — omitted on the phone reader (there is no panel to resize). */}
+        {compact ? null : (
         <Button type="button" variant="ghost" className="ide-handle" data-ide-handle="panel" role="separator"
                 aria-label={L.panel.resize} aria-orientation="vertical"
                 aria-valuenow={320} aria-valuemin={160} aria-valuemax={480} />
+        )}
         {/* R7FIX.1 (REQ-PANE-0) — the scrim an open overlay/sheet draws over the Page region;
             CSS shows it only while a pane is open in an overlay/sheet mode. */}
-        <div className="ide-scrim" data-ide-scrim aria-hidden="true" />
+        {compact ? null : <div className="ide-scrim" data-ide-scrim aria-hidden="true" />}
 
         {/* Right panel — the ADR-128 region (REQ-PANE-3): the Desk's four tab bodies and the
             Timeline aside's content moved UNCHANGED into Chat · Findings · Claims · Timeline ·
             Live feed (`]` toggles the pane; the tab strip keeps the Desk's attribute-driven
-            tablist so the island's pane-state contract never forks). */}
+            tablist so the island's pane-state contract never forks).
+            R7RO.2 — omitted on the phone reader: the §10.1 mounts the timeline/findings/chat
+            disclosures inside the Page instead (never a hidden second copy). */}
+        {compact ? null : (
         <aside className="ide-panel" data-pane="panel" aria-label={L.panel.heading}>
           <div className="ide-panel-head">
             <div className="ide-panel-tabs" role="tablist" aria-label={L.panel.heading}>
@@ -373,11 +405,14 @@ export function IdeShell(props: IdeShellProps): ReactNode {
             </div>
           </div>
         </aside>
+        )}
       </div>
 
       {/* Status bar — version / words / reading time / venue cap / credits (§5.1). The save state
           lives in the Page's [data-sync-pill] only (EDIT.1/ADR-049 — one indicator; this slot used
-          to render a second, SSR-pinned "Synced" that nothing ever fed). */}
+          to render a second, SSR-pinned "Synced" that nothing ever fed).
+          R7RO.2 — omitted on the phone reader; the meters render in the phone status line. */}
+      {compact ? null : (
       <footer className="ide-statusbar" aria-label="Status">
         {props.status?.version ? <span>{L.statusBar.versionPrefix}{props.status.version}</span> : null}
         {/* data-status-* slots: the page.js island rewrites them live (per-keystroke meters, P1.02). */}
@@ -390,9 +425,13 @@ export function IdeShell(props: IdeShellProps): ReactNode {
         <Button variant="ghost" size="sm" data-ide-view-menu aria-haspopup="menu" aria-expanded="false" title={shortcutFor("view-menu") ?? undefined}>{L.statusBar.view}</Button>
         <Button variant="ghost" size="sm" data-ide-theme-menu aria-haspopup="menu" aria-expanded="false">{L.statusBar.theme}</Button>
       </footer>
+      )}
 
       {/* The View menu — exact §5.1 contents (Write·Read·Focus; finding cards; inline suggestions;
-          Advanced ⌘⇧M; font preset + reader stepper). NO Source entry — it lives in Files. */}
+          Advanced ⌘⇧M; font preset + reader stepper). NO Source entry — it lives in Files.
+          R7RO.2 — omitted on the phone reader (its typography controls live in the Reading
+          disclosure inside the Page). */}
+      {compact ? null : (
       <div className="ide-menu" data-ide-menu="view" role="menu" aria-label={L.viewMenu.heading} hidden>
         {VIEW_MODES.map((m) => (
           <Button key={m.id} variant="ghost" role="menuitemradio" aria-checked={view === m.id}
@@ -427,8 +466,10 @@ export function IdeShell(props: IdeShellProps): ReactNode {
         <Button variant="ghost" className="ide-menu-row" data-ide-reader="down">{L.viewMenu.readerSmaller}</Button>
         <Button variant="ghost" className="ide-menu-row" data-ide-reader="up">{L.viewMenu.readerBigger}</Button>
       </div>
+      )}
 
       {/* Theme menu — app theme (dark/light/auto) + the per-project paper pin (⌘⇧L). */}
+      {compact ? null : (
       <div className="ide-menu" data-ide-menu="theme" role="menu" aria-label={L.statusBar.theme} hidden>
         <div className="ide-menu-note">{L.statusBar.theme}</div>
         {(["dark", "light", "auto"] as const).map((t) => (
@@ -446,15 +487,21 @@ export function IdeShell(props: IdeShellProps): ReactNode {
           </Button>
         ))}
       </div>
+      )}
 
       {/* R7FIX.1 (REQ-WRITE-4, B12) — the focus-view exit pill: hover- and keyboard-revealed
-          (CSS shows it only under data-view='focus'); Esc always exits too. */}
+          (CSS shows it only under data-view='focus'); Esc always exits too.
+          R7RO.2 — omitted on the phone reader (no view modes on the reader). */}
+      {compact ? null : (
       <Button variant="secondary" className="ide-focus-exit" data-ide-focus-exit>
         {L.focusExit}
       </Button>
+      )}
 
       {/* P1.06 (§5.12) — the `?` cheat sheet: the full keymap rendered from the shared CHEAT_SHEET
-          table (@rhema/ide) so the card can never drift from the dispatcher. */}
+          table (@rhema/ide) so the card can never drift from the dispatcher.
+          R7RO.2 — omitted on the phone reader (the keymap is the SPA's; there are no chords). */}
+      {compact ? null : (
       <div className="ide-cheatsheet" data-ide-cheatsheet role="dialog" aria-label={L.cheatsheet.heading} hidden>
         <div className="ide-cheatsheet-card">
           <div className="ide-pane-head">
@@ -471,6 +518,7 @@ export function IdeShell(props: IdeShellProps): ReactNode {
           </ul>
         </div>
       </div>
+      )}
     </div>
   );
 }

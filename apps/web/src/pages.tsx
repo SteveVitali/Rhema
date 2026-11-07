@@ -14,12 +14,14 @@ import {
   WhatChangedView,
   IdeShell,
   CompareView,
+  TimelinePane,
   type DossierLabels,
 } from "@rhema/ui";
 import {
   // P1.09 — the §6.4 surface helpers (the dossier's findings-surface derivations moved to
   // ./dossier-view.js with the view — SPA.21).
   type GateDecisionView,
+  type TimelineRun,
 } from "@rhema/findings-core";
 import type { GateCardDto } from "@rhema/api-client";
 import { COPY } from "./copy.js";
@@ -96,6 +98,7 @@ export function IdeFrame({ children }: { children: ReactNode }): ReactNode {
   const data = usePageData();
   const ide = data.ide ?? {};
   const slug = data.project?.slug ?? "";
+  const compact = data.compact === true;
   // R7WRITE.1a (REQ-WRITE-6) — the page header strip above `.paper`; the SSR documents feed it
   // the same `page` bag PageChrome renders. `run_lock` keeps no notice here (the lock banner IS
   // the notice verbatim); demo/showcase render the reason's one notice.
@@ -120,8 +123,30 @@ export function IdeFrame({ children }: { children: ReactNode }): ReactNode {
             : {}),
         })
       : undefined;
+  // R7RO.2 (REQ-MOBILE-3 amended; F4; RV-22) — the phone reader's §10.1 entry points. The
+  // desktop panel/margin/statusbar/menu subtrees are omitted from the DOM (IdeShell's compact
+  // arm); the timeline/findings/chat surfaces mount as server-rendered `<details>` disclosures
+  // INSIDE the Page — no-JS-capable native controls (RV-36) — each reachable from the phonebar.
+  // A nav link is emitted only for a section that actually renders (never a dead end).
+  const gateCard = (run: TimelineRun) =>
+    run.gate
+      ? gateCardFor(run.gate as GateCardDto, slug, compact, undefined, {
+          decisions: (run.card as { decisions?: readonly GateDecisionView[] }).decisions,
+        })
+      : undefined;
+  const L = COPY.ide;
+  const phoneNav: { label: string; href: string }[] = [];
+  const phoneTimeline = compact && (ide.timelineView != null || (ide.timeline ?? []).length > 0);
+  const phoneFindings =
+    compact && ((ide.findings ?? []).length > 0 || ide.latestReview != null);
+  const phoneChat = compact && ide.chat != null;
+  if (phoneTimeline) phoneNav.push({ label: L.panel.tabs.timeline, href: "#phone-timeline" });
+  if (phoneFindings) phoneNav.push({ label: L.panel.tabs.findings, href: "#phone-findings" });
+  if (phoneChat) phoneNav.push({ label: L.panel.tabs.chat, href: "#phone-chat" });
+  if (compact) phoneNav.push({ label: L.statusBar.theme, href: "#phone-reading" });
   return (
     <IdeShell
+      {...(compact ? { compact: true, phoneNav } : {})}
       {...(strip != null ? { pageHeader: strip } : {})}
       project={{ slug, title: data.project?.title ?? "", ...(data.project?.pill ? { pill: data.project.pill } : {}) }}
       {...(ide.userId ? { userId: ide.userId } : {})}
@@ -129,12 +154,12 @@ export function IdeFrame({ children }: { children: ReactNode }): ReactNode {
       {...(data.paperTheme ? { paperTheme: data.paperTheme } : {})}
       {...(data.theme?.pref ? { appTheme: data.theme.pref } : {})}
       {...(ide.initialView ? { initialView: ide.initialView } : {})}
-      {...(ide.findings ? { findings: ide.findings, hasFindings: true } : {})}
-      {...(ide.latestReview
+      {...(ide.findings && !compact ? { findings: ide.findings, hasFindings: true } : {})}
+      {...(ide.latestReview && !compact
         ? reviewPanelBodies(ide.latestReview, slug)
         : {})}
-      {...(ide.timeline ? { timeline: ide.timeline } : {})}
-      {...(ide.timelineView
+      {...(ide.timeline && !compact ? { timeline: ide.timeline } : {})}
+      {...(ide.timelineView && !compact
         ? {
             timelineView: ide.timelineView,
             timelineLabels,
@@ -142,15 +167,10 @@ export function IdeFrame({ children }: { children: ReactNode }): ReactNode {
             timelineHrefs: timelineHrefs(slug),
             // P1.09 — the waiting run mounts the IDENTICAL §6.4 card the Needs-you row expands to
             // (same DTO, same render path; its decision lines ride the run card itself).
-            renderGateCard: (run) =>
-              run.gate
-                ? gateCardFor(run.gate as GateCardDto, slug, data.compact ?? false, undefined, {
-                    decisions: (run.card as { decisions?: readonly GateDecisionView[] }).decisions,
-                  })
-                : undefined,
+            renderGateCard: gateCard,
           }
         : {})}
-      {...(ide.feed
+      {...(ide.feed && !compact
         ? {
             feed: {
               runId: ide.feed.runId,
@@ -163,15 +183,15 @@ export function IdeFrame({ children }: { children: ReactNode }): ReactNode {
             },
           }
         : {})}
-      {...(ide.runNextHref ? { runNextHref: ide.runNextHref } : {})}
-      {...(ide.palette ? { palette: ide.palette } : {})}
-      {...(ide.activeRun ? { activeRun: ide.activeRun } : {})}
+      {...(ide.runNextHref && !compact ? { runNextHref: ide.runNextHref } : {})}
+      {...(ide.palette && !compact ? { palette: ide.palette } : {})}
+      {...(ide.activeRun && !compact ? { activeRun: ide.activeRun } : {})}
       {...(ide.inboxCount != null ? { inboxCount: ide.inboxCount } : {})}
-      {...(ide.status ? { status: ide.status } : {})}
+      {...(ide.status && !compact ? { status: ide.status } : {})}
       {...(ide.themeUrl ? { themeUrl: ide.themeUrl } : {})}
       {...(ide.paperThemeUrl ? { paperThemeUrl: ide.paperThemeUrl } : {})}
-      {...(ide.chat ? { chatBody: chatPanel(ide.chat, slug, ide, data.compact === true) } : {})}
-      {...dossierSurfaces(data)}
+      {...(ide.chat && !compact ? { chatBody: chatPanel(ide.chat, slug, ide, false) } : {})}
+      {...(compact ? {} : dossierSurfaces(data))}
       labels={{
         ...COPY.ide,
         viewMenu: { ...COPY.ide.viewMenu, advanced: COPY.runSheet.advanced },
@@ -187,18 +207,124 @@ export function IdeFrame({ children }: { children: ReactNode }): ReactNode {
           <script src="/assets/landing.js" defer />
         </>
       ) : null}
-      {/* P1.19 — §10.1: below ~768 px the panel is display:none on the SSR reader, so the chat
-          surface mounts INSIDE the Page — text only (the compact ChatDesk drops the plan card's
-          run-start/edit actions, the anchored suggestion, and the tier pick; the estimate line
-          still shows). */}
-      {data.compact === true && ide.chat ? (
+      {/* R7RO.2 (REQ-MOBILE-3 amended; F4) — the §10.1 entry points, inside the Page as
+          server-rendered disclosures (native <details> — no-JS-capable, KIT-1-styled). The
+          meters the hidden status bar carried move to a phone status line; the phonebar links
+          above land here. */}
+      {compact && ide.status ? (
+        <p className="ide-phone-status ide-phone-only" data-phone-status="true">
+          {[
+            ide.status.version ? `${L.statusBar.versionPrefix}${ide.status.version}` : null,
+            typeof ide.status.words === "number"
+              ? L.statusBar.wordsFmt.replace("{n}", String(ide.status.words))
+              : null,
+            typeof ide.status.readMin === "number"
+              ? L.statusBar.readMinFmt.replace("{n}", String(ide.status.readMin))
+              : null,
+            ide.status.venueCap ?? null,
+            typeof ide.status.credits === "number"
+              ? L.statusBar.creditsFmt.replace("{n}", String(ide.status.credits))
+              : null,
+          ]
+            .filter((s) => s != null)
+            .join(" · ")}
+        </p>
+      ) : null}
+      {compact ? (
+        <details id="phone-reading" className="ide-phone-section ide-phone-only" data-phone-section="reading">
+          <summary>{L.statusBar.theme}</summary>
+          <div className="ide-phone-controls">
+            <span className="ide-menu-note">{L.viewMenu.fontSerif} / {L.viewMenu.fontSans}</span>
+            <button type="button" data-ide-font="serif" aria-checked="true">{L.viewMenu.fontSerif}</button>
+            <button type="button" data-ide-font="sans" aria-checked="false">{L.viewMenu.fontSans}</button>
+            <button type="button" data-ide-reader="down">{L.viewMenu.readerSmaller}</button>
+            <button type="button" data-ide-reader="up">{L.viewMenu.readerBigger}</button>
+          </div>
+          <div className="ide-phone-controls">
+            <span className="ide-menu-note">{L.statusBar.theme}</span>
+            {(["dark", "light", "auto"] as const).map((t) => (
+              <button key={t} type="button" data-ide-theme={t} aria-checked={(data.theme?.pref ?? "dark") === t}>
+                {L.themes[t]}
+              </button>
+            ))}
+          </div>
+          <div className="ide-phone-controls">
+            <span className="ide-menu-note">{L.statusBar.paper}</span>
+            {(["light", "follow", "dark"] as const).map((t) => (
+              <button key={t} type="button" data-ide-paper={t} aria-checked={(data.paperTheme ?? "light") === t}>
+                {L.themes[t === "follow" ? "paperFollow" : t === "light" ? "paperLight" : "paperDark"]}
+              </button>
+            ))}
+          </div>
+        </details>
+      ) : null}
+      {phoneTimeline ? (
+        <details id="phone-timeline" className="ide-phone-section ide-phone-only" data-phone-section="timeline">
+          <summary>{L.panel.tabs.timeline}</summary>
+          {/* §10.1 — the run sheet's verb chips and the next-step card's launch href stay off
+              the reader (run-start is the ✗ column); the round log + run report links + the
+              waiting run's compact gate card (Approve / Wait for me / Stop + the triage
+              disposition rows) are the admitted inputs. */}
+          {ide.timelineView ? (
+            <TimelinePane
+              view={ide.timelineView}
+              labels={timelineLabels}
+              cardLabels={runCardLabels}
+              hrefs={{ ...timelineHrefs(slug), nextStep: undefined, verbHref: undefined }}
+              renderGateCard={gateCard}
+            />
+          ) : (
+            <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+              {(ide.timeline ?? []).map((r) => (
+                <li key={r.id} style={{ padding: "6px 0" }}>
+                  {r.href ? <a href={r.href}>{r.label}</a> : r.label}
+                  <span style={{ color: "var(--shell-fg-muted)" }}> · {r.state}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </details>
+      ) : null}
+      {phoneFindings ? (
+        <details id="phone-findings" className="ide-phone-section ide-phone-only" data-phone-section="findings">
+          <summary>{L.panel.tabs.findings}</summary>
+          {/* the §5.7 anchors the Page's finding marks link to — `#finding-<id>` resolves inside
+              the reader document (the Margin that owned the ids is a desktop subtree). The ids
+              come from the projected list, else the latest delivered review's rows. */}
+          {(() => {
+            const anchorFindings =
+              (ide.findings ?? []).length > 0
+                ? (ide.findings ?? [])
+                : (ide.latestReview?.findings ?? []);
+            return anchorFindings.length > 0 ? (
+              <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+                {anchorFindings.map((f) => (
+                  <li key={f.id} id={`finding-${f.id}`} data-finding-id={f.id} data-severity={f.severity}
+                      style={{ padding: "6px 0", borderBottom: "1px solid var(--paper-rule)" }}>
+                    {f.excerpt}
+                    <span style={{ color: "var(--shell-fg-muted)" }}> · {f.severity} · {f.kind}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null;
+          })()}
+          {/* the latest delivered review's finding list — its disposition writes ride the gate
+              card's triage rows above; the dossier links resolve to the SPA's compact dossier. */}
+          {ide.latestReview ? reviewPanelBodies(ide.latestReview, slug).deskFindingsBody : null}
+        </details>
+      ) : null}
+      {/* P1.19 — §10.1: the chat surface mounts INSIDE the Page — text only (the compact ChatDesk
+          drops the plan card's run-start/edit actions, the anchored suggestion, and the tier
+          pick; the estimate line still shows). R7RO.2 — `id` makes it the phonebar's target. */}
+      {phoneChat ? (
         <section
+          id="phone-chat"
           className="ide-phone-only"
           data-phone-chat="true"
           aria-label={COPY.ide.panel.tabs.chat}
           style={{ marginTop: "24px", borderTop: "1px solid var(--paper-rule)", paddingTop: "12px" }}
         >
-          {chatPanel(ide.chat, slug, ide, true)}
+          {chatPanel(ide.chat!, slug, ide, true)}
         </section>
       ) : null}
     </IdeShell>

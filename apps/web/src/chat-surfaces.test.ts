@@ -93,7 +93,12 @@ describe("GET /p/:slug — the Desk Chat tab (§7.1)", () => {
     const res = await app.request("/p/demo", PHONE);
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain('data-desk-panel="chat"');
+    // R7RO.2 — the chat mounts inside the Page as the reader's own section; the desk tab body
+    // is a desktop subtree and never enters the phone DOM.
+    expect(html).not.toContain('data-desk-panel="chat"');
+    expect(html).toContain('data-phone-chat="true"');
+    expect(html).toContain('id="phone-chat"');
+    expect(html).toContain('href="#phone-chat"');
     expect(html).toContain("data-chat-composer");
     expect(html).toContain('action="/p/demo/chat/turns"');
     // §10.1 — the compact desk drops the tier notches (they're the desktop column).
