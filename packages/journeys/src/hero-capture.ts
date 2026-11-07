@@ -110,7 +110,13 @@ async function main(): Promise<number> {
     }
   }
   mkdirSync(outDir, { recursive: true });
-  const health = (await (await fetch(`${web}/healthz`)).json()) as {
+  // F-R7DEP.2-7 — the served route is the trailing-slash `/healthz/` (the web app's
+  // registered path); bare `/healthz` is GFE-intercepted on `*.run.app` (VERIF.2/F-OPS.1-10 —
+  // the T1 walk needed a localhost 307 normalizer to reach it). Try the real route first,
+  // then the bare spelling as a fallback for any surface that still aliases it.
+  let healthRes = await fetch(`${web}/healthz/`);
+  if (!healthRes.ok) healthRes = await fetch(`${web}/healthz`);
+  const health = (await healthRes.json()) as {
     build?: { gitSha?: string | null };
   };
   const observed = health.build?.gitSha ?? "";
@@ -133,6 +139,11 @@ async function main(): Promise<number> {
     return 2;
   }
   const page = await context.newPage();
+  // F-R7DEP.2-7 — the post-walk cookie read MUST happen before `context.close()`: the
+  // recorder needs the context to flush the webm, but `cookies()` on a closed context throws
+  // `Target closed` — the T1 capture crashed deterministically here AFTER a completed walk
+  // (exit 2, zero artifacts). Capture the jar inside the try, then close.
+  let postWalkCookies: Awaited<ReturnType<typeof context.cookies>> = [];
   try {
     await page.goto(`${web}/demo/${TOUR_ESSAY}?tour=published`, { waitUntil: "domcontentloaded" });
     for (const [i, step] of TOUR_STEPS.entries()) {
@@ -143,12 +154,13 @@ async function main(): Promise<number> {
         await page.locator("[data-demo-tour-next]").first().click();
       }
     }
+    postWalkCookies = await context.cookies();
   } finally {
     await context.close(); // flushes the webm
     await browser.close();
   }
   // Signed-in refusal, post-walk: the demo path must never mint a session cookie.
-  const leaked = (await context.cookies()).filter((c) => /session|token|auth/i.test(c.name));
+  const leaked = postWalkCookies.filter((c) => /session|token|auth/i.test(c.name));
   if (leaked.length > 0) {
     console.error(`refused: ${leaked.length} auth-shaped cookie(s) captured — nothing is recorded`);
     return 2;

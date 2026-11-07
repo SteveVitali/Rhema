@@ -38,6 +38,6 @@ export const Route = createFileRoute("/_authenticated/p/$project/figures")({
       throw q.error;
     }
     if (q.data == null) return <SurfaceShell />;
-    return <FiguresSurface data={q.data.figures} />;
+    return <FiguresSurface data={q.data.figures} slug={project} />;
   },
 });

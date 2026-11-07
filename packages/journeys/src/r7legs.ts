@@ -1099,7 +1099,15 @@ const U2_NORELOAD: StepFn = async (ctx) => {
   const loadsAtEntry = ctx.documentLoads;
 
   // list → project: the sidebar's project entry is an SPA link.
-  const projectLink = page.locator("[data-shell-project] a, [data-shell-recent]").first();
+  // F-R7DEP.2-1ev — the walk's dossier hop needs a delivered review, so prefer the Showcase
+  // recent (the workspace guarantee: its dossier always exists) over the bare first row — a
+  // fresher scratch leftover (e.g. an abandoned `untitled` from an earlier leg) carries no
+  // `/review/` link at all and the hop can never arm. A union `.first()` is DOM-order — the
+  // preference needs an explicit two-locator pick.
+  const showcaseRecent = page.locator('[data-shell-recent="showcase"]');
+  const projectLink = (await showcaseRecent.count()) > 0
+    ? showcaseRecent.first()
+    : page.locator("[data-shell-project] a, [data-shell-recent]").first();
   if ((await projectLink.count()) === 0) throw new Error("no project entry in the sidebar");
   const href = (await projectLink.getAttribute("href")) ?? "";
   const slug = /\/p\/([^/]+)/.exec(href)?.[1] ?? "";
