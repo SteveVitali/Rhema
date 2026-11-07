@@ -69,7 +69,9 @@ describe("DossierView (REQ-POS-3)", () => {
       <DossierView title="Sample" letter={["One paragraph."]} claims={claims} findings={[]} labels={labels} />,
     );
     expect(html).toContain('data-readonly="true"');
-    expect(html).toContain("Contradicted Tier-1");
+    // 243a_R7KIT.3e (REQ-COPY-8) — the verdict renders once; the duplicated badge text is gone.
+    expect(html).not.toContain("Contradicted · Tier 1");
+    expect(html).toContain('data-verdict="contradicted"');
     expect(html).toContain('data-contradicted-tier1="true"');
     // the fetched-URL chip is present and marked fetched
     expect(html).toContain('data-fetched="true"');

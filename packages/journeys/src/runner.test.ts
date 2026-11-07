@@ -100,6 +100,7 @@ describe("runJourneys — the expected-flag semantics", () => {
         res.id !== "U1.shell" &&
         res.id !== "U2.noreload" &&
         res.id !== "U3.occlusion" &&
+        res.id !== "U4.controls" &&
         res.id !== "U5.write" &&
         res.id !== "U6.chat" &&
         res.id !== "U7.import"

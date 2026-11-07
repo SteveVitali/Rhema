@@ -1052,8 +1052,15 @@ export function DossierArticle({
       <p data-run-header="true" className="ui-runhdr ui-d-fd" style={{ alignItems: "baseline", flexWrap: "wrap" }}>
         <span className="ui-d-b">{TL.workflowLabel[dossier.runSummary.workflow] ?? dossier.runSummary.workflow}</span>
         <span className="ui-d-t">
-          · {runCardLabels.stateLabel(dossier.runSummary.state)} ·{" "}
-          {runCardLabels.creditsLabel(dossier.runSummary.card.spentCredits, dossier.runSummary.card.capCredits)}
+          · {runCardLabels.stateLabel(dossier.runSummary.state)}
+          {/* the RunCard's own null-guard — a replayed/demo card may carry no meter. */}
+          {dossier.runSummary.card.spentCredits != null && dossier.runSummary.card.capCredits != null
+            ? ` · ${runCardLabels.creditsLabel(
+                dossier.runSummary.card.spentCredits,
+                dossier.runSummary.card.capCredits,
+                dossier.runSummary.card.provisional,
+              )}`
+            : ""}
         </span>
         <a href={`/p/${dossier.slug}/r/${dossier.runId}#report`} className="ui-vc-acc">
           {COPY.steer.report}

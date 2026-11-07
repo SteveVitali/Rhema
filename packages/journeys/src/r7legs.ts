@@ -770,6 +770,17 @@ const D2_TOUR: StepFn = async (ctx) => {
           ctx,
         );
       }
+      // 243a_R7KIT.3e — findings live in the right panel (REQ-PANE-5); at 1024–1279 that panel is
+      // a closed overlay (REQ-PANE-2), so a finding mark's zero-size target never places. The leg
+      // opens the panel like a user would, then re-syncs the mark with a resize tick.
+      if (w === 1024 && step.target.startsWith("[data-finding")) {
+        // the panel's open affordance at 1024 is the `]` chord / View-menu row — the delegated
+        // `data-ide-panel-toggle` listener binds clicks regardless of the row's menu-hidden state;
+        // the Findings tab body stays `display:none` until its `data-ide-panel-tab` is selected.
+        await page.locator("[data-ide-panel-toggle]").first().dispatchEvent("click");
+        await page.locator('[data-ide-panel-tab="findings"]').first().dispatchEvent("click");
+        await page.evaluate(() => window.dispatchEvent(new Event("resize")));
+      }
       const mark = page.locator(`[data-demo-tour-step="${step.id}"]`);
       try {
         await mark.waitFor({ timeout: 30_000 });
