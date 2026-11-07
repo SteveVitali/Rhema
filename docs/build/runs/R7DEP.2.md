@@ -180,3 +180,58 @@ as `F-R7DEP.2-n` findings → owner insert rows on the chain (the R7FIX.2 shape)
 same preview at the advanced tip. Prod Stage B cannot honestly report green while five held legs
 owe and an existing green regresses. The preview stays UP at T0 within the $20 cap for the H16
 window + remaining deferral captures while the owner fixes land.
+
+## RESUME — defect boundary closed by `250a_R7FIX.1` (PR #294, unmerged OPERATOR)
+
+- 2026-11-07T2xZ — **250a_R7FIX.1 landed at `c426bf74`** (CI pass #294, run `42406663079`, boundary
+  commit `3d790572` = the composed tip carrying this branch's Part-A records + the orchestrator's
+  insert row + the fixes). F-R7DEP.2-1 (`latestReviewRunId` stamped server-side + sidebar prefers
+  it), F-R7DEP.2-2 (`demo` presence-vs-value gate in `chrome.tsx`), F-R7DEP.2-3 (title focus
+  re-asserted post-mount), F-R7DEP.2-4 (notes card moved inside `data-conversion-form`), F-R7DEP.2-5
+  (leg-vs-fixture race — `waitFor` in the leg). `U3.stopgap` superseded by `U3.occlusion`
+  (`D-R7FIX.1-2` records "verified at T1 re-walk" — this ticket's act). Records branch for the
+  T1/Part-B phase: **`stevevitali/r7dep-2-t1-prod`** forked at `3d790572` (the R7DEP.1
+  part-A/part-B split pattern; keeps PR #294 a clean 250a diff).
+- 2026-11-07T2xZ — **HUMAN-H16 disposition: not-dispositioned.** Re-checked `docs/build/LEDGER.md`,
+  `docs/tickets/DEFERRALS.md`, `docs/build/readouts/` and `git log --grep=H16` after the pause:
+  no operator UX-session record exists (only `HUMAN-H14.md` in readouts). The contract records
+  three honest states — walked / declined-verbatim / **not-dispositioned** — and H16 is the
+  optional operator session; it blocks nothing. Recorded as not-dispositioned with `date -u`;
+  if the operator runs the session later this record gets a dated addendum.
+
+## RESUME act 2 — in-place update to the composed tip `3d790572` + re-walk
+
+- 2026-11-07T20:5xZ — Cloud Build `60e1ced5` SUCCESS, all-10 images @ `3d790572`
+  (`_TAG=r7dep-2-t1`; first resubmit `f2337378` failed at push — `_AR` needs the FULL
+  `us-central1-docker.pkg.dev/rhema-507501/rhema-pr-293` path, `docker.io` default bit).
+  Digests `logs/r7dep2/pr293-digests-composed.txt`; `rhema:gitSha`+image pins re-set through the
+  guarded `config` verb; `up` applied 11 updates + proxy template replace (1m33s, zero destructive).
+  **Provenance: web+api `/healthz/` → `3d790572…` — the same pr-293 stack, updated in place.**
+- 2026-11-07T21:0xZ — **re-walk at `3d790572`** (`t1-u-legs/` + `t1-d-legs/`, `--expect-sha` match,
+  $0). 11 legs green: the 8 incumbents re-proven + **U3.occlusion FLIP** (F-2 verified fixed — chat
+  tab enabled at all five sizes), **U7.import FLIP** (F-4 verified fixed — Conversion notes name
+  `title_extracted`), **U6.chat FLIP** (stub leg still green). Still owed/failing — see findings.
+- 2026-11-07T21:1xZ — **hero-capture attempt** at `3d790572` through a localhost URL-normalizer
+  (`/healthz`→`/healthz/` 307; the recipe's bare-`/healthz` provenance fetch is GFE-intercepted on
+  `*.run.app` — the same quirk VERIF.2/F-OPS.1-10 documents; uncommitted tool, transparent record).
+  The tour walk RAN to completion through the normalizer — then the recipe crashed deterministically
+  at `hero-capture.ts:~151`: `context.cookies()` is called **after** `context.close()` in `finally`
+  (`browserContext.cookies: Target … has been closed`, exit 2, no artifacts). **F-R7DEP.2-7.**
+
+### F-R7DEP.2 findings — status after `250a_R7FIX.1` (re-walk at `3d790572`)
+
+| # | State | Evidence |
+|---|---|---|
+| F-1 (R8.showcase.spa + U2.noreload) | **partial — still failing.** R8.showcase.spa fails identically: the dossier `.ui-d-l` "Clear" review link resolves but `element is not visible` (the fix stamped `latestReviewRunId` + moved the SIDEBAR item; the dossier-body link remains hidden). U2.noreload evolved: now times out on `a[href^="/p/untitled/review/"]` — the `untitled` project's review link is absent (fresh project, no review run? or leg picks the wrong row). | `t1-u-legs/`, `t1-d-legs/` report.json |
+| F-2 (U3.occlusion) | **FIXED — leg green** (ready-to-flip at `3d790572`, all five sizes). | `t1-u-legs/` |
+| F-3 (U5.write) | **unchanged.** "the inline title was not focused on the blank Page" — identical symptom at both SHAs; the post-mount re-assert did not close it. | `t1-u-legs/` |
+| F-4 (U7.import) | **FIXED — leg green** (Conversion notes name `title_extracted`). | `t1-u-legs/` |
+| F-5 (U1.shell) | **evolved.** Recents now resolve (the `waitFor` half worked) — new symptom: `/p/untitled/outline` loses the "Project › Surface" breadcrumb (or 404s). | `t1-u-legs/` |
+| **F-6 (new)** | **U4.controls regression — was FLIP at T0, now owed.** The F-2 fix enabled `data-ide-panel-tab="chat"`; on `/p/untitled` the probe now counts it as ONE native-styled control (`appearance=auto`, UA radius 8px, accent `rgb(43,99,201)`, inline `border:none;background:none` — missing the migrated control class). Collateral of enabling the tab. | `t1-u-legs/` report.json |
+| **F-7 (new)** | **hero-capture recipe broken end-to-end:** (a) bare `/healthz` provenance fetch has no `/healthz/` fallback — GFE-intercepted on `*.run.app` (normalizer workaround used); (b) `context.cookies()` after `context.close()` crashes the recipe deterministically after a completed walk (exit 2, no artifacts). 249a's recipe — out of scope for this ticket to patch. | run record above |
+
+**PAUSE — second defect-boundary.** `D-R7FIX.1-2` is NOT discharged (its verify list requires
+R8.showcase.spa + U2 + U5 + U1 green — all four still owe; U3.occlusion + U7.import verified).
+F-1 residual, F-3 residual, F-5 evolved, F-6 + F-7 new → owner insert round 2 (the `250a` shape).
+The preview stays UP at `3d790572` within the $20 cap for fix round 2's re-walk + the deferred
+hero capture; tear down at once if measured spend reaches $20.
