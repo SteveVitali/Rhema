@@ -67,6 +67,7 @@
 | `pnpm check:dom-contract` | PASS |
 | `pnpm check:spa-env` | PASS |
 | `pnpm check:protocol-markers` | PASS — 313 public-facing files scanned |
+| `pnpm exec eslint apps/web/src/copy.ts` (bannedPatterns leg, contracts dist removed) | PASS — the REQ-COPY-6 pattern list arms from the shared JSON with no build-order dependency |
 | `pnpm check:spa-budget` | WARN-held (all ceilings held) — entry **+17.2 kB** gz vs baseline `04a4e98b`; chain tip already carried ≈ +15.4 kB (GD-KIT3A-BUDGET deficit) → **ticket increment ≈ +1.8 kB** (`UI_LABELS` joined the entry graph via `copy.ts`) |
 | `public-ssr-baseline` BEFORE @ pre-change build vs AFTER @ branch build (local, `docs/build/reports/2026-11-07_public-ssr-baseline-{BEFORE,AFTER}`) | All five routes + favicon 200; semantic fields identical; normalized hashes moved on `/` only (`bytes` 56733→56734) — exactly the two enumerated public-copy leaves (GD-PUBDELTA.R7): `"the public funnel"`→`"the sign-up flow"`, `"Have an invitation? Sign in"`→`"Already have an account? Sign in"`. Same 2 warnings both runs (`/login` "private beta" wording — pre-existing, out of the banned list's scope; `/showcase` sample-dossier text absent on an unseeded local boot — data-dependent, identical before/after). |
 
@@ -86,5 +87,6 @@
 - No banned term survives in any `COPY` leaf; no snake_case key surfaces in rendered text (1,609-test sweep with the guard wired into the shared parity path).
 - The two-leg guard structure means a future banned term in COPY fails BOTH `lintInternalTerms` (vitest) and `no-banned-strings` `bannedPatterns` (eslint).
 - Deferrals: **none opened** (the H15-signed-demo-copy condition did not trigger); none closed.
+- **CI:** pass #284@`219eaea` (run 42332167998 — all seven legs + ci-pass anchor; `logs/ci-R7COPY.1a.json`). Three reads: the first red on a lint-time `contracts/dist` import (list moved to shared JSON), the second on an unused import + an undeclared `data-copy-guard-exclude` hook (declared + asserted); one unrelated `ingest.test.ts` flake passed on rerun.
 - Spend: **$0** — Stage A, all verification local (`GD-PREVIEW.R7`; no preview, no production mutation).
 - Operator judgement calls: (a) participial interpolation words keep lowercase (sentence position, not standalone labels); (b) `runLabelFor` keeps verb-phrase COPY leaves (a CTA verb, not an enum label — pinned by the SPA.20 leg); (c) `steer.deliverableLabel` stays templated count copy in COPY (interpolated "{n} findings" templates compose labels, not pure enum maps); (d) lowercase "Quiet hours" (the notification feature) is not the banned uppercase bucket term; (e) the ai-use statement's "review obligations" sentence is exported-document prose, not a COPY leaf — left verbatim (the lint scans `COPY`, not generated documents); (f) ESLint `bannedPatterns` scopes to the copy-bearing files — quoted property keys (event-type ids) are internal vocabulary by design.
