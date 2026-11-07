@@ -3,13 +3,15 @@
 // REQ-SAFE-10 leaf scan keys on the literal `COPY.…` refs inside this file).
 
 import type { RunSheetLabels } from "@rhema/ui";
+import { UI_LABELS, labelLookup } from "@rhema/contracts";
 import { COPY } from "./copy.js";
 
 /** The whole `COPY.runSheet` subtree — for leaf-internal references (the SPA leaf binds this rather
  *  than re-naming `COPY.runSheet`, which the REQ-SAFE-10 scan reads as an unresolved branch). */
 export const runSheetCopy = COPY.runSheet;
 
-/** The verb-specific Run label (§5.6). */
+/** The verb-specific Run label (§5.6) — "Run review"/"Run revise" CTA text, not the enum's display
+ *  name; the three runnable verbs' COPY leaves (R7COPY.1a: a verb phrase, not a parallel map). */
 export const runLabelFor: Record<string, string> = {
   review: COPY.runSheet.runReview,
   revise: COPY.runSheet.runRevise,
@@ -25,13 +27,7 @@ export const runSheetLabels: RunSheetLabels = {
   changeLabel: COPY.runSheet.change,
   whyPrefix: COPY.runSheet.why,
   advancedLegend: COPY.runSheet.advanced,
-  toggleLabels: {
-    fact_check: COPY.runSheet.factCheckToggle,
-    discourse: COPY.runSheet.discourseToggle,
-    second_read: COPY.runSheet.secondReadToggle,
-    repair_research: COPY.runSheet.repairResearchToggle,
-    gap_check: COPY.runSheet.gapCheckToggle,
-  },
+  toggleLabels: labelLookup(UI_LABELS.runToggle),
   buyCreditsLabel: COPY.runSheet.buyCredits,
   suspendedNotice: COPY.runSheet.suspended,
   purchasePausedLabel: COPY.runSheet.purchasePaused,

@@ -23,6 +23,22 @@ module.exports = {
             type: "array",
             items: { type: "string" },
           },
+          // REQ-GUARD-2 (R7COPY.1a): regex patterns from @rhema/contracts BANNED_INTERNAL_TERMS —
+          // matched against string-literal VALUES only (quoted property keys are internal ids,
+          // e.g. the feed's "gate.opened" event types, and are skipped).
+          bannedPatterns: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                text: { type: "string" },
+                pattern: { type: "string" },
+                flags: { type: "string" },
+              },
+              required: ["text", "pattern"],
+              additionalProperties: false,
+            },
+          },
         },
         additionalProperties: false,
       },
@@ -35,8 +51,17 @@ module.exports = {
   create(context) {
     const options = context.options[0] || {};
     const banned = (options.banned || []).filter((s) => typeof s === "string" && s.length > 0);
-    if (banned.length === 0) return {};
+    const patterns = (options.bannedPatterns || [])
+      .filter((p) => p && typeof p.text === "string" && typeof p.pattern === "string")
+      .map((p) => ({ text: p.text, re: new RegExp(p.pattern, p.flags ?? "i") }));
+    if (banned.length === 0 && patterns.length === 0) return {};
     const lowered = banned.map((b) => ({ raw: b, lc: b.toLowerCase() }));
+
+    /** A Literal that is a quoted property key — internal id, not user-facing text. */
+    function isPropertyKey(node) {
+      const p = node.parent;
+      return p && p.type === "Property" && p.key === node;
+    }
 
     function scan(node, text) {
       if (typeof text !== "string") return;
@@ -45,6 +70,14 @@ module.exports = {
         if (hay.includes(lc)) {
           context.report({ node, messageId: "banned", data: { term: raw } });
           return;
+        }
+      }
+      if (!isPropertyKey(node)) {
+        for (const { text: term, re } of patterns) {
+          if (re.test(text)) {
+            context.report({ node, messageId: "banned", data: { term } });
+            return;
+          }
         }
       }
     }

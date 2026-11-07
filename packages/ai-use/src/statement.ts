@@ -1,3 +1,4 @@
+import { MODEL_TIER_DISPLAY, UI_LABELS } from "@rhema/contracts";
 import type { StatementFacts } from "./facts.js";
 
 // The generated half of the AI-use statement (§8.4 REQ-VIS-10; REQ-POS-6 general template; REQ-GENRE-5's
@@ -54,7 +55,7 @@ function plural(n: number, singular: string, pluralForm?: string): string {
   return n === 1 ? singular : (pluralForm ?? `${singular}s`);
 }
 
-/** "2 review, 1 revise" — workflow keys verbatim, count first, in first-seen order. */
+/** "2 Review, 1 Revise" — UI labels, never raw workflow keys (R7COPY.1a; REQ-COPY-1; R5 G6). */
 function workflowCounts(facts: StatementFacts): string {
   const order: string[] = [];
   const counts = new Map<string, number>();
@@ -62,7 +63,14 @@ function workflowCounts(facts: StatementFacts): string {
     if (!counts.has(r.workflow)) order.push(r.workflow);
     counts.set(r.workflow, (counts.get(r.workflow) ?? 0) + 1);
   }
-  return order.map((w) => `${counts.get(w)} ${w}`).join(", ");
+  const labels = UI_LABELS.workflow as Record<string, string>;
+  return order.map((w) => `${counts.get(w)} ${labels[w] ?? w}`).join(", ");
+}
+
+/** Phase keys → UI labels (G6: "intake, craft, verification…" never renders raw). */
+function phaseLabels(phases: readonly string[]): string {
+  const labels = UI_LABELS.phase as Record<string, string>;
+  return phases.map((p) => labels[p] ?? p).join(", ");
 }
 
 /**
@@ -86,13 +94,15 @@ export function generatedSentences(
       `Rhēma ran ${facts.runs.length} ${plural(facts.runs.length, "editorial workflow", "editorial workflows")} on the manuscript ${span}: ${workflowCounts(facts)}.`,
     );
 
-    const tiers = [...new Set(facts.runs.map((r) => r.modelTier))];
+    const tiers = [...new Set(facts.runs.map((r) => r.modelTier))].map(
+      (t) => (MODEL_TIER_DISPLAY as Record<string, string>)[t] ?? t,
+    );
     sentences.push(
       `The ${plural(tiers.length, "workflow")} used the ${tiers.join(" and ")} model ${plural(tiers.length, "tier")}.`,
     );
 
     if (facts.phases.length > 0) {
-      sentences.push(`Workflow phases on record: ${facts.phases.join(", ")}.`);
+      sentences.push(`Workflow phases on record: ${phaseLabels(facts.phases)}.`);
     }
   } else {
     sentences.push("No Rhēma workflows ran on this manuscript.");

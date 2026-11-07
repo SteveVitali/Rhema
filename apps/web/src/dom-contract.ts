@@ -1627,6 +1627,14 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
       "spa/page-mount",
       "the live (sometimes hidden) PM view wrapper",
     ),
+    // R7COPY.1a (REQ-GUARD-2b) — a fixture/spec may mark a data-content subtree whose text the
+    // no-internal-keys DOM guard must skip (essay prose is data, not chrome).
+    a(
+      "data-copy-guard-exclude",
+      "conditional",
+      "spa/testkit.ts (REQ-GUARD-2 DOM guard)",
+      "marks a subtree whose text is data — excluded from the snake_case key scan",
+    ),
     // Source mode returns as a designed SPA feature (SPA.25) with its own contract rows.
     a(
       "data-version-rail",

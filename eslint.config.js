@@ -1,4 +1,5 @@
 // @ts-check
+import { createRequire } from "node:module";
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import rhema from "eslint-plugin-rhema";
@@ -79,6 +80,14 @@ const NO_RAW_CONTROLS_ENABLED = [
   "apps/web/src/dossier-view.tsx",
   "apps/web/src/spa/surfaces/dossier.tsx",
 ];
+
+// REQ-GUARD-2 (R7COPY.1a) — the REQ-COPY-6 banned internal-term list is authored once in
+// `packages/contracts/src/banned-internal-terms.json` and consumed here from SOURCE (createRequire
+// — no build-order dependency: a fresh checkout lints fine); `lintInternalTerms` reads the same
+// file through @rhema/contracts — one list, two guards.
+const BANNED_INTERNAL_TERMS = createRequire(import.meta.url)(
+  "./packages/contracts/src/banned-internal-terms.json",
+);
 
 export default tseslint.config(
   {
@@ -219,6 +228,26 @@ export default tseslint.config(
               message: "REQ-DWEB-3: snapshot JSON is read from disk, never imported.",
             },
           ],
+        },
+      ],
+    },
+  },
+  {
+    // REQ-GUARD-2(a) (R7COPY.1a) — the copy-bearing files get the REQ-COPY-6 banned internal-term
+    // scan on top of the global phrase list: `bannedPatterns` is seeded from @rhema/contracts'
+    // BANNED_INTERNAL_TERMS (the verbatim spec §4.13 list — one list, two guards). Quoted property
+    // keys are skipped (event-type ids like "gate.opened" are internal, not user copy).
+    files: ["apps/web/src/copy.ts", "apps/web/src/billing-copy.ts", "packages/contracts/src/labels.ts"],
+    rules: {
+      "rhema/no-banned-strings": [
+        "error",
+        {
+          banned: ["Claude Code", "you will be billed", "writes like you"],
+          bannedPatterns: BANNED_INTERNAL_TERMS.map((t) => ({
+            text: t.text,
+            pattern: t.pattern,
+            flags: t.flags,
+          })),
         },
       ],
     },

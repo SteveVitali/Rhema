@@ -149,3 +149,54 @@ export const BANNED_STRINGS: BannedString[] = [
 
 /** The flat list of banned substrings with no context exception — the seed for the strict no-banned-strings lint. */
 export const STRICTLY_BANNED: string[] = BANNED_STRINGS.filter((b) => !b.except).map((b) => b.text);
+
+// ---------- REQ-COPY-6 (R7COPY.1a) — the banned internal-term list ----------
+// Internal build vocabulary that must never reach user-facing copy, verbatim from the round-7 spec
+// §4.13 REQ-COPY-6 (the list is verbatim — never weaken it to get green). The ONE list lives in
+// `banned-internal-terms.json` beside this file — `lintInternalTerms` (vocab-lint.ts) AND the
+// ESLint `no-banned-strings` rule's `bannedPatterns` option (eslint.config.js requires the same
+// JSON) both consume it: two guards, one source, no build-order dependency.
+
+import bannedInternalTermsJson from "./banned-internal-terms.json" with { type: "json" };
+
+export interface BannedInternalTerm {
+  /** Stable id — an allow entry references this. */
+  id: string;
+  /** The spec §4.13 term verbatim. */
+  text: string;
+  /** Regex source matched against a copy leaf's VALUE (never its key). */
+  pattern: string;
+  /** Regex flags; "" = case-sensitive (the "QUIET" bucket term is uppercase-only on purpose). */
+  flags: string;
+  /** The plain-language replacement the jargon pass applies. */
+  replacement: string;
+}
+
+export const BANNED_INTERNAL_TERMS: readonly BannedInternalTerm[] =
+  bannedInternalTermsJson as readonly BannedInternalTerm[];
+
+/**
+ * A temporary, named, dated exemption for a banned internal term in an H15-SIGNED `demo.*` /
+ * `demo.tour.*` leaf (Phase-4 P4-24; `GD-TOURSIGN.R7` — the demo script is signed copy, never
+ * silently edited or silently exempted). Each entry must name the leaf + term, carry a D-row key
+ * (`D-<TICKET>-<n>`) that owns its removal, and name the date it was added. `validateInternalTermAllow`
+ * rejects a malformed or stale entry — a seeded allow without a D-row key fails the lint suite.
+ */
+export interface InternalTermAllow {
+  /** The copy-table leaf (must be `demo.*` — H15-signed copy only). */
+  key: string;
+  /** The `BANNED_INTERNAL_TERMS.id` this entry exempts. */
+  termId: string;
+  /** The DEFERRALS row owning removal (e.g. `D-R7COPY.1a-1`). */
+  deferral: string;
+  /** `date -u` day the entry was added (YYYY-MM-DD). */
+  added: string;
+  /** Why the leaf can't be edited here (e.g. "H15-signed tour script — 248's changed-leaf list"). */
+  note: string;
+}
+
+/**
+ * The live allow list. The expected case is EMPTY — a banned term in an H15-signed demo leaf is
+ * routed to `D-R7COPY.1a-1` (owner 248_R7TOUR.2) instead of being edited or silently exempted.
+ */
+export const BANNED_INTERNAL_TERM_ALLOW: readonly InternalTermAllow[] = [];

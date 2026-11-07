@@ -1,0 +1,72 @@
+[
+  {
+    "id": "quiet-bucket",
+    "text": "QUIET",
+    "pattern": "\\bQUIET\\b",
+    "flags": "",
+    "replacement": "nothing — the attention bucket is retired (ADR-128)"
+  },
+  {
+    "id": "obligations",
+    "text": "obligations",
+    "pattern": "\\bobligations?\\b",
+    "flags": "i",
+    "replacement": "open items"
+  },
+  {
+    "id": "gate-word",
+    "text": "gate",
+    "pattern": "\\bgates?\\b",
+    "flags": "i",
+    "replacement": "approval / spend confirmation"
+  },
+  {
+    "id": "coherence-read",
+    "text": "the coherence read",
+    "pattern": "\\bthe coherence read\\b",
+    "flags": "i",
+    "replacement": "plain wording (drop the parenthetical)"
+  },
+  {
+    "id": "public-funnel",
+    "text": "public funnel",
+    "pattern": "\\bpublic funnel\\b",
+    "flags": "i",
+    "replacement": "the sign-up flow"
+  },
+  {
+    "id": "sidecar",
+    "text": "sidecar",
+    "pattern": "\\bsidecars?\\b",
+    "flags": "i",
+    "replacement": "structured notes"
+  },
+  {
+    "id": "partial-phases",
+    "text": "partial (0/1 phases)",
+    "pattern": "\\bpartial\\s*\\(",
+    "flags": "i",
+    "replacement": "finished in part — {done} of {total} phases done"
+  },
+  {
+    "id": "waiting-call",
+    "text": "Waiting on your call",
+    "pattern": "\\bwaiting on your call\\b",
+    "flags": "i",
+    "replacement": "waiting for you"
+  },
+  {
+    "id": "invitation-era",
+    "text": "Have an invitation?",
+    "pattern": "\\bhave an invitation\\?",
+    "flags": "i",
+    "replacement": "already have an account?"
+  },
+  {
+    "id": "session-contract",
+    "text": "the shared session contract…",
+    "pattern": "\\bthe shared session contract\\b",
+    "flags": "i",
+    "replacement": "plain wording about the shared sign-in"
+  }
+]
