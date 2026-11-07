@@ -305,13 +305,32 @@ const R8_SHOWCASE_SPA: StepFn = async (ctx) => {
     throw new Error("the showcase notice (ReadOnlyProject{showcase}) did not mount");
   }
   // in-app hops are client navigations — the dossier link is the Page family's own walk.
-  const dossierLink = page.locator('a[href*="/review/"]').first();
+  // F-R7DEP.2-1r — `/showcase` 302s ONTO the dossier already, so the walk hops back to the
+  // project Page first, then returns through the sidebar's declared Reviews item — the
+  // visible, actionable dossier link. A bare `a[href*="/review/"]` is wrong: DOM-order its
+  // first match is the findings desk's filter "Clear" anchor inside the CLOSED panel
+  // (legitimately invisible — never the dossier link, and markup order must never be
+  // reshuffled to satisfy `.first()`).
+  const slug = page.url().split("/p/")[1]?.split("/")[0] ?? "";
+  const pageItem = page.locator('[data-project-item="page"]').first();
+  await settleClientNav(page, ctx, async () => {
+    await pageItem.click();
+  });
+  const dossierLink = page.locator('[data-project-item="reviews"]').first();
   if ((await dossierLink.count()) === 0) {
     throw new Error("the Showcase overview carries no dossier link to hop through");
   }
+  const dossierHref = (await dossierLink.getAttribute("href")) ?? "";
   await settleClientNav(page, ctx, async () => {
     await dossierLink.click();
   });
+  // the Reviews item must RESOLVE a dossier run — a `/p/:slug` fallback means the sidebar
+  // never learned the review's run id (its own defect, recorded honestly).
+  if (!new RegExp(`^/p/${slug}/review/`).test(new URL(page.url()).pathname)) {
+    throw new Error(
+      `the sidebar Reviews item's ${dossierHref} did not reach a dossier (landed ${page.url()})`,
+    );
+  }
   // the dossier's showcase banner carries the SAME notice (the mechanism's own slot) — and it
   // must be the SPA render again, never a document reload.
   if ((await page.locator("[data-readonly-notice='showcase'], [data-showcase-banner]").count()) === 0) {
@@ -1034,6 +1053,7 @@ const U1_SHELL: StepFn = async (ctx) => {
     throw new Error("the Files tree did not render under the project entry");
   }
   await page.screenshot({ path: join(ctx.outDir, "u1-shell-project-1440.png"), fullPage: true });
+  const itemBase = `/p/${scopeSlug}`;
   for (const item of ["outline", "figures", "versions", "export", "settings", "reviews", "page"] as const) {
     const link = page.locator(`[data-project-item="${item}"]`).first();
     if ((await link.count()) === 0) throw new Error(`the project item ${item} is missing`);
@@ -1042,11 +1062,45 @@ const U1_SHELL: StepFn = async (ctx) => {
       // contract (the walk's showcase/fixture project is writable, so this arm is informational).
       continue;
     }
-    await settleClientNav(page, ctx, async () => {
-      await link.click();
-    });
-    if ((await link.getAttribute("aria-current")) !== "page") {
-      throw new Error(`the ${item} item did not become aria-current after its SPA nav`);
+    const href = (await link.getAttribute("href")) ?? "";
+    // F-R7DEP.2-5r — `aria-current` belongs to the item whose surface the nav LANDS on,
+    // never unconditionally to the clicked one: on a project with no delivered review
+    // the Reviews item honestly resolves to `/p/:slug` (the overview IS the dossier
+    // cards' home), so its nav lands on the Page and "page" is the truthful carrier.
+    // A same-URL click proves nothing — assert the current item directly.
+    const before = new URL(page.url()).pathname;
+    if (before !== href) {
+      await settleClientNav(page, ctx, async () => {
+        await link.click();
+      });
+    }
+    const landed = new URL(page.url()).pathname;
+    // (the clicked href may legitimately resolve onward — e.g. `/v/working` → the
+    // newest `/v/<n>` — so the assert keys on the LANDED surface, not URL equality.)
+    const owner =
+      landed === itemBase || landed.startsWith(`${itemBase}/a/`) || landed.startsWith(`${itemBase}/edit/`)
+        ? "page"
+        : landed.startsWith(`${itemBase}/outline`)
+          ? "outline"
+          : landed.startsWith(`${itemBase}/figures`) ||
+              landed.startsWith(`${itemBase}/f/`) ||
+              landed.startsWith(`${itemBase}/visualize`)
+            ? "figures"
+            : landed.startsWith(`${itemBase}/v/`) || landed.startsWith(`${itemBase}/revisions/`)
+              ? "versions"
+              : landed.startsWith(`${itemBase}/review/`) || landed.startsWith(`${itemBase}/r/`)
+                ? "reviews"
+                : landed.startsWith(`${itemBase}/export`)
+                  ? "export"
+                  : landed.startsWith(`${itemBase}/settings`) || landed.startsWith(`${itemBase}/voice/`)
+                    ? "settings"
+                    : null;
+    if (owner == null) {
+      throw new Error(`the ${item} item landed on ${landed} — no project item owns it`);
+    }
+    const ownerLink = page.locator(`[data-project-item="${owner}"]`).first();
+    if ((await ownerLink.getAttribute("aria-current")) !== "page") {
+      throw new Error(`the ${owner} item did not become aria-current after the ${item} SPA nav to ${landed}`);
     }
   }
   // collapsed: the items stay as icon+tooltip rows.
@@ -1129,15 +1183,48 @@ const U2_NORELOAD: StepFn = async (ctx) => {
     await leg("compare→project", () => settleClientNav(page, ctx, () => backToPage.click()));
   }
 
-  // project → export → settings → inbox — the sidebar's project-scoped items are SPA links.
+  // project → export → settings — the write hops need a WRITABLE project: the read-only
+  // Showcase honestly withholds them (R7b's ReadOnlyProject contract — the items render
+  // `aria-disabled` with the reason, a GD-class surface decision recorded for this
+  // re-pin, never a vanished control). Assert the withheld state, then walk the hops on
+  // the first writable recent; a tenant with none keeps the withheld assert alone.
   const exportLink = page.locator(`a[href="/p/${slug}/export"]`).first();
-  await leg("project→export", () => settleClientNav(page, ctx, () => exportLink.click()));
-  const settingsLink = page.locator(`a[href="/p/${slug}/settings"]`).first();
-  await leg("export→settings", () => settleClientNav(page, ctx, () => settingsLink.click()));
+  if ((await exportLink.count()) > 0) {
+    await leg("project→export", () => settleClientNav(page, ctx, () => exportLink.click()));
+    const settingsLink = page.locator(`a[href="/p/${slug}/settings"]`).first();
+    await leg("export→settings", () => settleClientNav(page, ctx, () => settingsLink.click()));
+  } else {
+    for (const key of ["export", "settings"] as const) {
+      const item = page.locator(`[data-project-item="${key}"]`).first();
+      if ((await item.getAttribute("aria-disabled")) !== "true") {
+        throw new Error(
+          `the read-only project's ${key} item lost its disabled state (want aria-disabled + reason)`,
+        );
+      }
+    }
+    const writable = page
+      .locator('[data-shell-recent]:not([data-shell-recent="showcase"])')
+      .first();
+    if ((await writable.count()) > 0) {
+      const href2 = (await writable.getAttribute("href")) ?? "";
+      const slug2 = /\/p\/([^/]+)/.exec(href2)?.[1] ?? "";
+      await leg("project→writable", () => settleClientNav(page, ctx, () => writable.click()));
+      if (slug2 !== "") {
+        const exportLink2 = page.locator(`a[href="/p/${slug2}/export"]`).first();
+        await leg("writable→export", () =>
+          settleClientNav(page, ctx, () => exportLink2.click()));
+        const settingsLink2 = page.locator(`a[href="/p/${slug2}/settings"]`).first();
+        await leg("export→settings", () =>
+          settleClientNav(page, ctx, () => settingsLink2.click()));
+      }
+    }
+  }
   const inboxLink = page.locator("[data-shell-inbox]").first();
   await leg("settings→inbox", () => settleClientNav(page, ctx, () => inboxLink.click()));
 
-  // inbox → project: back through the sidebar's project entry.
+  // inbox → project: back through the sidebar's project entry — the Showcase stays the
+  // tail's surface (its write arms are safely withheld, so the approve/chat segments
+  // exercise their skip arms, never a real mutation on a paid:false leg).
   const projectAgain = page.locator(`a[href="/p/${slug}"]`).first();
   await leg("inbox→project", () => settleClientNav(page, ctx, () => projectAgain.click()));
 
@@ -1175,28 +1262,32 @@ const U2_NORELOAD: StepFn = async (ctx) => {
       await chatTab.click().catch(() => undefined);
     }
     const input = page.locator('[data-chat-composer] textarea[name="message"]').first();
-    if ((await input.count()) > 0) {
+    if ((await input.count()) > 0 && (await input.isEnabled())) {
       await input.fill(`${ctx.marker("U2CHAT")}`);
       await page.locator("[data-chat-composer] [data-chat-send], [data-chat-composer] button[type='submit']").first().click();
       // the optimistic bubble renders client-side — the JSON leg, never a form post.
       await page.locator('[data-chat-bubble="user"]').last().waitFor({ timeout: 10_000 }).catch(() => undefined);
+    } else if ((await input.count()) > 0) {
+      // the read-only substrate withholds the send — the composer carries its
+      // `data-chat-readonly` reason (the same withheld contract as export/settings),
+      // never a vanished or silently-dead control.
+      if ((await page.locator("[data-chat-readonly]").count()) === 0) {
+        throw new Error("the read-only project's composer lost its withheld reason");
+      }
     }
   });
 
-  // project → Showcase → back: the Showcase is in-SPA (ReadOnlyProject), so both hops are
-  // client navigations — never the REQ-ED-12 document swap.
-  const showcaseLink = page
-    .locator('[data-shell-recent="showcase"], a[href*="/showcase"], a[href^="/p/showcase"]')
+  // project → a peer recent → back to /app: the Showcase hops above already settled as
+  // client navigations (never the REQ-ED-12 document swap); the wordmark exit keeps the
+  // whole walk inside the one document.
+  const peer = page
+    .locator('[data-shell-recent]:not([data-shell-recent="showcase"])')
     .first();
-  if ((await showcaseLink.count()) > 0) {
-    await leg("project→showcase", () => settleClientNav(page, ctx, () => showcaseLink.click()));
-    const back = page.locator("[data-shell-wordmark]").first();
-    await leg("showcase→back", () => settleClientNav(page, ctx, () => back.click()));
-  } else {
-    const allProjects = page.locator("[data-shell-all-projects]").first();
-    await leg("project→back-to-list", () =>
-      settleClientNav(page, ctx, () => allProjects.click()));
+  if ((await peer.count()) > 0) {
+    await leg("project→peer", () => settleClientNav(page, ctx, () => peer.click()));
   }
+  const wordmark = page.locator("[data-shell-wordmark]").first();
+  await leg("project→back", () => settleClientNav(page, ctx, () => wordmark.click()));
 
   // the whole walk loaded exactly the entry document.
   if (ctx.documentLoads !== loadsAtEntry) {

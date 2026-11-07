@@ -2168,7 +2168,7 @@ const P1_APP_NEW: StepFn = async (ctx) => {
     await settleClientNav(page, ctx, () => newProject.click());
     await page.waitForURL(/\/p\/[a-z0-9-]+\?created=scratch/i, { timeout: 30_000 });
     // the inline title IS the heading (I2 — no placeholder heading above a real one) and focused.
-    const inlineTitle = page.locator("[data-inline-title] input[name='title']");
+    const inlineTitle = page.locator("input[data-inline-title][name='title']");
     await inlineTitle.waitFor({ state: "visible", timeout: 15_000 });
     const [focused, value] = await page.evaluate(() => {
       const el = document.activeElement;

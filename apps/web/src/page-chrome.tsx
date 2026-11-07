@@ -489,7 +489,6 @@ export function ProjectOverviewBody(props: ProjectOverviewProps): ReactNode {
           method="post"
           action={`/p/${slug}/rename`}
           data-rename-form="true"
-          data-inline-title="true"
           style={{ margin: "4px 0" }}
         >
           <input
@@ -499,6 +498,11 @@ export function ProjectOverviewBody(props: ProjectOverviewProps): ReactNode {
             defaultValue={project.title}
             placeholder={COPY.newProject.untitledTitle}
             aria-label={COPY.newProject.untitledTitle}
+            // F-R7DEP.2-3r — the hook rides the FIELD (the element the contract
+            // names "the focused blank-Page title"), never the form wrapper:
+            // `document.activeElement` lands on the input, and every consumer
+            // (`[data-inline-title]`) resolves the element that owns focus.
+            data-inline-title="true"
             autoFocus
             className="ide-title-field"
             style={{

@@ -482,10 +482,13 @@ describe("R7HOME.2b — opens to Page, blank-create landing, affordance row, adm
     await mountAt(`/p/${SLUG}?created=scratch`, bootFor(SPA_EDITOR), f.impl);
     await vi.waitFor(() => expect(el()!.querySelector("[data-page-view]")).not.toBeNull());
     const main = el()!;
-    const form = main.querySelector("form[data-inline-title]");
+    // F-R7DEP.2-3r — the hook rides the input itself (the focused element), never the
+    // form wrapper.
+    const input = main.querySelector("input[data-inline-title][name='title']")!;
+    expect(input).not.toBeNull();
+    const form = input.closest("form")!;
     expect(form).not.toBeNull();
-    expect(form!.getAttribute("action")).toBe(`/p/${SLUG}/rename`);
-    const input = form!.querySelector("input[name='title']")!;
+    expect(form.getAttribute("action")).toBe(`/p/${SLUG}/rename`);
     expect((input as HTMLInputElement).value).toBe("Untitled");
     expect(document.activeElement).toBe(input);
     // I2 — exactly ONE element carries the project title: the inline field IS the title (no

@@ -604,7 +604,7 @@ export function ProjectPageSurface({
   useEffect(() => {
     if (!scratchEntry) return;
     const focusTitle = (): boolean => {
-      const el = document.querySelector<HTMLInputElement>("[data-inline-title] input");
+      const el = document.querySelector<HTMLInputElement>("[data-inline-title]");
       if (el == null) return false;
       if (document.activeElement !== el) el.focus();
       return true;
