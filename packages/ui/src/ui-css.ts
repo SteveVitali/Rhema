@@ -56,7 +56,7 @@ export function uiCss(): string {
     ".ui-dialog-overlay, .ui-dialog, .ui-sheet, .ui-toast-viewport { position: fixed; }",
     ".ui-dialog, .ui-sheet, .ui-command-list { overflow-y: auto; }",
     ".ui-dialog, .ui-sheet, .ui-ob-drop { padding: var(--s4); }",
-    ".ui-dialog-title, .ui-prow-heading, .ui-inbox-body, .ui-inbox-heading, .ui-set-h2, .ui-set-h3, .ui-set-fs legend, .ui-c2-mb { margin: 0 0 var(--s2); }",
+    ".ui-dialog-title, .ui-prow-heading, .ui-inbox-body, .ui-inbox-heading, .ui-set-h2, .ui-set-h3, .ui-set-fs legend, .ui-c2-mb, .ui-md > * { margin: 0 0 var(--s2); }",
     ".ui-dialog-title, .ui-sheet-title, .ui-empty-title, .ui-prow-title, .ui-inbox-title, .ui-inbox-heading, .ui-inbox-empty, .ui-set-h2, .ui-rs-h,.ui-rs-lead, .ui-d-h { font-size: var(--fs-lead); }",
     ".ui-dialog-title, .ui-sheet-title { line-height: 1.25; }",
     ".ui-dialog-actions, .ui-vc-sec, .ui-c2-mt4, .ui-c2-ins { margin-top: var(--s4); }",
@@ -83,7 +83,7 @@ export function uiCss(): string {
     ".ui-inbox-row, .ui-vc-card { margin-bottom: var(--s2); }",
     ".ui-inbox-title, .ui-c2-ih { margin: 0 0 var(--s1); }",
     ".ui-inbox-meta, .ui-os-ol, .ui-os-ul, .ui-os-gl { margin: var(--s1) 0 0; }",
-    ".ui-inbox-empty, .ui-set-t--meas { max-width: 68ch; }",
+    ".ui-inbox-empty, .ui-set-t--meas, .ui-d-mw68 { max-width: 68ch; }",
     ".ui-inbox-card, .ui-set-row, .ui-set-card, .ui-vc-btns { margin: var(--s2) 0; }",
     ".ui-set-fs, .ui-c2-vl, .ui-c2-pre, .ui-c2-dl { margin: var(--s2) 0 0; }",
     ".ui-set-t--warn, .ui-c2-w, .ui-os-bw, .ui-d-w, .ui-d-wn { color: var(--sev-major); }",
@@ -207,7 +207,7 @@ export function uiCss(): string {
     ".ui-set-list { padding-left: 1em; }",
     ".ui-set-list--plain { padding-left: 0; }",
     ".ui-field--w { max-width: 9em; }",
-    ".ui-matrix { border-collapse: collapse; }",
+    ".ui-matrix, .ui-md-table { border-collapse: collapse; }",
     ".ui-matrix th, .ui-matrix td { padding: var(--s1) var(--s3) var(--s1) 0; }",
     ".ui-matrix th { text-align: left; }",
     ".ui-matrix td.ui-matrix-r { text-align: right; }",
@@ -220,11 +220,11 @@ export function uiCss(): string {
     ".ui-rs-time { font-weight: 400; }",
     ".ui-rs-lab { flex: 0 0 170px; }",
     ".ui-rs-end { justify-content: flex-end; }",
-    ".ui-ob-drop { max-width: 560px; border: 1px dashed var(--shell-border); }",
+    ".ui-ob-drop, .ui-c2-mw5 { max-width: 560px; }",
+    ".ui-ob-drop { border: 1px dashed var(--shell-border); }",
     ".ui-c2-ml { margin-left: var(--s3); }",
     ".ui-c2-mv { margin: var(--s1) 0 var(--s3); }",
     ".ui-c2-mw { max-width: 520px; }",
-    ".ui-c2-mw5 { max-width: 560px; }",
     ".ui-c2-img--l { max-height: 220px; }",
     ".ui-c2-pv { background: var(--paper-bg, var(--shell-surface)); }",
     ".ui-c2-dl { gap: var(--s1) var(--s3); }",
@@ -302,6 +302,10 @@ export function uiCss(): string {
     ".ui-dsv { background: var(--paper-bg); color: var(--paper-fg); border-radius: var(--radius-3); padding: var(--s4); }",
     ".ui-fdot { width: 8px; height: 8px; border-radius: 999px; background: var(--d-sev, var(--shell-fg-muted)); }",
     ".ui-rptab { width: 100%; }",
-    ".ui-d-mw68 { max-width: 68ch; }",
+    // ---- 245_R7COPY.1b (REQ-COPY-3; C8) — the one sanitized markdown renderer: `.ui-md` wraps
+    // every rendered block (spacing rides the `.ui-md > *` join into the s2-margin group; lists
+    // reuse `ui-os-ul/ol`, quotes `ui-d-q`, code `ui-vc-pre`/`ui-d-mono`); links and the
+    // `SafeUrlLink` evidence anchors wrap long URLs anywhere (full URL in `title`). ----
+    ".ui-md a, .ui-md-url { overflow-wrap: anywhere; }",
   ].join("\n");
 }

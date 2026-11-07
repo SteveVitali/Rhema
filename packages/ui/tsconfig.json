@@ -23,6 +23,9 @@
     },
     {
       "path": "../contracts"
+    },
+    {
+      "path": "../markdown"
     }
   ],
   "exclude": [

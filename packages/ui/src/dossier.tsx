@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Chip, FetchedUrlChip, severityColor } from "./primitives/chips.js";
 import { claimOrdinalLabel } from "./claims.js";
+import { MarkdownProse } from "./markdown-prose.js";
 
 // The read-only sample dossier (REQ-POS-3): an Editor's letter, a claim ledger, and the findings — rendered
 // with NO triage/disposition controls (the public invite page is read-only). Its point is the 60-second proof
@@ -112,9 +113,7 @@ export function DossierView({ title, letter, claims, findings, labels }: Dossier
       <section aria-label={labels.letterHeading}>
         <h3 className="ui-d-cap ui-d-s ui-d-cm">{labels.letterHeading}</h3>
         {letter.map((p, i) => (
-          <p key={i} className="ui-letter-p">
-            {p}
-          </p>
+          <MarkdownProse key={i} text={p} className="ui-letter-p" />
         ))}
       </section>
 
@@ -135,7 +134,7 @@ export function DossierView({ title, letter, claims, findings, labels }: Dossier
               <span aria-hidden="true" className="ui-fdot ui-d-mt6" style={{ "--d-sev": severityColor(f.severity), flexShrink: 0 } as CSSProperties} />
               <div>
                 <div className="ui-d-fd ui-d-b">{f.title}</div>
-                <div className="ui-d-fd ui-d-cm ui-d-mt6">{f.body}</div>
+                <div className="ui-d-fd ui-d-cm ui-d-mt6"><MarkdownProse text={f.body} /></div>
               </div>
             </li>
           ))}

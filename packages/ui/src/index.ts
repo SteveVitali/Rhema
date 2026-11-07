@@ -23,6 +23,9 @@ export type {
   StatusDotLegend,
   RowIndicator,
 } from "./project-list.js";
+// R7COPY.1b (REQ-COPY-3) — the one sanitized markdown renderer over the canonical profile.
+export { MarkdownProse, SafeUrlLink, markdownToReact, safeHref, BARE_URL_DISPLAY_MAX } from "./markdown-prose.js";
+export type { MarkdownProseProps } from "./markdown-prose.js";
 export { ConversionPreview, ConversionNotesCard } from "./conversion.js";
 export type { ConversionPreviewProps, PreviewWarning } from "./conversion.js";
 export { RunSheet, RunButton, AskButton, Paywall } from "./run-sheet.js";

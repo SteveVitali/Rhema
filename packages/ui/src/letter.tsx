@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { TrustChip as TrustChipModel } from "@rhema/findings-core";
 import { TrustChip } from "./chips.js";
+import { MarkdownProse } from "./markdown-prose.js";
 
 // The Editor's letter view (§5.7; REQ-IDE-31, REQ-PROD-2). Read-mode rendering with a sticky mini-TOC; every
 // passage reference resolves to a finding link; the attestation section is REPLACED by the runtime trust chip.
@@ -61,9 +62,7 @@ export function LetterView({ title, sections, trustChip, claims, labels }: Lette
           <section key={s.id} id={`letter-${s.id}`} data-letter-section={s.id} className="ui-d-mb16" style={{ scrollMarginTop: "16px" }}>
             <h3 className="ui-d-cap ui-d-s ui-d-cm">{s.title}</h3>
             {s.paragraphs.map((p, i) => (
-              <p key={i} className="ui-letter-p">
-                {p}
-              </p>
+              <MarkdownProse key={i} text={p} className="ui-letter-p" />
             ))}
             {s.findingRefs && s.findingRefs.length > 0 ? (
               <p className="ui-d-acts" style={{ flexWrap: "wrap" }}>

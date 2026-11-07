@@ -259,6 +259,12 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
       "ui/ide-shell + page meter slots",
       "data-status-{words,readmin,venue,…} family — the island rewrites them live",
     ),
+    a(
+      "data-md-block",
+      "conditional",
+      "ui/markdown-prose.tsx",
+      "R7COPY.1b — the one sanitized markdown renderer's block wrapper (REQ-COPY-3)",
+    ),
     a("data-sync-pill", "conditional", "ui/ide-shell + page-editor"),
     a(
       "data-sync-state",

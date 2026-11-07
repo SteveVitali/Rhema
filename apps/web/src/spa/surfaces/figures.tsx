@@ -23,7 +23,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { Fragment, useState, type FormEvent, type ReactNode } from "react";
-import { Button, Checkbox, Chip, Select, TextArea, TextField } from "@rhema/ui";
+import { Button, Checkbox, Chip, MarkdownProse, Select, TextArea, TextField } from "@rhema/ui";
 import { COPY } from "../../copy.js";
 import { BffError, bffFetch } from "../bff.js";
 import { PageBody, PageHeader } from "../page-header.js";
@@ -520,13 +520,13 @@ export function FigureCardSurface({ data, saved, notice }: FigureCardSurfaceProp
           {card.pendingProposal != null ? (
             <div data-pending-proposal="true">
               <p className="ui-c2-ts ui-c2-mb">{FC.pendingNote}</p>
-              <pre
+              <div
                 data-proposal-block="true"
                 className="ui-c2-pre ui-c2-mb"
-                style={{ whiteSpace: "pre-wrap", border: "1px solid var(--shell-border)" }}
+                style={{ border: "1px solid var(--shell-border)" }}
               >
-                {card.pendingProposal.markdown}
-              </pre>
+                <MarkdownProse text={card.pendingProposal.markdown} />
+              </div>
               <div className="ui-set-form">
                 <form
                   method="post"

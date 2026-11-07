@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Button } from "./primitives/button.js";
+import { MarkdownProse } from "./markdown-prose.js";
 import { DropdownMenu, DropdownMenuItem, DropdownMenuSeparator } from "./primitives/index.js";
 import type { PageEditorLabels, PageLockView, PageProposalView } from "./page-editor.js";
 
@@ -267,7 +268,7 @@ export function PageStrip(props: PageStripProps): ReactNode {
                  style={{ ...noticeStyle, borderLeftColor: "var(--sev-major)" }}>
               <div>
                 <div style={{ fontWeight: 600 }}>{p.label}</div>
-                <pre style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: "0.92em", margin: "6px 0 0", whiteSpace: "pre-wrap" }}>{p.markdown}</pre>
+                <MarkdownProse text={p.markdown} />
               </div>
               <div style={{ display: "flex", gap: "8px" }}>
                 <button

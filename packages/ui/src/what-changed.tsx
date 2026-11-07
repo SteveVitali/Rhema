@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import { MarkdownProse } from "./markdown-prose.js";
 import type {
   DiffHunk,
   MoveCardView,
@@ -54,20 +55,19 @@ const muted: CSSProperties = { color: "var(--paper-fg-muted)" };
 
 function BlockText({ text, side }: { text: string; side: "before" | "after" }): ReactNode {
   return (
-    <pre
+    <div
       data-diff-side={side}
       style={{
         margin: 0,
         padding: "8px 10px",
         fontSize: "12.5px",
         lineHeight: 1.5,
-        whiteSpace: "pre-wrap",
         background: side === "before" ? "var(--paper-diff-del)" : "var(--paper-diff-add)",
         borderLeft: `2px solid ${side === "before" ? "var(--sev-major, #b33)" : "var(--accent, #3a7)"}`,
       }}
     >
-      {text}
-    </pre>
+      <MarkdownProse text={text} />
+    </div>
   );
 }
 
