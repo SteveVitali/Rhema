@@ -1503,6 +1503,13 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     // R7WRITE.1a (REQ-WRITE-6) — the page header strip above `.paper`: crumb, version chip
     // (frozen/working badge), the moved sync pill, the ReadOnlyProject notice, Run ▾/Export/⋯.
     a("data-page-strip", "conditional", "ui/page-strip.tsx", "the header strip above the paper (R7WRITE.1a)"),
+    // R7SYNC.1 (REQ-SYNC-4) — the in-shell versions picker for a missing /v/:n.
+    a("data-version-picker", "conditional", "spa/version-picker.tsx", "the REQ-SYNC-4 picker surface"),
+    a("data-version-list", "conditional", "spa/version-picker.tsx", "the existing-versions list"),
+    a("data-version-option", "conditional", "spa/version-picker.tsx", "one picker row (value = draft n)"),
+    a("data-version-missing", "conditional", "spa/version-picker.tsx", "the missing/gap reason line"),
+    // R7SYNC.1 (REQ-SPEED-2) — the static pre-JS frame inside #spa-root.
+    a("data-shell-frame", "conditional", "spa-shell.ts", "the static shell frame painted before JS"),
     a("data-version-state", "conditional", "ui/page-strip.tsx", "frozen|working — the version chip's state"),
     a("data-version-badge", "conditional", "ui/page-strip.tsx", "the chip's frozen|working badge"),
     a("data-page-actions", "conditional", "ui/page-strip.tsx", "the strip's action group (withheld read-only)"),

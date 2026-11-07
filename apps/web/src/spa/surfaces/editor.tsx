@@ -134,7 +134,7 @@ function EditorEventBridge({ slug }: { readonly slug: string }): ReactNode {
   const queryClient = useQueryClient();
   useEffect(() => {
     const invalidate = (): void => {
-      void queryClient.invalidateQueries({ queryKey: ["bff"] });
+      void queryClient.invalidateQueries({ queryKey: ["bff", "p", slug] });
     };
     const onCommentAdded = (): void => invalidate();
     const onForkToast = (ev: Event): void => {
@@ -438,6 +438,19 @@ function useEditorChrome(
   useShellChrome(shell, extras);
 }
 
+/** R7SYNC.1 (REQ-SYNC-5) — the header Run menu's estimate hints: the twin's `ide.runHints`
+ *  (api-composed shared-estimator figures) formatted through COPY — never a hand-typed cost
+ *  literal. Keyed by the run menu's workflow names ("review"/"revise"). */
+function runHintsFor(ide: { readonly runHints?: Readonly<Record<string, number>> } | undefined): Record<string, string> | undefined {
+  if (ide?.runHints == null) return undefined;
+  const out: Record<string, string> = {};
+  for (const [wf, n] of Object.entries(ide.runHints)) {
+    if (typeof n === "number") out[wf] = COPY.projectHome.estimateFmt
+    .replace("{n}", n.toLocaleString("en-US"));
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // `/p/:slug` — the project Page leaf (R7HOME.2b, REQ-HOME-2): the head draft's Page IS the
 // surface — the Needs-you rows/approval settings/voice picker moved to the Project settings
@@ -481,6 +494,7 @@ export function ProjectPageSurface({ data, compact, search }: EditorSurfaceProps
             projectTitle: data.project.title,
             compact,
             readOnlyReason: ro?.reason ?? null,
+            runHints: runHintsFor(data.ide),
             ...(ro != null ? { notice: <ReadOnlyNotice reason={ro.reason} slug={slug} /> } : {}),
             source: { on: sourceMode, onToggle: () => setSourceMode((s) => !s) },
             onProposalAccept: seams.accept,
@@ -586,6 +600,7 @@ export function VersionPageSurface({
             ...(data.project?.title != null ? { projectTitle: data.project.title } : {}),
             compact,
             readOnlyReason: ro?.reason ?? null,
+            runHints: runHintsFor(data.ide),
             ...(ro != null ? { notice: <ReadOnlyNotice reason={ro.reason} slug={slug} /> } : {}),
             source: { on: sourceMode, onToggle: () => setSourceMode((s) => !s) },
             onProposalAccept: seams.accept,
@@ -655,6 +670,7 @@ export function ArtifactPageSurface({ data, compact }: EditorSurfaceProps<BffArt
             ...(data.project?.title != null ? { projectTitle: data.project.title } : {}),
             compact,
             readOnlyReason: ro?.reason ?? null,
+            runHints: runHintsFor(data.ide),
             ...(ro != null ? { notice: <ReadOnlyNotice reason={ro.reason} slug={slug} /> } : {}),
           })
         : undefined,

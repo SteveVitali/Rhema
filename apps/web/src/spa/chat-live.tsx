@@ -101,7 +101,7 @@ export function ChatPanelLive(props: {
         closeTail();
         setProgress(null);
         setOptimistic(null);
-        void queryClient.invalidateQueries({ queryKey: ["bff"] });
+        void queryClient.invalidateQueries({ queryKey: ["bff", "p", slug] });
       }
     };
     src.onerror = () => {
@@ -137,7 +137,7 @@ export function ChatPanelLive(props: {
         setPending(false);
         // The server turn exists — refetch so the optimistic bubble reconciles into a real row,
         // and open the run-event tail for progress until the terminal event.
-        void queryClient.invalidateQueries({ queryKey: ["bff"] });
+        void queryClient.invalidateQueries({ queryKey: ["bff", "p", slug] });
         if (runId != null) openTail(runId);
         else setOptimistic(null);
       })
@@ -165,7 +165,7 @@ export function ChatPanelLive(props: {
         json: { threadId: m.activeThreadId, action: "cancel", runId },
       })
         .catch(() => undefined)
-        .finally(() => void queryClient.invalidateQueries({ queryKey: ["bff"] }));
+        .finally(() => void queryClient.invalidateQueries({ queryKey: ["bff", "p", slug] }));
       return;
     }
     abortRef.current?.abort(); // pre-201: cancels the request itself

@@ -227,7 +227,7 @@ export function FigureCardSurface({ data, saved, notice }: FigureCardSurfaceProp
     },
     onSettled: (_env, _err, vars) => {
       setFormBusy(vars.form, false);
-      void queryClient.invalidateQueries({ queryKey: ["bff"] });
+      void queryClient.invalidateQueries({ queryKey: ["bff", "p", data?.slug ?? ""] });
     },
   });
 
@@ -628,7 +628,7 @@ export function VisualizeSurface({ data, contentKey }: VisualizeSurfaceProps): R
     },
     onSettled: (_env, _err, vars) => {
       setFormBusy(vars.form, false);
-      void queryClient.invalidateQueries({ queryKey: ["bff"] });
+      void queryClient.invalidateQueries({ queryKey: ["bff", "p", data?.slug ?? ""] });
     },
   });
 

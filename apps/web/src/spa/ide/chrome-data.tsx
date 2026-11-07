@@ -11,7 +11,7 @@
 // `data-palette` stays emitted (REQ-TST-2 attr parity).
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { reviewPanelBodies } from "../../dossier-view.js";
+import { reviewPanelBodies, runCardLabels, timelineHrefs, timelineLabels } from "../../dossier-view.js";
 import { type FeedRow, type IdeShellProps, type RunCardLabels, type TimelineHrefs, type TimelineLabels, type TimelineViewWire } from "@rhema/ui";
 import type { PaletteData } from "@rhema/ide";
 import type { BffIdeBag } from "../queries.js";
@@ -49,6 +49,8 @@ export interface IdeChromeData {
   readonly chatBody?: ReactNode;
   readonly timeline?: IdeShellProps["timeline"];
   readonly timelineView?: TimelineViewWire;
+  /** R7SYNC.1 (REQ-SYNC-5) — the shared estimator's per-workflow figures (formatted leaf-side). */
+  readonly runHints?: Readonly<Record<string, number>>;
   readonly timelineLabels?: TimelineLabels;
   readonly timelineCardLabels?: RunCardLabels;
   readonly timelineHrefs?: TimelineHrefs;
@@ -197,8 +199,17 @@ export function useShellChrome(shell: IdeTwinShell, extras?: IdeChromeData): voi
       ...(shell.ide.latestReview ? reviewPanelBodies(shell.ide.latestReview, slug) : {}),
       ...(shell.ide.timeline ? { timeline: shell.ide.timeline } : {}),
       ...(shell.ide.timelineView
-        ? { timelineView: shell.ide.timelineView as IdeChromeData["timelineView"] }
+        ? {
+            timelineView: shell.ide.timelineView as IdeChromeData["timelineView"],
+            // R7SYNC.1 (REQ-SYNC-3) — the structured pane needs its label/href maps on EVERY
+            // framed leaf, not only the ones that hand them in via extras (the tab fell back
+            // to the flat-rows/empty arm wherever a leaf forgot them).
+            timelineLabels,
+            timelineCardLabels: runCardLabels,
+            timelineHrefs: timelineHrefs(slug),
+          }
         : {}),
+      ...(shell.ide.runHints ? { runHints: shell.ide.runHints } : {}),
       ...(shell.ide.feed ? { feed: shell.ide.feed } : {}),
       ...(shell.ide.runNextHref ? { runNextHref: shell.ide.runNextHref } : {}),
       ...(palette ? { palette } : {}),

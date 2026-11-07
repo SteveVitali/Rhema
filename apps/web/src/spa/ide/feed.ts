@@ -94,7 +94,13 @@ export function useIdeFeed(opts: IdeFeedOpts): void {
       if (invalidateTimer) return;
       invalidateTimer = setTimeout(() => {
         invalidateTimer = undefined;
-        void latest.current.queryClient.invalidateQueries({ queryKey: ["bff"] });
+        // R7SYNC.1 (REQ-SPEED-3) — scoped: the run's project subtree + the inbox badge, not
+        // every cached twin. The slug parses off the feed's own `/p/:slug/r/:runId/events` URL.
+        const slug = /^\/p\/([^/]+)\/r\//.exec(latest.current.feed?.eventsUrl ?? "")?.[1];
+        void latest.current.queryClient.invalidateQueries({
+          queryKey: slug != null ? ["bff", "p", slug] : ["bff", "p"],
+        });
+        void latest.current.queryClient.invalidateQueries({ queryKey: ["bff", "app", "inbox"] });
       }, 150);
     };
 

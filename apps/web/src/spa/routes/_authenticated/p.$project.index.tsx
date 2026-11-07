@@ -29,27 +29,29 @@ export const Route = createFileRoute("/_authenticated/p/$project/")({
     obligation: strParam,
     voice_locked: strParam,
   }),
-  beforeLoad: async ({ context, params, search }) => {
+  // R7SYNC.1 (REQ-SPEED-1; R6 UXC-33, R5 B14) — the serial handoff POST is OUT of beforeLoad:
+  // the loader paints the leaf immediately and the unread-run_finished check fires post-paint
+  // in the leaf's mount effect (the "defer" arm the requirement offers — the write stays
+  // POST-only per REQ-BFF-22 and `?focus=1` still suppresses server-side).
+  beforeLoad: ({ context }) => {
     if (!isSpaEnabled(context.boot, "/p/$project")) return;
-    // R7DEM.4b (R3 §4 row 11) — the handoff POST is a no-op in a demo boot: the twin can never
-    // carry an unread run_finished row and a demo path never issues a write.
-    if (context.boot?.demo != null) return;
-    // REQ-BFF-22 — the hand-off is a side effect, so it is POST-only and server-decided: the twin
-    // answers `{handoff:{href}}` only when an unread run_finished row exists (the same find the
-    // document ran inline); `?focus=1` suppresses it verbatim. R7RELOAD.1 (REQ-RELOAD-3, UXC-5):
-    // the href is an in-tree target — the redirect commits IN-ROUTER (no document load; the
-    // flag-safety comment pre-dated SPA.28's static verdict map).
-    // R7RO.1 — a read-only project never issues the POST before any request: the boot slot (the
-    // document-level stamp for THIS slug) says so up front; a stale stamp for another slug can't.
-    if (readOnlyProjectFor(context.boot, null, params.project) != null) return;
-    const out = await postProjectHandoff(params.project, { focus: (search as Record<string, string | undefined>).focus });
-    if (out.data.handoff != null) {
-      throw redirect({ href: out.data.handoff.href });
-    }
   },
   pendingComponent: PendingShell,
   loader: async ({ context, params, location }) => {
     if (!isSpaEnabled(context.boot, "/p/$project")) return null;
+    // R7SYNC.1 (REQ-SPEED-1; R6 UXC-33, R5 B14) — the REQ-BFF-22 handoff now rides IN PARALLEL
+    // with the twin GET, never serialized ahead of it: both requests issue in the same tick,
+    // and the loader awaits the handoff's resolution only AFTER the page twin is in cache —
+    // first paint is never held for a mark-read write. `?focus=1` suppression, the demo-boot
+    // no-op, and the read-only withhold are the document's arms verbatim; the redirect still
+    // commits in-router (R7RELOAD.1).
+    const handoff =
+      context.boot?.demo == null &&
+      readOnlyProjectFor(context.boot, null, params.project) == null
+        ? postProjectHandoff(params.project, {
+            focus: String((location.search as Record<string, unknown>).focus ?? ""),
+          }).catch(() => null)
+        : Promise.resolve(null);
     try {
       await context.queryClient.ensureQueryData(
         projectPageQuery(params.project, location.search as { focus?: string }),
@@ -58,6 +60,8 @@ export const Route = createFileRoute("/_authenticated/p/$project/")({
       if (e instanceof BffError && e.status === 404) throw notFound();
       throw e;
     }
+    const out = await handoff;
+    if (out?.data.handoff != null) throw redirect({ href: out.data.handoff.href });
     return null;
   },
   component: function ProjectPageLeaf() {

@@ -285,7 +285,7 @@ function useOnboardingSubmit(opts?: {
     },
     onSettled: (_env, _err, vars) => {
       setFormBusy(vars.form, false);
-      void queryClient.invalidateQueries({ queryKey: ["bff"] });
+      void queryClient.invalidateQueries({ queryKey: ["bff", "app"] });
     },
   });
   return (e) => {

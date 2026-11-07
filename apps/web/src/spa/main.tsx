@@ -22,6 +22,7 @@ import { installSpaClickInterceptor } from "./nav-intercept.js";
 import { applyPaperForPath } from "./paper-boot.js";
 import { makeSpaQueryClient, sessionQuery } from "./queries.js";
 import { PendingShell, SpaNotFound, SpaRouteError } from "./states.js";
+import { installPrefetcher } from "./prefetch.js";
 
 /** The router context — loaders read `queryClient` for `ensureQueryData`; leaves read `boot`. */
 export interface SpaContext {
@@ -57,14 +58,14 @@ export function createSpaRouter(opts?: {
   const router = createRouter({
     routeTree,
     context: { queryClient, boot } satisfies SpaContext,
-    // REQ-NAVM-7 (NAVC.1, spec §2.6) — NO preload at ship: `defaultPreload:"intent"` is
-    // deliberately NOT set. Every preload runs `beforeLoad`+`loader`, and several are
-    // side-effecting — `postProjectHandoff` POST (`p.$project.index`), `confirmEmail`
-    // token consumption, mark-read twin GETs (r5_a3 audit). A future PRELOAD_SAFE
-    // routeId allowlist (a delegated pointerover/focusin leg) is gated on each listed
-    // route certifying its beforeLoad+loader side-effect-free first.
-    // `defaultPreloadStaleTime: 0` stays — the REQ-FW-7 query convention, inert while
-    // nothing preloads.
+    // REQ-NAVM-7 (NAVC.1, spec §2.6) — router preload stays OFF by design: `defaultPreload:"intent"`
+    // is deliberately NOT set (loaders and beforeLoad legs may have effects — the
+    // `postProjectHandoff` POST, `confirmEmail` token consumption, mark-read twin GETs).
+    // **2026-11-07 (R7SYNC.1, REQ-SPEED-3 — ADR-128's REQ-NAVM-7 item, discharged):** the named
+    // preload follow-up lands as QUERY-level `prefetchQuery` on hover/focus for the declared
+    // `PREFETCH_SAFE` set (queries.ts — each member certified free of read side effects;
+    // the mark-read/mint twins are excluded by name). `defaultPreloadStaleTime: 0` stays —
+    // the REQ-FW-7 query convention, inert while nothing router-preloads.
     defaultPreloadStaleTime: 0,
     scrollRestoration: true,
     // NAVC.4/REQ-NAVC-16 — `.ide-page` is the IDE's INNER page scroller (`packages/ui`'s
@@ -107,11 +108,13 @@ export function createSpaRouter(opts?: {
 
 /** Mount onto the shell's `[data-spa-root]` node (the server already stamped `data-renderer="spa"`). */
 export function mountSpa(root: HTMLElement): void {
-  const { router } = createSpaRouter();
+  const { router, queryClient } = createSpaRouter();
   // REQ-NAVM-1/2 — ONE delegated bubble-phase `click` listener on `document`, installed
   // at mount (never inside `createSpaRouter` — the router-direct dom suites must stay
   // un-intercepted). The listener outlives the mount for the document's lifetime.
   installSpaClickInterceptor(router);
+  // REQ-SPEED-3 — hover/focus twin prefetch for the PREFETCH_SAFE set (query-level, never router preload).
+  installPrefetcher(queryClient, () => readSpaBoot());
   // REQ-WRITE-8 (239) — the paper policy resolves BEFORE the target leaf paints on every client
   // navigation (the mirror arm; the twin's reconcile corrects only on a real difference).
   router.subscribe("onBeforeNavigate", (evt) => {

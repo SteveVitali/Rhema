@@ -403,7 +403,7 @@ describe("R7RO.1 — the source-level census pins every remaining write affordan
     { file: "src/chat-pane.tsx", pattern: /readOnlyTitle/, affordance: "chat composer + pane writes" },
     { file: "src/page-chrome.tsx", pattern: /withhold = props\.readOnly === "demo" \|\| props\.readOnly === "showcase"/, affordance: "overview rename/actions/approvals/voice/gates/decisions" },
     { file: "src/spa/page-mount.tsx", pattern: /if \(wire == null\) return;/, affordance: "⌘S restore-point mint without a wire" },
-    { file: "src/spa/routes/_authenticated/p.$project.index.tsx", pattern: /readOnlyProjectFor\(context\.boot, null, params\.project\)/, affordance: "the beforeLoad handoff POST" },
+    { file: "src/spa/routes/_authenticated/p.$project.index.tsx", pattern: /readOnlyProjectFor\(context\.boot, null, params\.project\)/, affordance: "the loader's concurrent handoff POST (REQ-SPEED-1)" },
   ];
   const root = join(process.cwd(), "apps/web");
   for (const { file, pattern, affordance } of pins) {

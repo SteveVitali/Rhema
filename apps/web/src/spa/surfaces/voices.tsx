@@ -258,7 +258,7 @@ function useVoiceFormSubmit(opts?: {
     onSettled: (_env, _err, vars) => {
       setFormBusy(vars.form, false);
       // Server-truth repaint — the twins refetch; a refused write keeps its persisted values.
-      void queryClient.invalidateQueries({ queryKey: ["bff"] });
+      void queryClient.invalidateQueries({ queryKey: ["bff", "voices"] });
     },
   });
   return (e) => {

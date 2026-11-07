@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { StaticRouter } from "react-router";
-import { themeCss, ideCss } from "@rhema/tokens";
+import { themeCss, ideCss, FONT_FACES } from "@rhema/tokens";
 import { uiCss } from "@rhema/ui";
 import { themeBootScript, resolveAppTheme } from "@rhema/ide";
 import { spaRouteFor } from "@rhema/contracts";
@@ -29,6 +29,16 @@ const IDE_CSS = ideCss();
 const UI_CSS = uiCss();
 /** The inline pre-paint theme boot (dark|light|auto + per-project paper + font preset + reader step). */
 const BOOT = themeBootScript();
+// R7SYNC.1 (REQ-SPEED-4; R6 UXC-36) — the same two reading-face preloads the SPA shell emits
+// (Literata normal + Inter; italic/mono stay lazy). CSP unchanged.
+const FONT_PRELOADS = FONT_FACES.filter(
+  (f) => (f.family === "Literata" && f.style === "normal") || f.family === "Inter",
+)
+  .map(
+    (f) =>
+      `<link rel="preload" as="font" href="/assets/fonts/${f.file}" type="font/woff2" crossorigin>`,
+  )
+  .join("");
 
 /**
  * The REQ-BETA-10 dwell heartbeat (PRB.12): when a page names its `dwellSurface`, the document carries a
@@ -126,7 +136,7 @@ export function renderDocument(
     `<head><meta charset="utf-8">` +
     `<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">` +
     `<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon.ico" sizes="any">` +
-    `${refresh}<title>${escapeHtml(doc.title)}</title>${social}` +
+    `${refresh}<title>${escapeHtml(doc.title)}</title>${social}${FONT_PRELOADS}` +
     `<script>${BOOT}</script>` +
     `<style>${THEME_CSS}</style>${isIde ? `<style>${IDE_CSS}</style>` : ""}<style>${UI_CSS}</style></head>` +
     `<body>${body}${island}${data.dwellSurface ? dwellBeacon(data.dwellSurface) : ""}</body></html>`
