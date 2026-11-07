@@ -202,10 +202,10 @@ describe("the nav-mechanism contract (REQ-NAVT-1/2)", () => {
   it("increments once per committed transition — push and replace both count", async () => {
     const { router } = await mountAt(
       "/usage",
-      bootFor({ "/usage": "spa", "/app/new": "spa" }),
+      bootFor({ "/usage": "spa", "/app": "spa" }),
     );
     await act(async () => {
-      await router.navigate({ to: "/app/new" });
+      await router.navigate({ to: "/app" });
     });
     expect(document.documentElement.getAttribute("data-nav-count")).toBe("1");
     await act(async () => {
@@ -223,10 +223,10 @@ describe("the nav-mechanism contract (REQ-NAVT-1/2)", () => {
   it("a Back pop counts as a committed transition — the restored entry's key differs", async () => {
     const { router } = await mountAt(
       "/usage",
-      bootFor({ "/usage": "spa", "/app/new": "spa" }),
+      bootFor({ "/usage": "spa", "/app": "spa" }),
     );
     await act(async () => {
-      await router.navigate({ to: "/app/new" });
+      await router.navigate({ to: "/app" });
     });
     expect(document.documentElement.getAttribute("data-nav-count")).toBe("1");
     await act(async () => {
@@ -300,15 +300,15 @@ describe("the nav-mechanism contract (REQ-NAVT-1/2)", () => {
 
 describe("head manager (REQ-BND-8, REQ-UX-7/9)", () => {
   it("rewrites document.title through docMetaFor on nav", async () => {
-    // /app/new is a still-stubbed leaf — the title leg doesn't need a fetch stub for the twin.
-    const boot = bootFor({ "/usage": "spa", "/app/new": "spa" });
+    // /app is a still-stubbed leaf — the title leg doesn't need a fetch stub for the twin.
+    const boot = bootFor({ "/usage": "spa", "/app": "spa" });
     const { router } = await mountAt("/usage", boot);
     expect(document.title).toBe("Usage · Rhēma");
     await act(async () => {
-      await router.navigate({ to: "/app/new" });
+      await router.navigate({ to: "/app" });
     });
-    expect(document.title).toBe("New project · Rhēma");
-    expect(document.documentElement.getAttribute("data-route")).toBe("/app/new");
+    expect(document.title).toBe("Projects · Rhēma");
+    expect(document.documentElement.getAttribute("data-route")).toBe("/app");
   });
 
   it("moves focus to the route's h1 and announces via the polite live region", async () => {
@@ -417,17 +417,17 @@ describe("head manager (REQ-BND-8, REQ-UX-7/9)", () => {
   });
 
   it("REQ-NAVC-21 — a replace commit announces the same way (the announce policy is commit-scoped)", async () => {
-    const { router } = await mountAt("/usage", bootFor({ "/usage": "spa", "/app/new": "spa" }));
+    const { router } = await mountAt("/usage", bootFor({ "/usage": "spa", "/app": "spa" }));
     const announcer = document.querySelector<HTMLElement>("[data-route-announcer]")!;
     const mutations: string[] = [];
     const mo = new MutationObserver(() => mutations.push(announcer.textContent ?? ""));
     mo.observe(announcer, { childList: true, characterData: true, subtree: true });
     await act(async () => {
-      await router.navigate({ to: "/app/new", replace: true });
+      await router.navigate({ to: "/app", replace: true });
     });
     mo.disconnect();
-    expect(document.title).toBe("New project · Rhēma");
-    expect(mutations.at(-1)).toBe("New project · Rhēma");
+    expect(document.title).toBe("Projects · Rhēma");
+    expect(mutations.at(-1)).toBe("Projects · Rhēma");
     expect(document.documentElement.getAttribute("data-nav-count")).toBe("1");
   });
 });
@@ -584,14 +584,14 @@ describe("the scroll contract (REQ-NAVC-16)", () => {
   });
 
   it("a push tops the window; a Back pop restores the prior position", async () => {
-    const { router } = await mountAt("/usage", bootFor({ "/usage": "spa", "/app/new": "spa" }));
+    const { router } = await mountAt("/usage", bootFor({ "/usage": "spa", "/app": "spa" }));
     window.scrollTo(0, 400);
     document.dispatchEvent(new Event("scroll")); // register the window scroll target
     expect(window.scrollY).toBe(400);
     await act(async () => {
-      await router.navigate({ to: "/app/new" });
+      await router.navigate({ to: "/app" });
     });
-    expect(router.state.location.pathname).toBe("/app/new");
+    expect(router.state.location.pathname).toBe("/app");
     expect(window.scrollY).toBe(0); // top-on-push
     await act(async () => {
       router.history.back();
@@ -605,11 +605,11 @@ describe("the scroll contract (REQ-NAVC-16)", () => {
     const inner = document.createElement("main");
     inner.className = "ide-page";
     document.body.appendChild(inner);
-    const { router } = await mountAt("/usage", bootFor({ "/usage": "spa", "/app/new": "spa" }));
+    const { router } = await mountAt("/usage", bootFor({ "/usage": "spa", "/app": "spa" }));
     inner.scrollTop = 300;
     inner.dispatchEvent(new Event("scroll")); // element scroll targets register by event
     await act(async () => {
-      await router.navigate({ to: "/app/new" });
+      await router.navigate({ to: "/app" });
     });
     // a scrollToTopSelectors element is NOT restored-then-topped — push tops it outright.
     expect(inner.scrollTop).toBe(0);
@@ -622,7 +622,7 @@ describe("the scroll contract (REQ-NAVC-16)", () => {
   });
 
   it("a hash push favors the fragment target — the cached window position is skipped", async () => {
-    const { router } = await mountAt("/usage", bootFor({ "/usage": "spa", "/app/new": "spa" }));
+    const { router } = await mountAt("/usage", bootFor({ "/usage": "spa", "/app": "spa" }));
     window.scrollTo(0, 300);
     document.dispatchEvent(new Event("scroll"));
     const target = document.createElement("div");
@@ -630,7 +630,7 @@ describe("the scroll contract (REQ-NAVC-16)", () => {
     document.body.appendChild(target);
     const siv = vi.spyOn(target, "scrollIntoView").mockImplementation(() => {});
     await act(async () => {
-      await router.navigate({ to: "/app/new" });
+      await router.navigate({ to: "/app" });
     });
     expect(window.scrollY).toBe(0);
     window.scrollTo(0, 200); // a mid-life position — must survive the hash nav untouched

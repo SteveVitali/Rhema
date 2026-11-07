@@ -265,10 +265,11 @@ describe("P1.19 — the §10.1 phone-width contract (REQ-SPEC-20; REQ-MOBILE-3 a
     expect(impHtml).toContain('id="spa-root"');
     expect(impHtml).toContain('data-device="phone"');
 
+    // R7HOME.2b — GET /app/new is a server redirect on every device (the create is one POST
+    // the leaf issues; a document GET never mounts a form).
     const np = await app.request("/app/new", MOBILE);
-    const npHtml = await np.text();
-    expect(npHtml).toContain('id="spa-root"');
-    expect(npHtml).toContain('data-device="phone"');
+    expect(np.status).toBe(302);
+    expect(np.headers.get("location")).toBe("/app");
   });
 
   it("the voice creation sheet and voices list serve the phone-boot shell", async () => {

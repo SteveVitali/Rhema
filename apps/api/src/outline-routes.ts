@@ -118,7 +118,12 @@ async function readTextFile(
   return bytes ? new TextDecoder().decode(bytes) : null;
 }
 
-/** The newest outline artifact in the project, or the one `slug` names. */
+/** The newest outline artifact in the project, or the one `slug` names.
+ *  R7HOME.2b (REQ-HOME-6, G5) — "outline exists" has ONE source: an `artifacts` row with
+ *  `kind = 'outline'`, the same fact `loadFiles` (the sidebar Files tree) lists. Before this the
+ *  route only scanned `agents/author/outline/%` mirror paths, so an uploaded outline
+ *  (`mirror_path = 'outline.md'`) appeared in the tree while the route answered "no outline".
+ *  A named `slug` still resolves against the author-outline namespace verbatim. */
 async function loadOutlineArtifact(
   deps: OutlineApiDeps,
   projectId: string,
@@ -128,9 +133,9 @@ async function loadOutlineArtifact(
     await deps.db.query(
       `select a.id, a.mirror_path, a.head_version_id, av.ordinal, av.word_count, a.created_at
          from artifacts a left join artifact_versions av on av.id = a.head_version_id
-        where a.project_id = $1 and a.mirror_path like $2 and a.mirror_path like '%.md'
+        where a.project_id = $1 and a.kind = 'outline' and a.mirror_path like '%.md'
         order by a.created_at desc`,
-      [projectId, `${AUTHOR_OUTLINE}%`],
+      [projectId],
     )
   ).rows as OutlineArtifactRow[];
   if (slug) return rows.find((r) => r.mirror_path === `${AUTHOR_OUTLINE}${slug}.md`) ?? null;
@@ -513,7 +518,11 @@ export function createOutlineRoutes(deps: OutlineApiDeps): Hono {
     ).rows as { id: string; draft_id: string | null; state: string }[];
     return c.json({
       artifactId: art.id,
-      slug: art.mirror_path.slice(AUTHOR_OUTLINE.length).replace(/\.md$/, ""),
+      // R7HOME.2b — the slug exists only inside the author-outline namespace; a root-level
+      // outline (`mirror_path = 'outline.md'`) is slug-less, so saves resolve it by recency.
+      slug: art.mirror_path.startsWith(AUTHOR_OUTLINE)
+        ? art.mirror_path.slice(AUTHOR_OUTLINE.length).replace(/\.md$/, "")
+        : null,
       mirrorPath: art.mirror_path,
       versionId: art.head_version_id,
       ordinal: art.ordinal,

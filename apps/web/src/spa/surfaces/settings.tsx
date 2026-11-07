@@ -940,19 +940,24 @@ export function DataSection({
  *  and the standing-guidance management half (REQ-GATE-10). The approvals section is the SHARED
  *  composition — ../../approval-settings.js — so a REQ-SPEC-1 option change lands on both
  *  renderers at once. */
-export function ProjectSettingsSurface({
+export function ProjectSettingsBody({
   projectSettings,
   saved,
   notice,
+  voiceLocked,
   contentKey,
+  onSubmit,
 }: {
   readonly projectSettings: BffProjectSettingsTwin["projectSettings"] | null;
   readonly saved: boolean;
   readonly notice: string | undefined;
+  /** R7HOME.2b — the `?voice_locked=1` soft-lock echo (was the overview's). */
+  readonly voiceLocked?: boolean;
   /** The leaf's search state — an envelope-nav remounts the uncontrolled forms on server truth. */
   readonly contentKey: string;
+  /** The delegated JSON submit — absent under `renderToStaticMarkup` (the body's forms post natively). */
+  readonly onSubmit?: (e: FormEvent<HTMLElement>) => void;
 }): ReactNode {
-  const onSubmit = useSettingsFormSubmit();
   const PS = S.projectSettings;
   if (!projectSettings) {
     return (
@@ -991,15 +996,86 @@ export function ProjectSettingsSurface({
           <p data-settings-notice="true" style={{ fontSize: "13px", color: "var(--sev-major)", margin: "4px 0" }}>{notice}</p>
         ) : null}
         <div key={contentKey} style={{ maxWidth: "640px" }}>
-          <section aria-label={PS.voiceHeading} style={settingsSectionStyle}>
+          {/* R7HOME.2b (REQ-HOME-2, I5) — the voice PICKER moved here from the overview verbatim
+              (§9.6; REQ-DATA-32): persona select + the one register pick + the pin hatches, each
+              posting the same /p/:slug/voice* writes the overview issued. */}
+          <section aria-label={PS.voiceHeading} style={settingsSectionStyle} data-voice-picker="true">
             <h2 style={settingsH2}>{PS.voiceHeading}</h2>
-            <p style={{ fontSize: "13px", color: "var(--shell-fg)", margin: "4px 0" }}>
-              {p.persona ? (
+            {p.persona ? (
+              <p style={{ fontSize: "13px", color: "var(--shell-fg)", margin: "4px 0" }}>
                 <a href={`/v/${p.persona.slug ?? p.persona.id}`} style={{ color: "var(--accent)" }}>{p.persona.name ?? p.persona.id}</a>
-              ) : (
-                <span style={{ color: "var(--shell-fg-faint)" }}>{PS.voiceNone}</span>
-              )}
-            </p>
+              </p>
+            ) : null}
+            {projectSettings.projectVoice ? (
+              <>
+                <form method="post" action={`/p/${slug}/voice`} style={{ marginTop: "6px" }}>
+                  <label style={{ display: "flex", gap: "8px", alignItems: "center", fontSize: "13px", color: "var(--shell-fg-muted)", flexWrap: "wrap" }}>
+                    <select name="personaId" defaultValue={projectSettings.projectVoice.current.personaId ?? ""} style={{ fontSize: "13px" }}>
+                      <option value="">{COPY.voice.picker.noVoice}</option>
+                      {projectSettings.projectVoice.options.map((o) => (
+                        <option key={o.personaId} value={o.personaId}>
+                          {o.name ?? o.personaId}
+                        </option>
+                      ))}
+                    </select>
+                    {/* P1.14 — ONE register pick on a multi-register voice (§9.6): a run input, never a pin. */}
+                    {(() => {
+                      const cur = projectSettings.projectVoice.options.find(
+                        (o) => o.personaId === projectSettings.projectVoice?.current.personaId,
+                      );
+                      const regs = cur?.registers ?? [];
+                      return regs.length > 1 ? (
+                        <select name="register" data-register-pick="true" defaultValue="" style={{ fontSize: "13px" }}>
+                          <option value="">{COPY.voice.picker.registerDefault}</option>
+                          {regs.map((r) => (
+                            <option key={r} value={r}>
+                              {r}
+                            </option>
+                          ))}
+                        </select>
+                      ) : null;
+                    })()}
+                    {projectSettings.projectVoice.current.voiceMode === "linked" &&
+                    projectSettings.projectVoice.current.status ? (
+                      <span data-voice-pill={projectSettings.projectVoice.current.status.pill.tone} style={{ fontSize: "12px", color: "var(--shell-fg-faint)" }}>
+                        {projectSettings.projectVoice.current.status.pill.label}
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: "12px", color: "var(--shell-fg-faint)" }}>{COPY.voice.picker.noVoiceNote}</span>
+                    )}
+                  </label>
+                  <button type="submit" style={{ fontSize: "12px", marginTop: "6px" }}>{COPY.voice.picker.save}</button>
+                </form>
+                {voiceLocked === true ? (
+                  <p data-voice-locked="true" role="alert" style={{ fontSize: "12px", color: "var(--sev-major)", margin: "8px 0 0" }}>
+                    {COPY.voice.detail.voiceLockedNotice}
+                  </p>
+                ) : null}
+                {projectSettings.projectVoice.current.pinnedStale ? (
+                  <div data-pinned-stale="true" style={{ marginTop: "8px", fontSize: "12px" }}>
+                    <p style={{ color: "var(--shell-fg-muted)", margin: "0 0 6px" }}>{COPY.voice.detail.pinnedStaleNotice}</p>
+                    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+                      <form method="post" action={`/p/${slug}/voice/adopt`} style={{ margin: 0 }}>
+                        <button type="submit" data-adopt-voice="true" style={{ fontSize: "12px", background: "none", border: "none", color: "var(--accent)", cursor: "pointer", padding: 0 }}>
+                          {COPY.voice.detail.adoptCta}
+                        </button>
+                      </form>
+                      <a href={`/p/${slug}/voice/reseed`} style={{ fontSize: "12px", color: "var(--accent)" }}>
+                        {COPY.voice.detail.reseedPreviewCta}
+                      </a>
+                      <form method="post" action={`/p/${slug}/voice/fork`} style={{ margin: 0 }}>
+                        <input type="hidden" name="personaId" value={projectSettings.projectVoice.current.personaId ?? ""} />
+                        <button type="submit" data-fork-project="true" style={{ fontSize: "12px", background: "none", border: "none", color: "var(--accent)", cursor: "pointer", padding: 0 }}>
+                          {COPY.voice.detail.forkProjectCta}
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <p style={{ fontSize: "13px", color: "var(--shell-fg-faint)", margin: "4px 0" }}>{PS.voiceNone}</p>
+            )}
           </section>
           <form method="post" action={`/p/${slug}/settings`} style={{ marginTop: "8px" }}>
             <section aria-label={PS.protocolHeading} style={settingsSectionStyle}>
@@ -1087,7 +1163,26 @@ export function ProjectSettingsSurface({
               never alters an open card; guidance edits route through the settings POSTs. */}
           {ps.approvalSettings ? (
             <ApprovalSettingsSection slug={slug} settings={ps.approvalSettings} returnTo={`/p/${slug}/settings`} editable />
-          ) : null}
+          ) : (
+            // R7HOME.2b — the PRB.05 opt-in fallback moved here with the admin block (was the
+            // overview's): without a settings read the 24h triage approve still has a home.
+            <form
+              method="post"
+              action={`/p/${slug}/approval-overrides`}
+              data-approval-opt-in="true"
+              style={{ marginTop: "20px", padding: "10px 14px", border: "1px solid var(--shell-border)", borderRadius: "8px", maxWidth: "68ch" }}
+            >
+              <h2 style={{ fontSize: "13px", fontWeight: 600, color: "var(--shell-fg)", margin: "0 0 6px" }}>
+                {COPY.gates.optInHeading}
+              </h2>
+              <label style={{ display: "flex", gap: "8px", alignItems: "center", fontSize: "13px", color: "var(--shell-fg-muted)" }}>
+                <input type="checkbox" name="approve_triage_24h" defaultChecked={typeof ps.approvalOverrides?.approve_triage === "number"} />
+                {COPY.gates.optInLabel}
+              </label>
+              <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 8px" }}>{COPY.gates.optInNote}</p>
+              <button type="submit" style={{ fontSize: "12px" }}>{COPY.gates.optInSave}</button>
+            </form>
+          )}
           <section aria-label={PS.tagsHeading} style={settingsSectionStyle}>
             <h2 style={settingsH2}>{PS.tagsHeading}</h2>
             {p.tags.length > 0 ? (
@@ -1100,4 +1195,16 @@ export function ProjectSettingsSurface({
       </PageBody>
     </div>
   );
+}
+
+/** The `/p/:project/settings` leaf mount — supplies the body's delegated JSON submit upgrade. */
+export function ProjectSettingsSurface(props: {
+  readonly projectSettings: BffProjectSettingsTwin["projectSettings"] | null;
+  readonly saved: boolean;
+  readonly notice: string | undefined;
+  readonly voiceLocked?: boolean;
+  readonly contentKey: string;
+}): ReactNode {
+  const onSubmit = useSettingsFormSubmit();
+  return <ProjectSettingsBody {...props} onSubmit={onSubmit} />;
 }

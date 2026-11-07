@@ -96,18 +96,38 @@ describe("GET /protocols — the §5.3 protocol cards", () => {
 });
 
 describe("POST /projects — the three-entry create (§5.3)", () => {
-  it("scratch: creates an empty project (Essay default for no Voice), lands no draft", async () => {
+  it("scratch: ONE create yields project + blank working head + seeded live doc (REQ-HOME-3)", async () => {
     const res = await app().request("/projects", post({ title: "My Essay", entry: "scratch" }));
     expect(res.status).toBe(201);
-    const { project } = (await res.json()) as { project: { id: string; slug: string; draftId: string | null } };
+    const { project } = (await res.json()) as {
+      project: { id: string; slug: string; draftId: string | null; draftN: number | null };
+    };
     expect(project.slug).toBe("my-essay");
-    expect(project.draftId).toBeNull();
     const row = (await db.pg.query(`select protocol_id from projects where id=$1`, [project.id])).rows[0] as {
       protocol_id: string;
     };
     expect(row.protocol_id).toBe("essay"); // REQ-GENRE-4 — Unfiled ⇒ Essay
+    // R7HOME.2b — the born-blank head: exactly one draft, n=1, the human_revision working
+    // lineage, no promoted version, and a seeded live_docs row wired through live_doc_id.
+    expect(project.draftId).not.toBeNull();
+    expect(project.draftN).toBe(1);
+    const drafts = (
+      await db.pg.query(
+        `select id, n, origin, state, promoted_version_id, live_doc_id from drafts where project_id=$1`,
+        [project.id],
+      )
+    ).rows as { id: string; n: number; origin: string; state: string; promoted_version_id: string | null; live_doc_id: string | null }[];
+    expect(drafts.length).toBe(1);
+    expect(drafts[0]).toMatchObject({ n: 1, origin: "human_revision", state: "working", promoted_version_id: null });
+    expect(drafts[0]!.live_doc_id).not.toBeNull();
+    const liveDocs = (
+      await db.pg.query(`select id, octet_length(y_state) yb from live_docs where draft_id=$1`, [drafts[0]!.id])
+    ).rows as { id: string; yb: number }[];
+    expect(liveDocs.length).toBe(1);
+    expect(liveDocs[0]!.id).toBe(drafts[0]!.live_doc_id);
+    expect(liveDocs[0]!.yb).toBe(0); // truly blank — the first keystroke edits in place, never a fork
     const rows = await listProjectStates(sql, principal());
-    expect(rows.find((r) => r.id === project.id)?.state.key).toBe("empty");
+    expect(rows.find((r) => r.id === project.id)?.state.key).toBe("draft");
   });
 
   it("draft: adopts the quarantined conversion as v3 (REQ-PROD-8 startVersion)", async () => {

@@ -799,13 +799,27 @@ export function createWebApp(deps: WebDeps): Hono {
       const slug = c.req.param("slug");
       const row = slug ? await bffProjectRow(c, deps.dataSource, session, slug) : null;
       if (!row) return c.json({ error: "not_found" }, 404);
-      const [settings, approvalSettings] = await Promise.all([
+      const [settings, approvalSettings, approvalOverrides, projectVoice] = await Promise.all([
         Promise.resolve()
           .then(() => deps.dataSource.getProjectSettings?.(session, row.id))
           .catch(swallowDegraded),
         Promise.resolve()
           .then(() => deps.dataSource.getApprovalSettings?.(session, row.id))
           .catch(swallowDegraded),
+        // R7HOME.2b — the opt-in fallback's checkbox truth (moved here with the admin block).
+        Promise.resolve()
+          .then(() => deps.dataSource.getApprovalOverrides?.(session, row.id))
+          .catch(swallowDegraded),
+        // R7HOME.2b (REQ-HOME-2) — the voice picker moved here from the overview: the twin carries
+        // the same {current, options} pair the overview's composition assembled.
+        Promise.all([
+          Promise.resolve()
+            .then(() => deps.dataSource.getProjectVoice(session, row.id))
+            .catch(() => null),
+          Promise.resolve()
+            .then(() => deps.dataSource.listVoices(session))
+            .catch(() => []),
+        ]).then(([current, options]) => (current ? { current, options } : undefined)),
       ]);
       if (!settings) return c.json({ error: "not_found" }, 404);
       return c.json({
@@ -813,6 +827,8 @@ export function createWebApp(deps: WebDeps): Hono {
           slug,
           settings,
           ...(approvalSettings ? { approvalSettings } : {}),
+          ...(approvalOverrides ? { approvalOverrides } : {}),
+          ...(projectVoice ? { projectVoice } : {}),
         },
       });
     }),
@@ -1454,7 +1470,28 @@ export function createWebApp(deps: WebDeps): Hono {
     // step pinned first in Run (with its estimate), Go-to = the timeline's versions + the Margin's
     // findings, Recent runs from the rounds, Settings = the settings links. Threads need no seed —
     // the section hides when empty. Every row is a navigation; the palette never launches a run.
-    const next = opts.timelineView?.nextStep;
+    // R7HOME.2b (REQ-HOME-2) — the Timeline tab's next-step card is dismissible per user per
+    // project: `next_step_<projectId>` rides the §5.11 dismissed_explainers machinery (user-scoped
+    // storage, project-scoped key), so the dismissal is a JSON write through the existing
+    // `/p/:slug/explainers/:name/dismiss` arm and reappears for another user verbatim.
+    let timelineView = opts.timelineView;
+    if (timelineView?.nextStep && timelineView.nextStep.verb !== "none") {
+      const key = `next_step_${row.id.toLowerCase()}`;
+      const dismissed = await Promise.resolve()
+        .then(() => deps.dataSource.getExplainers?.(session))
+        .then((e) => (e?.dismissed ?? []).includes(key))
+        .catch(() => false);
+      timelineView = {
+        ...timelineView,
+        nextStep: {
+          ...timelineView.nextStep,
+          dismissed,
+          dismissAction: `/p/${row.slug}/explainers/${key}/dismiss`,
+          dismissLabel: COPY.timeline.nextStepDismiss,
+        },
+      };
+    }
+    const next = timelineView?.nextStep;
     const nextVerb = next?.verb
       ? (VERB_TABLE.find((v) => v.workflow === next.verb)?.verb ?? null)
       : null;
@@ -1533,7 +1570,7 @@ export function createWebApp(deps: WebDeps): Hono {
         ...(opts.inboxCount != null ? { inboxCount: opts.inboxCount } : {}),
         ...(opts.findings ? { findings: opts.findings } : {}),
         ...(opts.timeline ? { timeline: opts.timeline } : {}),
-        ...(opts.timelineView ? { timelineView: opts.timelineView } : {}),
+        ...(timelineView ? { timelineView } : {}),
         ...(opts.feed ? { feed: opts.feed } : {}),
         // R7DEM.4 — `run-next` targets the run sheet (outside the demo allowlist) and the
         // theme/paperTheme URLs are write endpoints the guard 405s; the nested app drops all
@@ -3168,9 +3205,11 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/app/new", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    // SPA.27 — sole renderer: the shell (the SSR sheet is deleted; the leaf composes the entry /
-    // held-hold / picker state off the /bff twin).
-    return spaShellDocument(c, deps, session);
+    // R7HOME.2b (REQ-HOME-3, ADR-128's REQ-IDE-5 item) — the sheet's fate is a REDIRECT: a direct
+    // document GET lands on the projects list (a GET never creates), while an in-app "New project"
+    // navigates to `/app/new` in-router, where the leaf issues the ONE create POST and redirects
+    // onto the new Page — no dialog, no SSR sheet.
+    return c.redirect("/app");
   });
 
   // The sheet's submit: scratch creates immediately; the upload entries run the workspace-scoped
@@ -3197,15 +3236,14 @@ export function createWebApp(deps: WebDeps): Hono {
     // SPA.27 — the SSR sheet is deleted: form-mode validation/upstream failures land back on the
     // sheet URL (the leaf holds its own field state) instead of an inline re-render.
     if (entry === "scratch") {
-      if (!picks.title) {
-        if (json)
-          return c.json({ error: "title_required", detail: COPY.newProject.titleRequired }, 400);
-        return c.redirect(`/app/new?entry=${entry}`);
-      }
+      // R7HOME.2b (REQ-HOME-3) — an untitled scratch create is legal now: the project lands
+      // "Untitled" and the inline title focuses on its Page (the writer names it there, never in
+      // a dialog).
+      const createTitle = picks.title || COPY.newProject.untitledTitle;
       let created;
       try {
         created = await deps.dataSource.createProject(session, {
-          title: picks.title,
+          title: createTitle,
           entry,
           protocolId: picks.protocolId,
           venue: picks.venue,
@@ -4765,8 +4803,9 @@ export function createWebApp(deps: WebDeps): Hono {
       .catch((e) => ({ ok: false as const, locked: e instanceof ApiError && e.status === 409 }));
     // P1.14 — the soft lock (§9.6): a direct voice change after v1 409s; the redirect lands on the
     // notice that names the two hatches (adopt / fork).
-    if (!res.ok && res.locked) return mutationOutcome(c, { redirect: `/p/${slug}?voice_locked=1` });
-    return mutationOutcome(c, { redirect: `/p/${slug}` });
+    // R7HOME.2b — the picker (and its lock notice) lives on the Project settings page now.
+    if (!res.ok && res.locked) return mutationOutcome(c, { redirect: `/p/${slug}/settings?voice_locked=1` });
+    return mutationOutcome(c, { redirect: `/p/${slug}/settings` });
   });
 
   // ---- P1.14 — the §9.6 hatches: adopt the refreshed profile (+ optional charter reseed) or fork

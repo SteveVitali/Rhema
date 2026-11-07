@@ -432,6 +432,92 @@ describe("GET /p/:slug mounted (SPA.23)", () => {
   });
 });
 
+// ---- R7HOME.2b (REQ-HOME-2/3) — the Page IS the surface -------------------------------------------
+
+const BLANK_DOC = { ...DOC, draftId: "d_1", draftN: 1, markdown: "", meters: { words: 0, readMin: 0 } };
+const BLANK_PROJECT_TWIN: BffProjectTwin = {
+  ...PROJECT_TWIN,
+  project: { ...PROJECT, title: "Untitled", headDraftN: 1, created: { entry: "scratch" } } as never,
+  page: { slug: SLUG, projectId: "proj_pv", doc: BLANK_DOC as never },
+};
+
+describe("R7HOME.2b — opens to Page, blank-create landing, affordance row, admin moved", () => {
+  it("a head draft mounts the Page with NO admin below the document (REQ-HOME-2)", async () => {
+    const f = makeFetch({
+      project: {
+        ...PROJECT_TWIN,
+        gates: [{ id: "g_1", runId: "r_1", kind: "approve_triage", workflow: "review", state: "waiting", artifactId: null, artifactTitle: null, deadline: null, waitingHours: null, decisionScope: null, doNothing: null, activity: null, escalateTo: null, summary: null }] as never,
+        decisions: [{ id: "dcr_1", projectId: "proj_pv", obligationId: null, text: "Decide", options: [], createdAt: "2026-10-01T00:00:00Z" }] as never,
+        approvalSettings: { policy: "auto", deadlines: [], standing: [] } as never,
+        projectVoice: { current: { personaId: null, voiceMode: "ad_hoc" }, options: [] } as never,
+      } as never,
+    });
+    await mountAt(`/p/${SLUG}`, bootFor(SPA_EDITOR), f.impl);
+    await vi.waitFor(() => expect(el()!.querySelector("[data-page-view]")).not.toBeNull());
+    const main = el()!;
+    expect(main.querySelector("[data-page-mount='working']")).not.toBeNull();
+    // the admin block moved to Project settings / Inbox + Timeline — none of it renders below
+    // the document body on the Page surface.
+    for (const hook of [
+      "[data-needs-you]",
+      "[data-voice-picker]",
+      "[data-edit-source]",
+      "[data-next-step-card]",
+      "[data-approval-opt-in]",
+      "[data-decisions-list]",
+      "[data-gate-card]",
+    ]) {
+      expect(main.querySelector(hook), hook).toBeNull();
+    }
+    expect(main.querySelector("[data-page-root]")).not.toBeNull();
+    // no modal anywhere on the surface (REQ-IDE-41 kept) — the chrome's pre-existing cheat-sheet
+    // dialog is frame furniture, not the admin block's modal.
+    expect(main.querySelector("[aria-modal='true'], [role='dialog']:not([data-ide-cheatsheet])")).toBeNull();
+  });
+
+  it("?created=scratch lands a focused inline 'Untitled' title with no duplicate heading (REQ-HOME-3)", async () => {
+    const f = makeFetch({ project: BLANK_PROJECT_TWIN });
+    await mountAt(`/p/${SLUG}?created=scratch`, bootFor(SPA_EDITOR), f.impl);
+    await vi.waitFor(() => expect(el()!.querySelector("[data-page-view]")).not.toBeNull());
+    const main = el()!;
+    const form = main.querySelector("form[data-inline-title]");
+    expect(form).not.toBeNull();
+    expect(form!.getAttribute("action")).toBe(`/p/${SLUG}/rename`);
+    const input = form!.querySelector("input[name='title']")!;
+    expect((input as HTMLInputElement).value).toBe("Untitled");
+    expect(document.activeElement).toBe(input);
+    // I2 — exactly ONE element carries the project title: the inline field IS the title (no
+    // placeholder heading above it).
+    const h1s = Array.from(main.querySelectorAll("h1, h2")).filter((h) => (h.textContent ?? "").includes("Untitled"));
+    expect(h1s.length).toBe(0);
+    const titleCarriers = Array.from(main.querySelectorAll("input[name='title'], h1, h2")).filter(
+      (e) => e instanceof HTMLInputElement ? e.value === "Untitled" : (e.textContent ?? "").includes("Untitled"),
+    );
+    expect(titleCarriers.length).toBe(1);
+  });
+
+  it("the blank head renders the quiet affordance row — each action opens its existing flow", async () => {
+    const f = makeFetch({ project: BLANK_PROJECT_TWIN });
+    await mountAt(`/p/${SLUG}`, bootFor(SPA_EDITOR), f.impl);
+    await vi.waitFor(() => expect(el()!.querySelector("[data-page-view]")).not.toBeNull());
+    const row = el()!.querySelector("[data-empty-page-actions]");
+    expect(row).not.toBeNull();
+    const hrefs = Array.from(row!.querySelectorAll("a")).map((a) => a.getAttribute("href"));
+    expect(hrefs).toContain(`/p/${SLUG}/import`);   // Import a file · Paste text
+    expect(hrefs).toContain(`/p/${SLUG}/outline`);  // Start from an outline
+    const chat = row!.querySelector("button[data-ide-panel-tab='chat']");
+    expect(chat).not.toBeNull();                    // Ask in chat — the controller's own tab arm
+  });
+
+  it("a NON-empty head carries no affordance row (it is not the empty Page)", async () => {
+    const f = makeFetch(); // the base twin's doc has content
+    await mountAt(`/p/${SLUG}`, bootFor(SPA_EDITOR), f.impl);
+    await vi.waitFor(() => expect(el()!.querySelector("[data-page-view]")).not.toBeNull());
+    expect(el()!.querySelector("[data-empty-page-actions]")).toBeNull();
+    expect(el()!.querySelector("[data-inline-title]")).toBeNull();
+  });
+});
+
 // ---- the PageMount's pre-mount paint (REQ-ED-14's no-JS floor twin) --------------------------------
 
 describe("PageMount pre-mount paint (SPA.23)", () => {

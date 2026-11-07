@@ -399,6 +399,12 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
   // ---- /app/settings/* + /p/:p/settings ----
   settings: [
     a("data-settings-nav", "required", "pages.tsx settings shell"),
+    // R7HOME.2b — the voice picker + opt-in fallback moved here from the overview (REQ-HOME-2).
+    a("data-voice-picker", "conditional", "spa/surfaces/settings.tsx", "persona select + pin hatches"),
+    a("data-register-pick", "conditional", "spa/surfaces/settings.tsx", "ONE register pick on a multi-register voice"),
+    a("data-adopt-voice", "conditional", "spa/surfaces/settings.tsx", "stale-pin adopt hatch"),
+    n("register", "conditional", "spa/surfaces/settings.tsx register select"),
+    n("approve_triage_24h", "conditional", "spa/surfaces/settings.tsx opt-in checkbox"),
     a("data-notification-matrix", "conditional", "pages.tsx"),
     a("data-notification-row", "conditional", "pages.tsx"),
     a("data-notifications-form", "conditional", "pages.tsx"),
@@ -591,7 +597,6 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-artifact-kind", "conditional", "pages.tsx / spa/surfaces/voices.tsx", "one artifact row"),
     a("data-runs", "conditional", "pages.tsx / spa/surfaces/voices.tsx", "runs tab section"),
     a("data-profile", "conditional", "pages.tsx / spa/surfaces/voices.tsx", "snapshot row"),
-    a("data-typical-words", "conditional", "pages.tsx voice pick"),
     a("data-quality-notes", "conditional", "pages.tsx / spa/surfaces/voices.tsx"),
     n("name", "conditional", "pages.tsx / spa/surfaces/voices.tsx voice create form"),
     n("description", "conditional", "pages.tsx / spa/surfaces/voices.tsx voice form"),
@@ -634,7 +639,8 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
   ],
   // ---- /app/new*, /p/:p/import* (+ landing island legs on authed pages) ----
   onboarding: [
-    a("data-held", "conditional", "pages.tsx /app/new form", "landing-island hydration sentinel"),
+    // R7HOME.2b — `data-held` (the sheet form's sentinel) retired with the form; the hold
+    // contract's live hooks (notice/discard/token) now emit on the import surface.
     a("data-held-notice", "conditional", "pages.tsx + landing.ts", "held-draft notice"),
     a(
       "data-held-discard",
@@ -650,8 +656,8 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     ),
     a("data-held-token", "conditional", "pages.tsx hidden input"),
     a("data-new-project", "conditional", "pages.tsx"),
-    a("data-new-project-form", "conditional", "pages.tsx /app/new"),
-    a("data-protocol-card", "conditional", "pages.tsx /app/new + run sheet", "protocol pick card"),
+    // R7HOME.2b — `data-new-project-form`, `data-protocol-card`, `data-entry` retired with the
+    // new-project sheet (the create is one POST; the entries live on the empty-Page row).
     a("data-conversion-form", "conditional", "ui/conversion.tsx", "import conversion preview"),
     a("data-conversion-action", "conditional", "ui/conversion.tsx"),
     a(
@@ -690,19 +696,12 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
       "pages.tsx",
       "import outcome notice — also settings/data",
     ),
-    a(
-      "data-venue-stale",
-      "conditional",
-      "pages.tsx /app/new + spa/surfaces/onboarding.tsx",
-      "venue-suggestion staleness note",
-    ),
     n("file", "required", "pages.tsx /app/new + marketing dropzone"),
     n("heldToken", "conditional", "pages.tsx hidden input", "hold-claim handshake"),
     n("paste", "conditional", "pages.tsx /app/new paste path"),
     n("title", "conditional", "pages.tsx /app/new + voice forms"),
     n("entry", "conditional", "pages.tsx /app/new hidden echo + spa surfaces"),
     n("personaId", "conditional", "pages.tsx /app/new voice select + spa surfaces"),
-    n("startVersion", "conditional", "pages.tsx /app/new + spa surfaces", "start-version field"),
     u("held", "conditional", "server.ts signup redirect", "?held=1 carries the hold signal"),
     u("hc", "conditional", "server.ts ?hc= consumed-token echo"),
     u("created", "conditional", "server.ts create redirect", "?created=scratch|outline|draft"),
@@ -754,12 +753,11 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-undo", "conditional", "spa/surfaces/project-home.tsx", "the lifecycle toast's Undo"),
     n("q", "conditional", "pages.tsx / spa/surfaces/project-home.tsx", "the §5.2 search input"),
     n("protocol", "conditional", "run-sheet.tsx + pages.tsx", "the run sheet's protocol field"),
-    a("data-rename-form", "conditional", "pages.tsx project menu"),
+    a("data-rename-form", "conditional", "page-chrome.tsx (project menu + inline title)"),
+    a("data-inline-title", "conditional", "page-chrome.tsx — the focused blank-Page title"),
     a("data-duplicate-form", "conditional", "pages.tsx"),
-    a("data-fork-project", "conditional", "pages.tsx"),
-    a("data-next-step-card", "conditional", "pages.tsx"),
-    a("data-entry", "conditional", "pages.tsx next-step cards"),
-    a("data-needs-you", "conditional", "pages.tsx"),
+    a("data-fork-project", "conditional", "spa/surfaces/settings.tsx"),
+    a("data-empty-page-actions", "conditional", "page-chrome.tsx — the empty head's affordance row"),
     a("data-focused-gate", "conditional", "pages.tsx"),
     a("data-pretriage-line", "conditional", "pages.tsx / spa/surfaces/run-sheet.tsx"),
     a("data-run-card", "conditional", "ui/run-card.tsx", "feed run card — the live meter root"),
@@ -1254,7 +1252,8 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
       "ui/gate-card + approval-row",
       "the card's artifact link — the presence script's 'reading' ping target (SPA.11: spa/gate-presence.ts consumes it)",
     ),
-    a("data-gate-explainer", "conditional", "pages.tsx"),
+    // R7HOME.2b — `data-gate-explainer` retired with the overview's Needs-you section (the cards
+    // live in the Inbox/Timeline; the §5.11 dismiss machinery carries the next-step card instead).
     a("data-gate-plan", "conditional", "ui/gate-card.tsx"),
     a("data-gate-scope", "conditional", "ui/gate-card.tsx"),
     a("data-gate-cutlist", "conditional", "ui/gate-card.tsx"),
@@ -1554,7 +1553,9 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     ),
     // SPA.24 (REQ-ED-16) — `data-save-url` dropped: collab is the editor's only transport and the
     // source editor (its last emitter) is retired. `/save` stays server-side for `?collab=local`.
-    a("data-edit-source", "conditional", "pages.tsx", "Edit-source affordance (P1 action row)"),
+    // R7HOME.2b — `data-edit-source` retired (the Page IS the head draft; /v/working is no longer
+    // the way to reach it). `data-needs-you`/`data-next-step-card`/`data-entry` likewise — the
+    // gates moved to the Inbox/Timeline, the entries to the empty-Page affordance row.
     a("data-writer-text", "conditional", "ui/page-editor banner"),
     a("data-reader-text", "conditional", "ui/page-editor banner"),
     a("data-lost", "conditional", "ui/page-editor + spa/page-mount rail"),
@@ -1717,6 +1718,7 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-file-row", "conditional", "ui/files-pane.tsx"),
     a("data-lock-badge", "conditional", "ui/files-pane.tsx", "B10 — frozen/working Badge (replaces the lock glyph)"),
     a("data-next-step", "conditional", "ui/timeline.tsx"),
+    a("data-next-step-dismiss", "conditional", "ui/timeline.tsx", "R7HOME.2b — the per-user per-project dismiss control"),
     a("data-next-step-duration", "conditional", "ui/timeline.tsx"),
     a("data-version-chip", "conditional", "ui/version-rail + timeline"),
     a("data-project-id", "conditional", "ui/ide-shell.tsx"),

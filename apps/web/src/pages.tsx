@@ -311,18 +311,13 @@ export function ProjectPage(): ReactNode {
     <IdeFrame>
       {/* SPA.23 — the body lives in ./page-chrome.js (props-driven) so the `editor` SPA leaf
           renders the identical tree; the SSR wrapper just feeds `usePageData()` fields in. */}
+      {/* R7HOME.2b — the overview IS the Page now (REQ-HOME-2): the gates/decisions/approvals/
+          voice reads still compose for the ide bag + the settings twin, but the body renders
+          none of them below the document. */}
       <ProjectOverviewBody
         {...(data.project ? { project: data.project } : {})}
-        {...(data.gates ? { gates: data.gates } : {})}
-        {...(data.decisions ? { decisions: data.decisions } : {})}
-        {...(data.approvalOverrides ? { approvalOverrides: data.approvalOverrides } : {})}
-        {...(data.approvalSettings ? { approvalSettings: data.approvalSettings } : {})}
-        {...(data.explainersDismissed ? { explainersDismissed: data.explainersDismissed } : {})}
         compact={data.compact}
-        {...(data.triage ? { triage: data.triage } : {})}
-        {...(data.projectVoice ? { projectVoice: data.projectVoice } : {})}
         {...(data.page ? { page: data.page } : {})}
-        {...(data.ide?.timelineView ? { timelineView: data.ide.timelineView } : {})}
       />
     </IdeFrame>
   );

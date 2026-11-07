@@ -43,7 +43,6 @@ import { navigateDocument } from "../dom.js";
 import { useShellChrome } from "../ide/chrome-data.js";
 import {
   HELD_DISCARD_CTA,
-  HELD_DISCARDED_TEXT,
   deleteHold,
   getHold,
   heldReadyText,
@@ -54,7 +53,6 @@ import type {
   BffImportPreviewTwin,
   BffImportTwin,
   BffNewProjectPreviewTwin,
-  BffNewProjectTwin,
   NewProjectPreviewSearch,
 } from "../queries.js";
 
@@ -163,20 +161,6 @@ const textAreaStyle = {
   color: "var(--shell-fg)",
   fontSize: "13px",
   fontFamily: "monospace",
-  boxSizing: "border-box",
-} as const;
-
-const inputStyle = {
-  display: "block",
-  marginTop: "4px",
-  width: "100%",
-  maxWidth: "420px",
-  padding: "6px 10px",
-  borderRadius: "8px",
-  border: "1px solid var(--shell-border)",
-  background: "var(--shell-bg)",
-  color: "var(--shell-fg)",
-  fontSize: "14px",
   boxSizing: "border-box",
 } as const;
 
@@ -347,374 +331,6 @@ function ConvertingSection({ sourceLabel }: { sourceLabel: string }): ReactNode 
   );
 }
 
-// ---- `/app/new` — the new-project sheet ---------------------------------------------------------
-
-interface PreviewState {
-  readonly form: {
-    readonly title: string;
-    readonly protocolId: string | null;
-    readonly venue: string | null;
-    readonly personaId: string | null;
-    readonly startVersion: number | null;
-    readonly heldToken: string | null;
-  };
-  readonly preview: {
-    readonly quarantineKey: string;
-    readonly sourceLabel: string;
-    readonly sourceText: string;
-    readonly convertedMarkdown: string;
-    readonly countLine: string;
-    readonly warnings: readonly { readonly message: string; readonly blockId?: string | null }[];
-  };
-}
-
-export function NewProjectSurface({
-  newProject,
-  entry,
-  compact,
-}: {
-  newProject: BffNewProjectTwin["newProject"];
-  entry: "scratch" | "outline" | "draft";
-  compact: boolean;
-}): ReactNode {
-  const router = useRouter();
-  const formRef = useRef<HTMLFormElement>(null);
-  const [notice, setNotice] = useState<{ text: string; discard: boolean } | null>(null);
-  // The held token stamps only on a real DataTransfer attach and clears on Discard — kept as
-  // state so the `value`-controlled hidden input survives re-renders (see the hydration effect).
-  const [stampedToken, setStampedToken] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [inline, setInline] = useState<PreviewState | null>(null);
-  const [consumed, setConsumed] = useState<string | null>(null);
-
-  // ONB.1 — the hold claim: hydrate on EVERY mount while a hold exists; the record is never
-  // touched by hydration (no claim-on-attach), `heldToken` rides only on a real DataTransfer
-  // attach, Discard is the other writer. The effect is imperative over the uncontrolled inputs
-  // — verbatim from the landing island's job 2.
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const rec = await getHold();
-      if (!rec || cancelled) return;
-      const form = formRef.current;
-      const fileInput = form?.querySelector<HTMLInputElement>('input[name="file"]');
-      const titleInput = form?.querySelector<HTMLInputElement>('input[name="title"]');
-      let attached = false;
-      if (fileInput) {
-        try {
-          const dt = new DataTransfer();
-          dt.items.add(new File([rec.bytes], rec.name, { type: rec.type || "application/octet-stream" }));
-          fileInput.files = dt.files;
-          attached = fileInput.files.length === 1;
-        } catch {
-          attached = false;
-        }
-      }
-      // The token rides as React state (the hidden input is `value`-controlled) — the landing
-      // island stamps `.value` imperatively; the SPA must not, because a later re-render's
-      // `defaultValue` pass rewrites the `value` attribute and would clobber the stamp.
-      if (attached) setStampedToken(rec.token);
-      if (titleInput && !titleInput.value) {
-        titleInput.value = rec.name.replace(/\.[^.]+$/, "").slice(0, 120);
-      }
-      if (!cancelled) {
-        setNotice({ text: attached ? heldReadyText(rec.name) : heldReattachText(rec.name), discard: true });
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const onSubmit = useOnboardingSubmit({
-    onData: (data) => {
-      const d = data as PreviewState | undefined;
-      if (d && typeof d === "object" && "preview" in d) setInline(d);
-    },
-    onRedirect: (href) => {
-      // ONB.1 — the `?hc=` echo: a token matching THIS hold is the server-confirmed
-      // consumption — the marker renders and the hold deletes before the router moves.
-      const hc = new URLSearchParams(href.split("?")[1] ?? "").get("hc");
-      if (hc) {
-        void (async () => {
-          const rec = await getHold();
-          if (rec && rec.token === hc) await deleteHold();
-        })();
-        setConsumed(hc);
-      }
-      void router.navigate({ href });
-    },
-    onRefusal: (detail) => setError(detail),
-  });
-
-  const protocols = newProject.protocols ?? [];
-  const voices = newProject.voices ?? [];
-  const form = inline?.form ?? { title: "", protocolId: null, venue: null, personaId: null, startVersion: null, heldToken: null };
-  const pickedCard = protocols.find((p) => p.id === form.protocolId) ?? null;
-  const venueRows = pickedCard?.venueBar.table ?? protocols.flatMap((p) => p.venueBar.table);
-  const cards = [
-    { key: "scratch" as const, title: COPY.newProject.entryScratch, body: COPY.newProject.entryScratchNote },
-    { key: "outline" as const, title: COPY.newProject.entryOutline, body: COPY.newProject.entryOutlineNote },
-    { key: "draft" as const, title: COPY.newProject.entryDraft, body: COPY.newProject.entryDraftNote },
-  ];
-
-  // R7SHELL.1b — the sheet's only chrome is the sidebar; the title is a content row.
-  const sheetShell = (children: ReactNode): ReactNode => <PageBody>{children}</PageBody>;
-
-  if (compact) {
-    return sheetShell(
-      <div data-spa-surface>
-        <PageHeader title={COPY.newProject.heading} />
-        <p data-phone-blocked="true" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", maxWidth: "68ch" }}>
-          {COPY.phoneBlocked.note}
-        </p>
-      </div>,
-    );
-  }
-
-  return sheetShell(
-    <div data-spa-surface onSubmit={onSubmit}>
-      <PageHeader title={COPY.newProject.heading} />
-      <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px", maxWidth: "68ch" }}>{COPY.newProject.lede}</p>
-      {/* the consumed handshake marker — transient, rendered on the echo leg (ONB.1). */}
-      {consumed ? <span data-held-consumed={consumed} hidden /> : null}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px", margin: "16px 0" }}>
-        {cards.map((card) => (
-          <a
-            key={card.key}
-            href={`/app/new?entry=${card.key}`}
-            data-entry={card.key}
-            onClick={(e) => {
-              e.preventDefault();
-              void router.navigate({ to: "/app/new", search: { entry: card.key } });
-            }}
-            style={{
-              display: "block",
-              padding: "12px 14px",
-              borderRadius: "10px",
-              border: `1px solid ${entry === card.key ? "var(--accent)" : "var(--shell-border)"}`,
-              background: "var(--shell-surface)",
-              textDecoration: "none",
-              color: "var(--shell-fg)",
-            }}
-          >
-            <div style={{ fontWeight: 600, fontSize: "14px" }}>{card.title}</div>
-            <div style={{ fontSize: "12px", color: "var(--shell-fg-muted)", marginTop: "4px" }}>{card.body}</div>
-          </a>
-        ))}
-      </div>
-      {error ? (
-        <p role="alert" style={{ color: "var(--sev-major)", fontSize: "13px" }}>{error}</p>
-      ) : null}
-      {inline ? (
-        <ConversionPreview
-          sourceLabel={inline.preview.sourceLabel}
-          sourceText={inline.preview.sourceText}
-          convertedMarkdown={inline.preview.convertedMarkdown}
-          countLine={inline.preview.countLine}
-          warnings={inline.preview.warnings}
-          actions={{
-            formAction: "/app/new/create",
-            createLabel: COPY.import.createLabel,
-            fixNowLabel: COPY.import.fixNowLabel,
-            hiddenFields: {
-              entry,
-              title: form.title,
-              ...(form.protocolId ? { protocolId: form.protocolId } : {}),
-              ...(form.venue ? { venue: form.venue } : {}),
-              ...(form.personaId ? { personaId: form.personaId } : {}),
-              ...(form.startVersion != null ? { startVersion: String(form.startVersion) } : {}),
-              ...(form.heldToken ? { heldToken: form.heldToken } : {}),
-              qk: inline.preview.quarantineKey,
-            },
-          }}
-          labels={{
-            sourceHeading: COPY.import.sourceHeading,
-            convertedHeading: COPY.import.convertedHeading,
-            warningsHeading: COPY.import.warningsHeading,
-            noWarnings: COPY.import.noWarnings,
-            fixNowNote: COPY.import.fixNowNote,
-          }}
-        />
-      ) : (
-        <>
-          <p data-held-notice role="status" style={{ fontSize: "13px", color: "var(--state-ready)" }}>
-            {notice?.text ?? ""}
-            {notice?.discard ? (
-              <button
-                type="button"
-                data-held-discard="1"
-                style={{ marginLeft: "10px", fontSize: "12px" }}
-                onClick={() => {
-                  void deleteHold().then(() => {
-                    const form = formRef.current;
-                    const fileInput = form?.querySelector<HTMLInputElement>('input[name="file"]');
-                    try {
-                      if (fileInput) fileInput.value = "";
-                    } catch {
-                      /* a cleared input is best-effort — the hold is gone either way */
-                    }
-                    setStampedToken(null);
-                    setNotice({ text: HELD_DISCARDED_TEXT, discard: false });
-                  });
-                }}
-              >
-                {HELD_DISCARD_CTA}
-              </button>
-            ) : null}
-          </p>
-          <form method="post" action="/app/new" encType="multipart/form-data" data-held="1" data-new-project-form="true" style={{ maxWidth: "68ch" }} ref={formRef}>
-            <input type="hidden" name="entry" value={entry} />
-            <input type="hidden" name="heldToken" data-held-token value={stampedToken ?? form.heldToken ?? ""} readOnly />
-            <label style={{ display: "block", fontSize: "13px", color: "var(--shell-fg-muted)" }}>
-              {COPY.newProject.titleLabel}
-              <input
-                type="text"
-                name="title"
-                required={entry === "scratch"}
-                defaultValue={form.title}
-                placeholder={COPY.newProject.titlePlaceholder}
-                style={inputStyle}
-              />
-            </label>
-            <fieldset style={{ border: "none", padding: 0, margin: "16px 0 0" }}>
-              <legend style={{ fontSize: "13px", color: "var(--shell-fg-muted)", padding: 0 }}>{COPY.newProject.protocolLegend}</legend>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "10px", marginTop: "6px" }}>
-                {protocols.map((p) => (
-                  <label
-                    key={p.id}
-                    data-protocol-card={p.id}
-                    style={{
-                      display: "block",
-                      padding: "10px 12px",
-                      borderRadius: "10px",
-                      border: `1px solid ${form.protocolId === p.id ? "var(--accent)" : "var(--shell-border)"}`,
-                      background: "var(--shell-surface)",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <input type="radio" name="protocolId" value={p.id} defaultChecked={form.protocolId === p.id} style={{ marginRight: "6px" }} />
-                    <span style={{ fontWeight: 600, fontSize: "13px" }}>{p.name}</span>
-                    <div style={{ fontSize: "12px", color: "var(--shell-fg-muted)", marginTop: "4px" }}>{p.tagline}</div>
-                    <div style={{ fontSize: "12px", color: "var(--shell-fg-faint)", marginTop: "4px" }}>{p.holdYouTo}</div>
-                    {p.typicalReviewCredits != null ? (
-                      <div
-                        className="tnum"
-                        data-typical-words={p.typicalWords}
-                        style={{ fontSize: "11px", color: "var(--shell-fg-faint)", marginTop: "4px" }}
-                      >
-                        {`Review ≈ ${p.typicalReviewCredits} credits`}
-                        {p.typicalReviewDuration != null
-                          ? ` · ~${p.typicalReviewDuration.lowMinutes}–${p.typicalReviewDuration.highMinutes} min`
-                          : ""}
-                      </div>
-                    ) : null}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-            <label style={{ display: "block", fontSize: "13px", color: "var(--shell-fg-muted)", marginTop: "16px" }}>
-              {COPY.newProject.venueLabel}
-              <input
-                type="text"
-                name="venue"
-                list="np-venues"
-                defaultValue={form.venue ?? ""}
-                placeholder={COPY.newProject.venuePlaceholder}
-                style={inputStyle}
-              />
-              <datalist id="np-venues">
-                {venueRows.map((v) => (
-                  <option key={v.venue} value={v.venue} />
-                ))}
-              </datalist>
-              {(() => {
-                const staleDates = [
-                  ...new Set(
-                    venueRows
-                      .filter((v) => v.verified_at == null && v.as_of != null)
-                      .map((v) => v.as_of as string),
-                  ),
-                ].sort();
-                return staleDates.length > 0 ? (
-                  <span data-venue-stale style={{ display: "block", fontSize: "12px", color: "var(--shell-fg-faint)", marginTop: "4px" }}>
-                    {fmt(COPY.newProject.venueStaleFmt, { dates: staleDates.join(", ") })}
-                  </span>
-                ) : null;
-              })()}
-            </label>
-            {pickedCard?.lengthNorms.default != null ? (
-              <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 0" }} className="tnum">
-                {`${COPY.newProject.lengthLabel}: ${pickedCard.lengthNorms.default} ${pickedCard.lengthNorms.unit}`}
-              </p>
-            ) : null}
-            <label style={{ display: "block", fontSize: "13px", color: "var(--shell-fg-muted)", marginTop: "16px" }}>
-              {COPY.newProject.voiceLegend}
-              <select name="personaId" defaultValue={form.personaId ?? ""} style={{ display: "block", marginTop: "4px", fontSize: "13px" }}>
-                <option value="">{COPY.voice.picker.noVoice}</option>
-                {voices.filter((v) => v.mode !== "house").length > 0 ? (
-                  <optgroup label={COPY.newProject.voiceGroupYours}>
-                    {voices
-                      .filter((v) => v.mode !== "house")
-                      .map((v) => (
-                        <option key={v.personaId} value={v.personaId}>
-                          {`${v.name ?? v.personaId} — ${v.status.pill.label}`}
-                        </option>
-                      ))}
-                  </optgroup>
-                ) : null}
-                {voices.filter((v) => v.mode === "house").length > 0 ? (
-                  <optgroup label={COPY.newProject.voiceGroupHouse}>
-                    {voices
-                      .filter((v) => v.mode === "house")
-                      .map((v) => (
-                        <option key={v.personaId} value={v.personaId}>
-                          {`${v.name ?? v.personaId} — ${v.status.pill.label}`}
-                        </option>
-                      ))}
-                  </optgroup>
-                ) : null}
-              </select>
-            </label>
-            <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 0" }}>
-              {COPY.newProject.voiceHintNeverBuilt}{" "}
-              <a href="/voices/new" style={{ fontSize: "12px" }}>{COPY.voice.newCta}</a>
-            </p>
-            {entry === "draft" ? (
-              <label style={{ display: "block", fontSize: "13px", color: "var(--shell-fg-muted)", marginTop: "16px" }}>
-                {COPY.newProject.startVersionLabel}
-                <input
-                  type="number"
-                  name="startVersion"
-                  min={1}
-                  defaultValue={form.startVersion != null ? String(form.startVersion) : ""}
-                  style={{ display: "block", marginTop: "4px", width: "90px", padding: "6px 10px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", fontSize: "13px" }}
-                />
-              </label>
-            ) : null}
-            {entry !== "scratch" ? (
-              <>
-                <div style={{ marginTop: "16px" }}>
-                  <span style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{COPY.newProject.fileLabel}</span>
-                  <FileDropzone />
-                </div>
-                <label style={{ display: "block", fontSize: "13px", color: "var(--shell-fg-muted)", marginTop: "12px" }}>
-                  {COPY.newProject.pasteLabel}
-                  <textarea name="paste" style={textAreaStyle} />
-                </label>
-              </>
-            ) : null}
-            <div style={{ marginTop: "18px" }}>
-              <button type="submit" style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}>
-                {entry === "scratch" ? COPY.newProject.createCta : COPY.newProject.continueCta}
-              </button>
-            </div>
-          </form>
-        </>
-      )}
-    </div>,
-  );
-}
 
 // ---- `/app/new/preview` — the workspace-scoped poll leg -----------------------------------------
 
@@ -822,10 +438,49 @@ export function ImportSurface({
   const [error, setError] = useState<string | null>(null);
   const slug = data.project.slug;
 
+  // ONB.1 (R7HOME.2b) — the held-draft contract's new home: a landing drop that survived sign-in
+  // lands here (`/app/new?held=1` → blank create → this surface) and hydrates on EVERY mount
+  // while a hold exists (no claim-on-attach); `heldToken` rides only on a real DataTransfer
+  // attach, Discard is the other writer, and a confirmed preview submit deletes the hold.
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const [stampedToken, setStampedToken] = useState<string | null>(null);
+  const [heldNotice, setHeldNotice] = useState<{ text: string } | null>(null);
+  const stampedRef = useRef<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const rec = await getHold();
+      if (!rec || cancelled) return;
+      const fileInput = formRef.current?.querySelector<HTMLInputElement>('input[name="file"]');
+      let attached = false;
+      if (fileInput) {
+        try {
+          const dt = new DataTransfer();
+          dt.items.add(new File([rec.bytes], rec.name, { type: rec.type || "application/octet-stream" }));
+          fileInput.files = dt.files;
+          attached = fileInput.files.length === 1;
+        } catch {
+          attached = false;
+        }
+      }
+      if (attached) {
+        stampedRef.current = rec.token;
+        setStampedToken(rec.token);
+      }
+      if (!cancelled) setHeldNotice({ text: attached ? heldReadyText(rec.name) : heldReattachText(rec.name) });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const onSubmit = useOnboardingSubmit({
     onData: (d) => {
       // `{ok,data:{conversion}}` — the ready preview the document paints on the POST; the leaf
       // keeps ONE render path: navigate to the poll URL (warm read-back answers ready at once).
+      // A submitted held file is server-confirmed consumption (the server holds the bytes in
+      // quarantine) — the hold deletes before the router moves.
+      if (stampedRef.current) void deleteHold();
       const conv = (d as { conversion?: BffConversion } | undefined)?.conversion;
       if (conv?.quarantineKey) {
         const src = conv.sourceLabel ?? "";
@@ -833,6 +488,10 @@ export function ImportSurface({
           href: `/p/${slug}/import/preview?qk=${encodeURIComponent(conv.quarantineKey)}${src ? `&src=${encodeURIComponent(src)}` : ""}`,
         });
       }
+    },
+    onRedirect: (href) => {
+      if (stampedRef.current) void deleteHold();
+      void router.navigate({ href });
     },
     onRefusal: (detail) => setError(detail),
   });
@@ -850,7 +509,29 @@ export function ImportSurface({
           {error ? (
             <p data-import-notice="failed" role="alert" style={{ fontSize: "12px", color: "var(--sev-major)", marginTop: "8px" }}>{error}</p>
           ) : null}
-          <form method="post" action={`/p/${slug}/import/preview`} encType="multipart/form-data">
+          {heldNotice ? (
+            <p data-held-notice="true" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", marginTop: "8px" }}>
+              {heldNotice.text}{" "}
+              <button
+                type="button"
+                data-held-discard="true"
+                style={{ background: "none", border: "none", padding: 0, color: "var(--accent)", fontSize: "13px", cursor: "pointer" }}
+                onClick={() => {
+                  void deleteHold().then(() => {
+                    const input = formRef.current?.querySelector<HTMLInputElement>('input[name="file"]');
+                    if (input) input.value = "";
+                    stampedRef.current = null;
+                    setStampedToken(null);
+                    setHeldNotice(null);
+                  });
+                }}
+              >
+                {HELD_DISCARD_CTA}
+              </button>
+            </p>
+          ) : null}
+          <form ref={formRef} method="post" action={`/p/${slug}/import/preview`} encType="multipart/form-data">
+            {stampedToken ? <input type="hidden" name="heldToken" data-held-token="true" value={stampedToken} /> : null}
             <div>
               <span style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{COPY.import.fileLabel}</span>
               <FileDropzone />

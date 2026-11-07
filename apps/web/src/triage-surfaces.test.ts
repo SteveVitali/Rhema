@@ -4,14 +4,35 @@ import { renderToStaticMarkup } from "react-dom/server";
 import {
   ApiError,
   type ProjectRow,
+  type EditorDocDto,
   type GateCardDto,
   type DecisionItemDto,
   type ApprovalSettingsDto,
 } from "@rhema/api-client";
 import { createWebApp, type WebDeps } from "./server.js";
 import type { DataSource, DossierData } from "./data.js";
-import { buildRunCardView } from "@rhema/findings-core";
-import { ProjectOverviewBody } from "./page-chrome.js";
+import { buildRunCardView, needsYouOrder } from "@rhema/findings-core";
+import { ProjectSettingsBody } from "./spa/surfaces/settings.js";
+import type { BffProjectSettingsTwin } from "./spa/queries.js";
+
+/** R7HOME.2b — the opt-in fallback lives on the Project settings page now (was the overview). */
+function settingsSurfaceBody(twin: Partial<BffProjectSettingsTwin["projectSettings"]>): string {
+  return renderToStaticMarkup(
+    createElement(ProjectSettingsBody, {
+      projectSettings: {
+        slug: SLUG,
+        settings: {
+          project: { id: "p1", slug: SLUG, title: "Seed", tags: [], protocolOverrides: {} },
+          protocols: [],
+        } as never,
+        ...twin,
+      },
+      saved: false,
+      notice: undefined,
+      contentKey: "{}",
+    }),
+  );
+}
 
 // PRB.05 — the web shell's triage surfaces (§5.7/§6.4/§10.1): the dossier renders the five-verb disposition
 // controls on every finalized finding; the disposition POST forwards verb/note/reason_code/adapted_text and
@@ -28,6 +49,8 @@ const PROJECTS: ProjectRow[] = [
     id: "proj_pv",
     slug: "the-politics-of-visibility",
     title: "The Politics of Visibility",
+    // R7HOME.2b — a head draft so `/p/:slug` mounts the working Page (REQ-HOME-2).
+    headDraftId: "d_head",
     // R7RO.1 — `showcase: true` is a read-only row fact now (the twins carry
     // `project.readOnlyProject{showcase}`); it no longer forces SSR — the PHONE request does.
     showcase: true,
@@ -39,6 +62,21 @@ const PROJECTS: ProjectRow[] = [
     },
   },
 ];
+
+/** R7HOME.2b — the head draft's doc the phone `/p/:slug` mounts read-only (REQ-HOME-2). */
+const HEAD_DOC: EditorDocDto = {
+  draftId: "d_head",
+  draftN: 1,
+  origin: "human_revision",
+  state: "working",
+  markdown: "# The Politics of Visibility\n\nA working draft paragraph.\n",
+  sha256: "sha_head",
+  lock: null,
+  findings: [],
+  provenance: {},
+  meters: { words: 4, readMin: 1 },
+  proposals: [],
+};
 
 const DOSSIER: DossierData = {
   slug: "the-politics-of-visibility",
@@ -205,6 +243,7 @@ function makeDeps(
       suspended: false,
       clawbackDebt: 0,
     }),
+    getEditorDoc: async () => HEAD_DOC,
     recordExhaustedPrompt: async () => undefined,
     ...over,
   };
@@ -317,24 +356,16 @@ describe("the dossier's disposition controls (§5.7; REQ-BETA-6)", () => {
 });
 
 describe("the Needs-you gate cards + Decisions list on the project page (§6.4)", () => {
-  it("renders the approve_triage card with the ledger (escalations flagged, 'Approve proposals')", async () => {
+  it("R7HOME.2b — the Needs-you rows + Decisions list no longer render on /p/:slug (Inbox/Timeline own them)", async () => {
     const app = createWebApp(makeDeps());
-    // R7RO.1 — the desktop document is the shell on every row; these render asserts pin the
-    // surviving forced-SSR PHONE arm.
+    // the forced-SSR PHONE arm is where the document still renders the body.
     const res = await app.request(`/p/${SLUG}`, PHONE);
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain('data-needs-you="true"');
-    expect(html).toContain('data-gate-card="approve_triage"');
-    expect(html).toContain("Approve proposals");
-    expect(html).toContain('data-triage-ledger="true"');
-    // the wait-default card shows NO presence timer.
-    expect(html).not.toContain("data-presence-timer");
-    // per-row overrides ride the same disposition control.
-    expect(html).toContain(`action="/p/${SLUG}/findings/f_1/disposition"`);
-    // the Decisions list carries the escalation ask with inline options.
-    expect(html).toContain("Escalated finding: A citation is misstated.");
-    expect(html).toContain('value="dismiss"');
+    expect(html).not.toContain('data-needs-you');
+    expect(html).not.toContain('data-edit-source');
+    // the page mounts the head draft's Page — nothing below the document body.
+    expect(html).toContain('data-page-mount="working"');
   });
 
   it("POST a gate decision → decideGate; POST a decision answer → answerDecision", async () => {
@@ -361,7 +392,7 @@ describe("the Needs-you gate cards + Decisions list on the project page (§6.4)"
     expect(answerDecision).toHaveBeenCalledWith(expect.anything(), "proj_pv", "dcr_1", "dismiss");
   });
 
-  it("only an auto-proceed card carries the presence-ping script; its pings hit the activity route (REQ-SPEC-18)", async () => {
+  it("presence pings moved to the SPA Inbox with the cards; the activity route stays server-owned (REQ-SPEC-18)", async () => {
     const recordGateActivity = vi.fn(async () => {});
     const app = createWebApp(
       makeDeps({ listGates: async () => [GATE, GATE_AUTO], recordGateActivity }),
@@ -369,12 +400,13 @@ describe("the Needs-you gate cards + Decisions list on the project page (§6.4)"
     const res = await app.request(`/p/${SLUG}`, PHONE);
     expect(res.status).toBe(200);
     const html = await res.text();
-    // the wait-default approve_triage card emits NO presence script; the auto-proceed scope card does.
-    expect(html).toContain(`data-gate-card="approve_triage"`);
-    expect(html).toContain(`/p/${SLUG}/gates/gate_auto/activity`);
-    expect(html).not.toContain(`/p/${SLUG}/gates/gate_1/activity`);
-    // the script pings present/blur/reading at the card's activity endpoint.
-    expect(html).toContain("sendBeacon");
+    // R7HOME.2b — the gate cards (and their presence arms) live on the SPA Inbox now
+    // (REQ-HOME-2: decisions → Inbox + Timeline); the SSR Page emits neither the card nor the
+    // ping script. The React `useGatePresence` twin — 'present' on auto-proceed, nothing on
+    // wait-default — is pinned by `spa/inbox.dom.test.tsx`. The activity POST stays here.
+    expect(html).not.toContain('data-gate-card="');
+    expect(html).not.toContain(`/gates/gate_auto/activity`);
+    expect(html).not.toContain("data-presence-timer");
 
     const p = await app.request(`/p/${SLUG}/gates/gate_auto/activity`, {
       method: "POST",
@@ -400,33 +432,33 @@ describe("phone width — the SAME components at the narrow input set (§10.1; R
   const MOBILE = { headers: { "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0) Mobile" } };
 
   // SPA.27 — the compact dossier render asserts retired with the document (the flipped surfaces
-  // serve the shell at EVERY width; the leaf's own compact layout is client-side now). The gate
-  // card's phone asserts below survive — `/p/:slug` keeps its forced-SSR Page render on phone.
+  // serve the shell at EVERY width; the leaf's own compact layout is client-side now). R7HOME.2b —
+  // the forced-SSR phone Page carries no gate card any more: REQ-HOME-2 moved decisions to the
+  // Inbox + Timeline, and the phonebar's `/app/inbox` link is the phone decide path (the card's
+  // composition there is pinned by `spa/inbox.dom.test.tsx` — `data-inbox-gate-card` + the shared
+  // `gateCardFor` body).
 
-  it("the gate card narrows to Approve / Wait for me / Stop — same component, same contract", async () => {
+  it("the phone Page mounts the draft read-only + links the Inbox decide path — no inline gate card", async () => {
     const app = createWebApp(makeDeps());
     const res = await app.request(`/p/${SLUG}`, MOBILE);
     const html = await res.text();
-    expect(html).toContain('data-gate-card="approve_triage"');
-    for (const a of ["approve", "wait", "stop"]) expect(html).toContain(`data-action="${a}"`);
-    expect(html).not.toContain('data-action="approve_autonomous"');
-    expect(html).not.toContain('data-action="keep_planning"');
+    expect(html).not.toContain('data-gate-card="approve_triage"');
+    expect(html).toContain('data-page-mount="working"');
+    expect(html).toContain('href="/app/inbox"');
   });
 });
 
 describe("the per-project approve_triage 24-h opt-in (§6.4 R3)", () => {
   it("the project page renders the opt-in checkbox (unchecked while waiting by default)", async () => {
     // R7RO.1 — the only forced-SSR arm left is phone, where approval config is the §10.1 ✗
-    // column: the checkbox is withheld there. The desktop render is pinned on the shared
-    // `ProjectOverviewBody` the leaf mounts (non-compact, no read-only reason).
+    // column: the checkbox is withheld there. R7HOME.2b — the opt-in's home is the Project
+    // settings page (the overview renders no admin below the document).
     const app = createWebApp(makeDeps());
     const html = await (await app.request(`/p/${SLUG}`, PHONE)).text();
     expect(html).not.toContain('data-approval-opt-in="true"');
     expect(html).not.toContain('name="approve_triage_24h"');
 
-    const body = renderToStaticMarkup(
-      createElement(ProjectOverviewBody, { project: { slug: SLUG } }),
-    );
+    const body = settingsSurfaceBody({ approvalOverrides: {} });
     expect(body).toContain('data-approval-opt-in="true"');
     expect(body).toContain('name="approve_triage_24h"');
     expect(body).toContain("Auto-approve triage after 24 h");
@@ -441,13 +473,10 @@ describe("the per-project approve_triage 24-h opt-in (§6.4 R3)", () => {
         setApprovalOverrides,
       }),
     );
-    // the stored-override render is desktop chrome — the shared component's non-compact arm.
-    const body = renderToStaticMarkup(
-      createElement(ProjectOverviewBody, {
-        project: { slug: SLUG },
-        approvalOverrides: { approve_triage: 24 * 60 * 60 * 1000 },
-      }),
-    );
+    // the stored-override render is the Project settings surface's opt-in fallback.
+    const body = settingsSurfaceBody({
+      approvalOverrides: { approve_triage: 24 * 60 * 60 * 1000 },
+    });
     expect(body).toContain('name="approve_triage_24h" checked=""');
 
     const res = await app.request(`/p/${SLUG}/approval-overrides`, {
@@ -553,37 +582,24 @@ const SETTINGS = {
 };
 
 describe("P1.09 — the §6.4 approval surface on the web (AC1/AC5/AC6)", () => {
-  it("each Needs-you row is a <details> ApprovalRow mounting the IDENTICAL card anatomy", async () => {
-    const app = createWebApp(makeDeps({ listGates: async () => [GATE] }));
-    const html = await (await app.request(`/p/${SLUG}`, PHONE)).text();
-    expect(html).toContain('data-approval-row="gate_1"');
-    expect(html).toContain("<details"); // SSR/no-JS — the row expands natively
-    expect(html).toContain('data-approval-sheet="true"');
-    expect(html).toContain('data-gate-card="approve_triage"');
-    // the row itself carries kind + do-nothing on the summary (§5.11 — read before approving).
-    expect(html).toContain('data-row-do-nothing="true"');
-    expect(html).toContain('data-row-deadline="true"');
-  });
-
-  it("orders rows §5.11: deadline-bearing first (soonest), waiting next, informational last", async () => {
+  it("R7HOME.2b — the Needs-you rows no longer render on /p/:slug (the Inbox owns the gate cards)", async () => {
     const app = createWebApp(makeDeps({ listGates: async () => [GATE_INFO, GATE_DEADLINE, GATE] }));
     const html = await (await app.request(`/p/${SLUG}`, PHONE)).text();
-    const order = [...html.matchAll(/data-approval-row="([^"]+)"/g)].map((m) => m[1]);
-    expect(order).toEqual(["gate_dl", "gate_1", "gate_info"]);
+    // REQ-HOME-2 — nothing below the document body: no approval rows, gate cards, or explainer.
+    expect(html).not.toContain('data-approval-row');
+    expect(html).not.toContain('data-needs-you');
+    expect(html).not.toContain('data-gate-card');
+    expect(html).not.toContain('data-gate-explainer');
   });
 
-  it("the one-time explainer mounts on the first Approval card until dismissed (§5.11)", async () => {
-    const fresh = createWebApp(makeDeps({ getExplainers: async () => ({ dismissed: [] }) }));
-    const html = await (await fresh.request(`/p/${SLUG}`, PHONE)).text();
-    expect(html).toContain('data-gate-explainer="true"');
-    expect(html).toContain(`action="/p/${SLUG}/explainers/approvals/dismiss"`);
-
-    const seen = createWebApp(
-      makeDeps({ getExplainers: async () => ({ dismissed: ["approvals"] }) }),
-    );
-    expect(await (await seen.request(`/p/${SLUG}`, PHONE)).text()).not.toContain(
-      "data-gate-explainer",
-    );
+  it("the §5.11 ordering + the explainers machinery are intact (the dismiss arm is a JSON write)", async () => {
+    // the needsYouOrder unit is pinned by findings-core's own suite; the dismiss POST arm below
+    // still exercises the one-time-explainer machinery the next-step card's dismissal rides.
+    expect(needsYouOrder([GATE_INFO, GATE_DEADLINE, GATE]).map((g) => g.id)).toEqual([
+      "gate_dl",
+      "gate_1",
+      "gate_info",
+    ]);
   });
 
   it("the explainer dismiss POST hits the api seam and bounces back", async () => {
@@ -597,19 +613,14 @@ describe("P1.09 — the §6.4 approval surface on the web (AC1/AC5/AC6)", () => 
     expect(dismissExplainer).toHaveBeenCalledWith(expect.anything(), "approvals");
   });
 
-  it("the Approvals settings section renders the policy radios + per-kind grid + standing guidance", async () => {
-    // R7RO.1 — the phone arm withholds approval policy config (§10.1 ✗); the desktop render is
-    // pinned on the shared `ProjectOverviewBody` (the leaf mounts the same section).
+  it("the Approvals settings section renders the policy radios + per-kind grid + standing guidance (R7HOME.2b: on the Project settings page)", async () => {
+    // R7RO.1 — the phone arm withholds approval policy config (§10.1 ✗). R7HOME.2b — the
+    // section's home is the Project settings page (the overview renders no admin).
     const app = createWebApp(makeDeps({ getApprovalSettings: async () => SETTINGS }));
     const phoneHtml = await (await app.request(`/p/${SLUG}`, PHONE)).text();
     expect(phoneHtml).not.toContain('data-approval-settings="true"');
 
-    const body = renderToStaticMarkup(
-      createElement(ProjectOverviewBody, {
-        project: { slug: SLUG },
-        approvalSettings: SETTINGS as ApprovalSettingsDto,
-      }),
-    );
+    const body = settingsSurfaceBody({ approvalSettings: SETTINGS as ApprovalSettingsDto });
     expect(body).toContain('data-approval-settings="true"');
     for (const p of ["named", "wait_each", "run_to_completion"]) {
       expect(body).toContain(`data-policy="${p}"`);

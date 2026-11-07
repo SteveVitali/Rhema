@@ -1375,13 +1375,17 @@ describe("GET /bff/p/:slug/import/preview — the project poll twin (SPA.14; REQ
 });
 
 describe("POST /app/new — the sheet's JSON dual-mode (SPA.14; REQ-BFF-1/2/3/15/16)", () => {
-  it("scratch without a title → 400 {error:title_required}, never a silent redirect", async () => {
-    const res = await createWebApp(onboardingDeps({})).request("/app/new", {
+  // R7HOME.2b — a title-less scratch create is legal (REQ-HOME-3): "Untitled" is the server
+  // default and the writer renames inline on the Page; title_required survives on upload entries.
+  it("scratch without a title → creates 'Untitled' + {ok,redirect} (never a silent 400)", async () => {
+    const create = vi.fn(async ({ title }: { title: string }) => ({ slug: "untitled-proj", title }));
+    const res = await createWebApp(onboardingDeps({ createProject: create })).request("/app/new", {
       ...jsonPost,
       body: JSON.stringify({ entry: "scratch" }),
     });
-    expect(res.status).toBe(400);
-    expect(await res.json()).toEqual({ error: "title_required", detail: "A title is required." });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, redirect: "/p/untitled-proj?created=scratch" });
+    expect(create).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ title: "Untitled" }));
   });
 
   it("scratch create answers {ok,redirect:'/p/x?created=scratch'}", async () => {

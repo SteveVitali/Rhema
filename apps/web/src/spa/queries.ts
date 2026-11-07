@@ -269,6 +269,14 @@ export interface BffProjectSettingsTwin {
     readonly slug: string;
     readonly settings: ProjectSettingsDto;
     readonly approvalSettings?: ApprovalSettingsDto;
+    /** R7HOME.2b — the opt-in fallback's truth (the PRB.05 approve_triage 24-h checkbox). */
+    readonly approvalOverrides?: ApprovalOverridesDto;
+    /** R7HOME.2b (REQ-HOME-2) — the voice picker's {current, options} pair (moved from the
+     *  overview's composition verbatim). */
+    readonly projectVoice?: {
+      readonly current: ProjectVoiceDto;
+      readonly options: readonly VoiceListRowDto[];
+    };
   };
 }
 export const projectSettingsQuery = (slug: string) =>

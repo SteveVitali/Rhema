@@ -148,6 +148,9 @@ export const COPY = {
   // P1.04 — the §5.3 new-project sheet: exactly three entries + protocol/venue/Voice picks.
   newProject: {
     heading: "New project",
+    // R7HOME.2b (REQ-HOME-3) — the blank create's server-side title default: the writer renames it
+    // inline on the Page ("Untitled" IS the title — never a placeholder heading above a real one).
+    untitledTitle: "Untitled",
     lede: "Three ways in. Pick one — everything else has a sensible default.",
     titleLabel: "Title",
     titlePlaceholder: "The working title",
@@ -197,6 +200,14 @@ export const COPY = {
     conversionStartFailed: "The conversion could not start — try again.",
     createFailedFmt: "Could not create the project ({detail}).",
     createFailed: "Could not create the project.",
+  },
+
+  // R7HOME.2b (REQ-HOME-3) — the empty Page's quiet affordance row: the §5.3 entry points' home.
+  emptyPage: {
+    importFile: "Import a file",
+    pasteText: "Paste text",
+    startOutline: "Start from an outline",
+    askChat: "Ask in chat",
   },
 
   project: {
@@ -2022,6 +2033,8 @@ export const COPY = {
     } as Record<string, string>,
     estimateFmt: "est. {n} cr",
     versionFmt: "v{n}",
+    // R7HOME.2b (REQ-HOME-2) — the next-step card's dismiss affordance (per user per project).
+    nextStepDismiss: "Dismiss",
     /** the collapsed round summary's workflow names ("v1 → review (49) → revise → v2"). */
     workflowLabel: {
       review: "review",

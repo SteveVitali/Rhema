@@ -18,6 +18,8 @@ export const Route = createFileRoute("/_authenticated/p/$project/settings")({
     saved: flagParam,
     notice: strParam,
     approvals: oneParam("saved", "invalid"),
+    // R7HOME.2b — the soft-lock echo lands here with the picker (was the overview's `?voice_locked=1`).
+    voice_locked: strParam,
   }),
   pendingComponent: PendingShell,
   loader: async ({ context, params }) => {
@@ -47,6 +49,7 @@ export const Route = createFileRoute("/_authenticated/p/$project/settings")({
         projectSettings={q.data.projectSettings}
         saved={search.saved === "1"}
         notice={typeof search.notice === "string" ? search.notice : undefined}
+        voiceLocked={search.voice_locked === "1"}
         contentKey={JSON.stringify(search)}
       />
     );
