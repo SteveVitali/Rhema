@@ -1,7 +1,7 @@
 {
-  "$comment": "REQ-SAFE-7 / spec §9 R25 — gzip ceilings for apps/web/public/spa output, enforced by `pnpm check:spa-budget` (scripts/check-spa-budget.mjs) in the public-safe CI job. Initial ceilings are the R25 proposals (design/28 F6); they calibrate DOWN on the first real build. `groups` are lowercase substring matchers applied to the emitted file name + manifest key: `codemirror` is tested before `editor` (tighter ceiling wins). 'other' async chunks are bounded PER FILE; entry/editor/codemirror/total are group SUMS.",
+  "$comment": "REQ-SAFE-7 / spec §9 R25 — gzip ceilings for apps/web/public/spa output, enforced by `pnpm check:spa-budget` (scripts/check-spa-budget.mjs) in the public-safe CI job. Initial ceilings are the R25 proposals (design/28 F6); they calibrate DOWN on the first real build. entryGzipBytes raised to 307200 (300.0 kB) by operator ruling GD-SPA-ENTRY.R7 2026-11-07 — the round-7 copy tables (UI_LABELS, errorCopy inventory) join the boot graph by design; see the GATE DECISIONS row. `groups` are lowercase substring matchers applied to the emitted file name + manifest key: `codemirror` is tested before `editor` (tighter ceiling wins). 'other' async chunks are bounded PER FILE; entry/editor/codemirror/total are group SUMS.",
   "ceilings": {
-    "entryGzipBytes": 256000,
+    "entryGzipBytes": 307200,
     "editorLazyGzipBytes": 409600,
     "codemirrorGzipBytes": 133120,
     "otherAsyncGzipBytes": 153600,

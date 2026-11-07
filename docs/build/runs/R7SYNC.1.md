@@ -42,3 +42,13 @@
 - The handoff moved to a **concurrent loader fire** (not a post-paint leaf effect) so the redirect arm survives leaf crashes and stays in-router.
 - The in-project 404 now mounts inside `IdeChrome` via the layout's `notFoundComponent` + the `routeId:null` framed arm — new behavior, the SYNC-3 fix requires it.
 - `readOnlyProject`/`showcase` carrier counts in `renderer-overrides.test.ts` bumped 14→15 (the versions twin is carrier #15).
+
+## Orchestrator note — public-safe red on the first read, ruling + fix
+
+`public-safe` failed on the entry-graph hard ceiling: the round-7 copy tables (244's UI_LABELS,
+245a's errorCopy inventory) pushed the boot graph to 294.7 kB > 250.0 kB (the worker's local
+`check:spa-budget` ran against a stale dist and reported ceilings held; CI's fresh dist measured
+the breach). Operator ruling **GD-SPA-ENTRY.R7** (2026-11-07): raise `entryGzipBytes` → 307200
+(300.0 kB) with a dated comment in `apps/web/spa-budget.json`. The ≤15 kB per-ticket delta
+allowance + GD-KIT3A-BUDGET accounting stand unchanged; REQ-SPEED-2's instant-boot cost of the
+ruling is recorded in the GATE DECISIONS row.
