@@ -36,6 +36,12 @@ describe("REQ-GUARD-2(b) — the no-internal-keys DOM guard", () => {
     );
     expect(() => expectNoInternalKeys(el)).not.toThrow();
   });
+  it("a data-marked subtree (data-copy-guard-exclude) is excluded from the scan", () => {
+    const el = div(
+      `<div data-copy-guard-exclude><p>fixture prose mentioning chat_turn</p></div><section>Review</section>`,
+    );
+    expect(() => expectNoInternalKeys(el)).not.toThrow();
+  });
   it("a clean surface (labels only) passes", () => {
     const el = div(`<div><h1>Review</h1><p>3 Chat, 2 Research — Second read (independent)</p></div>`);
     expect(() => expectNoInternalKeys(el)).not.toThrow();
