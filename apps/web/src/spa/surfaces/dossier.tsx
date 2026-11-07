@@ -21,8 +21,8 @@
 //     identical twin, so `?disposed=`/`?applied=`/`?bulkdone=` repaint off a fresh twin read,
 //     never optimistic state. `{url}` hand-offs document-navigate verbatim. A refusal repaints
 //     the SSR's own arms — the `?ferr`/`fmsg` notice line (`data-finding-notice="error"`) plus
-//     the under-card `dispositionError` — with the api's `detail` verbatim (the voices.tsx
-//     `err.detail ?? err.code` precedent).
+//     the under-card `dispositionError` — with the code's mapped `errorCopy` sentence+action
+//     (REQ-COPY-2: never `detail`, never the raw code).
 //   • The Desk's `data-findings-filters` bar is a `method="get"` form — intercepted into an
 //     in-router nav to the same `?sev=&kind=&disp=` URL it would have built (the URL is the
 //     state), so filter changes never leave the SPA.
@@ -54,6 +54,7 @@ import {
 import { chatPanelLive as chatPanel } from "../chat-live.js";
 import { gateCardFor, gateCardModel } from "../../gate-card.js";
 import { BffError, bffFetch } from "../bff.js";
+import { errorMessage } from "../../error-copy.js";
 import { useGatePresence } from "../gate-presence.js";
 import { useReadOnlyProject, readOnlyReasonText, ReadOnlyNotice } from "../read-only.js";
 import { PageBody, PageHeader } from "../page-header.js";
@@ -89,7 +90,7 @@ function useDossierWrite() {
     // write named a finding (bulk/gate misses land the notice alone — `ferr=bulk` parity).
     const fid = /\/findings\/([^/]+)\//.exec(vars.action)?.[1] ?? "";
     const message =
-      err instanceof BffError ? (err.detail ?? err.code) : COPY.spaError.body;
+      err instanceof BffError ? errorMessage(err) : COPY.spaError.body;
     setMutError({ findingId: fid, message });
   }, []);
   const { pending, write } = usePaneWrite({ onError: onPaneError });
@@ -327,7 +328,7 @@ export function ObligationNewSurface({ data }: { readonly data: BffObligationNew
     onError: (err) => {
       // The document's re-rendered `role="alert"` verbatim — the api's `detail` (the 422's
       // `title_required` carries `COPY.obligation.required` verbatim) else the stable code.
-      setError(err instanceof BffError ? (err.detail ?? err.code) : COPY.obligation.failed);
+      setError(err instanceof BffError ? errorMessage(err) : COPY.obligation.failed);
     },
     onSettled: (_e, _er, vars) => {
       setFormBusy(vars.form, false);

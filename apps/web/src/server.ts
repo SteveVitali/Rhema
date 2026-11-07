@@ -25,6 +25,7 @@ import {
 import { legalElements } from "./legal.js";
 import { FAVICON_SVG } from "./brand.js";
 import { COPY } from "./copy.js";
+import { errorSentence } from "./error-copy.js";
 import type {
   DataSource,
   SessionHeaders,
@@ -2543,7 +2544,7 @@ export function createWebApp(deps: WebDeps): Hono {
       return mutationOutcome(c, { redirect: `/p/${slug}/figures/${figureId}` });
     } catch (e) {
       const notice =
-        e instanceof ApiError ? String(e.code ?? "chip_not_supported") : "chip_not_supported";
+        errorSentence(e instanceof ApiError ? (e.code ?? "chip_not_supported") : "chip_not_supported");
       return mutationOutcome(c, {
         redirect: `/p/${slug}/figures/${figureId}?notice=${encodeURIComponent(notice)}`,
       });
@@ -2591,12 +2592,13 @@ export function createWebApp(deps: WebDeps): Hono {
       });
       return mutationOutcome(c, { redirect: `/p/${slug}/figures/${figureId}`, data: out });
     } catch (e) {
-      const notice =
+      const notice = errorSentence(
         e instanceof ApiError && e.status === 409
           ? "figure_not_ready"
           : e instanceof ApiError
-            ? String(e.code ?? "propose_failed")
-            : "propose_failed";
+            ? (e.code ?? "propose_failed")
+            : "propose_failed",
+      );
       return mutationOutcome(c, {
         redirect: `/p/${slug}/figures/${figureId}?notice=${encodeURIComponent(notice)}`,
       });
@@ -2621,7 +2623,7 @@ export function createWebApp(deps: WebDeps): Hono {
         return mutationOutcome(c, { redirect: `/p/${slug}/v/${out.inserted.draftN}`, data: out });
       return mutationOutcome(c, { redirect: `/p/${slug}/figures/${figureId}` });
     } catch (e) {
-      const notice = e instanceof ApiError ? String(e.code ?? "accept_failed") : "accept_failed";
+      const notice = errorSentence(e instanceof ApiError ? (e.code ?? "accept_failed") : "accept_failed");
       return mutationOutcome(c, {
         redirect: `/p/${slug}/figures/${figureId}?notice=${encodeURIComponent(notice)}`,
       });

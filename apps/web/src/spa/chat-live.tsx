@@ -19,6 +19,7 @@ import { useRouter } from "@tanstack/react-router";
 import { ChatDesk, type ChatDeskLabels, type ChatDeskProps, type ChatLiveWire } from "@rhema/ui";
 import { formatFeedRow } from "@rhema/ide";
 import { BffError, bffFetch } from "./bff.js";
+import { errorMessage } from "../error-copy.js";
 import { COPY } from "../copy.js";
 import { isDemo } from "./demo.js";
 import { feedLabelsQuery } from "./queries.js";
@@ -148,7 +149,7 @@ export function ChatPanelLive(props: {
         }
         setPending(false);
         setOptimistic(null);
-        setError(err instanceof BffError ? (err.code ?? COPY.spaError.body) : COPY.spaError.body);
+        setError(err instanceof BffError ? errorMessage(err) : COPY.spaError.body);
       });
   };
 
