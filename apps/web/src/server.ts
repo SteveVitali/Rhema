@@ -81,6 +81,7 @@ import {
   PRICING,
   RIGORS,
   MODEL_TIERS,
+  HERO_RECORDING,
   forwardedClientIp,
   spaRouteFor,
   type ModelTier,
@@ -2772,11 +2773,24 @@ export function createWebApp(deps: WebDeps): Hono {
       c,
       c.req.query("src") ? { src: c.req.query("src") } : undefined,
     );
+    // 249a R7PUB.1 (REQ-PUB-2) — the hero slot keys on the committed asset's PRESENCE: the
+    // declared clip + poster both sit under `public/media/` only after 250 lands them, so the
+    // slot renders its static placeholder frame (no <video>, no corpus bytes) until then.
+    const heroClip = await Promise.all([
+      readFile(new URL(`../public/${HERO_RECORDING.clipLocalRel}`, import.meta.url)).then(
+        () => true,
+        () => false,
+      ),
+      readFile(new URL(`../public/${HERO_RECORDING.posterLocalRel}`, import.meta.url)).then(
+        () => true,
+        () => false,
+      ),
+    ]).then(([clip, poster]) => clip && poster);
     return c.html(
       renderDocument(
         c.req.path,
         landingElement,
-        { invite: { signupOpen }, claims },
+        { invite: { signupOpen }, claims, heroClip },
         { origin: new URL(c.req.url).origin },
       ),
     );
@@ -2784,10 +2798,12 @@ export function createWebApp(deps: WebDeps): Hono {
 
   // P1.17 (§15.2) — /pricing: the derived page model (the annual toggle re-renders prices and shows
   // the 15% saving in dollars — REQ-GROWTH-8).
+  // REQ-PUB-1 (249a R7PUB.1) — a signed-in reader RENDERS /pricing now (the account menu links
+  // here as a document navigation); the page swaps its sign-in affordance for the way back to
+  // /app. The flagged test tenant's `?audience=test` preview behaves exactly as before.
   app.get("/pricing", async (c) => {
-    const { claims, isTest } = await audienceClaims(c);
-    if (!(c.req.query("audience") === "test" && isTest) && (await signedIn(c)))
-      return c.redirect("/app");
+    const { claims } = await audienceClaims(c);
+    const authed = await signedIn(c);
     return c.html(
       renderDocument(
         c.req.path,
@@ -2795,6 +2811,7 @@ export function createWebApp(deps: WebDeps): Hono {
         {
           pricing: { annual: c.req.query("cycle") === "annual" },
           claims,
+          signedIn: authed,
         },
         { origin: new URL(c.req.url).origin },
       ),
@@ -7773,6 +7790,33 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!body) return c.body(null, 404);
     return c.body(body, 200, {
       "content-type": "font/woff2",
+      "cache-control": "public, max-age=31536000, immutable",
+    });
+  });
+
+  // 249a R7PUB.1 (REQ-PUB-2) — the hero recording's committed media: `public/media/<file>` under
+  // the same name-gate discipline as fonts (basename only, a pinned extension set, no traversal).
+  // Committed once ⇒ immutable cache. Absent ⇒ an EMPTY 404 (the slot renders its placeholder —
+  // never the not-found document).
+  const MEDIA_TYPES: Readonly<Record<string, string>> = {
+    mp4: "video/mp4",
+    webm: "video/webm",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    webp: "image/webp",
+  };
+  app.get("/assets/media/:file", async (c) => {
+    const file = c.req.param("file") ?? "";
+    const ext = /^[\w][\w.-]*\.(\w+)$/.exec(file)?.[1];
+    const type = ext != null ? MEDIA_TYPES[ext.toLowerCase()] : undefined;
+    if (type == null || file.includes("/")) return c.body(null, 404);
+    const body = await readFile(new URL(`../public/media/${file}`, import.meta.url)).catch(
+      () => null,
+    );
+    if (!body) return c.body(null, 404);
+    return c.body(body, 200, {
+      "content-type": type,
       "cache-control": "public, max-age=31536000, immutable",
     });
   });

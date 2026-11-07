@@ -70,6 +70,9 @@ export * from "./legal.js";
 export * from "./read-only-project.js";
 // R7DEM.4 (REQ-DWEB-1; ADR-126) — the demo slug/registry/route-id vocabulary (guard + SPA share it).
 export * from "./demo.js";
+// 249a R7PUB.1 (REQ-PUB-2; REQ-GROWTH-3) — the landing hero-recording slot's ONE asset-path +
+// limits declaration (web slot + journeys capture recipe + tests all read it).
+export * from "./hero-recording.js";
 
 // structured-output sidecars (REQ-SPEC-12, REQ-OBJ-16)
 export * from "./sidecars.js";

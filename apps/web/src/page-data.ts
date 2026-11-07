@@ -154,6 +154,13 @@ export interface PageData {
   readonly pricing?: {
     readonly annual?: boolean;
   };
+  /** 249a R7PUB.1 (REQ-PUB-1) — the viewer holds a live session; the public page swaps its
+   *  sign-in affordance for the way back to the app (never a redirect — REQ-PUB-1 renders). */
+  readonly signedIn?: boolean;
+  /** 249a R7PUB.1 (REQ-PUB-2) — the declared hero clip + poster exist under `public/media/`
+   *  (the route stats them per request): the slot renders `<video>` only when true, the static
+   *  placeholder frame otherwise. */
+  readonly heroClip?: boolean;
   /** HOT.1 — the public-claims visibility config for the landing/pricing pages (default
    *  `PUBLIC_CLAIMS` — every gated claim hidden); a test config flips ids to exercise the
    *  claim-ON path without touching copy. */

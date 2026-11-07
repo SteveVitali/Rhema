@@ -1,0 +1,142 @@
+{
+  "capturedAt": "2026-11-07T17:01:19.328Z",
+  "web": "http://127.0.0.1:43511",
+  "routes": {
+    "/": {
+      "status": 200,
+      "contentType": "text/html; charset=UTF-8",
+      "title": "Rhēma — A serious editor for serious writing.",
+      "titleBranded": true,
+      "h1Count": 1,
+      "h1Text": "An editorial board for everything you write.",
+      "meta": {
+        "description": true,
+        "ogTitle": true,
+        "ogDescription": true,
+        "twitterCard": true,
+        "iconLink": true
+      },
+      "markers": {
+        "dataRenderer": "ssr",
+        "dataRoute": "/",
+        "dataMounted": true,
+        "spaRoot": false
+      },
+      "bannedCopyHits": [],
+      "normalizedSha256": "f1fd63e65ddc170a762ab7c4272938e63b5a82a29f6a6605db8646b6675450da",
+      "bytes": 61210
+    },
+    "/pricing": {
+      "status": 200,
+      "contentType": "text/html; charset=UTF-8",
+      "title": "Pricing · Rhēma",
+      "titleBranded": true,
+      "h1Count": 1,
+      "h1Text": "Pricing",
+      "meta": {
+        "description": true,
+        "ogTitle": true,
+        "ogDescription": true,
+        "twitterCard": true,
+        "iconLink": true
+      },
+      "markers": {
+        "dataRenderer": "ssr",
+        "dataRoute": "/pricing",
+        "dataMounted": true,
+        "spaRoot": false
+      },
+      "bannedCopyHits": [],
+      "normalizedSha256": "11d4d9f12dd4192bb0efa39deb57340e907e7217db3b1e3e71e1be5b752b3c34",
+      "bytes": 65240
+    },
+    "/signup": {
+      "status": 200,
+      "contentType": "text/html; charset=UTF-8",
+      "title": "Create your account · Rhēma",
+      "titleBranded": true,
+      "h1Count": 1,
+      "h1Text": "Create your account",
+      "meta": {
+        "description": true,
+        "ogTitle": true,
+        "ogDescription": true,
+        "twitterCard": true,
+        "iconLink": true
+      },
+      "markers": {
+        "dataRenderer": "ssr",
+        "dataRoute": "/signup",
+        "dataMounted": true,
+        "spaRoot": false
+      },
+      "bannedCopyHits": [],
+      "normalizedSha256": "cf97077fb1a17d024efe6810ebd880d417866507cd411ead0426b47795b41750",
+      "bytes": 45349
+    },
+    "/login": {
+      "status": 200,
+      "contentType": "text/html; charset=UTF-8",
+      "title": "Sign in · Rhēma",
+      "titleBranded": true,
+      "h1Count": 1,
+      "h1Text": "Sign in",
+      "meta": {
+        "description": true,
+        "ogTitle": true,
+        "ogDescription": true,
+        "twitterCard": true,
+        "iconLink": true
+      },
+      "markers": {
+        "dataRenderer": "ssr",
+        "dataRoute": "/login",
+        "dataMounted": true,
+        "spaRoot": false
+      },
+      "bannedCopyHits": [
+        "\\bprivate beta\\b"
+      ],
+      "normalizedSha256": "10a29d15d80251b58805f419e7350eb6260ed8ea23492454871eb89bec1a65c4",
+      "bytes": 44800
+    },
+    "/showcase": {
+      "status": 200,
+      "contentType": "text/html; charset=UTF-8",
+      "title": "Showcase · Rhēma",
+      "titleBranded": true,
+      "h1Count": 1,
+      "h1Text": "Showcase",
+      "meta": {
+        "description": true,
+        "ogTitle": true,
+        "ogDescription": true,
+        "twitterCard": true,
+        "iconLink": true
+      },
+      "markers": {
+        "dataRenderer": "ssr",
+        "dataRoute": "/showcase",
+        "dataMounted": true,
+        "spaRoot": false
+      },
+      "bannedCopyHits": [],
+      "showcaseDossier": {
+        "The Politics of Visibility": false,
+        "tested": false
+      },
+      "normalizedSha256": "05392c6cb36dd0c262821ccaf31087ac22f12bcb542ee6e2a170540fab0e2646",
+      "bytes": 51690
+    }
+  },
+  "assets": {
+    "/favicon.svg": {
+      "status": 200,
+      "contentType": "image/svg+xml"
+    }
+  },
+  "warnings": [
+    "/login banned copy: \\bprivate beta\\b",
+    "/showcase missing sample-dossier text {\"The Politics of Visibility\":false,\"tested\":false}"
+  ]
+}

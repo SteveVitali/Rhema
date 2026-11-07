@@ -3,6 +3,7 @@ import type { ProjectRow } from "@rhema/api-client";
 import { buildPricingPageData, HERO_HEADLINE } from "@rhema/contracts";
 import { surfacePricer } from "@rhema/run-sheet";
 import { createWebApp, type WebDeps, type AuthOutcome } from "./server.js";
+import { COPY } from "./copy.js";
 import type { DataSource, SignupIntent } from "./data.js";
 
 // P1.17 — the public funnel surfaces, driven via Hono's app.request with an in-memory DataSource:
@@ -103,6 +104,57 @@ describe("§15.1 — the landing page", () => {
     expect(html).not.toContain("data-reveal");
   });
 
+  it("REQ-PUB-2 — the R7b marketing layout: dedicated nav, the serif display headline, the demo CTA", async () => {
+    const html = await (await createWebApp(makeDeps()).request("/")).text();
+    expect(html).toContain("data-mk-nav");
+    // the demo entry is a document nav in the marketing nav AND the hero CTA (S-14)
+    expect(html).toMatch(/data-demo-entry="nav"[^>]*href="\/demo"|href="\/demo"[^>]*data-demo-entry="nav"/);
+    expect(html).toContain(COPY.landing.hero.demoCta);
+    // §15.1 — the display headline sets in the paper serif (ui-t-ffp → var(--font-paper))
+    expect(html).toMatch(/<h1[^>]*data-display-headline[^>]*ui-t-ffp|<h1[^>]*ui-t-ffp[^>]*data-display-headline/);
+    expect(html).toContain(COPY.landing.hero.headline);
+  });
+
+  it("REQ-PUB-2/REQ-GROWTH-3 — the hero slot: placeholder now, clip arm identical box, lazy+muted+loop", async () => {
+    // asset absent → the static placeholder frame, NO <video>, no corpus bytes — inside the
+    // SAME reserved aspect box the clip arm renders (the swap can never shift layout).
+    const out = await (await createWebApp(makeDeps()).request("/")).text();
+    expect(out).toContain("data-hero-slot");
+    expect(out).toContain("data-hero-placeholder");
+    expect(out).not.toContain("data-hero-video");
+    expect(out).not.toContain("<video");
+    const box = /data-hero-slot[^>]*aspect-ratio:([^;"]+)/.exec(out);
+    expect(box?.[1]).toBeTruthy();
+
+    // clip arm (the element renders it when the declared asset exists — renderDocument with
+    // heroClip set, the same seam server.ts feeds from the public/media presence check).
+    const { renderDocument } = await import("./render.js");
+    const { landingElement } = await import("./routes.js");
+    const clip = renderDocument("/", landingElement, { heroClip: true }, { origin: "https://rhema.tools" });
+    expect(clip).toContain("data-hero-video");
+    const vtag = /<video[^>]*data-hero-video[^>]*>/.exec(clip)?.[0] ?? "";
+    for (const attr of ["muted", "loop", "playsinline", "poster=", 'preload="none"']) {
+      expect(vtag.toLowerCase(), attr).toContain(attr);
+    }
+    expect(vtag).not.toMatch(/autoplay/);
+    expect(clip).not.toMatch(/<source[^>]*\ssrc=/);
+    expect(clip).toContain('data-hero-src="/assets/media/hero-tour.mp4"');
+    // zero-CLS: the slot box carries the identical reserved aspect in BOTH states
+    const clipBox = /data-hero-slot[^>]*aspect-ratio:([^;"]+)/.exec(clip);
+    expect(clipBox?.[1]).toBe(box?.[1]);
+  });
+
+  it("REQ-PUB-2 — the FAQ rides the accordion classes on native <details> (the no-JS fallback)", async () => {
+    const html = await (await createWebApp(makeDeps()).request("/")).text();
+    expect(html).toContain('class="ui-accordion"');
+    expect(html).toContain("data-faq");
+    const items = [...html.matchAll(/<details[^>]*data-faq-item/g)];
+    expect(items.length).toBe(COPY.landing.faq.items.length);
+    for (const f of COPY.landing.faq.items) expect(html).toContain(f.q);
+    expect(html).toContain("ui-accordion-trigger");
+    expect(html).toContain("ui-accordion-panel");
+  });
+
   it("the landing's pricing teaser derives its figure (the Essay card's Review range)", async () => {
     const html = await (await createWebApp(makeDeps()).request("/")).text();
     const data = buildPricingPageData(undefined, surfacePricer());
@@ -143,6 +195,27 @@ describe("§15.2 — /pricing renders only derived figures", () => {
     expect(html).toContain(data.faq[0]!.q);
     // top-up packs render from the publication
     for (const t of data.topUpPacks) expect(html).toContain(`$${t.usd}`);
+  });
+
+  it("REQ-PUB-1 — a signed-in reader renders /pricing (never redirected), nav points back to /app", async () => {
+    const deps = makeDeps({ session: () => ({}) });
+    const res = await createWebApp(deps).request("/pricing", { redirect: "manual" });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("Pricing");
+    expect(html).toContain("data-pricing-app");
+    expect(html).toContain('href="/app"');
+    expect(html).not.toContain('href="/login"');
+  });
+
+  it("REQ-PUB-1 — the account menu's Pricing item lands here (document nav, already declared)", async () => {
+    // the shell side of the pair: data-shell-pricing is emitted by app-shell.tsx and asserted
+    // by its own DOM tests; this leg proves the /pricing endpoint it doc-navs to serves 200
+    // to the same signed-in session instead of bouncing to /app.
+    const deps = makeDeps({ session: () => ({}) });
+    const res = await createWebApp(deps).request("/pricing?cycle=annual", { redirect: "manual" });
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain("Annual");
   });
 
   it("the annual cycle shows the 15% saving in dollars on each paid card", async () => {
