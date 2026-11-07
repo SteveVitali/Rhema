@@ -130,5 +130,5 @@ Scanner over committed sources (runs inside the vitest leg; `import.meta.url`-re
 - 2026-11-07T05:16Z — **Closed:** Stage A complete. Records: `pr/R7COPY.1c.md`, `DEFERRALS` `D-R7COPY.1c-1`, `BUILD_INDEX` row 287, `LEDGER` advance. - PR #286 on `stevevitali/r7copy-1b-markdown` @ `2c6f3d05`, unmerged (OPERATOR).
 - ci boundary: **pass #286@`2c6f3d05`** (run 42342044243 — all seven legs + ci-pass anchor; the boundary script's final read hit a GitHub TLS timeout — verdict read back from `gh pr checks 286` at the exact head; `logs/ci-R7COPY.1c.json` records the timeout).
 - `check-append-only.mjs --base stevevitali/r7copy-1b-markdown` — OK.
-- `check-build-memory.sh` — ✓ no violations (21 warnings, all pre-existing posture — manifest rows/ADR index/ledger budgets/index columns/harness headers + the nextTicket naming note).
+- `check-append-only.mjs` re-run at `4240bbb9` — OK. `check-build-memory.sh` — ✓ no violations (21 warnings, all pre-existing posture — manifest rows/ADR index/ledger budgets/index columns/harness headers + the nextTicket naming note).
 - Harness: devin-desktop/swe-2-high/subagent · $0 Stage A.
