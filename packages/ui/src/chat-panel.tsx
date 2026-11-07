@@ -9,11 +9,13 @@
 // charge — while `meteredCredits` (burn) stays available and, when it exceeds the cap, is labelled
 // through COPY (`aboveCapFmt`) truthfully and never as the charge.
 //
-// Markdown seam (ordering concern): REQ-TALK-2 asks for rendered markdown, but the one sanitized
-// renderer (REQ-COPY-3) is 245's. Until then `renderAssistantText` renders sanitized plain
-// paragraphs — no ad-hoc markdown parser; 245 plugs its renderer in at this seam (D-R7TALK.1a-2).
+// Markdown seam (REQ-TALK-2's rendered-markdown clause): R7COPY.1b plugs the ONE sanitized
+// markdown renderer (REQ-COPY-3, `MarkdownProse` over `parseCanonical`) in at this seam — every
+// assistant bubble, user bubble and the optimistic/pending rows render sanitized markdown
+// through it. D-R7TALK.1a-2 closed.
 
 import type { ReactNode } from "react";
+import { MarkdownProse } from "./markdown-prose.js";
 import { Button } from "./primitives/button.js";
 import { Chip } from "./primitives/chips.js";
 import { TextArea } from "./primitives/fields.js";
@@ -226,20 +228,8 @@ const TIER_NOTCHES = ["base", "balanced", "frontier"] as const;
  * assistant bubble and the optimistic/pending rows go through this single function.
  */
 export function renderAssistantText(text: string, keyPrefix: string): ReactNode {
-  const paras = text
-    .split(/\n\s*\n/)
-    .map((p) => p.trim())
-    .filter((p) => p !== "");
-  if (paras.length === 0) return null;
-  return (
-    <>
-      {paras.map((p, i) => (
-        <p key={`${keyPrefix}-p${i}`} className="chat-bubble-text">
-          {p}
-        </p>
-      ))}
-    </>
-  );
+  if (text.trim() === "") return null;
+  return <MarkdownProse key={keyPrefix} text={text} className="chat-bubble-text" />;
 }
 
 const TERMINAL_STATES: ReadonlySet<string> = new Set([
@@ -535,7 +525,7 @@ export function ChatDesk(props: ChatDeskProps): ReactNode {
         {/* memory + pins sit in a header disclosure (REQ-TALK-2). */}
         <details className="chat-remembers" data-chat-remembers>
           <summary className="chat-disclosure">{L.memoryPinsHeading}</summary>
-          {m.brief ? <pre className="chat-brief">{m.brief}</pre> : null}
+          {m.brief ? <MarkdownProse text={m.brief} className="chat-brief" /> : null}
           <form method="post" action={E.correction} className="chat-notes-form">
             <input type="hidden" name="threadId" value={m.activeThreadId} />
             <TextArea

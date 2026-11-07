@@ -19,7 +19,7 @@
 
 import { useState, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Button, DecisionsList } from "@rhema/ui";
+import { Button, DecisionsList, MarkdownProse } from "@rhema/ui";
 import type { GateCardDto, InboxItemDto } from "@rhema/api-client";
 import { COPY } from "../../copy.js";
 import { decisionsLabels, gateCardFor, gateCardModel } from "../../gate-card.js";
@@ -81,7 +81,7 @@ function InboxGateRow({
       </summary>
       {projectMeta(item)}
       <div className="ui-inbox-card">
-        {item.body ? <p className="ui-inbox-body">{item.body}</p> : null}
+        {item.body ? <MarkdownProse text={item.body} className="ui-inbox-body" /> : null}
         {item.gate ? (
           <p className="ui-inbox-meta">
             {item.gate.kind.replace(/_/g, " ")} · {item.gate.workflow.replace(/_/g, " ")}
@@ -207,7 +207,7 @@ export function InboxSurface({
                   <div key={it.id} data-inbox-row={it.id} data-inbox-kind="decision" className="ui-inbox-row">
                     <p className="ui-inbox-title">{it.title}</p>
                     {projectMeta(it)}
-                    <p className="ui-inbox-body">{it.decision.text}</p>
+                    <MarkdownProse text={it.decision.text} className="ui-inbox-body" />
                     <DecisionsList
                       items={[
                         {
@@ -243,7 +243,7 @@ export function InboxSurface({
               <div key={it.id} data-inbox-row={it.id} data-inbox-type={it.type} className="ui-inbox-row ui-inbox-row--unread">
                 <p className="ui-inbox-title">{it.title}</p>
                 {projectMeta(it)}
-                {it.body ? <p className="ui-inbox-body">{it.body}</p> : null}
+                {it.body ? <MarkdownProse text={it.body} className="ui-inbox-body" /> : null}
                 {/* The form is the flex <p>'s sibling (matching the corrected SSR source — `form`
                     is a p-closing tag, so nesting it would produce a different DOM than served). */}
                 <p className="ui-inbox-actions">
@@ -278,7 +278,7 @@ export function InboxSurface({
               <div key={it.id} data-inbox-row={it.id} data-inbox-type={it.type} className="ui-inbox-row ui-inbox-row--read">
                 <p className="ui-inbox-title ui-inbox-title--read">{it.title}</p>
                 {projectMeta(it)}
-                {it.body ? <p className="ui-inbox-body ui-inbox-body--faint">{it.body}</p> : null}
+                {it.body ? <MarkdownProse text={it.body} className="ui-inbox-body ui-inbox-body--faint" /> : null}
                 <a href={it.href} data-inbox-open="true" className="ui-inbox-open">{IN.openCta}</a>
               </div>
             ))}
@@ -292,7 +292,7 @@ export function InboxSurface({
               <div key={it.id} data-inbox-row={it.id} data-inbox-type="voice_stale" className="ui-inbox-row">
                 <p className="ui-inbox-title">{it.title}</p>
                 {projectMeta(it)}
-                {it.body ? <p className="ui-inbox-body">{it.body}</p> : null}
+                {it.body ? <MarkdownProse text={it.body} className="ui-inbox-body" /> : null}
                 <a href={it.href} className="ui-inbox-open">{IN.openCta}</a>
               </div>
             ))}

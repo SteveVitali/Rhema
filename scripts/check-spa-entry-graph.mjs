@@ -57,6 +57,11 @@ export const DENIED_IN_ENTRY = new Set([
 export const DENIED_SOURCE_PATTERNS = [
   { re: /node_modules\/cmdk\//i, name: "cmdk" },
   { re: /spa\/palette\.[jt]sx?/i, name: "spa/palette (the lazy ⌘K palette chunk)" },
+  // R7COPY.1b (REQ-COPY-3/REQ-KIT-5) — the sanitized markdown renderer and its canonical-profile
+  // stack load in leaf chunks only: the renderer module itself plus the unified/remark parse
+  // tree (`@rhema/markdown`'s browser-safe deps) must never reach the shell entry graph.
+  { re: /packages\/ui\/src\/markdown-prose\.tsx/i, name: "ui/markdown-prose (the sanitized markdown renderer)" },
+  { re: /node_modules\/(unified|remark-parse|remark-gfm|remark-math|remark-frontmatter|remark-stringify|micromark|mdast-util-|mdast-util-to-string|unist-util-|devlop|vfile|decode-named-character-reference|character-entities|comma-separated-tokens|estree-util-|hast-util-|zwitch|trim-lines|property-information|space-separated-tokens|ccount|escape-string-regexp|markdown-table|bail|trough|extend|is-plain-obj|fault)[/.]/i, name: "the unified/remark markdown stack (leaf chunks only — REQ-KIT-5)" },
 ];
 
 /** Every denied non-Radx source package/module in a map's `sources[]`. */

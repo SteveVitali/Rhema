@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { severityColor } from "./primitives/chips.js";
+import { MarkdownProse } from "./markdown-prose.js";
 
 // The §5.3 conversion preview + Conversion-notes card. Source-beside-converted, a count line, an anchored
 // warnings list, and the two actions (Create and fix later / Fix now). Text-agnostic — all copy is a prop.
@@ -85,7 +86,7 @@ export function ConversionPreview(props: ConversionPreviewProps): ReactNode {
               {props.title}
             </p>
           ) : null}
-          <pre data-converted-pane style={convertedStyle}>{props.convertedMarkdown}</pre>
+          <div data-converted-pane style={convertedStyle}><MarkdownProse text={props.convertedMarkdown} /></div>
         </section>
       </div>
 

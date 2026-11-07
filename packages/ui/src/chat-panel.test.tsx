@@ -292,13 +292,19 @@ describe("ChatDesk (R7TALK.1a; REQ-TALK-2)", () => {
     expect(pending).not.toContain("turn ·");
   });
 
-  it("renderAssistantText escapes markup — the seam renders plain paragraphs, no raw HTML", () => {
+  it("renderAssistantText is the markdown seam — rendered emphasis/lists, still no raw HTML (R7COPY.1b)", () => {
     const html = render({
-      turns: [{ ...turn, spentCredits: 3, capCredits: 40, reply: "<b>bold</b>\n\n<script>x</script>" }],
+      turns: [{ ...turn, spentCredits: 3, capCredits: 40, reply: "*real* markdown\n\n- item\n\n<b>bold</b>\n\n<script>x</script>" }],
     });
-    expect(html).toContain("&lt;b&gt;bold&lt;/b&gt;");
+    // R7COPY.1b — the seam now renders sanitized markdown (emphasis, lists) through the ONE
+    // renderer; raw HTML stays escaped text — <b>/<script> never become live elements.
+    expect(html).toContain("<em>real</em>");
+    expect(html).toContain("<li>");
+    expect(html).toContain("&lt;b&gt;");
+    expect(html).toContain("&lt;script&gt;");
     expect(html).not.toContain("<b>bold</b>");
     expect(html).not.toContain("<script>");
+    expect(html).toContain('data-md-block');
   });
 });
 

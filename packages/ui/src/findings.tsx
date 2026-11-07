@@ -4,6 +4,7 @@ import { canDispose, type FindingGroup, type ReconciliationConflict } from "@rhe
 import { severityColor } from "./primitives/chips.js";
 import { Button } from "./primitives/button.js";
 import { ObligationChip, type ObligationStateKind } from "./chips.js";
+import { MarkdownProse, SafeUrlLink } from "./markdown-prose.js";
 
 // The findings list (§5.7 "three surfaces, one list", beta = the Desk list; REQ-IDE-23/24). Reading surface:
 // cards are read-only. Provisional cards expose NO disposition controls (REQ-IDE-15); the actual verb controls
@@ -91,7 +92,7 @@ export function FindingCard({ view, labels, obligation, controls, evidence }: Fi
         {obligation ? <ObligationChip state={obligation.state} label={obligation.label} /> : null}
       </div>
       <div className="ui-d-fd ui-d-b">{view.title}</div>
-      <div className="ui-d-fd ui-d-cm ui-d-mt6">{view.body}</div>
+      <div className="ui-d-fd ui-d-cm ui-d-mt6"><MarkdownProse text={view.body} /></div>
       {evidence ? (
         <div data-finding-evidence="true" className="ui-d-s ui-d-mt6">
           {evidence.verdictLabel != null ? (
@@ -102,7 +103,7 @@ export function FindingCard({ view, labels, obligation, controls, evidence }: Fi
           <ul className="ui-d-p0 ui-d-mt6" style={{ listStyle: "none" }}>
             {evidence.urls.map((u) => (
               <li key={u.url} className="ui-d-cm ui-d-p2">
-                <a href={u.url} className="ui-vc-acc">{u.url}</a>
+                <SafeUrlLink url={u.url} className="ui-vc-acc" />
                 {u.accessedAt != null && labels.accessedLabel ? <> · {labels.accessedLabel(u.accessedAt)}</> : null}
                 {u.fetched && labels.fetchedLabel ? (
                   u.retrievedBy === "search" ? (
@@ -209,7 +210,7 @@ export function FindingsList({ groups, conflicts, collapsedRejected, labels, obl
               <div>
                 <div className="ui-d-fd">{v.title}</div>
                 {v.reconciliation === "rejected" ? (
-                  <div className="ui-d-s ui-d-t ui-d-mt6">{v.body}</div>
+                  <div className="ui-d-s ui-d-t ui-d-mt6"><MarkdownProse text={v.body} /></div>
                 ) : null}
                 {labels.promoteLabel ? (
                   promoteActionFor ? (
