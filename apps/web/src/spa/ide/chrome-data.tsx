@@ -11,7 +11,7 @@
 // `data-palette` stays emitted (REQ-TST-2 attr parity).
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { reviewPanelBodies, runCardLabels, timelineHrefs, timelineLabels } from "../../dossier-view.js";
+import { reviewPanelBodies, runCardLabels, timelineHrefs, timelineLabels } from "../../dossier-labels.js";
 import { type FeedRow, type IdeShellProps, type RunCardLabels, type TimelineHrefs, type TimelineLabels, type TimelineViewWire } from "@rhema/ui";
 import type { PaletteData } from "@rhema/ide";
 import type { BffIdeBag } from "../queries.js";

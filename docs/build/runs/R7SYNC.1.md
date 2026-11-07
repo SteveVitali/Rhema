@@ -52,3 +52,14 @@ the breach). Operator ruling **GD-SPA-ENTRY.R7** (2026-11-07): raise `entryGzipB
 (300.0 kB) with a dated comment in `apps/web/spa-budget.json`. The ≤15 kB per-ticket delta
 allowance + GD-KIT3A-BUDGET accounting stand unchanged; REQ-SPEED-2's instant-boot cost of the
 ruling is recorded in the GATE DECISIONS row.
+
+## Orchestrator note — public-safe entry-graph guard: two real leaks, fixed
+
+`check-spa-entry-graph` failed on the fresh dist (the worker's local pass predated the final
+edits): `chrome-data.tsx` imported `reviewPanelBodies`/`runCardLabels`/`timelineHrefs`/
+`timelineLabels` from `dossier-view.js`, and 243a's migration made that module pull Radix Select +
+the markdown stack — both leaked into the entry chunk. Extracted the six pure label/body exports
+(+ `fmt`, `checkable`, `claimsLabels`) to `apps/web/src/dossier-labels.tsx` (light imports only);
+`dossier-view` re-exports them for compat and imports back what its internals still use;
+`chrome-data` repointed to `../../dossier-labels.js`. Guard green (only allowed
+Tooltip/DropdownMenu); 98-file sweep 1643/1643.
