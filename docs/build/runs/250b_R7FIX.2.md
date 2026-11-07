@@ -1,5 +1,7 @@
 # R7FIX.2 (250b) — run ledger: owner fixes for the R7DEP.2 defect boundary, round 2
 
+Harness: devin-desktop/swe-2-high/subagent
+
 - **Insert:** 250b of 254 (`250b_R7FIX.2__defect-round-2.md`) — 250_R7DEP.2's defect path, round 2.
 - **Branch:** `stevevitali/r7fix-2-defect-round-2` on `stevevitali/r7dep-2-t1-prod`
   (`77ec93dd` at setup — the composed tip the preview serves). PR stacks on 250's Part-B
