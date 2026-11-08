@@ -342,3 +342,32 @@ stays UP at `d372de85`; ~$11.5 of $20; tear down at once at $20 measured.
 **PAUSE — fifth defect-boundary.** Two legs remain (U2 recents visibility, U5 comment-submit
 hook) — both owner dispositions again. U3's flake is worth a hardening note but its retry is
 green at the same SHA. Preview stays UP at `e143828f`; ~$12 of $20; teardown at once at $20.
+
+## RESUME — defect boundary round 5 closed by `250e_R7FIX.5` (PR #298, unmerged OPERATOR)
+
+- 2026-11-08T03:xxZ — **250e_R7FIX.5 landed at `56ee2333`** (CI pass #298 `fd7da3f`, run
+  `42431069420`; records head **`5d001e6b`** = composed tip: my Part-B records + all five fix
+  rounds). U2 = leg bug (the `]` left the panel open → rail recents honestly hidden; the leg now
+  closes it before the peer pick); U5 = REAL surface defect (`onDocSelectionChange` closed the
+  format-bubble when the composer's own `input.focus()` collapsed the doc selection — the
+  composer self-destructed on open; collapse-close now exempts a menu holding
+  `document.activeElement`, covering the Link composer's latent defect too); U3's `]`-press race
+  hardened in u3-probe (blur + open/closed waits + one retry on both toggle arms).
+  `stevevitali/r7dep-2-t1-prod` advanced to `5d001e6b`. H16 re-checked: still
+  **not-dispositioned**. Journeys dist rebuilt; Cloud Build `c2d595fd` all-10 @ `5d001e6b`
+  (`_TAG=r7dep-2-t1e`).
+- 2026-11-08T04:xxZ — Cloud Build `c2d595fd` SUCCESS; digests `logs/r7dep2/pr293-digests-t1e.txt`;
+  `up` 11 updates + proxy replace (1m26s, zero destructive). **Provenance: web+api `/healthz/` →
+  `5d001e6b…` — fifth in-place update.**
+- 2026-11-08T04:xxZ — **T1e re-walk at `5d001e6b`** (`t1e-legs/`, `--expect-sha` match, $0):
+  **15 of 16 walked legs green** — 8 incumbents PASS + **U1.shell, U2.noreload, U3.occlusion,
+  U4.controls, U6.chat, U7.import ready-to-flip** (U2's panel-close + peer-pick fixes verified)
+  + **R8.showcase.spa PASS** (×3 consecutive). **ONE leg remains:**
+
+| Leg | T1e state | Root cause for round 6 |
+|---|---|---|
+| U5.write | owed — evolved | title-focus ✓, pointer-drag bubble ✓, composer-survives-own-collapse ✓, `[data-comment-submit]` clicked — but `[data-comment-card]` never became visible post-submit (30s). The anchored margin card didn't render (POST failed? card hook differs? anchored selection lost?). |
+
+**PAUSE — sixth defect-boundary.** `D-R7FIX.1-2…D-R7FIX.4-1` all verified; `D-R7FIX.5-1` partial
+(U2 closed; U5 remains at a deeper layer). ONE leg owes round 6. Preview stays UP at `5d001e6b`;
+~$13.5 of $20; teardown at once at $20.
