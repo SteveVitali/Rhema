@@ -371,3 +371,22 @@ green at the same SHA. Preview stays UP at `e143828f`; ~$12 of $20; teardown at 
 **PAUSE — sixth defect-boundary.** `D-R7FIX.1-2…D-R7FIX.4-1` all verified; `D-R7FIX.5-1` partial
 (U2 closed; U5 remains at a deeper layer). ONE leg owes round 6. Preview stays UP at `5d001e6b`;
 ~$13.5 of $20; teardown at once at $20.
+
+## RESUME — defect boundary round 6 closed by `250f_R7FIX.6` (PR #299, unmerged OPERATOR)
+
+- 2026-11-08T05:xxZ — **250f_R7FIX.6 landed at `d0a77d0`** (CI pass #299, run `42436202046`,
+  first-read green; **`d0a77d0` = composed tip**: my Part-B records + all six fix rounds).
+  U5's last root cause was a REAL defect: `EditorEventBridge` (the `rhema:comment-added` →
+  invalidateQueries seam) mounted only in `VersionPageSurface`, not `ProjectPageSurface` — the
+  working-head Page POSTed the note but never refetched so `page.doc.comments` stayed empty and
+  the card could never mount. Fixed: `ProjectPageSurface` wrapped in ToastProvider + the bridge
+  (lands the REQ-WRITE-7 fork-undo toast too); the toast.tsx `aria-allowed-role` latent violation
+  fixed alongside. `stevevitali/r7dep-2-t1-prod` advanced to `d0a77d0`. H16 re-checked: still
+  **not-dispositioned**. Journeys dist rebuilt `--force`; Cloud Build `1f40a059` all-10 @
+  `d0a77d0` (`_TAG=r7dep-2-t1f`).
+- NEXT (after build): digests → guarded `config`/`up` → provenance `d0a77d0` → **final T1f
+  re-walk** (all 16 legs; if all-green the board closes) → committed hero-capture at the final
+  SHA → `public/media/` assets + ADR-127 row → T1 commit → rebuild → T1 update → T1 re-walk set
+  + hero LCP/CLS → teardown (destroy→orphan→rm) → spend read → **Part B**: GD-DEPLOY.R7's 8
+  conditions → prod `pulumi up` @ T1 → provenance → deployments row → CDN invalidate
+  `/bff/p/demo~*` → Stage B → U6 paid (<$10) → SPEED-5 → close-out records/PR/CI boundary.
