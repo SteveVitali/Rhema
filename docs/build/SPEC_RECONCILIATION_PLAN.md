@@ -217,3 +217,27 @@ ids are used (REQ-VIS-12, REQ-SPEC-33, REQ-SPEC-34 — REQ-SPEC-23/26/28 remain 
 | A-6 | edit-path semantics note (ADR-048/049) | [ ] | proposed |
 | A-7 | run-task confinement note (ADR-074…076) | [ ] | proposed |
 | A-8 | spec ADR appendix / pointer (Appendix G) | [ ] | proposed |
+
+## 6. Round 7 — verification pass (2026-11-08, R7REC.1)
+
+**Applied amendments (ticked — each tick is the ratified ADR set ADR-126…130 plus its GATE
+DECISIONS row):** the spec fold-back is the dated-banner convention from round 3 — every
+ADR-126…130 carries its banner in each owning section spec §3.2 enumerates. This pass verified
+presence and **added the missing banners** (all dated 2026-11-08, naming the deciding ticket):
+
+| Amendment | Target · anchor | State | Manifest line |
+|---|---|---|---|
+| ADR-130 — walkthrough retired, record-composed card | `docs/rhema-design-spec.md` §5.5 D20 + REQ-IDE-19 row + REQ-IDE-48/IDE-41 markers | **applied this pass** (was missing) | yes |
+| ADR-129 — component stack | `docs/rhema-design-spec.md` §15 banner | **applied this pass** (was missing) | yes |
+| ADR-126 — demo Pages SPA read-only, every device class | `docs/frontend-spa-spec.md` §14.8 (REQ-ED-12/ADR-108) | **applied this pass** (was missing) | yes |
+| ADR-128 — `?` sheet kept, REQ-KEYS remaps chords | `docs/frontend-spa-spec.md` keymap bullet | **applied this pass** (was missing) | yes |
+| REQ-NAVM-7 discharged by REQ-SPEED-3 | `docs/post-spa-disposition-spec.md` §2.6 | **applied this pass** (was missing) | yes |
+| ADR-128 — REQ-IDE-2/-4/-5/-6/-8/-19*-48/GROWTH-12 banners | `docs/rhema-design-spec.md` | verified present (owning tickets 226/234/236/248) | — |
+| ADR-127 — corpus carve-out + hero-recording bytes+sha256 | `LICENSES.md` | verified present (249a declared, 250 completed) | — |
+| Post-ratification notes: GD-PREVIEW.R7 / GD-GOLDEN.R7 / GD-TOURSIGN.R7 / GD-PUBDELTA.R7 (at REQ-DACC-6) / §10-superseded-by-manifest | `docs/round-7-draft-spec.md` §6/§4.17/§10 | **applied this pass** (ticked: each is a GATE DECISIONS row) | yes |
+
+**Verification gate:** `docs/build/tools/check-adr-banners.mjs` enumerates the 15
+(ADR, file, anchor) pairs spec §3.2 mandates and fails on any missing banner — green this pass.
+REQ ids unchanged (append-only). The ADR set matches spec §3.2: ADR-126…130 all exist and are
+bannered; `build-memory adr-index` regenerated (ADR-131…136 land by their owning tickets — they
+are R7b mechanism ADRs, not spec §3.2 anchors; their banners ride the sections their tickets own).

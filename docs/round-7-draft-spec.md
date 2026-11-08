@@ -13,7 +13,7 @@
     become "staging-verified at the phase preview" DEFERRALS rows, closed by the ONE owned preview
     per phase in 224 (R7a) and 250 (R7b). Round preview spend is capped at $20. This governs every
     "owned preview" mention below, and HUMAN-H16 moves into 250's preview window.
-  - `GD-PUBDELTA.R7`: REQ-DACC-6's enumerated deltas also include the `/pricing` plan-value
+  - `GD-PUBDELTA.R7`: REQ-DACC-6's enumerated deltas also include the `/pricing` plan-value *(Post-ratification note, 2026-11-08 — GD-PUBDELTA.R7 "Accept both": the `/pricing` plan-value round-down (240) and the public jargon fixes (244) joined this enumerated delta list; each owner re-captured `public-ssr-baseline`.)*
     round-down and the public jargon fixes.
   - `GD-GOLDEN.R7`: each deploy classifies its payload under `docs/ops/golden-rerun-rule.md`, with
     ≤ 1 pre-authorized minimal-cohort re-run under the rule's $100 cap.
@@ -988,6 +988,16 @@ defects it would put in front of public visitors are fixed first:
 
   Anything else carries an unticked `Gate status` item, and the orchestrator pauses.
 
+
+- **Post-ratification notes (2026-11-08, R7REC.1 — all expired/recorded at GATE-ACCEPT.R7):**
+  - GD-PREVIEW.R7 executed as ruled: one owned preview per phase (pr-259 R7a, pr-293 R7b);
+    measured preview spend ≈$14 of the $20 cap; both stacks destroyed with zero-orphan sweeps.
+  - GD-GOLDEN.R7: both deploys classified non-protocol-affecting → no golden re-run, $0.
+  - GD-TOURSIGN.R7: "Read the diff at merge" — 248's PR lists every changed `demo.tour.*` leaf;
+    the operator's merge is the approval; no HUMAN row opened.
+  - GD-DEPLOY.R7 + GD-UX-PAIDLEG.R7 expired at the 2026-11-08 signature (the one paid U6
+    dispatch failed 402, metered $0.00, paused — re-dispatch authority stays the operator's).
+
 ## 7. Finding accounting
 
 R7CAP.1 maintains `docs/build/planning/2026-11-03_r7-demo/finding-map.csv` (finding → REQ →
@@ -1036,7 +1046,7 @@ ticket → evidence). R7OPEN.1 seeds it. Residue seeded here:
 - Suggestion marks, working copies and span-level provenance rendering (1.x per REQ-SPEC-19).
 - Replacing Wells as the in-workspace Showcase.
 
-## 10. Proposed decomposition (`decompose-spec mode=extend` finalizes ids and sizing)
+## 10. Proposed decomposition (`decompose-spec mode=extend` finalizes ids and sizing) *(Post-ratification note, 2026-11-08: the §10 proposed decomposition is superseded by the manifest's `### Round 7` table as executed — rows 209–254 incl. the Phase-4 suffix inserts 214b, 218a, 220a, 221a, 223b, 225a, 240a, 243a, 245a, 248a, 249a, 250a–f.)*
 
 `#` = row; `→` = depends on. Every row is ≤ M; R7b rows marked † were split per RV-24.
 **Owner → leg map** (REQ-DACC-8):

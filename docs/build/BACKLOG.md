@@ -259,3 +259,42 @@ FINDINGS** list and `docs/security/`. Round-3 surfaces unchanged and still homed
 
 Spec-register deferred rows: the 33 `MISSING` matrix rows are all spec-scheduled 1.x/Later scope —
 parked on BL-73; REC.2 confirms the schedule during spec reconciliation.
+
+## Reconcile sweep — 2026-11-08 (R7REC.1, round-7 tail)
+
+**Status:** `check-backlog.sh` — **420 expected sources: complete + non-duplicating +
+verdict-consistent** (was 87 issues on entry: ~70 missing sources, 2 stale-met-engineered,
+6 met-with-owed-leg, 1 malformed status cell). **The two sums** — recomputed from the matrix:
+**engineering closed 740 / 900 · requirement satisfied 705 / 900**. Beside R7CAP.1's headline —
+the round-7 corpus is 135 ids (111 MET · 18 MET-ENGINEERED · 1 PARTIAL · 3 MISSING·routed · 1
+N/A) of the 900-row matrix; the global sums include every prior round. The round-7 delta this
+pass: REQ-CLOSE-2/-3 → MET, REQ-DWEB-4/-7, REQ-DOPS-5, REQ-CLOSE-5 → MET-ENGINEERED,
+REQ-FIX-T8 → MET, REQ-OPS-5 narrowed (D-SPA.6-1 DONE), REQ-KIT-5 stays PARTIAL (signed).
+
+**New rows:** BL-104 (bespoke-capture bundle, 32 D-ids) · BL-105 (defect/authority: D-R7DEP.2-1/-2,
+D-R7TOUR.2-1 + F-9…17) · BL-106 (nine round-6 OPEN rows → 204/205) · BL-107 (REQ-CLOSE-4 → 254)
+· BL-108 (GATE-ACCEPT.R7 signed deviations, `accepted`). **Source appends:** BL-100 += D-R7DEM.2c-1
+(re-home per GATE-ACCEPT.R7 (b)); BL-76 += ADR-131…136 (round-7 product watches); BL-84 += ADR-111…125
+(round-5/6 retro-fitted watches); BL-30's malformed landing cell quoted.
+
+**DEFERRALS sweep (dated 2026-11-08 tails):** 13 validator-stuck rows normalized to DONE (the
+R7CAP.1-discharged set + D-R7DEP.1-1/-2, D-R7GUARD.1-1, D-OBS.1-3); ~32 bespoke-capture rows
+carried OPEN → BL-104 (incl. canonical-OPEN restores on D-R7DEM.4-1/-6b-1/D-R7TALK.1a-2 and the
+unparseable D-R7WRITE.2-1 compact row); defect/authority rows → BL-105; D-R7DEM.2c-1 → BL-100.
+
+### ADR-126…130 revisit-trigger sweep (2026-11-08, one state per ADR)
+
+| ADR | State | Evidence read |
+|---|---|---|
+| ADR-126 (demo static snapshots) | **quiet** | One sanctioned write only (`POST /a/demo` insert-only — verified live, `rhema_app` select denied); no second write, signed-in variant or live read shipped; S-1 rewrite held (no permanent 302 fallback); metrics enum ungrown |
+| ADR-127 (corpus CC BY-NC-ND 4.0) | **quiet** | Licence unchanged; no non-operator essay added; the recording asset rides the same grant (entry completed with bytes+sha256 2026-11-08) |
+| ADR-128 (IA v2) | **quiet** | Every surface renders inside the shell (U1.shell green @ prod `e578a767`); no modal introduced (REQ-IDE-41 kept); sidebar item set as decided; banners verified this pass |
+| ADR-129 (component stack) | **quiet** | `check:licenses` green on the pinned set; R7PANE.1 chose the in-house SplitPane inside the budget rule; no Radix gap or icon-set change |
+| ADR-130 (walkthrough retired) | **quiet** | No generated-prose return path; `run.walkthrough` grep-pin holds; COGS posture unchanged (one model call removed per run) |
+
+### Risk-register review — 2026-11-08 (round 7)
+
+The project keeps no standalone risk register; live surfaces are LEDGER OPEN FINDINGS + `docs/security/`.
+Round-7 additions: 12 honest Stage-B reds at prod `e578a767` (F-9…F-16 → BL-105; env-bound legs
+recorded); the paid-U6 402 funding seam (F-17 → BL-105); REQ-KIT-5's +0.3 kB deficit (signed → BL-108).
+Pre-existing rounds' surfaces unchanged and homed.

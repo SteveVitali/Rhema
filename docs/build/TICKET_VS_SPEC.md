@@ -191,3 +191,52 @@ ADR-006 Path B + §14.1/§14.4 restated superseding D-PRB.16-5 (2026-09-30, ADR-
 **Fold-backs applied by this run (ticked):** the 2026-09-15 G2 deferral and the 2026-09-23 early
 G3 read — both pre-existing operator GATE DECISIONS rows — now carried in §17 (ADR-104/ADR-105).
 Everything else is **proposed, not applied** — see `SPEC_RECONCILIATION_PLAN.md`.
+
+## Round 7 — rows 209–250 (incl. Phase-4 suffix rows; reconciled 2026-11-08 by R7REC.1)
+
+Reconciled against `docs/round-7-draft-spec.md` v0.2 (ratified GD-RATIFY.R7). Dominant tag is
+**in-spec** — every REQ id a row stamped is in the spec's §4 corpus. Dispositions recorded for
+the spec-implied / ticket-added deliverables.
+
+| Row (ticket) | Deliverable | Tag | Disposition |
+|---|---|---|---|
+| 209 R7OPEN.1 | Round-7 open: ADR-126…130 shells, leg registry + owed-stub convention, finding-map seed | in-spec (REQ-DOPS-*) | leg registry/AUTHORED_HELD: implementation detail |
+| 210 R7KIT.1 | Control base layer on tokens (REQ-KIT-1, REQ-COPY-7) | in-spec | — |
+| 211 R7RO.1 | ReadOnlyProject + Showcase in SPA (REQ-RELOAD-5, REQ-DWEB-14, REQ-ED-12/ADR-108 + ADR-126/128) | in-spec | verbatim reason union: implementation detail |
+| 212 R7FIX.1 | Pane occlusion stopgap + Desk-head + Focus exit (REQ-PANE-0) | in-spec | `u3ProbePage` harness: implementation detail |
+| 213 R7COPY.0 | Walkthrough retired; record-composed run card (REQ-COPY-4; ADR-130) | in-spec | `composeDeliveredSummary`: implementation detail |
+| 214 R7DEM.1 | Corpus export + sanitizer (REQ-CORPUS-1…14; ADR-127) | in-spec | denylist machinery: implementation detail |
+| 214b R7DEM.1b | Local corpus export driver | spec-implied | implementation detail |
+| 215–218 R7DEM.2a–2c | Markdown→sidecars converter (REQ-CONV-1…17) | in-spec | — (REQ-CONV-17 residual → BL-100) |
+| 218a R7DEM.3/b | Snapshot layout + replayed-run twins (REQ-DWEB-15) | in-spec | — |
+| 219 R7DATA.1 | Real corpus commit (HUMAN-H14 signed) | in-spec | — |
+| 220 R7DEM.4 | Demo serving, server half (REQ-DWEB-1…17; ADR-126) | in-spec | — |
+| 220a R7DEM.4b | Demo serving, SPA half (S-1 URL rewrite) | in-spec | — |
+| 221 R7DEM.5 | Demo side-effects + labels (REQ-DWEB-7/15) | in-spec | recording proxy + regenerated table: implementation detail |
+| 221a R7DEM.5b | `/demo` hub + card facts (REQ-TOUR-1) | in-spec | — |
+| 222 R7DEM.6a | Guided tour + entry points (REQ-TOUR-*) | in-spec | tour schema extensions: implementation detail |
+| 223 R7DEM.6b | `demo_events` carve-out (REQ-TOUR-9; ADR-126) | in-spec | — |
+| 223b R7DEM.6c | Migration portability fix (live F-R7DEP.1-1) | ticket-added | implementation detail (defect repair) |
+| 224 R7DEP.1 | R7a phase preview + prod deploy `4bc8cf4a` | in-spec (REQ-DACC-1/8) | deploy machinery: implementation detail |
+| 225/225a R7KIT.2/b | Primitives + generated styles + no-raw-controls rule (REQ-KIT-2/3; ADR-129) | in-spec | `uiCss()`/`uiTailCss()`: implementation detail |
+| 226–228 R7SHELL.1a/b/c | AppShell + sidebar + framed leaves + ⌘K palette + `GET /search` (REQ-SHELL-*; ADR-128/131/132) | in-spec | two-tenant probe extension: implementation detail |
+| 229 R7PANE.1 | SplitPane engine + breakpoints + right panel (REQ-PANE-*; ADR-129 choice) | in-spec | codec v2: implementation detail |
+| 230 R7SHELL.2 | Project scope in sidebar; Files→tree; rails removed (ADR-133) | in-spec | — |
+| 231 R7RELOAD.1 | Write grammar + delegated submit + GUARD-3 (REQ-RELOAD-1…7; ADR-134) | in-spec | `mutationOutcome` census: implementation detail |
+| 232/233 R7TALK.1a/b | Right-panel chat + tabs (REQ-TALK-*; ADR-135) | in-spec | stub-turn fixture: implementation detail |
+| 234–236 R7HOME.1/2a/2b | Flat list, editable imports, opens-to-Page (REQ-HOME-*; ADR-128) | in-spec | — |
+| 237/238 R7WRITE.1a/b | Format bubble + strip; anchored comments + fork Undo (REQ-WRITE-*) | in-spec | `rhema:comment-added` bridge: implementation detail |
+| 239 R7WRITE.2 | Source mode + browser-safe keymap (REQ-WRITE-5/8, REQ-KEYS-1/2) | in-spec | reserved-chords checker: implementation detail |
+| 240/240a R7KIT.3a/3a2 | Batch a/a2 primitives + copy fidelity (REQ-KIT-3/4) | in-spec | — (budget deviation → BL-108 signed) |
+| 241–243a R7KIT.3b/c2/d/e | Batches b/c2/d/e + dossier relayout (REQ-KIT-3, REQ-PANE-5, REQ-COPY-5/8) | in-spec | — |
+| 244/245/245a R7COPY.1a/b/c | Labels, one markdown renderer, errorCopy inventory (REQ-COPY-*) | in-spec | error-code inventory + copy lint: implementation detail |
+| 246 R7SYNC.1 | One-truth + speed (REQ-SYNC-*, REQ-SPEED-*; REQ-NAVM-7 discharge) | in-spec | `speed-leg.ts` N≥20 record: implementation detail |
+| 247 R7RO.2 | Phone-reader island (REQ-RELOAD-7, REQ-MOBILE-3) | in-spec | — |
+| 248 R7TOUR.2 | Tour re-pin + sidebar Demo entry (REQ-TOUR-2/4/5/8) | in-spec | — |
+| 248a–249 R7KIT.3f/GUARD.1 | Migrate-tail + GUARD-1 global + GUARD-4 (REQ-GUARD-1/4) | in-spec | — |
+| 249a R7PUB.1 | Signed-in `/pricing` + landing refresh + hero slot/recipe (REQ-PUB-1/2; ADR-127 asset) | in-spec | `hero-capture` recipe: implementation detail |
+| 250 + 250a–f R7DEP.2/R7FIX.1–6 | R7b preview, six defect-boundary fix rounds, prod deploy `e578a767`, Stage-B walk | in-spec (REQ-DACC-2/7) | fix rounds: implementation detail (defect repairs) |
+
+Round-7 counts: in-spec ~40 rows · spec-implied 1 (214b) · ticket-added 1 (223b) — every
+mechanism-level addition dispositioned `implementation detail`; no fold-back beyond the
+ADR-126…130 banners this run verifies.

@@ -846,6 +846,16 @@ has exactly one owner.
 
 ## Spec amendments applied
 
+- **2026-11-08 (253_R7REC.1 — round-7 spec fold-back, REQ-CLOSE-3):** verified the ADR-126…130
+  banner set spec §3.2 mandates and applied the missing dated banners — `docs/rhema-design-spec.md`
+  §5.5 D20 + REQ-IDE-19/-41/-48 rows (ADR-130: walkthrough retired → REQ-COPY-4 composed card;
+  ADR-128: IDE-41 kept, IDE-48 opens-to-Page) + §15 (ADR-129 component stack);
+  `docs/frontend-spa-spec.md` §14.8 (ADR-126: demo Pages SPA read-only every device class) +
+  keymap (ADR-128: `?` kept, REQ-KEYS remaps chords); `docs/post-spa-disposition-spec.md` §2.6
+  (REQ-NAVM-7 discharged by REQ-SPEED-3); `docs/round-7-draft-spec.md` post-ratification notes
+  (GD-PUBDELTA.R7 at REQ-DACC-6; GD-PREVIEW/GOLDEN/TOURSIGN.R7 + §10-superseded at §6/§10).
+  Ticks: the ratified ADRs + their GATE DECISIONS rows. Gate: `docs/build/tools/check-adr-banners.mjs`.
+
 - **2026-09-02 (cloud provider + inference channel; Q-3 / §12 / §13 / REQ-ARCH-1/2/30/31):** the ratified
   "AWS-first" decision is superseded — **compute moves to GCP** and **inference moves to the direct
   Anthropic API** (platform-billed, key in Secret Manager, proxy-injected). Rationale: the operator could
