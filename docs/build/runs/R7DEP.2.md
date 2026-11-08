@@ -422,7 +422,16 @@ green at the same SHA. Preview stays UP at `e143828f`; ~$12 of $20; teardown at 
   (≤2.5 s ✓) + CLS **0.000** (≤0.05 ✓) at 1440+390, clip arm live at both widths (the
   reduced-motion arm is the video's poster frame — no autoplay by design; markup violations []).
   Landing/pricing screenshots `t1-landing/`.
-- NEXT: teardown pr-293 (destroy→orphan-verify→rm) → spend read → **Part B** GD-DEPLOY.R7's 8
+- 2026-11-08T23:2xZ — **teardown act 1 `destroy pr-293` ran** — 138 deleted; ONE residual:
+  `gcp:compute:Subnetwork rhema-pr-293-private-app` blocked by the Google-managed serverless
+  address `serverless-ipv4-cloudrun-1794077420824796023` (still RESERVED — the Cloud Run VPC
+  lease auto-releases after service deletion; same orphan class as pr-259's `iap-ssh` residual).
+  Direct `gcloud compute addresses delete` refused (used by
+  `//serverless.googleapis.com/.../addressReservations/…`). **RETRY: re-run
+  `node scripts/live/preview-stack.mjs destroy pr-293` after the reservation releases
+  (~30–60 min post-service-delete), then the zero-orphan sweep, then `rm pr-293`, then the
+  spend read.** The stack is otherwise reduced to network residue.
+- NEXT: destroy-retry → orphan sweep → `rm` → spend read → **Part B** GD-DEPLOY.R7's 8
   conditions → prod `pulumi up` @ `e578a767` → provenance → deployments row → CDN invalidate
   `/bff/p/demo~*` → corpus-in-image → Stage B at T1 → U6 paid (<$10) → SPEED-5 prod → nightly
   dispatch → close-out records/PR/CI boundary.
