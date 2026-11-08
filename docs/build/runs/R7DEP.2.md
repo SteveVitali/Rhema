@@ -567,3 +567,11 @@ Rollback of the R7b deploy = the R7DEP.1 recipe shape with this round's pins:
   convert Dockerfile's pinned-download step). Not diff-caused — the identical image built clean
   in Cloud Build `7d470657` ~1 h earlier; a github release-CDN outage window. Rerun #3 queued;
   record `logs/ci-R7DEP.2.json`.
+- 2026-11-08T11:1xZ — **CI boundary final read: EXTERNALLY-BLOCKED, not diff-caused.** At
+  `474d49be`: fast-path + typecheck/lint/unit + contracts + public-safe all PASS (the
+  flip-catchup holds); `integration` + `images` legs FAIL ×3 attempts on the SAME external
+  cause — github.com release/archive fetches (pandoc, typst, dumb-init tarballs) answering
+  504/failed through a sustained github CDN outage window (~2.5 h). The identical images
+  built clean in Cloud Build `7d470657` (the deploy artifact itself). Record
+  `logs/ci-R7DEP.2.json`; the boundary re-reads when the upstream recovers — rerun
+  `gh run rerun <run> --failed` on run `42470880492`, then `ci-boundary --pr 300`.
