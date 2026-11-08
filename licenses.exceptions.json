@@ -4,62 +4,62 @@
     "@anthropic-ai/claude-agent-sdk": {
       "type": "npm",
       "license": "Commercial",
-      "rationale": "The Agent SDK is a proprietary dependency the whole run model depends on — the largest control concession in the design (Q-3, §12.1 REQ-ARCH-4). Mitigated by the Engine abstraction (REQ-ARCH-7). Hosted under our own brand; never surfaced or marketed as 'Claude Code'."
+      "rationale": "The Agent SDK is a proprietary dependency the whole run model depends on \u2014 the largest control concession in the design (Q-3, \u00a712.1 REQ-ARCH-4). Mitigated by the Engine abstraction (REQ-ARCH-7). Hosted under our own brand; never surfaced or marketed as 'Claude Code'."
     },
     "@resvg/resvg-js": {
       "type": "npm",
       "license": "MPL-2.0",
-      "rationale": "Server-side SVG→PNG rasterizer in the worker only (P1.13, §7.5 figure render@2x.png — resolves §16.3 #8); weak copyleft used as an unmodified dependency; never in a client bundle."
+      "rationale": "Server-side SVG\u2192PNG rasterizer in the worker only (P1.13, \u00a77.5 figure render@2x.png \u2014 resolves \u00a716.3 #8); weak copyleft used as an unmodified dependency; never in a client bundle."
     },
     "@resvg/resvg-js-darwin-arm64": {
       "type": "npm",
       "license": "MPL-2.0",
-      "rationale": "Platform binary of @resvg/resvg-js (same package, same use — see that entry): server-side SVG→PNG rasterizer in the worker only, unmodified, never in a client bundle."
+      "rationale": "Platform binary of @resvg/resvg-js (same package, same use \u2014 see that entry): server-side SVG\u2192PNG rasterizer in the worker only, unmodified, never in a client bundle."
     },
     "@resvg/resvg-js-darwin-x64": {
       "type": "npm",
       "license": "MPL-2.0",
-      "rationale": "Platform binary of @resvg/resvg-js (same package, same use — see that entry): server-side SVG→PNG rasterizer in the worker only, unmodified, never in a client bundle."
+      "rationale": "Platform binary of @resvg/resvg-js (same package, same use \u2014 see that entry): server-side SVG\u2192PNG rasterizer in the worker only, unmodified, never in a client bundle."
     },
     "@resvg/resvg-js-linux-x64-gnu": {
       "type": "npm",
       "license": "MPL-2.0",
-      "rationale": "Platform binary of @resvg/resvg-js (same package, same use — see that entry): server-side SVG→PNG rasterizer in the worker only, unmodified, never in a client bundle."
+      "rationale": "Platform binary of @resvg/resvg-js (same package, same use \u2014 see that entry): server-side SVG\u2192PNG rasterizer in the worker only, unmodified, never in a client bundle."
     },
     "@resvg/resvg-js-linux-x64-musl": {
       "type": "npm",
       "license": "MPL-2.0",
-      "rationale": "Platform binary of @resvg/resvg-js (same package, same use — see that entry): server-side SVG→PNG rasterizer in the worker only, unmodified, never in a client bundle."
+      "rationale": "Platform binary of @resvg/resvg-js (same package, same use \u2014 see that entry): server-side SVG\u2192PNG rasterizer in the worker only, unmodified, never in a client bundle."
     },
     "@resvg/resvg-js-linux-arm64-gnu": {
       "type": "npm",
       "license": "MPL-2.0",
-      "rationale": "Platform binary of @resvg/resvg-js (same package, same use — see that entry): server-side SVG→PNG rasterizer in the worker only, unmodified, never in a client bundle."
+      "rationale": "Platform binary of @resvg/resvg-js (same package, same use \u2014 see that entry): server-side SVG\u2192PNG rasterizer in the worker only, unmodified, never in a client bundle."
     },
     "@resvg/resvg-js-linux-arm64-musl": {
       "type": "npm",
       "license": "MPL-2.0",
-      "rationale": "Platform binary of @resvg/resvg-js (same package, same use — see that entry): server-side SVG→PNG rasterizer in the worker only, unmodified, never in a client bundle."
+      "rationale": "Platform binary of @resvg/resvg-js (same package, same use \u2014 see that entry): server-side SVG\u2192PNG rasterizer in the worker only, unmodified, never in a client bundle."
     },
     "@resvg/resvg-js-win32-x64-msvc": {
       "type": "npm",
       "license": "MPL-2.0",
-      "rationale": "Platform binary of @resvg/resvg-js (same package, same use — see that entry): server-side SVG→PNG rasterizer in the worker only, unmodified, never in a client bundle."
+      "rationale": "Platform binary of @resvg/resvg-js (same package, same use \u2014 see that entry): server-side SVG\u2192PNG rasterizer in the worker only, unmodified, never in a client bundle."
     },
     "axe-core": {
       "type": "npm",
       "license": "MPL-2.0",
-      "rationale": "The WCAG 2.2 AA checker UX.2 runs inside the journeys harness (ADR-068) — dev/test tooling only, executed by Playwright's page context, never in a shipped client bundle or server image. MPL-2.0 is weak copyleft; used as an unmodified dependency."
+      "rationale": "The WCAG 2.2 AA checker UX.2 runs inside the journeys harness (ADR-068) \u2014 dev/test tooling only, executed by Playwright's page context, never in a shipped client bundle or server image. MPL-2.0 is weak copyleft; used as an unmodified dependency."
     },
     "elkjs": {
       "type": "npm",
       "license": "EPL-2.0",
-      "rationale": "Transitive dep of beautiful-mermaid (P1.13 Mermaid→SVG layout, packages/figures). EPL-2.0 is weak copyleft; used as an unmodified dependency for diagram layout in the worker only, never in a client bundle."
+      "rationale": "Transitive dep of beautiful-mermaid (P1.13 Mermaid\u2192SVG layout, packages/figures). EPL-2.0 is weak copyleft; used as an unmodified dependency for diagram layout in the worker only, never in a client bundle."
     },
     "pandoc": {
       "type": "system-binary",
       "license": "GPL-2.0-or-later",
-      "rationale": "Used only in the isolated `export`/`convert` containers, invoked as a SEPARATE PROCESS over files — no linking into our TypeScript. GPL's copyleft is not triggered by separate-process invocation. Not an npm dependency; shipped in the container image."
+      "rationale": "Used only in the isolated `export`/`convert` containers, invoked as a SEPARATE PROCESS over files \u2014 no linking into our TypeScript. GPL's copyleft is not triggered by separate-process invocation. Not an npm dependency; shipped in the container image."
     },
     "typst": {
       "type": "system-binary",
@@ -69,17 +69,17 @@
     "util-linux": {
       "type": "system-binary",
       "license": "GPL-2.0-or-later",
-      "rationale": "SEC.3 — the three applets (setpriv, unshare, mount) are statically built from the pinned upstream tarball and vendored into the distroless run-task image; invoked as SEPARATE PROCESSES by absolute argv — no linking into our TypeScript. GPL copyleft is not triggered by separate-process invocation (the pandoc precedent). Source is fetched from kernel.org, SHA-256-pinned at build."
+      "rationale": "SEC.3 \u2014 the three applets (setpriv, unshare, mount) are statically built from the pinned upstream tarball and vendored into the distroless run-task image; invoked as SEPARATE PROCESSES by absolute argv \u2014 no linking into our TypeScript. GPL copyleft is not triggered by separate-process invocation (the pandoc precedent). Source is fetched from kernel.org, SHA-256-pinned at build."
     },
     "libcap-ng": {
       "type": "system-binary",
       "license": "LGPL-2.1-or-later",
-      "rationale": "SEC.3 — statically linked into the vendored util-linux setpriv (Alpine ships no libcap-ng .a, so it is built static from the pinned upstream source). Static linkage into a GPL-2.0 binary yields a GPL-2.0 whole anyway; the binary is a separate process, never linked into our TypeScript. SHA-256-pinned at build."
+      "rationale": "SEC.3 \u2014 statically linked into the vendored util-linux setpriv (Alpine ships no libcap-ng .a, so it is built static from the pinned upstream source). Static linkage into a GPL-2.0 binary yields a GPL-2.0 whole anyway; the binary is a separate process, never linked into our TypeScript. SHA-256-pinned at build."
     },
     "dumb-init": {
       "type": "system-binary",
       "license": "MIT",
-      "rationale": "SEC.3 — the static PID-1 init in the distroless run-task image (reaper + signal forwarder; the equivalent-approved tini substitute, ADR-074). Permissive, but recorded because it is a system binary built from the pinned upstream source — the npm scan cannot see it."
+      "rationale": "SEC.3 \u2014 the static PID-1 init in the distroless run-task image (reaper + signal forwarder; the equivalent-approved tini substitute, ADR-074). Permissive, but recorded because it is a system binary built from the pinned upstream source \u2014 the npm scan cannot see it."
     },
     "fonts": {
       "type": "asset",
@@ -94,87 +94,97 @@
     "demo-hero-recording": {
       "type": "asset",
       "license": "CC-BY-NC-ND-4.0",
-      "rationale": "249a R7PUB.1 / ADR-127 — the landing hero recording (apps/web/public/media/hero-tour.mp4 + hero-tour-poster.jpg) is captured from the logged-out demo tour and therefore SHOWS corpus content: a licensed derivative under the same CC BY-NC-ND 4.0 grant and pen-name scope (S-11). 250_R7DEP.2 commits the files and completes this entry's bytes/sha256 in the run record."
+      "rationale": "249a R7PUB.1 / ADR-127 \u2014 the landing hero recording (apps/web/public/media/hero-tour.mp4 + hero-tour-poster.jpg) is captured from the logged-out demo tour and therefore SHOWS corpus content: a licensed derivative under the same CC BY-NC-ND 4.0 grant and pen-name scope (S-11). 250_R7DEP.2 commits the files and completes this entry's bytes/sha256 in the run record. Captured 2026-11-08 on pr-293 @ d0a77d0 (250_R7DEP.2).",
+      "files": {
+        "hero-tour.mp4": {
+          "bytes": 780708,
+          "sha256": "8f4bda23e1fa6897a2a7130b30d4a60e88316722886dbf80cf3a08ec2189f8e5"
+        },
+        "hero-tour-poster.jpg": {
+          "bytes": 5769,
+          "sha256": "d3d51548a1917a4d8972485b00d67692a08c14f8b40841654fb409296ba8b93f"
+        }
+      }
     },
     "duck": {
       "type": "npm",
       "license": "BSD",
-      "rationale": "Transitive dep of mammoth (docx conversion, apps/convert) via lop. The declared SPDX string is the bare 'BSD', but the checked-in LICENSE file is the permissive 2-clause text (no advertising clause) — equivalent to allowlisted BSD-2-Clause. Server-side conversion only; never in a client bundle."
+      "rationale": "Transitive dep of mammoth (docx conversion, apps/convert) via lop. The declared SPDX string is the bare 'BSD', but the checked-in LICENSE file is the permissive 2-clause text (no advertising clause) \u2014 equivalent to allowlisted BSD-2-Clause. Server-side conversion only; never in a client bundle."
     },
     "pako": {
       "type": "npm",
       "license": "(MIT AND Zlib)",
-      "rationale": "Transitive dep of mammoth via jszip (docx conversion). The declared SPDX expression is a conjunction of two permissive licences — MIT is allowlisted and Zlib is a permissive zlib licence. Server-side only."
+      "rationale": "Transitive dep of mammoth via jszip (docx conversion). The declared SPDX expression is a conjunction of two permissive licences \u2014 MIT is allowlisted and Zlib is a permissive zlib licence. Server-side only."
     },
     "@fontsource-variable/inter": {
       "type": "npm",
       "license": "OFL-1.1",
-      "rationale": "SIL Open Font License 1.1 — the §5.9 typefaces self-hosted via Fontsource (P1.01, REQ-IDE-39). OFL permits bundling + webfont embedding; the files ship as served woff2 assets (apps/web/public/fonts), never modified, with copyright + licence intact. No Reserved Font Name issue: Fontsource publishes the unmodified upstream faces."
+      "rationale": "SIL Open Font License 1.1 \u2014 the \u00a75.9 typefaces self-hosted via Fontsource (P1.01, REQ-IDE-39). OFL permits bundling + webfont embedding; the files ship as served woff2 assets (apps/web/public/fonts), never modified, with copyright + licence intact. No Reserved Font Name issue: Fontsource publishes the unmodified upstream faces."
     },
     "@fontsource-variable/jetbrains-mono": {
       "type": "npm",
       "license": "OFL-1.1",
-      "rationale": "SIL Open Font License 1.1 — the §5.9 typefaces self-hosted via Fontsource (P1.01, REQ-IDE-39). OFL permits bundling + webfont embedding; the files ship as served woff2 assets (apps/web/public/fonts), never modified, with copyright + licence intact. No Reserved Font Name issue: Fontsource publishes the unmodified upstream faces."
+      "rationale": "SIL Open Font License 1.1 \u2014 the \u00a75.9 typefaces self-hosted via Fontsource (P1.01, REQ-IDE-39). OFL permits bundling + webfont embedding; the files ship as served woff2 assets (apps/web/public/fonts), never modified, with copyright + licence intact. No Reserved Font Name issue: Fontsource publishes the unmodified upstream faces."
     },
     "@fontsource-variable/literata": {
       "type": "npm",
       "license": "OFL-1.1",
-      "rationale": "SIL Open Font License 1.1 — the §5.9 typefaces self-hosted via Fontsource (P1.01, REQ-IDE-39). OFL permits bundling + webfont embedding; the files ship as served woff2 assets (apps/web/public/fonts), never modified, with copyright + licence intact. No Reserved Font Name issue: Fontsource publishes the unmodified upstream faces."
+      "rationale": "SIL Open Font License 1.1 \u2014 the \u00a75.9 typefaces self-hosted via Fontsource (P1.01, REQ-IDE-39). OFL permits bundling + webfont embedding; the files ship as served woff2 assets (apps/web/public/fonts), never modified, with copyright + licence intact. No Reserved Font Name issue: Fontsource publishes the unmodified upstream faces."
     },
     "caniuse-lite": {
       "type": "npm",
       "license": "CC-BY-4.0",
-      "rationale": "Browser-support DATA table consumed by browserslist inside the babel toolchain (@vitejs/plugin-react, @tanstack/router-plugin — SPA.1, ADR-106). Compile-time input only; it is never bundled, served, or executed — the compiled output is our own code. CC-BY-4.0 permits use with attribution; the committed dependency record + LICENSES policy carry it."
+      "rationale": "Browser-support DATA table consumed by browserslist inside the babel toolchain (@vitejs/plugin-react, @tanstack/router-plugin \u2014 SPA.1, ADR-106). Compile-time input only; it is never bundled, served, or executed \u2014 the compiled output is our own code. CC-BY-4.0 permits use with attribution; the committed dependency record + LICENSES policy carry it."
     },
     "lightningcss": {
       "type": "npm",
       "license": "MPL-2.0",
-      "rationale": "Optional CSS toolchain peer of Vite (vite cssMinify: 'lightningcss') resolved once vite@8 entered the graph (SPA.1, ADR-106). Build-time CSS transformer only — what ships is our transformed CSS, not lightningcss code. MPL-2.0 is weak file-level copyleft; used as an unmodified dependency (the axe-core / resvg precedents)."
+      "rationale": "Optional CSS toolchain peer of Vite (vite cssMinify: 'lightningcss') resolved once vite@8 entered the graph (SPA.1, ADR-106). Build-time CSS transformer only \u2014 what ships is our transformed CSS, not lightningcss code. MPL-2.0 is weak file-level copyleft; used as an unmodified dependency (the axe-core / resvg precedents)."
     },
     "lightningcss-darwin-arm64": {
       "type": "npm",
       "license": "MPL-2.0",
-      "rationale": "Platform binary of lightningcss (same package, same use — see that entry): optional Vite CSS-toolchain peer, build-time only, unmodified, never in a client bundle."
+      "rationale": "Platform binary of lightningcss (same package, same use \u2014 see that entry): optional Vite CSS-toolchain peer, build-time only, unmodified, never in a client bundle."
     },
     "lightningcss-darwin-x64": {
       "type": "npm",
       "license": "MPL-2.0",
-      "rationale": "Platform binary of lightningcss (same package, same use — see that entry): optional Vite CSS-toolchain peer, build-time only, unmodified, never in a client bundle."
+      "rationale": "Platform binary of lightningcss (same package, same use \u2014 see that entry): optional Vite CSS-toolchain peer, build-time only, unmodified, never in a client bundle."
     },
     "lightningcss-linux-x64-gnu": {
       "type": "npm",
       "license": "MPL-2.0",
-      "rationale": "Platform binary of lightningcss (same package, same use — see that entry): optional Vite CSS-toolchain peer, build-time only, unmodified, never in a client bundle. This is the variant CI installs."
+      "rationale": "Platform binary of lightningcss (same package, same use \u2014 see that entry): optional Vite CSS-toolchain peer, build-time only, unmodified, never in a client bundle. This is the variant CI installs."
     },
     "lightningcss-linux-x64-musl": {
       "type": "npm",
       "license": "MPL-2.0",
-      "rationale": "Platform binary of lightningcss (same package, same use — see that entry): optional Vite CSS-toolchain peer, build-time only, unmodified, never in a client bundle."
+      "rationale": "Platform binary of lightningcss (same package, same use \u2014 see that entry): optional Vite CSS-toolchain peer, build-time only, unmodified, never in a client bundle."
     },
     "lightningcss-linux-arm64-gnu": {
       "type": "npm",
       "license": "MPL-2.0",
-      "rationale": "Platform binary of lightningcss (same package, same use — see that entry): optional Vite CSS-toolchain peer, build-time only, unmodified, never in a client bundle."
+      "rationale": "Platform binary of lightningcss (same package, same use \u2014 see that entry): optional Vite CSS-toolchain peer, build-time only, unmodified, never in a client bundle."
     },
     "lightningcss-linux-arm64-musl": {
       "type": "npm",
       "license": "MPL-2.0",
-      "rationale": "Platform binary of lightningcss (same package, same use — see that entry): optional Vite CSS-toolchain peer, build-time only, unmodified, never in a client bundle."
+      "rationale": "Platform binary of lightningcss (same package, same use \u2014 see that entry): optional Vite CSS-toolchain peer, build-time only, unmodified, never in a client bundle."
     },
     "lightningcss-win32-x64-msvc": {
       "type": "npm",
       "license": "MPL-2.0",
-      "rationale": "Platform binary of lightningcss (same package, same use — see that entry): optional Vite CSS-toolchain peer, build-time only, unmodified, never in a client bundle."
+      "rationale": "Platform binary of lightningcss (same package, same use \u2014 see that entry): optional Vite CSS-toolchain peer, build-time only, unmodified, never in a client bundle."
     },
     "lightningcss-win32-arm64-msvc": {
       "type": "npm",
       "license": "MPL-2.0",
-      "rationale": "Platform binary of lightningcss (same package, same use — see that entry): optional Vite CSS-toolchain peer, build-time only, unmodified, never in a client bundle."
+      "rationale": "Platform binary of lightningcss (same package, same use \u2014 see that entry): optional Vite CSS-toolchain peer, build-time only, unmodified, never in a client bundle."
     },
     "lightningcss-freebsd-x64": {
       "type": "npm",
       "license": "MPL-2.0",
-      "rationale": "Platform binary of lightningcss (same package, same use — see that entry): optional Vite CSS-toolchain peer, build-time only, unmodified, never in a client bundle."
+      "rationale": "Platform binary of lightningcss (same package, same use \u2014 see that entry): optional Vite CSS-toolchain peer, build-time only, unmodified, never in a client bundle."
     }
   }
 }

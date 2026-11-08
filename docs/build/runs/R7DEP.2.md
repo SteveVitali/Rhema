@@ -384,9 +384,16 @@ green at the same SHA. Preview stays UP at `e143828f`; ~$12 of $20; teardown at 
   fixed alongside. `stevevitali/r7dep-2-t1-prod` advanced to `d0a77d0`. H16 re-checked: still
   **not-dispositioned**. Journeys dist rebuilt `--force`; Cloud Build `1f40a059` all-10 @
   `d0a77d0` (`_TAG=r7dep-2-t1f`).
-- NEXT (after build): digests → guarded `config`/`up` → provenance `d0a77d0` → **final T1f
-  re-walk** (all 16 legs; if all-green the board closes) → committed hero-capture at the final
-  SHA → `public/media/` assets + ADR-127 row → T1 commit → rebuild → T1 update → T1 re-walk set
-  + hero LCP/CLS → teardown (destroy→orphan→rm) → spend read → **Part B**: GD-DEPLOY.R7's 8
+- 2026-11-08T06:xxZ — Cloud Build `1f40a059` SUCCESS; digests `logs/r7dep2/pr293-digests-t1f.txt`;
+  `up` 11 updates + proxy replace (1m34s, zero destructive). **Provenance: web+api `/healthz/` →
+  `d0a77d0…` — sixth in-place update.**
+- 2026-11-08T06:xxZ — **T1f re-walk at `d0a77d0` — ALL 16 LEGS GREEN** (`t1f-legs/`,
+  `--expect-sha` match, $0): 8 incumbents PASS + **U1.shell, U2.noreload, U3.occlusion,
+  U4.controls, U5.write, U6.chat, U7.import ALL ready-to-flip** + **R8.showcase.spa PASS** (×4
+  consecutive — the regression durably closed). **The board is closed** — every `F-R7DEP.2-*`
+  finding verified fixed at the deployed tip; `D-R7FIX.1-2…D-R7FIX.6-1` dispositions follow.
+- NEXT: committed hero-capture at `d0a77d0` → `public/media/` assets + ADR-127 row + registry
+  flips + DEFERRALS closures → **T1 commit** → rebuild all-10 at T1 → in-place update → T1
+  re-walk set + hero LCP/CLS → teardown (destroy→orphan→rm) → spend read → **Part B**: GD-DEPLOY.R7's 8
   conditions → prod `pulumi up` @ T1 → provenance → deployments row → CDN invalidate
   `/bff/p/demo~*` → Stage B → U6 paid (<$10) → SPEED-5 → close-out records/PR/CI boundary.
