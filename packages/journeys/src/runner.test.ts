@@ -78,10 +78,10 @@ describe("runJourneys — the expected-flag semantics", () => {
   // R7OPEN.1 (REQ-DACC-8) — the offline dry path over the real registry: every round-7 leg's
   // wired owed-stub classifies `owed` through the runner (never a run failure), so the nightly
   // cannot re-redden. Removing a leg's stub (or flipping its row green) fails this test.
-  it("every round-7 registry leg reports owed on the offline path", async () => {
-    // 224 R7DEP.1 flipped the five D*/R11/P1.demo legs green on pr-259 evidence @4f66cebc —
-    // they are out of this owed census; U3.stopgap + R8.showcase.spa followed on R7FIX.2's
-    // live proof at @18a0df79 (2026-11-05), leaving the seven R7b U* legs until 250.
+  it("the flipped round-7 legs classify real failures, never owed", async () => {
+    // 250_R7DEP.2 flipped U1–U7 green at T1 `e578a767` (preview board @`d0a77d0` + prod Stage-B
+    // `prod-stageb/`). The round-7 owed census is EMPTY: a green row's offline failure is a real
+    // `fail` (it can re-redden the nightly honestly), never the `owed` classification.
     const R7_IDS = [
       "U1.shell", "U2.noreload", "U3.occlusion", "U4.controls", "U5.write", "U6.chat", "U7.import",
     ];
@@ -89,28 +89,14 @@ describe("runJourneys — the expected-flag semantics", () => {
     expect(steps.map((s) => s.id).sort()).toEqual(R7_IDS.slice().sort());
     const r = await run(steps, ALL_IMPLS);
     for (const res of r.results) {
-      expect(res.outcome, res.id).toBe("owed");
-      // R7SHELL.1a authored the real U1.shell body, R7PANE.1 the real U3.occlusion body,
-      // R7RELOAD.1 the real U2.noreload body, R7TALK.1a the real U6.chat stub-turn body,
-      // R7HOME.2a the real U7.import paste-import body, and R7WRITE.1b the real U5.write body
-      // while the rows stay red — a held authored
-      // leg's error is its own offline failure, never the stub signature; the nightly still
-      // classifies it `owed` (the row cannot re-redden or go green silently).
-      if (
-        res.id !== "U1.shell" &&
-        res.id !== "U2.noreload" &&
-        res.id !== "U3.occlusion" &&
-        res.id !== "U4.controls" &&
-        res.id !== "U5.write" &&
-        res.id !== "U6.chat" &&
-        res.id !== "U7.import"
-      ) {
-        expect(res.error, res.id).toContain(`owed — owner ${res.owner}`);
-      } else {
-        expect(res.error, res.id).toBeTruthy();
-      }
+      expect(res.outcome, res.id).toBe("fail");
+      // The flipped rows are `expected:"green"` — their real bodies fail on the stub ctx with
+      // their own errors (never the owed signature); the offline dry path classifies each as a
+      // real `fail`, which is exactly the honest-nightly contract post-flip.
+      expect(res.error, res.id).toBeTruthy();
+      expect(res.error, res.id).not.toContain("owed — owner");
     }
-    expect(r.passed).toBe(true); // owed is a debt report, never a run failure
+    expect(r.passed).toBe(false); // a green leg failing fails the run — the honest post-flip arm
   });
   it("paid steps skip without --paid; a missing impl on a green step fails the run", async () => {
     const r = await run([step("P1x", "red", true), step("G3", "green")], {});
