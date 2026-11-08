@@ -43,5 +43,4 @@ BEFORE any runs/R7*.md was read; ledgers reconciled afterwards — AC-4 ordering
 
 ## Checks
 
-check-coverage-matrix 6/6 · append-only (below) · build-memory (below) · ci-boundary
-recorded at PR head (below). Probe: prod /healthz 200 @ e578a767, 2026-11-08T11:09Z.
+check-coverage-matrix 6/6 · append-only OK vs stevevitali/r7dep-2-t1-prod · build-memory 0 violations (21 legacy warnings) · **exact-head ci-boundary:** #301 @ aa144f46 — fast-path PASS; typecheck/lint/unit pending at read (full suite ~17 min). **Stack read @ 2026-11-08T11:38:54Z** (ci-R7CAP.1-stack.json): #301 pending; **#300 FAIL — images + integration legs, both external: the run-task image build fails at wget https://github.com/Yelp/dumb-init/archive/… → HTTP/1.1 504 Gateway Time-out (GitHub CDN outage), typecheck/contracts/public-safe/fast-path all PASS — externally blocked, not a code failure**; #293 and below pass. Probe: prod /healthz 200 @ e578a767, 2026-11-08T11:09Z.
