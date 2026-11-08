@@ -627,37 +627,44 @@ export function ProjectPageSurface({
   }, [scratchEntry]);
 
   return (
-    <div data-spa-surface onSubmit={onSubmit} aria-busy={pending || undefined}>
-      {search["hc"] ? <HeldConsumedMarker token={search["hc"]} /> : null}
-      {/* R7WRITE.1a — the ReadOnlyProject notice moved into the page header strip (REQ-WRITE-6). */}
-      <ProjectOverviewBody
-        project={project}
-        {...(ro != null ? { readOnly: ro.reason } : {})}
-        compact={compact}
-        {...(pageView ? { page: pageView } : {})}
-        {...(page
-          ? {
-              pageHost: (
-                <PageHost
-                  page={page}
-                  compact={compact}
-                  viewRef={viewRef}
-                  sourceMode={sourceMode}
-                  onSourceModeChange={setSourceMode}
-                />
-              ),
-            }
-          : {})}
-        pageEmbeds={false}
-        onProposalAccept={seams.accept}
-        onProposalReject={seams.reject}
-      />
-      {mutError != null ? (
-        <p role="alert" className="ui-d-fs ui-set-t--warn ui-t-m03">
-          {mutError}
-        </p>
-      ) : null}
-    </div>
+    <ToastProvider dismissLabel={COPY.projectHome.undoLabel} viewportLabel={slug}>
+      {/* R7WRITE.1b — the comment-added invalidate + frozen-fork Undo toast on the
+          working-head Page too (REQ-WRITE-2/7): `/p/:slug`'s PageMount POSTs the same anchored
+          note and the collab wire can frozen-fork here — without the bridge the twin never
+          refetches and `data-comment-card` never lands (F-R7DEP.2-3's deepest layer). */}
+      <EditorEventBridge slug={slug} />
+      <div data-spa-surface onSubmit={onSubmit} aria-busy={pending || undefined}>
+        {search["hc"] ? <HeldConsumedMarker token={search["hc"]} /> : null}
+        {/* R7WRITE.1a — the ReadOnlyProject notice moved into the page header strip (REQ-WRITE-6). */}
+        <ProjectOverviewBody
+          project={project}
+          {...(ro != null ? { readOnly: ro.reason } : {})}
+          compact={compact}
+          {...(pageView ? { page: pageView } : {})}
+          {...(page
+            ? {
+                pageHost: (
+                  <PageHost
+                    page={page}
+                    compact={compact}
+                    viewRef={viewRef}
+                    sourceMode={sourceMode}
+                    onSourceModeChange={setSourceMode}
+                  />
+                ),
+              }
+            : {})}
+          pageEmbeds={false}
+          onProposalAccept={seams.accept}
+          onProposalReject={seams.reject}
+        />
+        {mutError != null ? (
+          <p role="alert" className="ui-d-fs ui-set-t--warn ui-t-m03">
+            {mutError}
+          </p>
+        ) : null}
+      </div>
+    </ToastProvider>
   );
 }
 

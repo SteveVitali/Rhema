@@ -93,9 +93,11 @@ export function ToastProvider({
   return (
     <ToastContext.Provider value={queue}>
       {children}
-      <ul className="ui-toast-viewport" role="region" aria-label={viewportLabel}>
+      {/* `region`/`status` are live-area roles — disallowed on <ul>/<li> (aria-allowed-role).
+          The viewport+rows are plain divs carrying the same classes and roles. */}
+      <div className="ui-toast-viewport" role="region" aria-label={viewportLabel}>
         {toasts.map((toast) => (
-          <li
+          <div
             key={toast.id}
             role="status"
             className={`ui-toast ui-toast--${toast.tone ?? "neutral"}`}
@@ -112,9 +114,9 @@ export function ToastProvider({
             >
               ×
             </IconButton>
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
     </ToastContext.Provider>
   );
 }

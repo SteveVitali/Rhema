@@ -786,6 +786,52 @@ describe("R7WRITE.1b — anchored comments + the fork-undo toast (REQ-WRITE-2/7)
     expect(card?.textContent).toContain("tighten this claim");
   });
 
+  it("/p/:slug — rhema:comment-added invalidates the project twin; the margin card mounts (F-R7DEP.2-3, REQ-WRITE-2)", async () => {
+    // The working-head Page leaf carries the SAME `rhema:comment-added` bridge — without it the
+    // anchored Guidance's card never lands (T1e's [data-comment-card] timeout: the POST
+    // succeeded, the twin just never refetched). The refetch's answer carries the comment.
+    const commented = {
+      ...PROJECT_TWIN,
+      page: {
+        ...(PROJECT_TWIN.page as Record<string, unknown>),
+        doc: {
+          ...DOC,
+          comments: [
+            {
+              id: "g_1",
+              text: "tighten this claim",
+              anchor: { blockId: "b_1", quote: "Body text.", startOffset: 2, endOffset: 12, confidence: 1 },
+              createdAt: "2026-10-02T00:00:00Z",
+            },
+          ],
+        },
+      },
+    } as BffProjectTwin;
+    const inner = makeFetch();
+    let serveComment = false;
+    const impl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      const path = url.split("?")[0]!;
+      if (serveComment && init?.method === "GET" && path === `/bff/p/${SLUG}`) {
+        return jsonResponse(200, commented);
+      }
+      return inner.impl(input, init);
+    });
+    await mountAt(`/p/${SLUG}`, bootFor(SPA_EDITOR), impl);
+    await vi.waitFor(() => expect(el()!.querySelector("[data-page-view]")).not.toBeNull());
+    expect(el()!.querySelector("[data-comment-card]")).toBeNull();
+    serveComment = true;
+    await act(async () => {
+      window.dispatchEvent(new CustomEvent("rhema:comment-added", { detail: {} }));
+    });
+    // the bridge's invalidate re-asks the `["bff","p",slug]` twin; the comment renders a card.
+    await vi.waitFor(() => expect(el()!.querySelector("[data-comment-card]")).not.toBeNull());
+    const card = el()!.querySelector<HTMLElement>("[data-comment-card]")!;
+    expect(card.dataset["commentCard"]).toBe("g_1");
+    expect(card.dataset["anchorBlock"]).toBe("b_1");
+    expect(card.textContent).toContain("tighten this claim");
+  });
+
   it("rhema:fork-toast pushes the 'reviewed version' toast with the Undo action (REQ-WRITE-7)", async () => {
     const f = makeFetch();
     await mountAt(`/p/${SLUG}/v/7`, bootFor(SPA_EDITOR), f.impl);
