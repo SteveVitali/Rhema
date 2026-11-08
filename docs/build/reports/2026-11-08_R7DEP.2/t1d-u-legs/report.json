@@ -1,0 +1,126 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "8653c971bc2b",
+  "startedAt": "2026-11-08T00:21:05.960Z",
+  "finishedAt": "2026-11-08T00:22:55.382Z",
+  "webBaseUrl": "https://rhema-pr-293-web-723313c-tkbl73n3tq-uc.a.run.app",
+  "apiBaseUrl": "https://rhema-pr-293-api-e35a071-tkbl73n3tq-uc.a.run.app",
+  "provenance": {
+    "expected": "e143828f78b47b227818291a2b4a9eef7ea5fda1",
+    "observed": {
+      "web": "e143828f78b47b227818291a2b4a9eef7ea5fda1",
+      "api": "e143828f78b47b227818291a2b4a9eef7ea5fda1"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "U1.shell",
+      "journey": "returning",
+      "owner": "R7SHELL.1a",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 9173,
+      "screenshot": "U1.shell.png"
+    },
+    {
+      "id": "U2.noreload",
+      "journey": "returning",
+      "owner": "R7RELOAD.1",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 34239,
+      "error": "locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-shell-recent]:not([data-shell-recent=\"showcase\"])').first()\n    - locator resolved to <a href=\"/p/untitled-4\" data-shell-recent=\"untitled-4\" class=\"app-shell-item app-shell-recent\">…</a>\n  - attempting click action\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 100ms\n    58 × waiting for element to be visible, enabled and stable\n       - element is not visible\n     - retrying click action\n       - waiting 500ms\n",
+      "screenshot": "U2.noreload.png"
+    },
+    {
+      "id": "U3.occlusion",
+      "journey": "returning",
+      "owner": "R7PANE.1",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2228,
+      "error": "the right panel did not open on demand at 1440×900",
+      "screenshot": "U3.occlusion.png"
+    },
+    {
+      "id": "U4.controls",
+      "journey": "returning",
+      "owner": "R7KIT.3e",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 5944,
+      "screenshot": "U4.controls.png"
+    },
+    {
+      "id": "U5.write",
+      "journey": "returning",
+      "owner": "R7WRITE.1b",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 39163,
+      "error": "locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-comment-submit]').first()\n",
+      "screenshot": "U5.write.png"
+    },
+    {
+      "id": "U6.chat",
+      "journey": "returning",
+      "owner": "R7TALK.1a",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 3958,
+      "screenshot": "U6.chat.png"
+    },
+    {
+      "id": "U7.import",
+      "journey": "returning",
+      "owner": "R7HOME.2a",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 10952,
+      "screenshot": "U7.import.png"
+    },
+    {
+      "id": "R8.showcase.spa",
+      "journey": "returning",
+      "owner": "R7RO.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 3061,
+      "screenshot": "R8.showcase.spa.png"
+    }
+  ],
+  "passed": true
+}

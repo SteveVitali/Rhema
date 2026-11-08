@@ -310,3 +310,35 @@ round-3 re-walk + the real hero capture; tear down at once at $20 measured.
 **PAUSE — fourth defect-boundary.** `D-R7FIX.1-2`/`D-R7FIX.2-1`/`D-R7FIX.3-1` each verified
 partial; two legs remain (U2 chat-send sequencing, U5 format-bubble arm). Owner round 4. Preview
 stays UP at `d372de85`; ~$11.5 of $20; tear down at once at $20 measured.
+
+## RESUME — defect boundary round 4 closed by `250d_R7FIX.4` (PR #297, unmerged OPERATOR)
+
+- 2026-11-08T01:xxZ — **250d_R7FIX.4 landed at `3833209`** (CI pass #297, run `42424967401`;
+  records-head re-read `e143828f` also all-green, run `42427709159`; **`e143828f` = composed
+  tip**: my Part-B records + all four fix rounds). Both remaining legs were leg-side bugs, the
+  surface honest: U2's `chatTab.click()` re-ordered to the reader's sequence (blur → `]` →
+  `waitForSelector('.ide[data-panel="open"]')` → click; the `.catch` swallow removed); U5's
+  `selectText()` replaced with a real pointer-drag across the paragraph (the bubble mount was
+  intact at head — the arm had never been exercised because title-focus failed ×3 first).
+  `stevevitali/r7dep-2-t1-prod` advanced to `e143828f`. H16 re-checked: still
+  **not-dispositioned**. Journeys dist rebuilt; Cloud Build `40eda3ed` all-10 @ `e143828f`
+  (`_TAG=r7dep-2-t1d`).
+- 2026-11-08T02:xxZ — Cloud Build `40eda3ed` SUCCESS, all-10 @ `e143828f`; digests
+  `logs/r7dep2/pr293-digests-t1d.txt`; `up` 11 updates + proxy replace (1m34s, zero destructive).
+  **Provenance: web+api `/healthz/` → `e143828f…` — fourth in-place update.**
+- 2026-11-08T02:xxZ — **T1d re-walk at `e143828f`** (`t1d-u-legs/`, `--expect-sha` match, $0):
+  **U1.shell, U4.controls, U6.chat, U7.import ready-to-flip + R8.showcase.spa PASS** (green ×2
+  runs). `U3.occlusion` reported owed on "right panel did not open on demand @1440×900" — an
+  isolated retry at the SAME SHA **PASSED** (`/tmp/r7dep2/u3-retry`; the `]` press raced the
+  listener mount — recorded as a timing flake for the owner, not a regression). Two legs remain:
+
+| Leg | T1d state | Root cause for round 5 |
+|---|---|---|
+| U2.noreload | owed — evolved | chat-send now passes; the peer-recent hop's `.first()` `[data-shell-recent]:not(=showcase)` resolves `untitled-4` — in DOM but `element is not visible` (the recents group renders it collapsed/overflowed; leg needs the first VISIBLE writable recent or a disclosure step). |
+| U5.write | owed — evolved | title-focus + pointer-drag bubble BOTH pass now; `[data-comment-submit]` is absent after the comment composer opens (composer mounts, its submit hook isn't where the leg expects — or the anchored selection didn't persist). |
+| U3.occlusion | **ready-to-flip** (retry PASS, first-run `]`-press race recorded) | — |
+| U1/U4/U6/U7, R8.showcase.spa | green | — |
+
+**PAUSE — fifth defect-boundary.** Two legs remain (U2 recents visibility, U5 comment-submit
+hook) — both owner dispositions again. U3's flake is worth a hardening note but its retry is
+green at the same SHA. Preview stays UP at `e143828f`; ~$12 of $20; teardown at once at $20.
