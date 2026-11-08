@@ -335,3 +335,36 @@ its DEFERRALS cell. None was closeable by an offline ticket; none was fabricated
   decides at row 170).
 - **Build state: IN_PROGRESS.** `nextTicket` → `GATE-ACCEPT.R5` (row 170 — an operator
   gate). Nothing is merged; nothing is claimed DONE.
+
+## §R7 — the list GATE-ACCEPT.R7 signs (drafted by 251_R7CAP.1, 2026-11-08)
+
+Round 7 has no CAP.3; this section is the acceptance-list draft produced by R7CAP.1
+(`docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md`). The operator signs this list — or
+rules each item — at 252_GATE-ACCEPT.R7.
+
+### (a) Deployed + coverage posture signed as round-7 close
+
+Prod serves `e578a767` (provenance all-PASS web+api); both phase deploys ran under
+GD-DEPLOY.R7 with deployments rows + CDN invalidations; preview spend ≈$14/$20.
+Coverage: 135/135 round-7 REQ ids verdicted — 111 MET · 18 MET-ENGINEERED · 1 PARTIAL ·
+3 MISSING→routed (252/253/254) · 1 N/A (REQ-WRITE-3→BL-97). Finding map: 0 unmapped.
+Deferral census: no round-7 OPEN row without owner+date.
+
+### (b) Deferrals accepted into the tail
+
+| row | what is owed | owner |
+|---|---|---|
+| bespoke-capture bundle (~30 rows: D-R7KIT.1-1, D-R7COPY.0-1/-1b-1/-1c-1, D-R7SHELL.1b-1/-1c-1, D-R7TALK.1b-1, D-R7HOME.1-1/-2b-1, D-R7WRITE.1a-1, D-R7KIT.3{a,a2,b,c2,d,f,e,1a,2a,1b,4b,5b,6a,6b}-1, D-R7RO.2-1, D-R7DEM.5-1/-4-1, D-R7SHELL.2-1, D-R7RELOAD.1-1, D-R7TALK.1a-1/-1a-2, D-R7WRITE.1b-1) | bespoke Stage-B captures beyond the green leg board | 253_R7REC.1 sweep |
+| D-R7DEM.2c-1 | parseDraftLedgerSections Roman-numeral fix | 253 → BL-100 |
+| D-R7TOUR.2-1 (prod arm) | D2.tour prod flip once the F-9 asset-class defect is fixed | the F-9 insert |
+| D-R7DEP.2-2 | F-10…F-14 product defects (credit copy, P1 links, axe, select, checkbox) | post-round defect insert |
+
+### (c) Deviations + waivers for signature
+
+- REQ-KIT-5: R7KIT.3a declared +15.3 kB vs the ≤15 kB allowance — honest declaration, ruling owed.
+- `U3.stopgap` superseded by `U3.occlusion` (R7a-era surface retired by R7b).
+- D2.tour's prod red is an asset-parity class (hero mp4 served 206 correctly), not tour code.
+- The one authorized paid U6 dispatch failed HTTP 402 (unfunded identity; metered $0.00; paused per GD-UX-PAIDLEG.R7) — paid re-dispatch authority is the operator's ruling.
+- HUMAN-H16 produced no F-R7UX-* rows — waived as skipped/undispositioned unless the operator rules otherwise.
+- Env-bound Stage-B legs recorded (`JOURNEY_DATABASE_URL`, unexpired token, pre-existing magic-link loop).
+- GD-DEPLOY.R7 + GD-UX-PAIDLEG.R7 expire at this signature.

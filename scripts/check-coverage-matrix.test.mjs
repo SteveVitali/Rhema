@@ -49,6 +49,13 @@ const R5_NON_IDS = new Set([
   "REQ-NAVC-15",
   "REQ-NAVC-24",
 ]);
+// R7CAP.1 — the round-7 corpus (`docs/round-7-draft-spec.md` v0.2, ratified GD-RATIFY.R7). All
+// round-7 families are uppercase with numeric suffixes (`REQ-[A-Z]+-[0-9]+`); ranges are written
+// with the Unicode ellipsis (`REQ-CORPUS-1…15`). Older-family ids the spec cites (REQ-IDE-*,
+// REQ-DATA-14, REQ-MOBILE-3, REQ-NAVM-7, REQ-GROWTH-*, REQ-EVAL-19, REQ-POS-3, REQ-SPEC-*) are
+// already authoritative through the design/SPA corpus, so adding the file only registers the
+// round-7 families.
+const R7_SPEC = readFileSync(`${ROOT}/docs/round-7-draft-spec.md`, "utf8");
 const MATRIX_PATH = `${ROOT}/docs/build/COVERAGE_MATRIX.csv`;
 const MATRIX = readFileSync(MATRIX_PATH, "utf8");
 const DEFERRALS = readFileSync(`${ROOT}/docs/tickets/DEFERRALS.md`, "utf8");
@@ -150,6 +157,14 @@ for (const m of R5_SPEC.matchAll(
   }
 }
 for (const id of R5_NON_IDS) specIds.delete(id);
+// Round 7: bare ids plus `…` (U+2026) ranges.
+for (const m of R7_SPEC.matchAll(/REQ-([A-Z]+)-(\d+)/g)) {
+  specIds.add(`REQ-${m[1]}-${m[2]}`);
+}
+for (const m of R7_SPEC.matchAll(/REQ-([A-Z]+)-(\d+)…(\d+)/g)) {
+  for (let n = Number(m[2]); n <= Number(m[3]); n++)
+    specIds.add(`REQ-${m[1]}-${n}`);
+}
 const sortedSpecIds = [...specIds].sort();
 
 const rows = parseCsv(MATRIX);
