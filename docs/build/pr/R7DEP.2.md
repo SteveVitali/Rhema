@@ -46,3 +46,50 @@ Preview: measured vs the $20 round cap (224's ≈$8 carried in). Inference: the 
 
 OPERATOR — the run never merges its own PR; deploy acts are pre-authorized under the ticket's
 quoted `GD-*` rulings only.
+
+## Closeout — 2026-11-08 (prod @ `e578a767`)
+
+- **Part A complete.** One preview `pr-293` (created once, updated in place 7×): full T0 walk →
+  six owner insert rounds (250a–f) → **all-16 board green at `d0a77d0`** → U1–U7 flipped
+  `expected:"green"` → hero clip + poster landed (13.72 s, 780,708 B, muted, 1280×720 —
+  ADR-127 bytes+sha256 completed) → T1 `e578a767` re-walk green (N10, R8.showcase, P1.public,
+  D1.hub, U1.shell, R8.showcase.spa) → hero vitals LCP 184–304 ms / CLS 0.000 → teardown:
+  `destroy` ×4 (147+51 deleted — a Google-managed `serverless-ipv4-cloudrun-…023` lease held the
+  private subnet ~65 min then auto-released) → **zero-orphan sweep 9 families, 0** → `rm`.
+  Preview spend ≈ **$14 of $20**; inference $0.
+- **Part B — all eight `GD-DEPLOY.R7` conditions evidenced in order:** build `7d470657` all-10
+  @ `e578a767` (`_TAG=r7dep-2`, `rhema-prod` AR, `_ALLOW_PLACEHOLDER_SDK=0`, worktree at the
+  exact SHA) · `pulumi preview --diff` classified — 10 updates + 1 stateless InstanceTemplate
+  replace, zero stateful/delete, additive-only migrations, cost Δ≈$0 ≤$15 · `0062_drafts_discard`
+  applied via `prod-migrate-seed` over the operator IAP tunnel (in-band additive lint PASS, 62
+  recorded) · `pulumi up --stack prod` update 174 (1m42s) · **`check-deploy-provenance`
+  all-PASS** — `rhema.tools` + `api.rhema.tools` → `e578a767…` · `deployments` row
+  `prod:e578a767…` (`protocols_version 0.4.0+9c2b880dbee74bd8`) · committed rollback recipe
+  (the `4bc8cf4a`/`c6d7dedb` digest set — never executed, the operator's go) · corpus-in-web-image
+  asserted (in-build `RUN test -s` step `#15` green on the deployed digest `259973f9…`) · CDN
+  invalidation `/bff/p/demo~*` on `rhema-prod-urlmap-6f2b86e` host `rhema.tools` (dry-run==act).
+- **Stage B at prod T1** (`prod-stageb/`, 150+ captures): **U1–U7 all FLIP green at the deployed
+  SHA** — the ticket's named flip set lands minus D2.tour. Green: D1.hub, D3.readonly, P1.demo,
+  R11.demo, P1.public, N10, R8.showcase/spa/prefs/inbox, X1.*, T1–T3/T17, C1, R1/R5/R7/R10.keepalive,
+  N2–N4/N7, P1.dossier. **`D-R7GUARD.1-1` closed (prod arm).**
+- **Honest red tally (12 legs — F-R7DEP.2-9…16, DEFERRALS `D-R7DEP.2-2`):** new-at-T1 reds —
+  D2.tour (hero mp4 206 counted by bundle parity; the clip first exists at T1), N9 (credits
+  copy), P1.project/pill/runsheet/outline/figures (`.first()` picks the out-of-viewport
+  `showcase-copy` recent), P1.app-new (2 WCAG), T4, T5; still-red pre-existing — N1/N3 (evolved
+  shape), N8, T6; env-bound skipped — T7/R6F/T12F/T13F (`JOURNEY_DATABASE_URL` unbound), T8
+  (D-FIX.1-1); `U3.stopgap` superseded (U3.occlusion green is the R7b arm). Compared against the
+  Nov-7 nightly artifact (`journey-report-42374280018`) — none silently greened.
+- **The ONE U6 paid run — FAILED, pause per `GD-UX-PAIDLEG.R7`.** Mechanism: the 232-updated
+  paid `R4` row (`--paid --headroom 0.5`, `capUsd` $0.50 at target, `cogsLevers
+  {testCheapRoute:false}`, Base tier, system-role DSN; ISO-week metered $3.34352 < $5 preflight).
+  The turn POST answered **HTTP 402** — the journey identity carried no credits; the status poll
+  never returned `optimistic`. **Metered spend $0.00** (usage_records delta 0; debits == burn:
+  $0=$0). No second run — the single authorized dispatch was consumed; re-dispatch needs a fresh
+  operator ruling (`D-R7DEP.2-1`). No pause sentinel written or cleared.
+- **REQ-SPEED-5 prod primary** @ `e578a767`, N=20, 2026-11-08T08:59Z: hard-open p75 **123 ms**
+  (≤1200), warm-open p75 **116 ms** (≤400), pending-indicator −1 (0 samples). Preview record:
+  147/119/−1. No regressions.
+- **Post-deploy nightly dispatched** — run `42465216426` (`paid=false`,
+  `expect-sha=e578a767…`, ref `stevevitali/r7dep-2-t1-prod`).
+- **Golden classification:** non-affecting; **$0** (no rerun). **Spend:** preview ≈$14/$20;
+  paid leg $0.00; golden $0. **Provenance re-read at close:** see run ledger.
