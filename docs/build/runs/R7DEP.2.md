@@ -431,6 +431,13 @@ green at the same SHA. Preview stays UP at `e143828f`; ~$12 of $20; teardown at 
   `node scripts/live/preview-stack.mjs destroy pr-293` after the reservation releases
   (~30–60 min post-service-delete), then the zero-orphan sweep, then `rm pr-293`, then the
   spend read.** The stack is otherwise reduced to network residue.
+- 2026-11-08T23:5xZ/00:1xZ — **destroy retries #2+#3:** 9 more deleted (147 total); the
+  `serverless-ipv4-cloudrun-1794077420824796023` lease is STILL `RESERVED` at ~55 min post-delete
+  (auto-release timing varies; a passive GCP wait — the preview surface is down, only network
+  residue remains: ~54 stack resources, all behind the held subnet). **RETRY LOOP (operator may
+  run):** `gcloud compute addresses describe serverless-ipv4-cloudrun-1794077420824796023
+  --region us-central1 --format='value(status)'` — when the read 404s/IN_USE clears, re-run
+  `node scripts/live/preview-stack.mjs destroy pr-293` → orphan sweep → `rm pr-293` → spend read.
 - NEXT: destroy-retry → orphan sweep → `rm` → spend read → **Part B** GD-DEPLOY.R7's 8
   conditions → prod `pulumi up` @ `e578a767` → provenance → deployments row → CDN invalidate
   `/bff/p/demo~*` → corpus-in-image → Stage B at T1 → U6 paid (<$10) → SPEED-5 prod → nightly
