@@ -320,4 +320,32 @@ describe("R7WRITE.1b — the Comment bubble item (REQ-WRITE-2; UXC-23, I5)", () 
     expect(document.querySelector("[data-comment-composer]")).toBeNull();
     expect(document.querySelector("[data-format-bubble]")).toBeNull();
   });
+
+  it("the composer survives its own selection-collapse — collapse elsewhere still closes (F-R7DEP.2-3ev)", async () => {
+    await mount(<div data-pane="page" />);
+    selectInPage({ top: 300, bottom: 340, left: 200, right: 500 });
+    await mouseUp();
+    const comment = document.querySelector<HTMLElement>('[data-format-item="comment"]')!;
+    await act(async () => {
+      comment.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    const input = document.querySelector<HTMLTextAreaElement>("[data-comment-input]")!;
+    expect(input).not.toBeNull();
+    // 250e R7FIX.5 — the real-browser sequence the deployed surface hit: focusing the
+    // composer textarea collapses the document selection and fires selectionchange.
+    // The menu in use is never a lost selection — the composer + its Post must survive.
+    await act(async () => {
+      window.getSelection()?.removeAllRanges();
+      input.focus();
+      document.dispatchEvent(new Event("selectionchange"));
+    });
+    expect(document.querySelector("[data-comment-composer]")).not.toBeNull();
+    expect(document.querySelector("[data-comment-submit]")).not.toBeNull();
+    // contrast: the collapse landing ELSEWHERE (focus left the menu) still dismisses.
+    await act(async () => {
+      input.blur();
+      document.dispatchEvent(new Event("selectionchange"));
+    });
+    expect(document.querySelector("[data-comment-composer]")).toBeNull();
+  });
 });

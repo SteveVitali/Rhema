@@ -1289,6 +1289,19 @@ const U2_NORELOAD: StepFn = async (ctx) => {
   // project → a peer recent → back to /app: the Showcase hops above already settled as
   // client navigations (never the REQ-ED-12 document swap); the wordmark exit keeps the
   // whole walk inside the one document.
+  // F-R7DEP.2-1ev — chat-send leaves the right panel OPEN, and at the harness's 1280-px
+  // signed-in viewport an open panel is the paneLayout rail ceiling (REQ-PANE-2, tested):
+  // `data-ide-sidebar="rail"` puts the sidebar's whole recents group display:none — in
+  // DOM but honestly unactionable (T1d's invisible `untitled-N` pick). A reader who is
+  // done with the panel closes it first (the same `]` toggle — a bare chrome chord, so
+  // the caret blurs out of any focus zone first); the sidebar re-expands and the
+  // recents return. A panel that refuses to close is its own defect — the wait throws.
+  const ideAtPeer = page.locator(".ide").first();
+  if ((await ideAtPeer.getAttribute("data-panel")) === "open") {
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    await page.keyboard.press("]");
+    await page.waitForSelector('.ide[data-panel="closed"]', { timeout: 5_000 });
+  }
   const peer = page
     .locator('[data-shell-recent]:not([data-shell-recent="showcase"])')
     .first();

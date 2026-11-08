@@ -1019,7 +1019,19 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
     const onDocSelectionChange = (): void => {
       const sel = window.getSelection();
       const kind = cmdMenu?.dataset["kind"];
-      if ((kind === "selection" || kind === "format-bubble") && (!sel || sel.isCollapsed)) closeCmdMenu();
+      // F-R7DEP.2-3ev (250e R7FIX.5) — the collapse close dismisses the bubble when the
+      // selection is lost ELSEWHERE. A composer inside the menu (the Comment/Link input)
+      // legitimately collapses the document selection by taking focus itself — the menu
+      // in use is never a lost selection, so it must not close. Without the guard the
+      // composer's own focus() fired this handler on open and removed the whole form —
+      // T1d's missing data-comment-submit (a real REQ-WRITE-2 write-path defect, proven
+      // in a live-browser repro).
+      if (
+        (kind === "selection" || kind === "format-bubble") &&
+        (!sel || sel.isCollapsed) &&
+        !(document.activeElement != null && (cmdMenu?.contains(document.activeElement) ?? false))
+      )
+        closeCmdMenu();
     };
     const onContextMenu = (e: MouseEvent): void => {
       const pane = (e.target as HTMLElement | null)?.closest('[data-panel-body="timeline"], [data-pane="timeline"]');
