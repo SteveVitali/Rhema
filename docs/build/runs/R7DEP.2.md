@@ -561,3 +561,9 @@ Rollback of the R7b deploy = the R7DEP.1 recipe shape with this round's pins:
   makes the server render `data-hero-video`). Fixed as flip-catch-up at `53946e6f` (the
   placeholder arm is now proven via `heroClip:false`; the round-7 census asserts green +
   real-fail classification). 48/48 tests in the three files re-run green locally.
+- 2026-11-08T10:2xZ — **CI boundary second read:** `typecheck/lint/unit` PASS at `53946e6f`
+  (the flip-catchup) + fast-path/contracts/public-safe green; **`images` leg FAIL twice on the
+  SAME external cause: `curl (22) 504` fetching pandoc+typst from github.com releases** (the
+  convert Dockerfile's pinned-download step). Not diff-caused — the identical image built clean
+  in Cloud Build `7d470657` ~1 h earlier; a github release-CDN outage window. Rerun #3 queued;
+  record `logs/ci-R7DEP.2.json`.
