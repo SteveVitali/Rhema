@@ -1436,3 +1436,5 @@ decomposition) predate the convention and remain in the prior region verbatim._
 - 2026-11-08 — **R7CAP.1 done — round-7 capstone gap analysis (row 301; Stage A, $0, read-only):** 135/135 REQ ids verdicted (111 MET · 18 MET-ENGINEERED · 1 PARTIAL · 3 routed · 1 N/A); finding map 0 unmapped; deferral census leaves no OPEN row without owner+date; GATE-ACCEPT.R7 list drafted in CAPSTONE_CLOSURE §R7.
 
 - 2026-11-08 — **ci boundary — R7CAP.1** — #301 @ aa144f46: fast-path pass; typecheck/lint/unit pending at read. **Stack read 11:38:54Z:** #300 (R7DEP.2) FAIL on images + integration — external GitHub CDN 504 on the dumb-init tarball fetch (recorded externally blocked, not a code failure); typecheck/contracts/public-safe pass; #293↓ pass.
+
+- 2026-11-08 — **ci boundary — R7CAP.1 (final)** — #301 @ b1edd7b7 @12:08:15Z:  leg FAIL on the external GitHub CDN 504 (dumb-init fetch — same outage hitting #300; externally blocked, not a code failure); typecheck/lint/unit + contracts + public-safe + integration + fast-path all PASS.
