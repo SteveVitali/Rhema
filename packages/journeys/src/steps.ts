@@ -88,16 +88,36 @@ const ASSET_CONTENT_TYPE: Readonly<Record<string, string>> = {
   webp: "image/webp",
   woff2: "font/woff2",
   json: "application/json",
+  mp4: "video/mp4",
+  webm: "video/webm",
 };
 
-/** Bundle-parity leg (PR-J4; REQ-TL-13): every served `/assets/**` response came back 200 with the
- *  content-type its extension family carries — island `/assets/<entry>.js`, SPA manifest assets
- *  under `/assets/spa/**`, and the self-hosted fonts — and the visited pages produced no console
- *  error / failed request (deliverable 7's full contract). */
+/** R7FIX.7 (F-R7DEP.2-9) — the range-served media families: a `<video>`/`<audio>` element
+ *  negotiates bytes through `Range` requests, and the CORRECT answer is `206 Partial Content`
+ *  (the hero clip's `GET /assets/media/hero-tour.mp4 → 206/video/mp4` is the deployed asset
+ *  working as designed — the CDN-warmed arm reads 200, the cold ranged arm 206; both are
+ *  success). A 206 on any other extension family still fails the parity check. */
+const RANGE_MEDIA_EXT: ReadonlySet<string> = new Set([
+  "mp4",
+  "webm",
+  "m4a",
+  "mp3",
+  "wav",
+  "ogg",
+  "mov",
+]);
+
+/** Bundle-parity leg (PR-J4; REQ-TL-13): every served `/assets/**` response came back 200 —
+ *  or, for a range-served media family, 206 Partial Content — with the content-type its
+ *  extension family carries — island `/assets/<entry>.js`, SPA manifest assets under
+ *  `/assets/spa/**`, self-hosted fonts, and the `/assets/media/` hero clip — and the visited
+ *  pages produced no console error / failed request (deliverable 7's full contract). */
 export function assertBundleParity(ctx: StepCtx): void {
   const bad = ctx.assetHits.filter((h) => {
-    if (h.status !== 200) return true;
     const ext = /\.(\w+)(?:[?#]|$)/.exec(new URL(h.url).pathname)?.[1];
+    const statusOk =
+      h.status === 200 || (h.status === 206 && ext != null && RANGE_MEDIA_EXT.has(ext));
+    if (!statusOk) return true;
     const expected = ext != null ? ASSET_CONTENT_TYPE[ext] : undefined;
     return expected != null && !(h.contentType ?? "").includes(expected);
   });

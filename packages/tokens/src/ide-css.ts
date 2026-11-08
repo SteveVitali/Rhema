@@ -432,8 +432,11 @@ export function ideCss(): string {
     `@media (min-width: ${B.bpPhonePx}px) and (max-width: ${B.bpSingleColumnPx - 1}px) {`,
     `  .app-shell[data-ide-sidebar='drawer'] .app-shell-topbar { display: flex; flex: 0 0 ${B.topBarPx}px; align-items: center; gap: var(--s3); padding: 0 var(--s3); background: var(--shell-surface); border-bottom: 1px solid var(--shell-border); font-size: var(--fs-dense, 13px); }`,
     "  .app-shell[data-ide-sidebar='drawer'] .app-shell-topbar button { display: inline-flex; align-items: center; justify-content: center; min-width: 36px; min-height: 36px; border: none; border-radius: var(--radius-2); background: none; color: var(--shell-fg-muted); cursor: pointer; }",
-    `  .app-shell[data-ide-sidebar='drawer'] .app-shell-sidebar { position: fixed; left: 0; top: ${B.topBarPx}px; bottom: 0; transform: translateX(-100%); transition: transform var(--dur-pane, 160ms) ease; }`,
-    "  .app-shell[data-ide-sidebar='drawer'][data-drawer='open'] .app-shell-sidebar { transform: none; box-shadow: 8px 0 24px rgba(0,0,0,0.35); }",
+    // R7FIX.7 (F-R7DEP.2-11) — an off-canvas drawer must not leave its links visible/focusable
+    // while closed: `visibility` joins the slide so keyboard focus and hit-testing can never
+    // reach a control the user cannot see. The delayed visibility flip lets the slide finish.
+    `  .app-shell[data-ide-sidebar='drawer'] .app-shell-sidebar { position: fixed; left: 0; top: ${B.topBarPx}px; bottom: 0; transform: translateX(-100%); visibility: hidden; transition: transform var(--dur-pane, 160ms) ease, visibility 0s linear var(--dur-pane, 160ms); }`,
+    "  .app-shell[data-ide-sidebar='drawer'][data-drawer='open'] .app-shell-sidebar { transform: none; visibility: visible; transition: transform var(--dur-pane, 160ms) ease; box-shadow: 8px 0 24px rgba(0,0,0,0.35); }",
     "  .app-shell[data-ide-sidebar='drawer'][data-drawer='open'] .app-shell-scrim { display: block; position: fixed; inset: 0; z-index: 25; background: rgba(0,0,0,0.45); border: none; }",
     "}",
     // <768 (desktop UA): off-canvas drawer behind a 48-px top bar; the IDE's side panes open as
@@ -442,8 +445,8 @@ export function ideCss(): string {
     `  .app-shell-topbar { display: flex; flex: 0 0 ${B.topBarPx}px; align-items: center; gap: var(--s3); padding: 0 var(--s3); background: var(--shell-surface); border-bottom: 1px solid var(--shell-border); font-size: var(--fs-dense, 13px); }`,
     "  .app-shell-topbar button { display: inline-flex; align-items: center; justify-content: center; min-width: 36px; min-height: 36px; border: none; border-radius: var(--radius-2); background: none; color: var(--shell-fg-muted); cursor: pointer; }",
     "  .app-shell-topbar button:hover { background: var(--shell-raised); color: var(--shell-fg); }",
-    `  .app-shell-sidebar { position: fixed; left: 0; top: ${B.topBarPx}px; bottom: 0; transform: translateX(-100%); transition: transform var(--dur-pane, 160ms) ease; box-shadow: none; }`,
-    "  .app-shell[data-drawer='open'] .app-shell-sidebar { transform: none; box-shadow: 8px 0 24px rgba(0,0,0,0.35); }",
+    `  .app-shell-sidebar { position: fixed; left: 0; top: ${B.topBarPx}px; bottom: 0; transform: translateX(-100%); visibility: hidden; transition: transform var(--dur-pane, 160ms) ease, visibility 0s linear var(--dur-pane, 160ms); box-shadow: none; }`,
+    "  .app-shell[data-drawer='open'] .app-shell-sidebar { transform: none; visibility: visible; transition: transform var(--dur-pane, 160ms) ease; box-shadow: 8px 0 24px rgba(0,0,0,0.35); }",
     "  .app-shell[data-drawer='open'] .app-shell-scrim { display: block; position: fixed; inset: 0; z-index: 25; background: rgba(0,0,0,0.45); border: none; }",
     "  .app-shell-content { padding-top: 0; }",
     `  .ide[data-ide-hosted] .ide-panel[data-open] { position: absolute; left: auto; right: 0; top: 0; bottom: 0; width: min(var(--panel-w, ${B.timelinePx}px), 90vw); height: auto; z-index: 20; box-shadow: -8px 0 24px rgba(0,0,0,0.35); }`,

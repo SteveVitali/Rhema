@@ -51,7 +51,6 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { PageBody, PageHeader } from "../page-header.js";
 import {
   Button,
-  Checkbox,
   MarkdownProse,
   RadioGroup,
   RadioGroupItem,
@@ -728,11 +727,26 @@ function VoiceSourceCard({ pid, conn, samples }: { pid: string; conn: VoiceConne
       {/* the per-source settings (§9.5 Settings): auto-include + daily auto-sync. */}
       <form method="post" action={`/v/${pid}/connections/${conn.id}/settings`} data-source-settings-form="true" className="ui-set-form ui-set-t--sm ui-set-t--m">
         <label className="ui-set-form">
-          <Checkbox name="autoIncludeNew" defaultChecked={conn.auto_include_new !== false} aria-label={VC.detail.autoIncludeLabel} />
+          {/* R7FIX.7 (F-R7DEP.2-14) — the named GUARD-1 exemption: the source-settings form is a
+              native document POST, so its checkbox carriers stay KIT-1-styled native inputs
+              (RV-36). The Radix migration left `input[name="autoIncludeNew"]` as Radix's own
+              aria-hidden pointer-inert BubbleInput under the card — the field was untogglable
+              for the leg AND invisible to anyone inspecting the form grammar. */}
+          <input
+            type="checkbox"
+            name="autoIncludeNew"
+            defaultChecked={conn.auto_include_new !== false}
+            aria-label={VC.detail.autoIncludeLabel}
+          />
           {VC.detail.autoIncludeLabel}
         </label>
         <label className="ui-set-form">
-          <Checkbox name="dailySync" defaultChecked={conn.schedule === "daily"} aria-label={VC.detail.dailySyncLabel} />
+          <input
+            type="checkbox"
+            name="dailySync"
+            defaultChecked={conn.schedule === "daily"}
+            aria-label={VC.detail.dailySyncLabel}
+          />
           {VC.detail.dailySyncLabel}
         </label>
         <Button type="submit" variant="ghost" size="sm">{VC.detail.saveSettingsCta}</Button>
@@ -745,7 +759,15 @@ function VoiceSourceCard({ pid, conn, samples }: { pid: string; conn: VoiceConne
             {pending.map((s) => (
               <li key={s.id} data-review-item={s.external_id ?? s.id} className="ui-set-form ui-set-t--sm">
                 <HiddenField name="known" value={s.external_id ?? ""} />
-                <Checkbox name="include" value={s.external_id ?? ""} defaultChecked={s.access === "free"} aria-label={s.title ?? s.external_id ?? s.id} />
+                {/* same native-post carrier exemption — the include flag posts `include=<id>`
+                    per checked row, identically to the pre-migration input. */}
+                <input
+                  type="checkbox"
+                  name="include"
+                  value={s.external_id ?? ""}
+                  defaultChecked={s.access === "free"}
+                  aria-label={s.title ?? s.external_id ?? s.id}
+                />
                 <span className="ui-vc-grow">{s.title ?? s.external_id ?? s.id}</span>
                 {s.access === "paywalled" ? (
                   <span className="ui-set-t--warn">{VC.detail.paywallBadge}</span>

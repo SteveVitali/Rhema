@@ -207,7 +207,15 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
       if (id && typeof state[id] === "boolean") b.setAttribute("aria-checked", String(state[id]));
     }
     for (const b of ide.querySelectorAll<HTMLElement>("[data-ide-panel-tab], [data-ide-desk-tab]")) {
-      b.setAttribute("aria-selected", String((b.dataset["idePanelTab"] ?? b.dataset["ideDeskTab"]) === state.panelTab));
+      // R7FIX.7 (F-R7DEP.2-12) — `aria-selected` is a TAB-state attribute (axe aria-allowed-attr
+      // fails it on a plain button): non-tab hook carriers — e.g. the empty Page's "Ask in chat"
+      // ghost Button, which rides the same delegated activation arm without being a tab — must
+      // never carry it.
+      if (b.getAttribute("role") === "tab") {
+        b.setAttribute("aria-selected", String((b.dataset["idePanelTab"] ?? b.dataset["ideDeskTab"]) === state.panelTab));
+      } else {
+        b.removeAttribute("aria-selected");
+      }
     }
     applySuggestions(state.suggestionsInline === true);
   }, [ideEl, applySuggestions, presentationNow]);
