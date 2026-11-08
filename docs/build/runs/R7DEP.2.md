@@ -547,3 +547,17 @@ Rollback of the R7b deploy = the R7DEP.1 recipe shape with this round's pins:
 6. The SPA renderer flags/keys do not exist to flip (renderer rollback is a code rollback,
    gotcha 7). A prod incident attributed to this deploy voids `GD-DEPLOY.R7` — rollback
    is then the operator's go.
+- 2026-11-08T09:4xZ — **post-deploy nightly `42465216426` completed: FAIL (honest tally).**
+  Its reds largely match the direct Stage-B set — N1/N3 (magic-link loop), N8, T4/T5/T6,
+  P1.project/pill/runsheet/outline/figures, P1.app-new — plus DB-bound legs that ran there:
+  T7 (purge-job variant), T12F/T13F — and **U2.noreload + U5.write evolved again** (the two
+  flakiest seams: `.first()` recent pick / bounding-box — they were green in the direct run).
+  **D2.tour PASSED on the nightly** — the direct run's 206-parity fail did not reproduce
+  (CDN-warmed path; F-9 stays open as the intermittent-class record, the leg is deploy-green).
+- 2026-11-08T09:3xZ — **CI boundary first read: FAIL on #300 (typecheck/lint/unit, run
+  42465484349)** — three test-side gaps surfaced by the flip commit, none product code:
+  `registry.test.ts` + `runner.test.ts` pinned the pre-flip owed census (U1–U7 now green),
+  `marketing.test.ts` pinned `data-hero-placeholder` on the served `/` (the committed clip
+  makes the server render `data-hero-video`). Fixed as flip-catch-up at `53946e6f` (the
+  placeholder arm is now proven via `heroClip:false`; the round-7 census asserts green +
+  real-fail classification). 48/48 tests in the three files re-run green locally.
