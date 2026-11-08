@@ -392,8 +392,37 @@ green at the same SHA. Preview stays UP at `e143828f`; ~$12 of $20; teardown at 
   U4.controls, U5.write, U6.chat, U7.import ALL ready-to-flip** + **R8.showcase.spa PASS** (×4
   consecutive — the regression durably closed). **The board is closed** — every `F-R7DEP.2-*`
   finding verified fixed at the deployed tip; `D-R7FIX.1-2…D-R7FIX.6-1` dispositions follow.
-- NEXT: committed hero-capture at `d0a77d0` → `public/media/` assets + ADR-127 row + registry
-  flips + DEFERRALS closures → **T1 commit** → rebuild all-10 at T1 → in-place update → T1
-  re-walk set + hero LCP/CLS → teardown (destroy→orphan→rm) → spend read → **Part B**: GD-DEPLOY.R7's 8
-  conditions → prod `pulumi up` @ T1 → provenance → deployments row → CDN invalidate
-  `/bff/p/demo~*` → Stage B → U6 paid (<$10) → SPEED-5 → close-out records/PR/CI boundary.
+- 2026-11-08T22:0xZ — **committed hero capture at `d0a77d0`** (the fixed recipe, `/healthz/`
+  provenance): clip `13.8s / 780,708B / 1280×720 / no audio` sha256 `8f4bda23…`, poster `5,769B`
+  sha256 `d3d51548…`, manifest `violations: []` → `docs/build/reports/2026-11-08_R7DEP.2/hero-recording-manifest.json`.
+  Assets landed at the declared `HERO_RECORDING` paths; `licenses.exceptions.json`
+  `demo-hero-recording` + `LICENSES.md` completed with bytes+sha256; `.gitignore` gained
+  `!apps/web/public/media/` (the generated-bundle ignore needed a declared-asset carve-out).
+- 2026-11-08T22:0xZ — **REQ-SPEED-5 preview record** @ `d0a77d0`, N=20: **hard-open p75 147 ms**
+  (≤1.2 s ✓), **warm-open p75 119 ms** (≤400 ms ✓), **pending 0 samples** (the skeleton never
+  painted — no regressions recorded; `gated:false`). JSON in the speed-leg output.
+- 2026-11-08T22:0xZ — `public-ssr-baseline` @ `d0a77d0` → `public-ssr-baseline-t1f/baseline.json`:
+  all 5 public routes 200/SSR. 2 WARNs recorded (not gates): `/login` carries banned copy
+  "private beta" (F-R7DEP.2-8 — copy defect for the tail) and `/showcase` lacks the sample-dossier
+  text leg (the workspace Showcase now owns that surface).
+- 2026-11-08T22:0xZ — **two-tenant BFF probe: UNMEASURABLE (skipped-with-reason)** — `B:/bff/*`
+  all 401 (the jrn-b session was never minted/expired on this stack) and A lacks the
+  `JRN-<nonce>-TENANTA`/`VOICEA` markers the X1 leg plants — the probe's inputs don't exist in
+  this window; NOT a tenant-isolation failure. Anonymous `/bff/app` → 401 `unauthenticated` ✓
+  (the one leg that could run). Bodies preserved under `two-tenant-t1f/`.
+- 2026-11-08T22:1xZ — **T1 = `e578a767fbff5e8e0cfb7282541ba2bb3172744b`** — committed + pushed:
+  the all-16-green board, U1–U7 `expected:"green"` flips, hero assets + license records,
+  `D-R7FIX.*-N` + staging `D-R7*` dispositions. (Environment incident: local disk hit 100% —
+  gcloud crashed on temp; ~7 GB of regenerable caches freed; the T1 push reached the remote.)
+- 2026-11-08T22:4xZ — Cloud Build `0b004712` SUCCESS, all-10 @ `e578a767`; digests
+  `pr293-digests-t1final.txt`; `up` (7th in-place update, zero destructive). **Provenance:
+  web+api `/healthz/` → `e578a767…`.**
+- 2026-11-08T22:5xZ — **T1 re-walk set PASS** (`t1-rewalk/`): N10, R8.showcase, P1.public, D1.hub,
+  U1.shell, R8.showcase.spa all green at `e578a767`. **Hero vitals**: landing LCP **184–304 ms**
+  (≤2.5 s ✓) + CLS **0.000** (≤0.05 ✓) at 1440+390, clip arm live at both widths (the
+  reduced-motion arm is the video's poster frame — no autoplay by design; markup violations []).
+  Landing/pricing screenshots `t1-landing/`.
+- NEXT: teardown pr-293 (destroy→orphan-verify→rm) → spend read → **Part B** GD-DEPLOY.R7's 8
+  conditions → prod `pulumi up` @ `e578a767` → provenance → deployments row → CDN invalidate
+  `/bff/p/demo~*` → corpus-in-image → Stage B at T1 → U6 paid (<$10) → SPEED-5 prod → nightly
+  dispatch → close-out records/PR/CI boundary.
