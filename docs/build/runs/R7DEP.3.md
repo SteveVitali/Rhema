@@ -153,3 +153,16 @@ Rollback of the `b8307a40` deploy = the R7DEP.2 recipe shape with this round's p
   scheduled nightly re-proves the board on its own cadence), smoke/SSR sweeps (R7DEP.2's
   prod Stage-B board at `e578a767` stands; this deploy's payload is the defect-fix delta whose
   legs are the `D-R7FIX.7-1` arm).
+- 2026-11-09T18:5xZ — records committed `16a0eb09` (run ledger, PR body, BUILD_INDEX 304, LEDGER
+  PHASE LOG, DEFERRALS dispositions, leg evidence) → pushed → **PR #305** (base
+  `stevevitali/r7fix-7-postround-defects`) → `c33b51bb` BUILD_INDEX PR-cell fix.
+- **Checks:** `check-append-only.mjs --base b8307a40` — **OK**. `check-build-memory.sh` —
+  **1 violation + 22 warnings; the violation is PRE-EXISTING/inherited** (an OPEN DEFERRALS row
+  references GATE-ACCEPT.R7 whose readout says PASSED — 34 such references exist at base
+  `b8307a40`, e.g. `D-R7DEM.2c-1` re-homed on BL-100 per the gate's own (b) disposition; this
+  diff adds none). The warnings are the standing ledger-budget/index-shape class.
+- **CI boundary:** `ci-boundary.sh --pr 305` — **pass #305@16a0eb0** (run 42663409706 — all
+  seven legs + ci-pass anchor: fast-path 46s, typecheck/lint/unit 27m40s, contracts 26s,
+  public-safe 38s, integration 2m25s, images 8m36s; record `logs/ci-R7DEP.3.json`). Trailing
+  `c33b51bb` is BUILD_INDEX-only (deploy-neutral).
+- **Closed 2026-11-09** — deploy live at `b8307a40`, provenance re-verified post-close below.
