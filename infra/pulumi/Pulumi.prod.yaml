@@ -382,13 +382,13 @@ config:
   # demo_events beacon channel (migration applied via the operator-tunnel path BEFORE
   # this pin lands), the walkthrough retirement (ADR-130), the round-7 must-fixes, and
   # the two R7FIX.2 leg fixes. Every image's provenance is one commit.
-  # 2026-11-08 — R7DEP.2 Part B: all-10 images rebuilt on the R7b chain tip e578a767
-  # (Cloud Build 7d470657, _TAG=r7dep-2, _GIT_SHA=e578a767fbff5e8e0cfb7282541ba2bb3172744b)
-  # — the R7b deploy: SPA authenticated workspace, U1–U7 recurrence guards, the tour
-  # re-pin + hero recording (landing clip), landing/pricing, read-only Showcase, and
-  # migration 0062_drafts_discard (additive, applied via the operator-tunnel path
-  # BEFORE this pin lands). Every image's provenance is one commit.
-  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:ea5a2240576de39899bcc8f501e338bd3022a15b3794d1f7f11713db73308341","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:259973f9d01c5ffd014af49df2688d0bb3e8ab602e47aa54d8c67bd55011588c","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:eb58889c04f25396f084f567dfa9b0e5662138c2d721a26c659229b4948b7d77","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:d900ee21478b858f0bad3da77cf0f5a02fdc39c02aefeec9c2a64e852f493bbd","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:566a2efe3f93a6a1cc5e9b235bd83fc5ffac4124ef6b6b0f4160837f9ca71f37","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:4314843faa1fc924e73e84ebf8cf5332afcbf036bf3fc3b129be8408936929cf","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:d920a2a920f0eace58cb5da684c4b2debf67d566e1ada7fa45283fbfcbec2ac7","turbo-cache":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/turbo-cache@sha256:3fdc9d0fb06dbd2ba7d904026fdc3a0f573bab04973a3047d17d3a38af552059"}'
+  # 2026-11-09 — R7DEP.3: all-10 images rebuilt on the post-acceptance chain tip b8307a40
+  # (Cloud Build e8883414, _TAG=r7deploy-tip, _GIT_SHA=b8307a401ba21a08cd15a7abcab2eb7c5743a506)
+  # — the operator-ruled "deploy from latest open PR's branch tip" act: the e578a767 R7b
+  # deploy + the 250g_R7FIX.7 post-round defect fixes (F-11 drawer visibility, F-12 aria/tab
+  # + contrast, F-13 native selects, F-14 native checkboxes; F-9/F-10 leg-side/evidence
+  # dispositions). No migrations in the payload. Every image's provenance is one commit.
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:ef1da8261c3eca354330db37c3e8dd9e900f12f539cadde18cbf068f4993de2c","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:977203e866534bda919d974fdd602bc2e07b1d7cebb687bd2faef0734acc290f","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:15a6197e48fe26fff956881afe610ed932f0668e33b9d6877b4f26e587c0d193","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:d7f601c40e3e30e96e2ffdbc5025328d148774ce0effa60be928377587a3c671","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:79ffd17187866c87c4f1ecae9178086428769f956c3e97297d8cf6b93ccd93f2","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:09929319acfe8a3ddf803922e73eecbc60d16feec0d7ccb46b0cbc303aab0e90","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:42ea4a0a0584c025c37e01ed1d58e6b6f7af815eaafe2aaa021de15eb83b42e6","turbo-cache":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/turbo-cache@sha256:57b48cd6a6eb73d90419e77c0426973d78c2dcb6ad8179a0351f30a2d0908d8e"}'
   # SEC.3 (build sec3-73718cd, Cloud Build 90a36278, 2026-10-03, SHA 73718cd): the distroless
   # run-task image — no shell/pkg manager, static setpriv/unshare/mount/dumb-init, pure-argv
   # ENTRYPOINT (dumb-init → setpriv ambient caps → node harness-main), TS scoped-runner. Third
@@ -417,10 +417,10 @@ config:
   # 2026-11-05 — R7DEP.1 Part B: run-task re-pinned to the 4bc8cf4a tip build
   # (02a947ec, _ALLOW_PLACEHOLDER_SDK=0 — the vendored-SDK context assert + in-build
   # contents assert passed).
-  # 2026-11-08 — R7DEP.2 Part B: run-task re-pinned to the e578a767 tip build
-  # (7d470657, _ALLOW_PLACEHOLDER_SDK=0 — the vendored-SDK context assert + in-build
+  # 2026-11-09 — R7DEP.3: run-task re-pinned to the b8307a40 tip build
+  # (e8883414, _ALLOW_PLACEHOLDER_SDK=0 — the vendored-SDK context assert + in-build
   # contents assert passed).
-  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:3eb631519f4296e74a6de738762e4bdf57f184c90fc3c9bb0fe7188c5a16217d
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:ff540da201117a94e1a6755765599dd1cd222e2ca134e75ec5a2d13008e1d798
   # SEC.3 — the run-task pod's appArmorProfile: Localhost + the `rhema-run-task` profile (loaded on
   # every sandbox node by the apparmor-loader DaemonSet). Rollback = flip the type back to the prior
   # posture + re-pin the prior digest — config only, no code revert.
@@ -441,8 +441,8 @@ config:
   # _SERVICES=egress-proxy) — carries the DATABASE_URL_SECRET boot-fetch (F-R6DEP4-2).
   # 2026-11-05 — R7DEP.1 Part B: egress-proxy re-pinned to the 4bc8cf4a tip build
   # (02a947ec) — every image's provenance is one commit.
-  # 2026-11-08 — R7DEP.2 Part B: egress-proxy re-pinned to the e578a767 tip build (7d470657).
-  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:54f7245288350abd20491288a8e40c8ed4b13e1bbdbd1b5c3ac0416bae26176f
+  # 2026-11-09 — R7DEP.3: egress-proxy re-pinned to the b8307a40 tip build (e8883414).
+  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:9055473281b3f17978724ab63de8cdcc6a84707babd0f53d5863c8f21120678a
   # 2026-10-24 — R6INF.2 (ADR-122) up B: repoint consumers to the ILB VIP (proxyVipAddress output);
   # the direct 10.8.16.4 path stays live for in-flight pods until the post-soak cleanup update.
   rhema:proxyBaseUrl: http://10.8.16.7:8443
