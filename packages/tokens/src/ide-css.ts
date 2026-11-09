@@ -149,7 +149,13 @@ export function ideCss(): string {
     // R7FIX.1 (REQ-WRITE-4, B12) — the focus-view exit pill: hover- and keyboard-revealed. It is a
     // fixed button top-centre; outside focus view it never mounts an affordance (display:none).
     // opacity:0 keeps it hit-testable — a pointer entering its box (or Tab reaching it) reveals.
-    ".ide-focus-exit { display: none; position: fixed; top: 10px; left: 50%; transform: translateX(-50%) translateY(-6px); z-index: 65; align-items: center; gap: var(--s1); padding: 5px 14px; border-radius: var(--radius-pill); border: 1px solid var(--shell-border); background: var(--shell-raised); color: var(--shell-fg); font-size: var(--fs-micro, 12px); font-family: var(--font-shell); cursor: pointer; opacity: 0; transition: opacity var(--dur-pane) ease, transform var(--dur-pane) ease; box-shadow: 0 4px 16px rgba(0,0,0,0.35); }",
+    // R7FIX.8 (F-R7DEP.3-1) — the hide rule must WIN the cascade: the carrier is a ui-btn
+    // (`.ui-btn { display: inline-flex }`), so the bare `.ide-focus-exit` selector tied on
+    // specificity and lost on source order — the invisible button kept a live hit-box at
+    // top-centre in EVERY view and occluded the page strip's [data-sync-pill] at 1440×900
+    // (P1.pill prod red). `.ide` scoping beats the primitive's single class; the
+    // `.ide[data-view='focus']` reveal below still out-specifies it.
+    ".ide .ide-focus-exit { display: none; position: fixed; top: 10px; left: 50%; transform: translateX(-50%) translateY(-6px); z-index: 65; align-items: center; gap: var(--s1); padding: 5px 14px; border-radius: var(--radius-pill); border: 1px solid var(--shell-border); background: var(--shell-raised); color: var(--shell-fg); font-size: var(--fs-micro, 12px); font-family: var(--font-shell); cursor: pointer; opacity: 0; transition: opacity var(--dur-pane) ease, transform var(--dur-pane) ease; box-shadow: 0 4px 16px rgba(0,0,0,0.35); }",
     ".ide[data-view='focus'] .ide-focus-exit { display: inline-flex; }",
     ".ide[data-view='focus'] .ide-focus-exit:hover, .ide[data-view='focus'] .ide-focus-exit:focus-visible { opacity: 1; transform: translateX(-50%); }",
     ".ide[data-view='focus'] .ide-focus-exit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }",
