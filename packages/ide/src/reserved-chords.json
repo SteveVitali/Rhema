@@ -1,24 +1,13 @@
 {
-  "$comment": "REQ-KEYS-1 (226_R7SHELL.1a; RV-14) — the browser-safe keymap rules as data. Rule 1 (nonCapturable): chords a supported browser never delivers to the page. Rule 2 (conventionalAvoid): capturable but conventional chords the map must avoid. Rule 4 (keep): chords the spec keeps despite convention (⌘K palette, ⌘⏎ run sheet, ⌘S restore-point semantics). transitional: pre-existing conventional-avoid bindings grandfathered until 239_R7WRITE.2 completes the remap — each entry pins the chord to its ONE grandfathered action, so planting any other action on the chord fails the checker. `mod` = ⌘ on macOS / Ctrl elsewhere.",
+  "$comment": "REQ-KEYS-1 (226_R7SHELL.1a, completed 239_R7WRITE.2; RV-14) — the browser-safe keymap rules as data. Rule 1 (nonCapturable): chords a supported browser never delivers to the page. Rule 2 (conventionalAvoid): capturable but conventional chords the map must avoid. Rule 4 (keep): chords the spec keeps despite convention (⌘K palette, ⌘⏎ run sheet, ⌘S restore-point semantics). transitional: EMPTY since 239 — it grandfathered the pre-remap ⌘⇧*/⌘G/⌘,/⌘I bindings until 239_R7WRITE.2 completed the table; the key is kept (empty) so the schema stays stable. `mod` = ⌘ on macOS / Ctrl elsewhere. The evidence fields (per-row sources, the old→new table, keep reasons, the RV-14 layout note, the editor-scope note) live in reserved-chords-evidence.json — a test-only module so the documentation weight never rides the entry bundle (the ≤15 kB entry delta).",
   "nonCapturable": ["mod+t", "mod+w", "mod+n", "mod+q", "mod+tab", "ctrl+tab", "mod+shift+n"],
   "conventionalAvoid": [
     "mod+l", "mod+d", "mod+f", "mod+g", "mod+p", "mod+s", "mod+t", "mod+w", "mod+n", "mod+r",
     "mod+,", "mod+.", "mod+\\", "mod+i",
     "mod+0", "mod+1", "mod+2", "mod+3", "mod+4", "mod+5", "mod+6", "mod+7", "mod+8", "mod+9",
     "mod+shift+t", "mod+shift+r", "mod+shift+d", "mod+shift+c", "mod+shift+m", "mod+shift+v",
-    "mod+shift+e", "mod+shift+j"
+    "mod+shift+e", "mod+shift+j", "mod+shift+l", "mod+shift+f"
   ],
   "keep": ["mod+k", "mod+enter", "mod+s"],
-  "transitional": {
-    "mod+g": "goto-approval",
-    "mod+i": "inbox",
-    "mod+,": "settings",
-    "mod+shift+m": "view-menu",
-    "mod+shift+t": "triage",
-    "mod+shift+r": "run-next",
-    "mod+shift+d": "sheet:draft",
-    "mod+shift+e": "sheet:review",
-    "mod+shift+v": "sheet:revise",
-    "mod+shift+c": "compare-previous"
-  }
+  "transitional": {}
 }

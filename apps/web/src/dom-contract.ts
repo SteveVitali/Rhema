@@ -1496,7 +1496,7 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-version-badge", "conditional", "ui/page-strip.tsx", "the chip's frozen|working badge"),
     a("data-page-actions", "conditional", "ui/page-strip.tsx", "the strip's action group (withheld read-only)"),
     a("data-run-menu", "conditional", "ui/page-strip.tsx", "the Run ▾ menu trigger (a real menu — B8)"),
-    a("data-more-menu", "conditional", "ui/page-strip.tsx", "the ⋯ menu trigger (Edit source lives here until 239)"),
+    a("data-more-menu", "conditional", "ui/page-strip.tsx", "the ⋯ menu trigger"),
     a("data-export-link", "conditional", "ui/page-strip.tsx", "the Export action"),
     // R7WRITE.1a (REQ-WRITE-1) — the format bubble above a Page selection.
     a("data-format-bubble", "conditional", "spa/ide/controller.ts", "the floating format bubble (above-selection placement)"),
@@ -1593,16 +1593,16 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     // never a reuse of the retired island's contract. Emitted only by the SPA mount — the SSR host
     // block and forced-SSR postures (phone/showcase, REQ-ED-12) never carry them.
     a(
-      "data-source-bar",
+      "data-source-wrap",
       "conditional",
       "spa/page-mount",
-      "the source-mode toolbar row (toggle + stale note)",
+      "the source-mode wrap (host + stale note); R7WRITE.2 retires data-source-bar + the floating chip",
     ),
     a(
       "data-source-toggle",
       "conditional",
-      "spa/page-mount",
-      "source↔rendered mode toggle (aria-pressed = mode)",
+      "ui/page-strip.tsx",
+      "the ONE Rich text / Source toggle in the page header strip (aria-pressed = mode)",
     ),
     a(
       "data-source-host",

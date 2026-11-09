@@ -808,6 +808,12 @@ defects it would put in front of public visitors are fixed first:
 - `REQ-KEYS-2`: every shortcut appears in menus, tooltips and the `?` sheet, generated from the
   keymap. A + B.
 
+> **Dated banner (2026-11-06, 239_R7WRITE.2 — ADR-128's REQ-UX-8 / REQ-IDE-49 item, spec §3.2):**
+> the `?` cheat sheet is **kept** as the sheet's trigger, per ADR-128 — the remap changes chords
+> only. The full old → new table, per-row sources for the non-capturable set, and RV-14's layout
+> note live in `packages/ide/src/reserved-chords.json`; the `transitional` grandfather map is
+> empty (the remap is complete) and the key is retained for schema stability.
+
 ### 4.13 REQ-COPY: vocabulary, errors, rendered text [B6, C3, C8, C9, C12, D2, D5, E1, G2, G6, H3, UXC-27/28/30]
 
 - `REQ-COPY-1` [R7b]: a label table for every internal key reaching UI (workflow, phase, artifact

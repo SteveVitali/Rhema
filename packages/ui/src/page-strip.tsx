@@ -26,6 +26,8 @@ export interface PageStripAction {
   readonly href?: string;
   /** estimator-rendered hint (e.g. "≈ 560 cr") — never computed here. */
   readonly hint?: string;
+  /** the keymap-generated chord glyph (REQ-KEYS-2 — `shortcutFor`, never hand-typed). */
+  readonly keys?: string | null;
   /** a client action (e.g. the source-mode toggle) — used instead of `href`. */
   readonly onSelect?: () => void;
 }
@@ -52,6 +54,15 @@ export interface PageStripProps {
     readonly exportHref: string;
     readonly more: readonly PageStripAction[];
   } | null;
+  /** REQ-WRITE-5 (239) — the ONE Rich text / Source toggle (SPA arm only; SSR never emits it
+   *  since Source mode is SPA-mounted). `on` = Source mode active. */
+  readonly source?: {
+    readonly on: boolean;
+    readonly onToggle: () => void;
+    readonly richLabel: string;
+    readonly sourceLabel: string;
+    readonly tip?: string;
+  };
   readonly reviseUrl?: string;
   readonly cancelUrl: string;
   readonly labels: PageEditorLabels;
@@ -143,6 +154,18 @@ export function PageStrip(props: PageStripProps): ReactNode {
              style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "2px 10px", borderRadius: "999px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", fontSize: "12px", color: "var(--shell-fg-muted)", whiteSpace: "nowrap" }}>
           {L.sync.synced}
         </div>
+        {props.source ? (
+          <button
+            type="button"
+            data-source-toggle="true"
+            className="page-strip-btn"
+            aria-pressed={props.source.on}
+            {...(props.source.tip ? { title: props.source.tip } : {})}
+            onClick={() => props.source?.onToggle()}
+          >
+            {props.source.on ? props.source.richLabel : props.source.sourceLabel}
+          </button>
+        ) : null}
         {props.actions ? (
           <div className="page-strip-actions" data-page-actions="true" style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
             <DropdownMenu
@@ -156,7 +179,10 @@ export function PageStrip(props: PageStripProps): ReactNode {
                 <DropdownMenuItem key={item.label} asChild>
                   <a href={item.href} style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
                     <span>{item.label}</span>
-                    {item.hint ? <span style={{ color: "var(--shell-fg-faint)" }}>{item.hint}</span> : null}
+                    <span style={{ display: "inline-flex", gap: "8px", color: "var(--shell-fg-faint)" }}>
+                      {item.keys ? <kbd>{item.keys}</kbd> : null}
+                      {item.hint ? <span>{item.hint}</span> : null}
+                    </span>
                   </a>
                 </DropdownMenuItem>
               ))}

@@ -1,26 +1,26 @@
-// REQ-KEYS-1 (226_R7SHELL.1a; RV-14) — the reserved-chords checker. `reserved-chords.json`
-// carries Rules 1–4 as data (non-capturable set, conventional-avoid set, keep set, and the
-// transitional grandfathering 239_R7WRITE.2 retires). A chord descriptor is canonicalized to
-// `mod[+shift]+<key>` / `alt[+shift]+<key>` / bare `<key>` and checked against the sets:
-// nonCapturable is ALWAYS illegal; conventionalAvoid is legal only in `keep` or when the
-// `transitional` map pins the chord to exactly that action — so a planted ⌘1 binding, or a
-// planted second action on a grandfathered chord like ⌘⇧T, fails the check.
+// REQ-KEYS-1 (226_R7SHELL.1a, completed 239_R7WRITE.2; RV-14) — the reserved-chords checker.
+// `reserved-chords.json` carries the RULE sets only (non-capturable set, conventional-avoid set,
+// keep set, and the now-empty transitional map 239 retired); the documentation fields (sources,
+// old→new, keep reasons, the layout note, the editor-scope note) live in
+// `reserved-chords-evidence.json`, imported only by the test module — never the entry bundle.
+// A chord descriptor is canonicalized to `mod[+shift]+<key>` / `alt[+shift]+<key>` /
+// `shift+<key>` / bare `<key>` and checked against the sets: nonCapturable is ALWAYS illegal;
+// conventionalAvoid is legal only in `keep` or when the `transitional` map pins the chord to
+// exactly that action. A two-key sequence (`g p`) is checked per key — Rule 1/Rule 2 concern
+// mod-chords only. A binding marked `scope:"editor"` (the ProseMirror Page keymap) is checked
+// against Rule 1 only: inside a focused editor the user's conventions (⌘B/⌘I/⌘⇧S/⌘Z) are the
+// expected chords — the evidence file's `editorScopeNote` records the exemption.
 
 import reserved from "./reserved-chords.json" with { type: "json" };
-
-export interface ChordSpec {
-  readonly key: string;
-  readonly metaKey?: boolean;
-  readonly ctrlKey?: boolean;
-  readonly shiftKey?: boolean;
-  readonly altKey?: boolean;
-}
+// `ChordSpec`/`canonicalChord`/`matchesChord` live in ./keymap.js — the runtime module every
+// importer already pulls; this file (the checker + the rule-set JSON) is TEST-only.
 
 export interface ReservedChords {
   readonly nonCapturable: readonly string[];
   readonly conventionalAvoid: readonly string[];
   readonly keep: readonly string[];
-  /** grandfathered chord → the ONE action it may carry until 239 completes the remap. */
+  /** grandfathered chord → the ONE action it may carry — EMPTY since 239 (kept for schema
+   *  stability; any repopulated entry pins a chord to exactly that action). */
   readonly transitional: Readonly<Record<string, string>>;
 }
 
@@ -35,21 +35,12 @@ const NON_CAPTURABLE = new Set(RESERVED_CHORDS.nonCapturable);
 const CONVENTIONAL_AVOID = new Set(RESERVED_CHORDS.conventionalAvoid);
 const KEEP = new Set(RESERVED_CHORDS.keep);
 
-/** Canonicalize a chord descriptor: `mod+shift+t`, `alt+[`, or the bare key. `mod` = ⌘/Ctrl. */
-export function canonicalChord(c: ChordSpec): string {
-  const parts: string[] = [];
-  if (c.metaKey || c.ctrlKey) parts.push("mod");
-  if (c.altKey) parts.push("alt");
-  if (c.shiftKey) parts.push("shift");
-  parts.push(c.key.length === 1 ? c.key.toLowerCase() : c.key);
-  return parts.join("+");
-}
-
 export type ChordVerdict = "ok" | "non-capturable" | "conventional-avoid" | "transitional-mismatch";
 
-/** The rule verdict for one chord+action pair. */
-export function checkChord(chord: string, action: string): ChordVerdict {
+/** The rule verdict for one chord+action pair. `scope:"editor"` exempts Rule 2 (see above). */
+export function checkChord(chord: string, action: string, scope?: "editor"): ChordVerdict {
   if (NON_CAPTURABLE.has(chord)) return "non-capturable";
+  if (scope === "editor") return "ok";
   if (!CONVENTIONAL_AVOID.has(chord)) return "ok";
   if (KEEP.has(chord)) return "ok";
   if (RESERVED_CHORDS.transitional[chord] === action) return "ok";
@@ -62,14 +53,17 @@ export interface ChordViolation {
   readonly verdict: Exclude<ChordVerdict, "ok">;
 }
 
-/** Every rule violation in a binding list — the checker test asserts this is empty. */
+/** Every rule violation in a binding list — the checker test asserts this is empty. A `g p`-style
+ *  two-key chord validates each key in the sequence. */
 export function chordViolations(
-  bindings: readonly { readonly chord: string; readonly actionKind: string }[],
+  bindings: readonly { readonly chord: string; readonly actionKind: string; readonly scope?: "editor" | "findings" }[],
 ): ChordViolation[] {
   const out: ChordViolation[] = [];
   for (const b of bindings) {
-    const verdict = checkChord(b.chord, b.actionKind);
-    if (verdict !== "ok") out.push({ chord: b.chord, action: b.actionKind, verdict });
+    for (const single of b.chord.split(" ")) {
+      const verdict = checkChord(single, b.actionKind, b.scope === "editor" ? "editor" : undefined);
+      if (verdict !== "ok") out.push({ chord: b.chord, action: b.actionKind, verdict });
+    }
   }
   return out;
 }

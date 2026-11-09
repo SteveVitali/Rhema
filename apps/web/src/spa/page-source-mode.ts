@@ -13,13 +13,28 @@ import {
   drawSelection,
   highlightActiveLine,
   keymap,
-  lineNumbers,
 } from "@codemirror/view";
 import { defaultKeymap, history as cmHistory, historyKeymap, indentWithTab } from "@codemirror/commands";
 import type { Node as PMNode } from "prosemirror-model";
 import type { Transaction } from "prosemirror-state";
 import type { EditorView } from "prosemirror-view";
 import { applySourceMarkdown, docToMarkdown, markdownToDoc, SOURCE_EDIT_META } from "@rhema/editor";
+
+/** REQ-WRITE-5 — the prose face for the source buffer: the paper's own serif family + size +
+ *  measure tokens, so a source edit reads like the same sheet it typesets (never monospace
+ *  prose, and the gutter is gone). */
+const SOURCE_PROSE_THEME = CmView.theme({
+  "&": {
+    fontFamily: "var(--paper-serif, var(--font-serif, Literata, Georgia, serif))",
+    fontSize: "var(--paper-size, 17px)",
+    lineHeight: "var(--paper-leading, 1.55)",
+  },
+  ".cm-content": {
+    fontFamily: "inherit",
+    caretColor: "var(--paper-fg)",
+  },
+  ".cm-line": { padding: "0 2px" },
+});
 
 export interface SourceModeOptions {
   /** Element the CM editor mounts into (`[data-source-host]`). */
@@ -85,7 +100,12 @@ export function mountSourceMode(opts: SourceModeOptions): SourceModeHandle {
     state: CmState.create({
       doc: seedText,
       extensions: [
-        lineNumbers(),
+        // REQ-WRITE-5 (239; I8) — Source reads like PROSE: soft wrap at the pane measure and the
+        // serif reading face, never monospace prose. The line-number gutter is REMOVED — a
+        // decision this ticket records: prose does not number lines, and the gutter stole ~32 px
+        // of the 360 px pane the wrap was added to protect.
+        CmView.lineWrapping,
+        SOURCE_PROSE_THEME,
         highlightActiveLine(),
         drawSelection(),
         cmHistory(),

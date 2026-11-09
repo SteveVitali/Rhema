@@ -863,7 +863,10 @@ export interface DataSource {
     session: SessionHeaders,
     appTheme: ThemeSettingsDto["appTheme"],
   ): Promise<ThemeSettingsDto>;
-  /** set the project's paper pin (⌘⇧L → PUT /projects/:id/paper-theme). */
+  /** REQ-WRITE-8 (239) — the project's stored paper policy by slug, for the shell's first-bytes
+   *  `data-paper` stamp (best-effort; a miss degrades to the localStorage mirror). */
+  getProjectTheme?(session: SessionHeaders, slug: string): Promise<{ paperTheme: "light" | "follow" | "dark" } | null>;
+  /** set the project's paper pin (⇧T → PUT /projects/:id/paper-theme). */
   setPaperTheme(
     session: SessionHeaders,
     projectId: string,
@@ -1719,6 +1722,11 @@ export function apiDataSource(
       createApiClient({ baseUrl, fetch: f, headers: session }).setTheme(appTheme),
     setPaperTheme: (session, projectId, paperTheme) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).setPaperTheme(projectId, paperTheme),
+    getProjectTheme: async (session, slug) => {
+      const row = (await client(session).listProjects()).find((r) => r.slug === slug);
+      const t = row?.paperTheme;
+      return t === "light" || t === "follow" || t === "dark" ? { paperTheme: t } : null;
+    },
     // ---- P1.04 — the workspace home + the §5.3 new-project flow ----
     createProject: (session, req) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).createProject(req),

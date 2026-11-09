@@ -8,7 +8,7 @@
 // phone `pageMount` and server-owned routes, whose leaves take `SsrHandoff` and never reach
 // this layout unframed).
 
-import { useMemo, useRef, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import { Outlet, useLocation, useRouter } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SPA_IDE_FRAMED_ROUTES, spaRouteFor } from "@rhema/contracts";
@@ -20,6 +20,7 @@ import { feedLabelsQuery, sessionQuery } from "../queries.js";
 import { IdeChromeDataProvider, useIdeChromePublished } from "./chrome-data.js";
 import { useIdeChromeController, type IdeChromeNav } from "./controller.js";
 import { useIdeFeed } from "./feed.js";
+import { reconcilePaperTheme } from "../paper-boot.js";
 import { delegatedSubmitHandler, usePaneWrite } from "../write-paths.js";
 
 const FRAMED: ReadonlySet<string> = new Set(SPA_IDE_FRAMED_ROUTES);
@@ -133,6 +134,14 @@ export function IdeChrome({ slug, children }: { slug: string; children?: ReactNo
     defaultPanelTab: data.activeRun != null || data.feed != null ? "timeline" : "chat",
   });
   useIdeFeed({ hostRef, ...(data.feed != null ? { feed: data.feed } : {}), ...(maps.data != null ? { maps: maps.data } : {}), queryClient });
+
+  // REQ-WRITE-8 (239) — the twin's paperTheme is the server truth; reconcile it into
+  // `data-paper` + the localStorage mirror (only on a real difference — the pre-paint
+  // mirror arm already painted the right value, so there is no dark→light flip).
+  const twinPaper = data.paperTheme ?? boot?.theme?.paperTheme ?? null;
+  useEffect(() => {
+    reconcilePaperTheme(slug, twinPaper);
+  }, [slug, twinPaper]);
 
   const feed =
     data.feed != null && maps.data != null

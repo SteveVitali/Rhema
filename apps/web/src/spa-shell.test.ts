@@ -313,6 +313,40 @@ describe("the catch-all split (REQ-BND-4/11)", () => {
     }
   });
 
+  it("REQ-WRITE-8 (239; B15) — a project deep link stamps data-paper in the FIRST document bytes from the stored policy", async () => {
+    // A stored `dark` pin reaches the shell before any client code runs — the boot-script's
+    // localStorage-mirror fallback can never flash `light` on a hard load for this user.
+    const app = createWebApp(
+      spaDeps({
+        spaAssetRoot: spaFixture(),
+        dataSource: {
+          checkSession: async () => true,
+          listProjects: async () => [],
+          getSessionPrincipal: async () => PRINCIPAL,
+          getTheme: async () => ({ appTheme: "light" as const }),
+          getProjectTheme: async (_s: unknown, slug: string) =>
+            slug === "acme" ? { paperTheme: "dark" as const } : null,
+        } as unknown as DataSource,
+      }),
+    );
+    // a `/p/<slug>` SPA-space path — the catch-all shell arm — carries the stamp on ANY project
+    // route, not only surfaces with a resolved twin.
+    const res = await app.request("/p/acme/future-route");
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain('data-paper="dark"');
+    expect(html).toContain('data-project="acme"');
+    // …and the boot JSON carries the same truth (the twin reconcile writes no second value).
+    expect(bootOf(html).theme?.paperTheme).toBe("dark");
+    // a non-project route stamps NEITHER attr on the <html> tag — no project context → no paper
+    // policy (the inlined boot script legitimately names the attributes it may set later).
+    const home = await app.request("/app/future-route");
+    const homeHtml = await home.text();
+    const homeTag = /<html[^>]*>/.exec(homeHtml)![0]!;
+    expect(homeTag).not.toContain("data-paper=");
+    expect(homeTag).not.toContain("data-project=");
+  });
+
   it("the retired force-SPA signals (?renderer=spa / x-rhema-renderer: spa) change nothing; anonymous stays gated", async () => {
     // Removal-detecting: the shell served anyway, so a spa-pin can't widen anything — and the
     // session gate still runs first, so it can't open the shell for an anonymous request.

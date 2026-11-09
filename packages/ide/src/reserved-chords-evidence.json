@@ -1,0 +1,48 @@
+{
+  "$comment": "REQ-KEYS-1 (239_R7WRITE.2) — the documentation half of the reserved-chords table: per-row sources for the non-capturable set (evidence class A — facts are cited, not Playwright-provable), the keep reasons, the complete old → new table, and RV-14's layout note. Kept in a test-only module (reserved-chords-evidence.ts) so this weight never rides the entry bundle; the checker reads the slim sets from reserved-chords.json.",
+  "nonCapturableSources": {
+    "mod+t": "new tab — Chrome/Safari/Firefox on macOS/Windows/Linux (support.mozilla.org keyboard shortcuts; Google Chrome keyboard shortcuts; Safari keyboard shortcuts)",
+    "mod+w": "close tab — Chrome/Safari/Firefox on macOS/Windows/Linux",
+    "mod+n": "new window — Chrome/Safari/Firefox on macOS/Windows/Linux",
+    "mod+q": "quit — Chrome/Safari on macOS (Firefox macOS also quits on ⌘Q)",
+    "mod+tab": "OS window switcher on macOS (⌘Tab) and Windows (Alt+Tab is the untrappable twin) — never delivered to the page",
+    "ctrl+tab": "next tab — Chrome/Firefox on macOS/Windows/Linux; Safari uses ⇧⌘[/] and ⌃⇧Tab equally undeliverable",
+    "mod+shift+n": "new private/incognito window — Chrome/Firefox on macOS/Windows/Linux; Safari macOS"
+  },
+  "keepReasons": {
+    "mod+k": "Rule 4 — the one palette chord (contextual link under a Page selection, REQ-WRITE-1); Ctrl+K is capturable so pages may claim it (RV-14e).",
+    "mod+enter": "Rule 4 — run sheet from the Page; in Source mode CodeMirror's own Mod-Enter (insertBlankLine) wins (Rule 5).",
+    "mod+s": "Rule 2's recorded exception — REQ-IDE save semantics: ⌘S mints a named restore point, the product's one manual save verb."
+  },
+  "editorScopeNote": "Bindings marked scope:\"editor\" (the ProseMirror Page keymap — marks, undo, list Tab/⇧Tab — and CodeMirror's own keys inside the Source host) are checked against Rule 1 only: inside a focused editor the USER's conventions (⌘B bold, ⌘I italic, ⌘⇧S strike, ⌘Z undo, Mod-Enter) are the expected chords, not browser-chrome collisions. The Source host's own bindings always win while it has focus (Rule 5) — the app dispatches only ⌘S there.",
+  "layoutNote": "RV-14 layout note: (a) no binding in the table needs an Option/AltGr glyph on any supported layout — `alt+` chords exist only inside the findings zones (⌥J/⌥K, both printable-position-safe); (b) every `mod` chord resolves to ⌘ on macOS and Ctrl on Windows/Linux, and Ctrl+Alt on Windows overlaps AltGr — so no `mod+alt` chord is bound anywhere; (c) bare-key chords (`f`, `t`, `v`, `c`, `h`, `l`, `g`, `r`, `?`, `/`, `[`, `]`) are inert inside every text input, so a non-US layout that needs AltGr to reach `[`/`]`/`/` can still type those glyphs — the chord never fires while typing.",
+  "oldToNew": [
+    { "action": "palette", "old": "mod+k", "new": "mod+k", "note": "Rule 4 kept" },
+    { "action": "palette (command mode)", "old": "/", "new": "/", "note": "kept" },
+    { "action": "pane:files", "old": "mod+1", "new": "[", "note": "226: ⌘1 retired (Chrome tab switch); `[` is the sidebar chord" },
+    { "action": "pane:timeline", "old": "mod+2", "new": "]", "note": "226: ⌘2 retired; `]` is the right-panel chord" },
+    { "action": "pane:desk", "old": "mod+j", "new": null, "removed": "226: ⌘J retired; the Desk merged into the right panel (R7PANE.1)" },
+    { "action": "view-menu", "old": "mod+shift+m", "new": "v" },
+    { "action": "focus-mode", "old": "mod+shift+f", "new": "f", "note": "Rule 3's own example chord" },
+    { "action": "paper-theme", "old": "mod+shift+l", "new": "shift+t", "note": "⌘⇧L flagged by RV-14(a); ⇧T = the Theme pair" },
+    { "action": "triage", "old": "mod+shift+t", "new": "t", "note": "⌘⇧T = Chrome reopen-tab" },
+    { "action": "restore-point", "old": "mod+s", "new": "mod+s", "note": "recorded Rule-2 exception (save semantics)" },
+    { "action": "run-next", "old": "mod+shift+r", "new": "r n", "note": "⌘⇧R = hard reload" },
+    { "action": "sheet:draft", "old": "mod+shift+d", "new": "r d", "note": "⌘⇧D = bookmark all tabs" },
+    { "action": "sheet:review", "old": "mod+shift+e", "new": "r r", "note": "⌘⇧E = Firefox network inspector" },
+    { "action": "sheet:revise", "old": "mod+shift+v", "new": "r v", "note": "⌘⇧V = paste plain text" },
+    { "action": "goto-approval", "old": "mod+g", "new": null, "removed": "⌘G = find-next; the Needs-you surface moved to the Inbox (R7HOME.2b) — `g i` owns the intent" },
+    { "action": "inbox", "old": "mod+i", "new": "g i", "note": "frees ⌘I for the Page editor's italic (RV-14a)" },
+    { "action": "settings", "old": "mod+,", "new": "g s", "note": "⌘, = Chrome/macOS settings" },
+    { "action": "compare-previous", "old": "mod+shift+c", "new": "c", "note": "⌘⇧C = devtools inspect" },
+    { "action": "version-prev", "old": "[ (then 226's provisional alt+[)", "new": "h", "note": "`[` owns the sidebar since 226; h/l is the final pair" },
+    { "action": "version-next", "old": "] (then 226's provisional alt+])", "new": "l" },
+    { "action": "undo", "old": "mod+z", "new": "mod+z", "note": "dispatches but stays inert — the focused surface owns undo" },
+    { "action": "redo", "old": "mod+shift+z", "new": "mod+shift+z" },
+    { "action": "cheatsheet", "old": "?", "new": "?", "note": "ADR-128's REQ-UX-8/REQ-IDE-49 item — `?` stays the sheet's trigger" },
+    { "action": "run-sheet", "old": null, "new": "mod+enter", "note": "NEW binding — Rule 4's ⌘⏎ (run sheet from the Page); CodeMirror's Mod-Enter wins in Source mode" },
+    { "action": "goto-projects", "old": null, "new": "g p", "note": "NEW — Rule 3's go-to set" },
+    { "action": "goto-voices", "old": null, "new": "g v", "note": "NEW — Rule 3's go-to set" },
+    { "action": "finding chords (j/k/p/a/d/r/f/e/Enter/Esc/⌥j/⌥k)", "old": "unchanged", "new": "unchanged", "note": "Margin/Findings-scoped — inert while typing, per §5.12" }
+  ]
+}

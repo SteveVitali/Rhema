@@ -26,6 +26,7 @@ import { inputRules, wrappingInputRule, textblockTypeInputRule } from "prosemirr
 import { pageSchema } from "./schema.js";
 import { decorationsPlugin } from "./decorations.js";
 import { provenancePlugin, ORIGIN_META, type BlockSource } from "./provenance.js";
+import { PAGE_KEYMAP } from "./page-keymap.js";
 
 // The Page's PM wiring (§5.4): the schema-first doc, the keymaps (editing + markdown-flavoured input
 // rules), undo history, and the two sidecar plugins (findings/proposal/authorship decorations +
@@ -160,23 +161,33 @@ export function pagePlugins(
         textblockTypeInputRule(/^```$/, s.nodes.code_block!),
       ],
     }),
-    keymap({
-      "Mod-z": collab ? yUndo : undo,
-      "Mod-y": collab ? yRedo : redo,
-      "Shift-Mod-z": collab ? yRedo : redo,
-      "Mod-b": toggleMark(s.marks.strong!),
-      "Mod-i": toggleMark(s.marks.em!),
-      "Mod-`": toggleMark(s.marks.code!),
-      "Mod-Shift-s": toggleMark(s.marks.strike!),
-      Enter: chainCommands(
-        (st, d) => (inList(st) ? splitListItem(listItem)(st, d) : false),
-        newlineInCode, createParagraphNear, liftEmptyBlock, splitBlock,
+    // REQ-KEYS-1 (239_R7WRITE.2) — the editing map builds from PAGE_KEYMAP's committed table so
+    // the reserved-chords checker sees every binding; the command set is schema-derived here.
+    keymap(
+      Object.fromEntries(
+        PAGE_KEYMAP.map((b) => [
+          b.pmKey,
+          (
+            {
+              undo: collab ? yUndo : undo,
+              redo: collab ? yRedo : redo,
+              "mark:strong": toggleMark(s.marks.strong!),
+              "mark:em": toggleMark(s.marks.em!),
+              "mark:code": toggleMark(s.marks.code!),
+              "mark:strike": toggleMark(s.marks.strike!),
+              split: chainCommands(
+                (st, d) => (inList(st) ? splitListItem(listItem)(st, d) : false),
+                newlineInCode, createParagraphNear, liftEmptyBlock, splitBlock,
+              ),
+              "join-backward": chainCommands(deleteSelection, joinBackward, selectNodeBackward),
+              "delete-selection": deleteSelection,
+              "list-sink": ((st, d) => (inList(st) ? sinkListItem(listItem)(st, d) : false)) as Command,
+              "list-lift": ((st, d) => (inList(st) ? liftListItem(listItem)(st, d) : false)) as Command,
+            } satisfies Record<string, Command>
+          )[b.actionKind]!,
+        ]),
       ),
-      Backspace: chainCommands(deleteSelection, joinBackward, selectNodeBackward),
-      "Mod-Backspace": deleteSelection,
-      Tab: (st, d) => (inList(st) ? sinkListItem(listItem)(st, d) : false),
-      "Shift-Tab": (st, d) => (inList(st) ? liftListItem(listItem)(st, d) : false),
-    }),
+    ),
     keymap(baseKeymap),
     dropCursor(),
     gapCursor(),

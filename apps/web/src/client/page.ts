@@ -26,6 +26,7 @@ import {
   type FindingForDecoration,
   type Proposal,
 } from "@rhema/editor";
+import { ISLAND_CHORDS, matchesChord } from "@rhema/ide";
 import { createCollabSession, type CollabSyncEvent } from "./collab";
 
 const LOCK_POLL_MS = 10_000;
@@ -271,9 +272,10 @@ async function main(): Promise<void> {
     },
   });
 
-  // ⌘S — the named restore point (the ONLY manual save verb; never a Save button).
+  // ⌘S — the named restore point (the ONLY manual save verb; never a Save button). REQ-KEYS-1
+  // (239): the chord reads the committed ISLAND_CHORDS table, never a hand-typed key literal.
   window.addEventListener("keydown", (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+    if (ISLAND_CHORDS.some((b) => matchesChord({ key: e.key.length === 1 ? e.key.toLowerCase() : e.key, metaKey: e.metaKey, ctrlKey: e.ctrlKey, shiftKey: e.shiftKey, altKey: e.altKey }, b.chord))) {
       e.preventDefault();
       session?.markRestorePoint();
       setPill({ state: "syncing", queued: session?.provider.unsyncedChanges ?? 0 });
