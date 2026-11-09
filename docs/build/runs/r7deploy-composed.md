@@ -171,6 +171,25 @@ Rollback of the `ee40639d` deploy = the R7DEP.3 recipe shape with this round's p
 - **Not run:** post-deploy nightly dispatch (not in the ruling's arm list); smoke/SSR sweeps
   (R7DEP.2's prod Stage-B board at `e578a767` + R7DEP.3's `D-R7FIX.7-1` legs stand; this
   deploy's product delta is exactly the `P1.pill` arm just proven).
-- **Records:** `runs/r7deploy-composed.md` (this), `pr/r7deploy-composed.md`, BUILD_INDEX next
-  row, LEDGER PHASE LOG `done` + `ci boundary` lines, DEFERRALS dated dispositions.
+- **Records:** `runs/r7deploy-composed.md` (this), `pr/r7deploy-composed.md`, BUILD_INDEX row
+  309, LEDGER PHASE LOG `done` + `ci boundary` lines, DEFERRALS dated dispositions.
   `nextTicket`/`lastCompleted` UNCHANGED (`200_R6WATCH.1` / `R7REC.1`).
+- 2026-11-09T21:5xZ — records committed `c38182a8` (run ledger, PR body, BUILD_INDEX 309, LEDGER
+  PHASE LOG, DEFERRALS dispositions, `Pulumi.prod.yaml` re-pin, leg evidence) → pushed →
+  **PR #312** (base `stevevitali/r7fix-9-paid-leg-pin`) → `8ea28b08` BUILD_INDEX PR-cell fix.
+- **Checks:** `check-append-only.mjs --base origin/stevevitali/r7fix-9-paid-leg-pin` — **OK**.
+  `check-build-memory.sh` — **2 violations + 22 warnings, both violations INHERITED, none added
+  by this diff:** (a) `duplicate DEFERRALS id 'D-R7DEP.3-1'` — introduced by the orchestrator's
+  union-resolve `48ea5dbd` (each source branch carries exactly one copy; the union kept both —
+  r7fix-8's carries the 250h note, r7fix-9's doesn't). "Never delete a row" rules out collapsing
+  it; the dated note on the first copy records the artifact and marks the canonical tail.
+  (b) the OPEN-row→GATE-ACCEPT.R7 reference — the standing pre-existing class recorded at
+  R7DEP.3/tip2 (34 such refs at base; this diff adds none and closes three rows, none of them
+  that class). The `docs/build/logs/.gitignore` layout violation my work created was fixed
+  locally before this commit (untracked, matching the main worktree's posture — the root
+  `.gitignore` keeps the whole dir local-only).
+- **CI boundary:** `ci-boundary.sh --pr 312` — **pass `#312@8ea28b0`** (run 42706079203 — all
+  seven legs + ci-pass anchor: fast-path, typecheck/lint/unit, contracts, public-safe,
+  integration, images; record `logs/ci-r7deploy-composed.json`, read 2026-11-09T22:20:32Z).
+
+- **Closed 2026-11-09** — deploy live at `ee40639d`, provenance verified.
