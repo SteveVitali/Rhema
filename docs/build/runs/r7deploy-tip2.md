@@ -90,3 +90,14 @@ checks out merged code — no deploy dependency).
   fix; composition decision owed). No rows opened; `D-R7FIX.9-1` unchanged (cron-bound).
 - Spend this run: **$0** (git evidence + one `/healthz` read pair; no builds, no legs,
   no cloud mutations).
+- **2026-11-09T21:1xZ close:** records committed `02359412` + `14d98504` → **PR #309**
+  (base `stevevitali/r7fix-9-paid-leg-pin`) → `ci-boundary.sh --pr 309` — **pass
+  `#309@14d9850`** (run 42700670863 — all seven legs + ci-pass anchor;
+  `logs/ci-r7deploy-tip2.json`). Checks: `check-append-only.mjs --base
+  stevevitali/r7fix-9-paid-leg-pin` — **OK**; `check-build-memory.sh` — **1 violation +
+  23 warnings; the violation is PRE-EXISTING/inherited** (an OPEN DEFERRALS row references
+  GATE-ACCEPT.R7 whose readout says PASSED — the same standing class recorded at R7DEP.3;
+  this diff adds none). Concurrency note: a sibling worker's `stevevitali/r6watch-early`
+  (ruling arm (a)) shares this worktree — its HEAD was active mid-run; the records commit
+  was moved to `r7deploy-tip2` and `r6watch-early` restored to its pre-run tip `13e7d9dc`
+  (local-only, unpushed — no divergence).
