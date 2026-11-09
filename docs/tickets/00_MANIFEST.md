@@ -469,6 +469,7 @@ Dispatched **out of order** (`GD-ORDER.R7`): `200_R6WATCH.1` (clock-bound ≥ 20
 | 250e | `250e_R7FIX.5__defect-round-5.md` | R7b | **run-time insert** — defect boundary round 5 (U2 visible-recent pick + U5 comment-submit hook + optional U3 hardening; the T1e re-walk proves them deployed) | — |
 | 250f | `250f_R7FIX.6__defect-round-6.md` | R7b | **run-time insert** — defect boundary round 6 (U5 comment-card post-submit mount; the T1f re-walk proves it deployed) | — |
 | 250g | `250g_R7FIX.7__postround-defects.md` | R7b tail | **run-time insert** — the acceptance-routed post-round defects: F-9 hero-mp4 asset-parity + D2.tour prod flip, F-10…14 product defects (credit copy, P1 links, axe, select, checkbox) | — |
+| 250h | `250h_R7FIX.8__sync-pill-occlusion.md` | R7b tail | **run-time insert** — F-R7DEP.3-1: the sync-pill/focus-exit overlap at 1440×900 (deploy-bound arm rides the next deploy) | — |
 | 251 | `251_R7CAP.1__capstone-gap-analysis.md` | tail | **capstone** — round-7 REQ coverage + finding accounting (REQ-CLOSE-1) | — |
 | 252 | `252_GATE-ACCEPT.R7__accepted-deviations.md` | tail | **gate** — operator signs the R7 deviations list; GD-DEPLOY.R7 expires (REQ-CLOSE-2) | operator |
 | 253 | `253_R7REC.1__backlog-and-reconciliation.md` | tail | **reconcile** — backlog + spec fold-back, ADR-126…130 banners (REQ-CLOSE-3) | — |
