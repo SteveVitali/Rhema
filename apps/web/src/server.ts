@@ -6926,11 +6926,16 @@ export function createWebApp(deps: WebDeps): Hono {
         ? c.json({ error: "not_found" }, 404)
         : c.html(renderDocument(c.req.path, notFoundElement), 404);
     }
-    const form = await c.req.parseBody();
+    // R7WRITE.1b (REQ-WRITE-2) — the bubble's Comment posts JSON `{text, anchors}`; the no-JS
+    // form leg keeps its parseBody read (the SPA Page's bottom form is gone, the phone reader's
+    // stays until 247_R7RO.2).
+    const isJson = (c.req.header("content-type") ?? "").includes("application/json");
+    const form = isJson ? ((await c.req.json().catch(() => ({}))) as Record<string, unknown>) : await c.req.parseBody();
     const text = typeof form.text === "string" ? form.text.trim() : "";
+    const anchors = isJson && Array.isArray(form.anchors) ? (form.anchors as readonly unknown[]) : undefined;
     if (text !== "") {
       await deps.dataSource
-        .postEditorNote(session, t.row.id, t.draftId, text)
+        .postEditorNote(session, t.row.id, t.draftId, text, ...(anchors != null ? [anchors] : []))
         .catch(() => undefined);
     }
     // R7RELOAD.1 (REQ-RELOAD-3, UXC-4): the success target is `/v/:n` DIRECTLY — the write
@@ -6963,6 +6968,33 @@ export function createWebApp(deps: WebDeps): Hono {
       .catch(() => null);
     const href = doc ? `/p/${t.slug}/v/${doc.draftN}` : `/p/${t.slug}`;
     return mutationOutcome(c, { redirect: href });
+  });
+
+  // R7WRITE.1b (REQ-WRITE-7) — the fork toast's Undo: discard the just-created v(N+1). JSON arm
+  // carries the api's stable code (`fork_has_edits`/`fork_read_by_run`/`not_a_fork`/`not_found`);
+  // the no-JS arm redirects to the restored parent page.
+  app.post("/p/:project/drafts/:n/discard-fork", async (c) => {
+    const session = deps.session(c);
+    if (!session)
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    const slug = c.req.param("project") ?? "";
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) {
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    }
+    const n = Number(c.req.param("n") ?? "0");
+    try {
+      const out = await deps.dataSource.discardFork(session, row.id, n);
+      if (wantsJson(c)) return mutationOutcome(c, { data: out });
+      return mutationOutcome(c, { redirect: `/p/${slug}/v/${out.parentN}` });
+    } catch (e) {
+      const code = e instanceof ApiError ? e.message : "discard_failed";
+      const status = e instanceof ApiError ? e.status : 500;
+      if (wantsJson(c)) return c.json({ error: code }, status as 400);
+      return mutationOutcome(c, { redirect: `/p/${slug}` });
+    }
   });
 
   // "Revise using your edits" (REQ-DATA-26): review of vN + the v(N+1) human-revision base. Lands on the

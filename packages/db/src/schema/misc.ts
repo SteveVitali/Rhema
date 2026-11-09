@@ -14,6 +14,8 @@ export const guidance = pgTable("guidance", {
   consumedBy: jsonb("consumed_by").notNull().default([]), // {runId, phase}[] delivery records (0010)
   active: boolean("active").notNull().default(true), // standing guidance is retirable, never deleted (0010)
   createdBy: jsonb("created_by"),
+  // 0062 (R7WRITE.1b; REQ-WRITE-2) — the draft an anchored inline_comment was written on.
+  draftId: text("draft_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

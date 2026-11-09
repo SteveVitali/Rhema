@@ -1501,8 +1501,16 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     // R7WRITE.1a (REQ-WRITE-1) — the format bubble above a Page selection.
     a("data-format-bubble", "conditional", "spa/ide/controller.ts", "the floating format bubble (above-selection placement)"),
     a("data-format-item", "conditional", "spa/ide/controller.ts", "one bubble item — format action | agent verb"),
+    a("data-placed", "conditional", "spa/ide/controller.ts", "the bubble's above/below placement (R7WRITE.1a's contract)"),
     a("data-format-link-input", "conditional", "spa/ide/controller.ts", "the contextual-⌘K link URL field"),
     a("data-format-link-apply", "conditional", "spa/ide/controller.ts", "the link form's apply control"),
+    a("data-comment-input", "conditional", "spa/ide/controller.ts", "the Comment bubble's textarea (REQ-WRITE-2)"),
+    a("data-comment-composer", "conditional", "spa/ide/controller.ts", "the Comment composer's bubble box"),
+    a("data-comment-submit", "conditional", "spa/ide/controller.ts", "the Comment composer's Post control"),
+    a("data-comment-card", "conditional", "spa/surfaces/editor.tsx", "the anchored comment's margin card (REQ-WRITE-2)"),
+    a("data-anchor-block", "conditional", "spa/surfaces/editor.tsx", "the comment card's anchor block ref"),
+    a("data-fork-undo", "conditional", "spa/surfaces/editor.tsx", "the frozen-fork toast's Undo action (REQ-WRITE-7)"),
+    a("data-discarded", "conditional", "ui/version-rail.tsx", "the '· discarded' rail marker (REQ-SYNC-4)"),
     a(
       "data-page-session",
       "conditional",

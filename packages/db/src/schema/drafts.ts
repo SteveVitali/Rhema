@@ -16,6 +16,9 @@ export const drafts = pgTable("drafts", {
   baseDraftId: text("base_draft_id"),
   claimsPendingVerification: boolean("claims_pending_verification").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  // 0062 (R7WRITE.1b; REQ-SYNC-4) — the discarded-fork marker; versions stay append-only.
+  discardedAt: timestamp("discarded_at"),
+  discardedBy: jsonb("discarded_by"),
 });
 
 export const liveDocs = pgTable("live_docs", {

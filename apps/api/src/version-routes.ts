@@ -70,12 +70,14 @@ interface RailDraftRow {
   word_count: number | null;
   reviewed: boolean;
   answered: boolean;
+  discarded: boolean;
 }
 
 export async function loadVersionRail(exec: SqlExecutor, projectId: string) {
   const drafts = (
     await exec.query(
       `select d.id, d.n, d.origin, d.state, d.frozen_at, d.created_at, d.claims_pending_verification,
+              (d.discarded_at is not null) as discarded,
               av.word_count,
               exists(select 1 from correspondence_items ci
                        where ci.draft_id = d.id and ci.kind = 'review') as reviewed,
@@ -141,6 +143,7 @@ export async function loadVersionRail(exec: SqlExecutor, projectId: string) {
       words: d.word_count,
       reviewed: d.reviewed,
       answered: d.answered,
+      discarded: d.discarded === true,
       claimsPendingVerification: d.claims_pending_verification,
       obligations: byDraft.get(d.id) ?? { open: 0, addressed: 0 },
     })),
@@ -766,6 +769,125 @@ export function createVersionRoutes(deps: VersionApiDeps): Hono {
         out.reason === "locked" ? 409 : out.reason === "not_editable" ? 409 : out.reason === "restore_unavailable" ? 503 : 404;
       return c.json({ error: out.reason }, status);
     }
+    return c.json(out);
+  });
+
+  // ---- R7WRITE.1b (REQ-WRITE-7; RV-27) — the fork toast's Undo: `discard-fork` marks the
+  //      just-created working head `v(N+1) · discarded` (append-only — the number is kept, never
+  //      reused or deleted) and restores the parent as the project's working view. It succeeds
+  //      iff (a) the head carries no edits beyond the forking keystroke(s) — at most ONE
+  //      `artifact_versions` row on its `drafts/v<N>.md` artifact (the forking materialization) —
+  //      and (b) no run has read it and no correspondence references it (S-4's freeze triggers);
+  //      a promote/export trigger already fails the `state='working'` check. 404 cross-workspace,
+  //      409 `fork_has_edits` / `fork_read_by_run` / `not_a_fork` otherwise. ----
+  app.post("/projects/:id/drafts/:n/discard-fork", async (c) => {
+    const principal = deps.principal(c);
+    if (!principal) return c.json({ error: "unauthenticated" }, 401);
+    if (!(await ownProject(c, principal.workspaceId))) return c.json({ error: "not_found" }, 404);
+    const projectId = c.req.param("id");
+    const n = Number(c.req.param("n"));
+    if (!Number.isInteger(n) || n < 1) return c.json({ error: "not_found" }, 404);
+
+    const out = await deps.txRunner.run(principal.workspaceId, async (tx) => {
+      const head = (
+        await tx.query(
+          `select id, n, origin, state, base_draft_id, promoted_version_id, discarded_at
+             from drafts where project_id = $1 and n = $2 for update`,
+          [projectId, n],
+        )
+      ).rows[0] as
+        | { id: string; n: number; origin: string; state: string; base_draft_id: string | null; promoted_version_id: string | null; discarded_at: Date | string | null }
+        | undefined;
+      if (!head) return { ok: false as const, reason: "not_found" as const };
+      // Only a just-forked working human_revision head with a live base can be discarded — a
+      // frozen/working-other draft, an already-discarded row, or a base-less head is a 409.
+      if (
+        head.state !== "working" ||
+        head.origin !== "human_revision" ||
+        head.base_draft_id == null ||
+        head.discarded_at != null
+      ) {
+        return { ok: false as const, reason: "not_a_fork" as const };
+      }
+      // (a) no edits beyond the forking keystroke(s): ≤1 artifact version on the head's own
+      //     draft artifact (see the run ledger for the measurable definition).
+      const versionCount = (
+        await tx.query(
+          `select count(*)::int as c from artifact_versions av
+             join artifacts a on a.id = av.artifact_id
+            where a.project_id = $1 and a.mirror_path = $2 and a.kind = 'draft'`,
+          [projectId, `drafts/v${head.n}.md`],
+        )
+      ).rows[0] as { c: number };
+      if (versionCount.c > 1) return { ok: false as const, reason: "fork_has_edits" as const };
+      // (b) no run has read it (lock_set carries `draft:read:<id>` / `draft:write:<id>` keys) and
+      //     no correspondence item references it (the dossier_ref trigger).
+      const readByRun = (
+        await tx.query(
+          `select 1 from runs
+            where project_id = $1
+              and (lock_set @> $2::text[] or lock_set @> $4::text[]
+                   or inputs->>'draftId' = $3 or inputs->>'nextDraftId' = $3)
+            limit 1`,
+          [
+            projectId,
+            [`draft:read:${head.id}`] as unknown as string[],
+            head.id,
+            [`draft:write:${head.id}`] as unknown as string[],
+          ],
+        )
+      ).rows[0];
+      const referenced = (
+        await tx.query(`select 1 from correspondence_items where draft_id = $1 limit 1`, [head.id])
+      ).rows[0];
+      if (readByRun || referenced) {
+        return { ok: false as const, reason: "fork_read_by_run" as const };
+      }
+      const base = (
+        await tx.query(
+          `select id, n, promoted_version_id from drafts where id = $1`,
+          [head.base_draft_id],
+        )
+      ).rows[0] as { id: string; n: number; promoted_version_id: string | null } | undefined;
+      if (!base) return { ok: false as const, reason: "not_found" as const };
+      // The discard: state leaves 'working' (the partial unique index frees the slot so the next
+      // fork may mint v(N+2)); frozen_by records the cause honestly; a never-materialized head
+      // inherits its base's promoted bytes so the frozen invariant (promoted_version_id) holds.
+      await tx.query(
+        `update drafts
+            set state = 'frozen',
+                frozen_at = $2,
+                frozen_by = $3,
+                discarded_at = $2,
+                discarded_by = $4,
+                promoted_version_id = coalesce(promoted_version_id, $5)
+          where id = $1`,
+        [
+          head.id,
+          deps.clock.now(),
+          JSON.stringify({ cause: "discard" }),
+          JSON.stringify({ kind: "user", userId: principal.userId }),
+          base.promoted_version_id,
+        ],
+      );
+      return {
+        ok: true as const,
+        discardedDraftId: head.id,
+        discardedN: head.n,
+        parentDraftId: base.id,
+        parentN: base.n,
+      };
+    });
+
+    if (!out.ok) {
+      if (out.reason === "not_found") return c.json({ error: "not_found" }, 404);
+      return c.json({ error: out.reason }, 409);
+    }
+    // R7WRITE.1b — reconcile the search index fallout: the discarded head must not surface as a
+    // draft hit (the parent's index row is already authoritative).
+    await deps.db
+      .query(`delete from project_search_docs where ref_id = $1 and kind = 'draft'`, [out.discardedDraftId])
+      .catch(() => undefined);
     return c.json(out);
   });
 

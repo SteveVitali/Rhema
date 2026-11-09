@@ -420,8 +420,12 @@ export function PageEditor(props: PageEditorProps): ReactNode {
         </div>
       ) : null}
 
-      {/* the note field — comments write Guidance rows (live during runs; §6.3/REQ-DATA-41) */}
-      {!props.readOnly ? (
+      {/* the note field — comments write Guidance rows (live during runs; §6.3/REQ-DATA-41).
+          R7WRITE.1b (REQ-WRITE-2): the SPA Page drops this bottom-of-page form — Comment moved to
+          the format bubble's anchored composer. The removal is gated to the SPA mount
+          (`embeds={false}`): the forced-SSR phone reader shares this component and keeps the
+          form until 247_R7RO.2 dispositions it. */}
+      {!props.readOnly && (props.embeds ?? true) ? (
         <form method="post" action={props.noteUrl} style={{ marginTop: "16px", borderTop: "1px solid var(--shell-border)", paddingTop: "10px" }}>
           <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block" }}>
             {L.noteLabel}

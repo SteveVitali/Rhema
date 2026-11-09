@@ -23,8 +23,9 @@ export interface CommandMenuItem {
   readonly label: string;
   /** a §7.2 command string resolved through the grammar — cost-bearing rows route to the sheet. */
   readonly command?: string;
-  /** "ask" opens the Desk's composer tab — a free local action, never a command. */
-  readonly action?: "ask";
+  /** "ask" opens the Desk's composer tab — a free local action, never a command; "comment" opens
+   *  the bubble's anchored comment composer (REQ-WRITE-2). */
+  readonly action?: "ask" | "comment";
   /** a format action — a local ProseMirror command the Page's live view dispatches. */
   readonly format?: FormatAction;
   /** a hint shown right-aligned (e.g. "chat", "≈ 40 cr"); the island derives disabled reasons
@@ -61,7 +62,9 @@ export function selectionMenuModel(opts?: SelectionMenuOpts): SelectionMenuModel
   const hint = (verb: string): { hint?: string } =>
     opts?.costHints?.[verb] ? { hint: opts.costHints[verb] } : {};
   return {
-    comment: null, // 238_R7WRITE.1b fills this slot (REQ-WRITE-2) — nothing renders until then.
+    // R7WRITE.1b (REQ-WRITE-2; UXC-23, I5) — Comment is the bubble's first item: it opens an
+    // inline composer over the selection and writes anchored Guidance (the margin card).
+    comment: { label: "Comment", action: "comment" },
     format: [
       { label: "Bold", format: "bold" },
       { label: "Italic", format: "italic" },

@@ -768,3 +768,166 @@ describe("restore points — grouped list, preview, undoable apply", () => {
     expect(res.status).toBe(409);
   });
 });
+
+// ── R7WRITE.1b (REQ-WRITE-7) — discard-fork: the Undo guarded write ───────────────────────────
+
+/** Seed a just-forked working head v2 off the (frozen) seeded v1 — the forking materialization's
+ *  single artifact_version is the measurable "forking keystroke(s)". */
+async function seedForkHead(args: { versions?: number } = {}) {
+  // freeze the seeded v1 with a promoted version (the check constraint requires it on frozen rows).
+  const v1 = await putArtifact({
+    id: "art_v1",
+    kind: "draft",
+    mirrorPath: "drafts/v1.md",
+    text: "# Draft\n\nThe pillar stands on the old claim.\n",
+  });
+  await db.pg.query(
+    `update drafts set state = 'frozen', origin = 'response_to_review', promoted_version_id = $1
+      where id = $2`,
+    [v1.versionId, seed.draftId],
+  );
+  // the fork head: its own artifact + the single forking-save version (or `versions` rows).
+  const head = await putArtifact({
+    id: "art_v2",
+    kind: "draft",
+    mirrorPath: "drafts/v2.md",
+    text: "# Draft\n\nThe pillar stands on the old claim, edited.\n",
+  });
+  let promoted = head.versionId;
+  for (let i = 2; i <= (args.versions ?? 1); i++) {
+    // a second+ materialized save = a real edit beyond the forking keystroke(s).
+    const text = `# Draft\n\nThe pillar stands on the old claim, edited ${i}.\n`;
+    const blob = await store.putText(seed.workspaceId, text);
+    promoted = `av_v2_${i}`;
+    await db.pg.query(
+      `insert into artifact_versions(id, artifact_id, ordinal, content_sha256, s3_key, bytes, word_count, media_type, created_by, created_at, immutable)
+       values ($1,$2,$3,$4,$5,$6,$7,'text/markdown',$8,$9,false)`,
+      [
+        promoted,
+        "art_v2",
+        i,
+        blob.sha256,
+        blob.key,
+        Buffer.byteLength(text),
+        text.split(/\s+/).filter(Boolean).length,
+        JSON.stringify({ kind: "user", userId: seed.userId }),
+        NOW,
+      ],
+    );
+  }
+  await db.pg.query(
+    `insert into drafts(id, project_id, n, origin, state, base_draft_id, promoted_version_id)
+     values ('dft_v2', $1, 2, 'human_revision', 'working', $2, $3)`,
+    [seed.projectId, seed.draftId, promoted],
+  );
+  return { headDraftId: "dft_v2" };
+}
+
+describe("POST /projects/:id/drafts/:n/discard-fork — the frozen-fork Undo (REQ-WRITE-7)", () => {
+  it("discards a just-forked head: marks it, restores the parent, keeps the number (REQ-SYNC-4)", async () => {
+    await seedForkHead();
+    const res = await app.request(`/projects/${seed.projectId}/drafts/2/discard-fork`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{}",
+    });
+    expect(res.status).toBe(200);
+    const out = (await res.json()) as {
+      discardedDraftId: string; discardedN: number; parentDraftId: string; parentN: number;
+    };
+    expect(out).toMatchObject({
+      discardedDraftId: "dft_v2", discardedN: 2, parentDraftId: seed.draftId, parentN: 1,
+    });
+    // the marker, not deletion: the row is frozen+discarded, promoted bytes intact.
+    const row = (
+      await db.pg.query(
+        `select state, discarded_at is not null as discarded, discarded_by, promoted_version_id is not null as promoted
+           from drafts where id = 'dft_v2'`,
+      )
+    ).rows[0] as { state: string; discarded: boolean; discarded_by: unknown; promoted: boolean };
+    expect(row).toMatchObject({ state: "frozen", discarded: true, promoted: true });
+    expect(row.discarded_by).toMatchObject({ userId: seed.userId });
+    // the parent is the working view again — the 'working' resolve never lands on v2.
+    const resolve = await app.request(`/projects/${seed.projectId}/editor/resolve/working`);
+    const resolved = (await resolve.json()) as { draftId?: string; draftN?: number };
+    expect(resolved).toMatchObject({ draftId: seed.draftId, draftN: 1 });
+    // the rail marks it — the SPA renders "v2 · discarded".
+    const rail = await app.request(`/projects/${seed.projectId}/versions`);
+    const drafts = ((await rail.json()) as { drafts: { n: number; discarded?: boolean }[] }).drafts;
+    expect(drafts.find((d) => d.n === 2)).toMatchObject({ discarded: true });
+    expect(drafts.find((d) => d.n === 1)?.discarded).not.toBe(true);
+  });
+
+  it("409 fork_has_edits once a second materialized save lands on the head", async () => {
+    await seedForkHead({ versions: 2 });
+    const res = await app.request(`/projects/${seed.projectId}/drafts/2/discard-fork`, {
+      method: "POST",
+    });
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as { error: string }).error).toBe("fork_has_edits");
+  });
+
+  it("409 fork_read_by_run once a run's lock set names the head (S-4)", async () => {
+    await seedForkHead();
+    await seedRun(db, {
+      runId: "run_probe",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      workflow: "revise",
+      state: "done",
+      lockSet: ["draft:read:dft_v2"],
+    });
+    const res = await app.request(`/projects/${seed.projectId}/drafts/2/discard-fork`, {
+      method: "POST",
+    });
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as { error: string }).error).toBe("fork_read_by_run");
+  });
+
+  it("409 fork_read_by_run once correspondence references the head (the dossier_ref trigger)", async () => {
+    await seedForkHead();
+    await db.pg.query(
+      `insert into correspondence_items(id, project_id, kind, draft_id, run_id, ordinal, delivered_at, artifact_ids)
+       values ('corr_probe', $1, 'review', 'dft_v2', 'run_probe', 1, now(), '{}')`,
+      [seed.projectId],
+    );
+    const res = await app.request(`/projects/${seed.projectId}/drafts/2/discard-fork`, {
+      method: "POST",
+    });
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as { error: string }).error).toBe("fork_read_by_run");
+  });
+
+  it("409 not_a_fork on the frozen parent, a non-human_revision head, and an already-discarded row", async () => {
+    await seedForkHead();
+    // the frozen base is not a fork.
+    expect(
+      (await app.request(`/projects/${seed.projectId}/drafts/1/discard-fork`, { method: "POST" })).status,
+    ).toBe(409);
+    // discard once, then again — the marker is idempotent-refused, never re-applied.
+    await app.request(`/projects/${seed.projectId}/drafts/2/discard-fork`, { method: "POST" });
+    const again = await app.request(`/projects/${seed.projectId}/drafts/2/discard-fork`, {
+      method: "POST",
+    });
+    expect(again.status).toBe(409);
+    expect(((await again.json()) as { error: string }).error).toBe("not_a_fork");
+  });
+
+  it("404 on another workspace's project and on a missing draft", async () => {
+    await seedForkHead();
+    const other = await seedProject(db, {
+      projectId: "prj_other",
+      workspaceId: "ws_other",
+      userId: "usr_other",
+      billingAccountId: "ba_other",
+    });
+    expect(
+      (await app.request(`/projects/${other.projectId}/drafts/2/discard-fork`, { method: "POST" }))
+        .status,
+    ).toBe(404);
+    expect(
+      (await app.request(`/projects/${seed.projectId}/drafts/99/discard-fork`, { method: "POST" }))
+        .status,
+    ).toBe(404);
+  });
+});

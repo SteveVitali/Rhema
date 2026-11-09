@@ -57,10 +57,11 @@ describe("the §7.4 format bubble (REQ-WRITE-1; R7WRITE.1a)", () => {
     }
   });
 
-  it("the leading Comment slot is reserved for 238 — null today, nothing renders for it", () => {
+  it("the leading Comment slot is R7WRITE.1b's anchored-comment item (REQ-WRITE-2)", () => {
     const model = selectionMenuModel();
-    expect(model.comment).toBeNull();
-    expect(selectionMenuItems()[0]!.format).toBe("bold"); // no dead first row
+    expect(model.comment).toEqual({ label: "Comment", action: "comment" });
+    // Comment is the bubble's FIRST item — ahead of bold (UXC-23/I5's one-click affordance).
+    expect(selectionMenuItems()[0]!.action).toBe("comment");
   });
 
   it("the bubble's agent commands resolve byte-identically to the same string typed in the palette", () => {

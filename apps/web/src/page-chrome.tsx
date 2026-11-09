@@ -147,6 +147,7 @@ export const railLabels: VersionRailLabels = {
   originLabel: (origin) => VR.originLabel[origin] ?? origin,
   workingLabel: VR.workingLabel,
   frozenTitle: VR.frozenTitle,
+  discardedLabel: VR.discardedLabel,
   reviewedFlag: VR.reviewedFlag,
   answeredFlag: VR.answeredFlag,
   claimsPending: VR.claimsPending,

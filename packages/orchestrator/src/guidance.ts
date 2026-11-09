@@ -46,6 +46,8 @@ export interface CaptureGuidanceArgs {
   /** narrows which workflows the guidance applies to; omitted = all workflows. */
   readonly workflows?: readonly string[];
   readonly anchors?: unknown;
+  /** R7WRITE.1b (REQ-WRITE-2) — the draft an anchored inline comment was written on (margin card). */
+  readonly draftId?: string;
 }
 
 type CaptureDeps = Pick<OrchestratorDeps, "ids" | "clock" | "eventWriter">;
@@ -73,8 +75,8 @@ export async function captureGuidanceTx(tx: SqlClient, deps: CaptureDeps, args: 
   }
   await tx.query(
     `insert into guidance(id, project_id, run_id, source, anchors, body, standing, workflows, consumed_by,
-       active, created_by, preference_signal, created_at)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,'[]'::jsonb,true,$9,$10,$11)`,
+       active, created_by, preference_signal, created_at, draft_id)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,'[]'::jsonb,true,$9,$10,$11,$12)`,
     [
       guidanceId,
       args.projectId,
@@ -87,6 +89,7 @@ export async function captureGuidanceTx(tx: SqlClient, deps: CaptureDeps, args: 
       JSON.stringify(args.userId),
       preferenceSignal,
       now,
+      args.draftId ?? null,
     ],
   );
   // The `guidance.captured` event lives on the RUN stream (run_event_seq.run_id → runs.id): it exists to

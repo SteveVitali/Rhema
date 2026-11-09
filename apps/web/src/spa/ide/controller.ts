@@ -830,6 +830,10 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
             openLinkForm(rect);
             return;
           }
+          if (item.action === "comment") {
+            openCommentForm(rect);
+            return;
+          }
           if (item.format) {
             closeCmdMenu();
             window.dispatchEvent(
@@ -841,6 +845,10 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
           if (item.action === "ask") {
             closeCmdMenu();
             commit({ panelOpen: true, panelTab: "chat" });
+            return;
+          }
+          if (item.action === "comment") {
+            openCommentForm(rect);
             return;
           }
           const parsed = item.command ? parseCommand(item.command) : null;
@@ -877,7 +885,7 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
       );
       menu.style.left = `${place.left}px`;
       menu.style.top = `${place.top}px`;
-      menu.dataset["placed"] = place.placed;
+      menu.setAttribute("data-placed", place.placed);
       if (linkMode) openLinkForm(rect);
     };
     /** The Link affordance (bubble item + contextual ⌘K): an inline URL field inside the bubble —
@@ -925,7 +933,58 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
       );
       menu.style.left = `${place.left}px`;
       menu.style.top = `${place.top}px`;
-      menu.dataset["placed"] = place.placed;
+      menu.setAttribute("data-placed", place.placed);
+      input.focus();
+    };
+    /** R7WRITE.1b (REQ-WRITE-2) — the Comment composer's inline form: a textarea + Post inside the
+     *  bubble's own box. The submit is a JSON mutation — `rhema:comment-submit` hands the text to
+     *  PageMount, which derives the selection's anchor from the live view and POSTs the note
+     *  (anchored Guidance) with no reload. Esc dismisses with focus back on the selection. */
+    const openCommentForm = (rect: DOMRect): void => {
+      closeCmdMenu();
+      const menu = document.createElement("div");
+      menu.className = "ide-fmt-bubble";
+      menu.dataset["kind"] = "format-bubble";
+      menu.setAttribute("data-format-bubble", "true");
+      const input = document.createElement("textarea");
+      input.className = "ide-fmt-comment-input";
+      input.setAttribute("data-comment-input", "true");
+      input.setAttribute("data-comment-composer", "true");
+      input.setAttribute("aria-label", "Comment");
+      input.placeholder = "Comment…";
+      input.rows = 2;
+      const apply = document.createElement("button");
+      apply.type = "button";
+      apply.className = "ide-fmt-item";
+      apply.setAttribute("data-comment-submit", "true");
+      apply.textContent = "Post";
+      const commitComment = (): void => {
+        const text = input.value.trim();
+        if (text === "") return;
+        window.dispatchEvent(new CustomEvent("rhema:comment-submit", { detail: { text } }));
+        closeCmdMenu();
+        focusPageSelection();
+      };
+      apply.addEventListener("click", commitComment);
+      input.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter" && (ev.metaKey || ev.ctrlKey)) commitComment();
+        if (ev.key === "Escape") {
+          closeCmdMenu();
+          focusPageSelection();
+        }
+      });
+      menu.appendChild(input);
+      menu.appendChild(apply);
+      document.body.appendChild(menu);
+      cmdMenu = menu;
+      const place = formatBubblePlacement(
+        rect,
+        { width: menu.offsetWidth, height: menu.offsetHeight },
+        { w: window.innerWidth, h: window.innerHeight },
+      );
+      menu.style.left = `${place.left}px`;
+      menu.style.top = `${place.top}px`;
+      menu.setAttribute("data-placed", place.placed);
       input.focus();
     };
     const pageSelectionRect = (): DOMRect | null => {
