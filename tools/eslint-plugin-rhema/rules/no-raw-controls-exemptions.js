@@ -50,4 +50,16 @@ module.exports = [
     reason:
       "the mark-read form's hidden `item` id is the no-JS post's field — the KIT-1-styled native-form grammar stays (RV-36); every visible control is a primitive.",
   },
+  {
+    file: "apps/web/src/spa/surfaces/settings.tsx",
+    component: "HiddenField",
+    reason:
+      "the no-JS post's hidden id carriers (sessionId, personaId) — Radix's own hidden select/radio/checkbox inputs carry the named fields, so only these ids ride a raw input (RV-36); every visible control is a primitive.",
+  },
+  {
+    file: "apps/web/src/spa/surfaces/billing.tsx",
+    component: "HiddenField",
+    reason:
+      "the no-JS post's hidden id carriers (tier, packId) — Radix's own hidden carriers cover the named fields, so only these ids ride a raw input (RV-36); every visible control is a primitive.",
+  },
 ];

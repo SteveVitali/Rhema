@@ -18,7 +18,13 @@ import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
 import type { BffProjectUsageTwin, BffUsageTwin } from "./queries.js";
-import { axeCheck, restoreDocumentNav, SETTLE_TIMEOUT, settled, stubDocumentNav } from "./testkit.js";
+import {
+  axeCheck,
+  restoreDocumentNav,
+  SETTLE_TIMEOUT,
+  settled,
+  stubDocumentNav,
+} from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -31,7 +37,13 @@ const SLUG = "acme";
 // The fixtures mirror the retained SSR spec's (billing-pages.test.ts) shapes exactly — the
 // parity assertions compare the two renderers on the SAME data.
 const ACCOUNT: UsageAccountDto = {
-  level0: { spendableCredits: 3100, heldCredits: 120, plan: "writer", trialState: null, trialDaysLeft: null },
+  level0: {
+    spendableCredits: 3100,
+    heldCredits: 120,
+    plan: "writer",
+    trialState: null,
+    trialDaysLeft: null,
+  },
   buckets: [
     { bucket: "included", available: 2000, held: 100, expiresAt: "2026-10-01T00:00:00Z" },
     { bucket: "topup", available: 1100, held: 20, expiresAt: "2027-06-01T00:00:00Z" },
@@ -43,7 +55,8 @@ const ACCOUNT: UsageAccountDto = {
   periodStart: "2026-09-01T00:00:00Z",
   periodEnd: "2026-10-01T00:00:00Z",
   warnings: ["Included credits reset in 7 days — 500 over the rollover cap will expire."],
-  nextExpiry: { bucket: "included", credits: 500, at: "2026-10-01T00:00:00Z" } };
+  nextExpiry: { bucket: "included", credits: 500, at: "2026-10-01T00:00:00Z" },
+};
 
 const USAGE: UsageDto = {
   spendableCredits: 3100,
@@ -58,17 +71,36 @@ const USAGE: UsageDto = {
       capCredits: 90,
       spentCredits: 55,
       createdAt: "2026-09-20T10:00:00Z",
-      endedAt: "2026-09-20T10:12:00Z" },
-  ] };
+      endedAt: "2026-09-20T10:12:00Z",
+    },
+  ],
+};
 
 const PROJECT_USAGE: UsageProjectDto = {
   projectId: "proj_a",
   projectName: "Alpha Essay",
   totalCredits: 88,
   runs: [
-    { runId: "run_1", at: "2026-09-20T10:00:00Z", workflow: "review", state: "delivered", credits: 55, estimateCredits: 60, capCredits: 90 },
-    { runId: "run_2", at: "2026-09-21T10:00:00Z", workflow: "chat", state: "delivered", credits: 33, estimateCredits: 30, capCredits: 45 },
-  ] };
+    {
+      runId: "run_1",
+      at: "2026-09-20T10:00:00Z",
+      workflow: "review",
+      state: "delivered",
+      credits: 55,
+      estimateCredits: 60,
+      capCredits: 90,
+    },
+    {
+      runId: "run_2",
+      at: "2026-09-21T10:00:00Z",
+      workflow: "chat",
+      state: "delivered",
+      credits: 33,
+      estimateCredits: 30,
+      capCredits: 45,
+    },
+  ],
+};
 
 function usageTwin(over?: Partial<BffUsageTwin>): BffUsageTwin {
   return { usage: USAGE, account: ACCOUNT, ...over };
@@ -80,16 +112,19 @@ function projectTwin(): BffProjectUsageTwin {
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json" } });
+    headers: { "content-type": "application/json" },
+  });
 }
 
 /** The fetch stub — every same-origin path the mount can reach is named; anything else 500s so a
  *  surprise read fails loudly rather than fabricating data. */
-function makeFetch(opts: {
-  usage?: BffUsageTwin;
-  project?: BffProjectUsageTwin;
-  projectStatus?: number;
-} = {}) {
+function makeFetch(
+  opts: {
+    usage?: BffUsageTwin;
+    project?: BffProjectUsageTwin;
+    projectStatus?: number;
+  } = {},
+) {
   return vi.fn(async (input: RequestInfo | URL) => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (url === "/session") return jsonResponse(200, PRINCIPAL);
@@ -118,7 +153,8 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
   document.body.appendChild(el);
   const { router, queryClient } = createSpaRouter({
     boot,
-    history: createMemoryHistory({ initialEntries: [path] }) });
+    history: createMemoryHistory({ initialEntries: [path] }),
+  });
   const root = createRoot(el);
   mounted.push(root);
   await act(async () => {
@@ -132,9 +168,12 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
   // REQ-ENG-1 — return only once the match has RESOLVED: `data-mounted` on <html> is the
   // router's settled-leaf stamp (REQ-NAVT-2). Bare post-mount selector reads raced that
   // commit — the BL-87 mount-settle flake class.
-  await vi.waitFor(() => {
-    expect(document.documentElement.getAttribute("data-mounted")).not.toBeNull();
-    }, { timeout: SETTLE_TIMEOUT });
+  await vi.waitFor(
+    () => {
+      expect(document.documentElement.getAttribute("data-mounted")).not.toBeNull();
+    },
+    { timeout: SETTLE_TIMEOUT },
+  );
   return { router, queryClient, el };
 }
 
@@ -195,7 +234,7 @@ describe("GET /usage mounted (REQ-SEQ-9 — the flipped surface)", () => {
 
   it("component axe on the mounted surface (REQ-VFY-6)", async () => {
     await mountAt("/usage", BOOT, makeFetch());
-    await axeCheck((await settled("[data-spa-surface]")));
+    await axeCheck(await settled("[data-spa-surface]"));
   });
 
   it("beats the SSR dwell heartbeat to /a/dwell — REQ-BETA-10's React-effect port", async () => {
@@ -221,7 +260,6 @@ describe("GET /usage mounted (REQ-SEQ-9 — the flipped surface)", () => {
     }
   });
 
-
   it("a degraded seam renders the surviving half only — never a fabricated zero (REQ-BFF-9)", async () => {
     await mountAt("/usage", BOOT, makeFetch({ usage: usageTwin({ account: null }) }));
     const main = el()!;
@@ -238,7 +276,11 @@ describe("GET /usage mounted (REQ-SEQ-9 — the flipped surface)", () => {
   });
 
   it("empty runs render the empty state — no table", async () => {
-    await mountAt("/usage", BOOT, makeFetch({ usage: usageTwin({ usage: { ...USAGE, runs: [] } }) }));
+    await mountAt(
+      "/usage",
+      BOOT,
+      makeFetch({ usage: usageTwin({ usage: { ...USAGE, runs: [] } }) }),
+    );
     const main = el()!;
     expect(main.textContent).toContain(COPY.usage.runEmpty);
     expect(main.querySelector("[data-usage-runs]")).toBeNull();
@@ -262,22 +304,32 @@ describe("GET /p/:slug/usage mounted (REQ-SEQ-9 — the level-2 rollup)", () => 
     expect(document.documentElement.getAttribute("data-route")).toBe("/p/$project/usage");
     const main = el()!;
     expect(main.querySelector("h1")?.textContent).toBe(COPY.projectUsage.heading);
-    expect(main.querySelector("[data-project-usage-total]")?.textContent).toBe("88 cr across 2 runs");
+    expect(main.querySelector("[data-project-usage-total]")?.textContent).toBe(
+      "88 cr across 2 runs",
+    );
     expect(main.querySelector("[data-project-usage-runs]")).not.toBeNull();
     expect(main.querySelector('[data-project-usage-run="run_1"]')).not.toBeNull();
-    const report = main.querySelector<HTMLAnchorElement>(
-      '[data-project-usage-run="run_1"] a',
-    );
+    // REQ-KIT-4 (D4) — enum keys render as labels: "Review"/"Delivered", never snake_case keys.
+    const row = main.querySelector('[data-project-usage-run="run_1"]')!;
+    expect(row.textContent).toContain("Review");
+    expect(row.textContent).toContain("Delivered");
+    expect(main.textContent).not.toMatch(/\b[a-z][a-z0-9]*_[a-z0-9_]+\b/);
+    const report = main.querySelector<HTMLAnchorElement>('[data-project-usage-run="run_1"] a');
     expect(report?.getAttribute("href")).toBe("/app/usage/r/run_1");
     expect(report?.textContent).toBe(COPY.projectUsage.runReportCta);
     // R7SHELL.1b — the "Back to the project" nav idiom is now the Project › Surface crumb.
     const crumb = main.querySelector("[data-page-breadcrumb]");
-    expect(crumb?.querySelector<HTMLAnchorElement>('[data-breadcrumb-link]')?.getAttribute("href")).toBe(`/p/${SLUG}`);
-    expect(crumb?.querySelector<HTMLAnchorElement>('[data-breadcrumb-link]')?.textContent).toBe("Alpha Essay");
-    expect(crumb?.querySelector('[aria-current="page"]')?.textContent).toBe(COPY.projectUsage.heading);
-    await axeCheck((await settled("[data-spa-surface]")));
+    expect(
+      crumb?.querySelector<HTMLAnchorElement>("[data-breadcrumb-link]")?.getAttribute("href"),
+    ).toBe(`/p/${SLUG}`);
+    expect(crumb?.querySelector<HTMLAnchorElement>("[data-breadcrumb-link]")?.textContent).toBe(
+      "Alpha Essay",
+    );
+    expect(crumb?.querySelector('[aria-current="page"]')?.textContent).toBe(
+      COPY.projectUsage.heading,
+    );
+    await axeCheck(await settled("[data-spa-surface]"));
   });
-
 
   it("the query key carries the slug — the browser key grammar is [bff, p, slug, usage]", async () => {
     const f = makeFetch();
@@ -285,10 +337,10 @@ describe("GET /p/:slug/usage mounted (REQ-SEQ-9 — the level-2 rollup)", () => 
     expect(f.mock.calls.some(([u]) => String(u) === `/bff/p/${SLUG}/usage`)).toBe(true);
   });
 
-
   it("empty runs render the empty state", async () => {
     const f = makeFetch({
-      project: { usageProject: { ...PROJECT_USAGE, totalCredits: 0, runs: [], slug: SLUG } } });
+      project: { usageProject: { ...PROJECT_USAGE, totalCredits: 0, runs: [], slug: SLUG } },
+    });
     await mountAt(`/p/${SLUG}/usage`, BOOT, f);
     const main = el()!;
     expect(main.textContent).toContain(COPY.projectUsage.runEmpty);

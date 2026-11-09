@@ -38,6 +38,7 @@ import { useRouter } from "@tanstack/react-router";
 import type { FormEvent, ReactNode } from "react";
 import { PageBody, PageHeader } from "../page-header.js";
 import type { BillingPlanDto } from "@rhema/api-client";
+import { Button, Checkbox, Select, TextField } from "@rhema/ui";
 import { COPY } from "../../copy.js";
 import { billingNoticeFor } from "../../billing-copy.js";
 import { bffFetch } from "../bff.js";
@@ -48,10 +49,24 @@ import { SettingsNav } from "./settings.js";
 // Destructure the COPY branches once — the REQ-SAFE-10 leaf scan keys on `COPY.<path>` literals.
 const { billing: B, phoneBlocked: PB } = COPY;
 
+/**
+ * The no-JS form grammar's hidden carrier — GUARD-1's named exemption owns this one component
+ * (the `tier`/`packId` ids the Radix wrappers do not carry; R7KIT.3a).
+ */
+function HiddenField({
+  name,
+  value,
+}: {
+  readonly name: string;
+  readonly value: string;
+}): ReactNode {
+  return <input type="hidden" name={name} value={value} />;
+}
+
 /** P1.19's phone-width note — verbatim from pages.tsx `PhoneBlockedNote`. */
 function PhoneBlockedNote(): ReactNode {
   return (
-    <p data-phone-blocked="true" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", maxWidth: "68ch" }}>
+    <p data-phone-blocked="true" className="ui-set-t ui-set-t--m ui-set-t--meas">
       {PB.note}
     </p>
   );
@@ -206,7 +221,9 @@ export function BillingSurface({ twin, saved, notice, compact }: BillingSurfaceP
         <PageBody>
           <PageHeader title={B.heading} />
           <SettingsNav active="billing" />
-          <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }} data-billing-down="true">{B.stripeDownNote}</p>
+          <p className="ui-set-t ui-set-t--m" data-billing-down="true">
+            {B.stripeDownNote}
+          </p>
         </PageBody>
       </div>
     );
@@ -229,204 +246,315 @@ export function BillingSurface({ twin, saved, notice, compact }: BillingSurfaceP
             flash, and the key remounts the uncontrolled forms so they re-read the
             (already-invalidated) server truth — a refused write reverts the controls like the
             SSR 302 did (the settings frame's contentKey precedent). */}
-        <div key={`${saved ? "1" : ""}|${notice ?? ""}`} style={{ maxWidth: "640px" }}>
-
-        {sub.subscription?.pastDue ? (
-          <p data-past-due="true" style={{ fontSize: "13px", color: "var(--sev-major)", margin: "8px 0" }}>
-            {B.pastDueBanner}
-          </p>
-        ) : null}
-        {noticeCopy ? (
-          <p data-notice="true" style={{ fontSize: "13px", color: "var(--sev-major)", margin: "8px 0" }}>{noticeCopy}</p>
-        ) : null}
-        {/* BILL.3 — the purchase switch rendered truthfully: while the api reports `closed` the page
+        <div key={`${saved ? "1" : ""}|${notice ?? ""}`} className="ui-set-main">
+          {sub.subscription?.pastDue ? (
+            <p data-past-due="true" className="ui-set-t ui-set-t--warn">
+              {B.pastDueBanner}
+            </p>
+          ) : null}
+          {noticeCopy ? (
+            <p data-notice="true" className="ui-set-t ui-set-t--warn">
+              {noticeCopy}
+            </p>
+          ) : null}
+          {/* BILL.3 — the purchase switch rendered truthfully: while the api reports `closed` the page
             shows the paused note and the subscribe/top-up/portal forms never mount (the POSTs would
             403 anyway — this is the honest surface, not a trap door). */}
-        {!purchaseOpen ? (
-          <p data-purchase-paused="true" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0" }}>
-            {B.purchasePausedNote}
-          </p>
-        ) : null}
-        {saved ? (
-          <p data-saved="true" style={{ fontSize: "13px", color: "var(--state-ready)", margin: "8px 0" }}>{B.saved}</p>
-        ) : null}
+          {!purchaseOpen ? (
+            <p data-purchase-paused="true" className="ui-set-t ui-set-t--m">
+              {B.purchasePausedNote}
+            </p>
+          ) : null}
+          {saved ? (
+            <p data-saved="true" className="ui-set-t ui-set-t--ok">
+              {B.saved}
+            </p>
+          ) : null}
 
-        <section data-plan-card="true" style={{ margin: "12px 0 20px" }}>
-          <h2 style={{ fontSize: "14px", margin: "0 0 8px" }}>{B.planHeading}</h2>
-          {sub.trial.state === "trial_active" || sub.trial.state === "trial_pending" ? (
-            <p data-trial-state={sub.trial.state === "trial_pending" ? "pending" : "active"} style={{ fontSize: "13px", margin: "4px 0" }}>
-              {/* HOT.1/ACT.1 — the api nulls `includedNote` while the claim is gated off for this
+          <section data-plan-card="true" className="ui-set-sec">
+            <h2 className="ui-set-h2">{B.planHeading}</h2>
+            {sub.trial.state === "trial_active" || sub.trial.state === "trial_pending" ? (
+              <p
+                data-trial-state={sub.trial.state === "trial_pending" ? "pending" : "active"}
+                className="ui-set-t"
+              >
+                {/* HOT.1/ACT.1 — the api nulls `includedNote` while the claim is gated off for this
                   audience; the badge + claim render together, else the factual window note. Pending
                   adds the eligibility line: the entitlement is `locked` until the first run claims it
                   through the device check (§14.3 identity-before-spend). */}
-              {plans.trial.includedNote != null ? (
-                <>
-                  <span style={{ fontSize: "11px", padding: "1px 6px", borderRadius: "999px", border: "1px solid var(--accent)", color: "var(--accent)" }}>{B.includedBadge}</span>
-                  {" "}{plans.trial.includedNote}
-                  {sub.trial.state === "trial_pending" ? <>{" "}{plans.trial.eligibilityLine}</> : null}
-                </>
-              ) : B.trialWindowFmt.replace("{days}", String(plans.trial.windowDays))}
-            </p>
-          ) : sub.trial.state === "trial_denied" ? (
-            <p data-trial-state="denied" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "4px 0" }}>{B.trialDeniedNote}</p>
-          ) : sub.trial.state === "trial_used" ? (
-            <p data-trial-state="used" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "4px 0" }}>{B.trialUsedNote}</p>
-          ) : null}
-          {current === "free" ? (
-            <p data-current-plan="free" style={{ fontSize: "13px", margin: "4px 0" }}>{B.freeNote}</p>
-          ) : (
-            <p data-current-plan={current} style={{ fontSize: "13px", margin: "4px 0" }}>
-              <strong>{plans.plans[current]?.display ?? current}</strong>
-              {sub.subscription ? (
-                <>
-                  {" · "}
-                  {sub.subscription.cancelAtPeriodEnd
-                    ? B.cancelScheduledFmt.replace("{at}", sub.subscription.periodEnd.slice(0, 10))
-                    : sub.subscription.scheduledTier
-                      ? B.scheduledDowngradeFmt
-                          .replace("{tier}", plans.plans[sub.subscription.scheduledTier]?.display ?? sub.subscription.scheduledTier)
-                          .replace("{at}", sub.subscription.periodEnd.slice(0, 10))
-                      : B.periodEndFmt.replace("{at}", sub.subscription.periodEnd.slice(0, 10))}
-                </>
-              ) : null}
-            </p>
-          )}
-        </section>
-
-        {/* P1.19 — §10.1 ✗: billing/configuration controls (plan ladder forms, top-ups, auto-reload,
-            portal) never render on phone width; the read-only plan card above stays. */}
-        {compact === true ? <PhoneBlockedNote /> : (
-        <>
-        <section data-plan-ladder="true" style={{ margin: "0 0 20px" }}>
-          {planEntries.map(([tier, plan]: [string, BillingPlanDto]) => {
-            const isCurrent = tier === current;
-            // The per-card action, computed ahead of the JSX so the nested ternary never sits
-            // between tags (the REQ-SAFE-10 inline-copy sweep scans `>…<` spans lexically).
-            const waitlistForm = (
-              <form method="post" action="/app/settings/billing/waitlist" data-waitlist-form="true" style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
-                <input type="email" name="email" required placeholder={B.teamEmailLabel}
-                  style={{ padding: "5px 8px", fontSize: "12px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)" }} />
-                <input type="number" name="seats" min={1} placeholder={B.teamSeatsLabel}
-                  style={{ width: "70px", padding: "5px 8px", fontSize: "12px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)" }} />
-                <button type="submit" style={{ fontSize: "12px" }}>{B.teamCta}</button>
-                <span style={{ fontSize: "11px", color: "var(--shell-fg-faint)" }}>{B.waitlistBadge}</span>
-              </form>
-            );
-            const cancelForm = (
-              <form method="post" action="/app/settings/billing/cancel" data-cancel-form="true">
-                <button type="submit" style={{ fontSize: "12px" }}>{B.cancelCta}</button>
-                <span style={{ fontSize: "11px", color: "var(--shell-fg-faint)", marginLeft: "8px" }}>{B.cancelNote}</span>
-              </form>
-            );
-            const subscribeForm = (
-              <form method="post" action="/app/settings/billing/subscribe" data-subscribe-form={tier} style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-                <input type="hidden" name="tier" value={tier} />
-                <select name="cycle" aria-label={B.cycleLabel} style={{ fontSize: "12px", padding: "4px 6px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)" }}>
-                  <option value="monthly">{B.monthlyLabel}</option>
-                  <option value="annual">{B.annualLabel}</option>
-                </select>
-                <button type="submit" style={{ fontSize: "12px" }}>{B.subscribeCta.replace("{tier}", plan.display)}</button>
-              </form>
-            );
-            // BILL.3 — no subscribe form while purchase is closed.
-            const cardAction = plan.waitlist
-              ? waitlistForm
-              : isCurrent
-                ? sub.subscription && !sub.subscription.cancelAtPeriodEnd
-                  ? cancelForm
-                  : null
-                : purchaseOpen
-                  ? subscribeForm
-                  : null;
-            return (
-              <div key={tier} data-plan={tier} style={{ border: "1px solid var(--shell-border)", borderRadius: "8px", padding: "12px 14px", margin: "0 0 10px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "8px" }}>
-                  <strong style={{ fontSize: "14px" }}>{plan.display}</strong>
-                  <span style={{ fontSize: "13px", fontVariantNumeric: "tabular-nums" }}>
-                    {/* PR-U6/ACT.1 — Team is per-seat (`$40/seat/mo`); the annual figure reads
-                        "billed annually", never the "$/mo Annual" concat; null ⇒ no annual offer. */}
-                    ${plan.monthlyUsd}{plan.perSeat ? "/seat/mo" : "/mo"}
-                    {plan.annualMonthlyUsd != null && plan.annualMonthlyUsd < plan.monthlyUsd ? (
-                      <span style={{ color: "var(--shell-fg-muted)" }}> · ${plan.annualMonthlyUsd}/mo {B.annualBillingLabel}</span>
+                {plans.trial.includedNote != null ? (
+                  <>
+                    <span className="ui-badge ui-badge--accent">{B.includedBadge}</span>{" "}
+                    {plans.trial.includedNote}
+                    {sub.trial.state === "trial_pending" ? (
+                      <> {plans.trial.eligibilityLine}</>
                     ) : null}
-                  </span>
-                </div>
-                {/* HOT.1 — null while the plan's coverage line is a hidden claim (DTO-redacted). */}
-                {plan.whatItCovers != null ? (
-                  <p style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "4px 0 8px" }}>{plan.whatItCovers}</p>
+                  </>
+                ) : (
+                  B.trialWindowFmt.replace("{days}", String(plans.trial.windowDays))
+                )}
+              </p>
+            ) : sub.trial.state === "trial_denied" ? (
+              <p data-trial-state="denied" className="ui-set-t ui-set-t--m">
+                {B.trialDeniedNote}
+              </p>
+            ) : sub.trial.state === "trial_used" ? (
+              <p data-trial-state="used" className="ui-set-t ui-set-t--m">
+                {B.trialUsedNote}
+              </p>
+            ) : null}
+            {current === "free" ? (
+              <p data-current-plan="free" className="ui-set-t">
+                {B.freeNote}
+              </p>
+            ) : (
+              <p data-current-plan={current} className="ui-set-t">
+                <strong>{plans.plans[current]?.display ?? current}</strong>
+                {sub.subscription ? (
+                  <>
+                    {" · "}
+                    {sub.subscription.cancelAtPeriodEnd
+                      ? B.cancelScheduledFmt.replace(
+                          "{at}",
+                          sub.subscription.periodEnd.slice(0, 10),
+                        )
+                      : sub.subscription.scheduledTier
+                        ? B.scheduledDowngradeFmt
+                            .replace(
+                              "{tier}",
+                              plans.plans[sub.subscription.scheduledTier]?.display ??
+                                sub.subscription.scheduledTier,
+                            )
+                            .replace("{at}", sub.subscription.periodEnd.slice(0, 10))
+                        : B.periodEndFmt.replace("{at}", sub.subscription.periodEnd.slice(0, 10))}
+                  </>
                 ) : null}
-                {cardAction}
-              </div>
-            );
-          })}
-        </section>
+              </p>
+            )}
+          </section>
 
-        <section data-topups="true" style={{ margin: "0 0 20px" }}>
-          <h2 style={{ fontSize: "14px", margin: "0 0 8px" }}>{B.topupHeading}</h2>
-          {/* BILL.3 — §14.2: Free never sees a Checkout top-up (the api would 402 `topups_require_plan`);
+          {/* P1.19 — §10.1 ✗: billing/configuration controls (plan ladder forms, top-ups, auto-reload,
+            portal) never render on phone width; the read-only plan card above stays. */}
+          {compact === true ? (
+            <PhoneBlockedNote />
+          ) : (
+            <>
+              <section data-plan-ladder="true" className="ui-set-sec">
+                {planEntries.map(([tier, plan]: [string, BillingPlanDto]) => {
+                  const isCurrent = tier === current;
+                  // The per-card action, computed ahead of the JSX so the nested ternary never sits
+                  // between tags (the REQ-SAFE-10 inline-copy sweep scans `>…<` spans lexically).
+                  const waitlistForm = (
+                    <form
+                      method="post"
+                      action="/app/settings/billing/waitlist"
+                      data-waitlist-form="true"
+                      className="ui-set-form"
+                    >
+                      <TextField
+                        type="email"
+                        name="email"
+                        required
+                        placeholder={B.teamEmailLabel}
+                        aria-label={B.teamEmailLabel}
+                      />
+                      <TextField
+                        type="number"
+                        name="seats"
+                        min={1}
+                        placeholder={B.teamSeatsLabel}
+                        aria-label={B.teamSeatsLabel}
+                        className="ui-field--w"
+                      />
+                      <Button type="submit" size="sm">
+                        {B.teamCta}
+                      </Button>
+                      <span className="ui-set-t--sm ui-set-t--f">{B.waitlistBadge}</span>
+                    </form>
+                  );
+                  const cancelForm = (
+                    <form
+                      method="post"
+                      action="/app/settings/billing/cancel"
+                      data-cancel-form="true"
+                      className="ui-set-form"
+                    >
+                      <Button type="submit" size="sm" variant="danger">
+                        {B.cancelCta}
+                      </Button>
+                      <span className="ui-set-t--sm ui-set-t--f">{B.cancelNote}</span>
+                    </form>
+                  );
+                  const subscribeForm = (
+                    <form
+                      method="post"
+                      action="/app/settings/billing/subscribe"
+                      data-subscribe-form={tier}
+                      className="ui-set-form"
+                    >
+                      <HiddenField name="tier" value={tier} />
+                      <Select
+                        name="cycle"
+                        defaultValue="monthly"
+                        aria-label={B.cycleLabel}
+                        items={[
+                          { value: "monthly", label: B.monthlyLabel },
+                          { value: "annual", label: B.annualLabel },
+                        ]}
+                      />
+                      <Button type="submit" size="sm">
+                        {B.subscribeCta.replace("{tier}", plan.display)}
+                      </Button>
+                    </form>
+                  );
+                  // BILL.3 — no subscribe form while purchase is closed.
+                  const cardAction = plan.waitlist
+                    ? waitlistForm
+                    : isCurrent
+                      ? sub.subscription && !sub.subscription.cancelAtPeriodEnd
+                        ? cancelForm
+                        : null
+                      : purchaseOpen
+                        ? subscribeForm
+                        : null;
+                  return (
+                    <div key={tier} data-plan={tier} className="ui-set-card">
+                      <div className="ui-bill-head">
+                        <strong className="ui-set-h2">{plan.display}</strong>
+                        <span className="ui-bill-price">
+                          {/* PR-U6/ACT.1 — Team is per-seat (`$40/seat/mo`); the annual figure reads
+                        "billed annually", never the "$/mo Annual" concat; null ⇒ no annual offer. */}
+                          ${plan.monthlyUsd}
+                          {plan.perSeat ? "/seat/mo" : "/mo"}
+                          {plan.annualMonthlyUsd != null &&
+                          plan.annualMonthlyUsd < plan.monthlyUsd ? (
+                            <span className="ui-set-t--m">
+                              {" "}
+                              · ${plan.annualMonthlyUsd}/mo {B.annualBillingLabel}
+                            </span>
+                          ) : null}
+                        </span>
+                      </div>
+                      {/* HOT.1 — null while the plan's coverage line is a hidden claim (DTO-redacted). */}
+                      {plan.whatItCovers != null ? (
+                        <p className="ui-set-note ui-set-t--m">{plan.whatItCovers}</p>
+                      ) : null}
+                      {cardAction}
+                    </div>
+                  );
+                })}
+              </section>
+
+              <section data-topups="true" className="ui-set-sec">
+                <h2 className="ui-set-h2">{B.topupHeading}</h2>
+                {/* BILL.3 — §14.2: Free never sees a Checkout top-up (the api would 402 `topups_require_plan`);
               the honest note renders in place of the pack buttons. Purchase-closed hides them too. */}
-          {!purchaseOpen ? null : sub.tier === "free" ? (
-            <p data-topup-gated="true" style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "0 0 8px" }}>
-              {B.topupRequiresPlanNote}
-            </p>
-          ) : plans.topUpPacks.map((p) => (
-            <form key={p.id} method="post" action="/app/settings/billing/topup" data-topup-form={p.id} style={{ display: "inline-block", margin: "0 8px 8px 0" }}>
-              <input type="hidden" name="packId" value={p.id} />
-              <button type="submit" style={{ fontSize: "12px" }}>
-                {B.topupCta.replace("{n}", p.credits.toLocaleString("en-US")).replace("{usd}", String(p.usd))}
-              </button>
-            </form>
-          ))}
-        </section>
+                {!purchaseOpen ? null : sub.tier === "free" ? (
+                  <p data-topup-gated="true" className="ui-set-note ui-set-t--m">
+                    {B.topupRequiresPlanNote}
+                  </p>
+                ) : (
+                  plans.topUpPacks.map((p) => (
+                    <form
+                      key={p.id}
+                      method="post"
+                      action="/app/settings/billing/topup"
+                      data-topup-form={p.id}
+                      className="ui-bill-pack"
+                    >
+                      <HiddenField name="packId" value={p.id} />
+                      <Button type="submit" size="sm">
+                        {B.topupCta
+                          .replace("{n}", p.credits.toLocaleString("en-US"))
+                          .replace("{usd}", String(p.usd))}
+                      </Button>
+                    </form>
+                  ))
+                )}
+              </section>
 
-        <section data-auto-reload="true" style={{ margin: "0 0 20px" }}>
-          <h2 style={{ fontSize: "14px", margin: "0 0 8px" }}>{B.autoReloadHeading}</h2>
-          <p style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "0 0 8px" }}>{B.autoReloadNote}</p>
-          <form method="post" action="/app/settings/billing/auto-reload" data-auto-reload-form="true" style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", fontSize: "12px" }}>
-            <label style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-              <input type="checkbox" name="enabled" value="1" defaultChecked={sub.autoReload.enabled} />
-              {B.autoReloadEnable}
-            </label>
-            <label>
-              {B.autoReloadThresholdLabel}{" "}
-              <input type="number" name="thresholdCredits" min={1} defaultValue={sub.autoReload.thresholdCredits ?? 500}
-                style={{ width: "90px", padding: "4px 6px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", fontSize: "12px" }} />
-            </label>
-            <label>
-              {B.autoReloadPackLabel}{" "}
-              <select name="packId" defaultValue={sub.autoReload.packId ?? plans.topUpPacks[0]?.id}
-                style={{ padding: "4px 6px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", fontSize: "12px" }}>
-                {plans.topUpPacks.map((p) => (
-                  <option key={p.id} value={p.id}>${p.usd} — {p.credits.toLocaleString("en-US")} cr</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              {B.autoReloadCapLabel}{" "}
-              <input type="number" name="monthlyCapUsd" min={1} defaultValue={sub.autoReload.monthlyCapUsd ?? 50}
-                style={{ width: "70px", padding: "4px 6px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", fontSize: "12px" }} />
-            </label>
-            <button type="submit" style={{ fontSize: "12px" }}>{B.autoReloadSave}</button>
-          </form>
-        </section>
+              <section data-auto-reload="true" className="ui-set-sec">
+                <h2 className="ui-set-h2">{B.autoReloadHeading}</h2>
+                <p className="ui-set-note ui-set-t--m">{B.autoReloadNote}</p>
+                <form
+                  method="post"
+                  action="/app/settings/billing/auto-reload"
+                  data-auto-reload-form="true"
+                  className="ui-set-form"
+                >
+                  <label className="ui-set-row">
+                    <Checkbox
+                      name="enabled"
+                      value="1"
+                      defaultChecked={sub.autoReload.enabled}
+                      aria-label={B.autoReloadEnable}
+                    />
+                    {B.autoReloadEnable}
+                  </label>
+                  <label>
+                    {B.autoReloadThresholdLabel}{" "}
+                    <TextField
+                      type="number"
+                      name="thresholdCredits"
+                      min={1}
+                      defaultValue={sub.autoReload.thresholdCredits ?? 500}
+                      aria-label={B.autoReloadThresholdLabel}
+                      className="ui-field--w"
+                    />
+                  </label>
+                  <label>
+                    {B.autoReloadPackLabel}{" "}
+                    <Select
+                      name="packId"
+                      defaultValue={sub.autoReload.packId ?? plans.topUpPacks[0]?.id}
+                      aria-label={B.autoReloadPackLabel}
+                      items={plans.topUpPacks.map((p) => ({
+                        value: p.id,
+                        label: `$${p.usd} — ${p.credits.toLocaleString("en-US")} cr`,
+                      }))}
+                    />
+                  </label>
+                  <label>
+                    {B.autoReloadCapLabel}{" "}
+                    <TextField
+                      type="number"
+                      name="monthlyCapUsd"
+                      min={1}
+                      defaultValue={sub.autoReload.monthlyCapUsd ?? 50}
+                      aria-label={B.autoReloadCapLabel}
+                      className="ui-field--w"
+                    />
+                  </label>
+                  <Button type="submit" size="sm">
+                    {B.autoReloadSave}
+                  </Button>
+                </form>
+              </section>
 
-        {/* BILL.3 — the Portal is a purchase entry point too: while the switch is closed the form never
+              {/* BILL.3 — the Portal is a purchase entry point too: while the switch is closed the form never
             mounts (the api would 403 before the Stripe call anyway). */}
-        {sub.hasStripeCustomer && purchaseOpen ? (
-          <form method="post" action="/app/settings/billing/portal" data-portal-form="true" style={{ margin: "0 0 20px" }}>
-            <button type="submit" style={{ fontSize: "12px" }}>{B.manageCta}</button>
-            <span style={{ fontSize: "11px", color: "var(--shell-fg-faint)", marginLeft: "8px" }}>{B.manageNote}</span>
-          </form>
-        ) : null}
-        {/* BILL.3 — no stripe_customer yet ⇒ name the reason instead of hiding the affordance silently
+              {sub.hasStripeCustomer && purchaseOpen ? (
+                <form
+                  method="post"
+                  action="/app/settings/billing/portal"
+                  data-portal-form="true"
+                  className="ui-set-form ui-set-sec"
+                >
+                  <Button type="submit" size="sm">
+                    {B.manageCta}
+                  </Button>
+                  <span className="ui-set-t--sm ui-set-t--f">{B.manageNote}</span>
+                </form>
+              ) : null}
+              {/* BILL.3 — no stripe_customer yet ⇒ name the reason instead of hiding the affordance silently
             only when purchase is open (while closed the paused note already explains). */}
-        {!sub.hasStripeCustomer && purchaseOpen ? (
-          <p data-no-customer="true" style={{ fontSize: "11px", color: "var(--shell-fg-faint)", margin: "0 0 20px" }}>
-            {B.noStripeCustomerNote}
-          </p>
-        ) : null}
-        </>
-        )}
+              {!sub.hasStripeCustomer && purchaseOpen ? (
+                <p data-no-customer="true" className="ui-set-t--sm ui-set-t--f ui-set-sec">
+                  {B.noStripeCustomerNote}
+                </p>
+              ) : null}
+            </>
+          )}
         </div>
       </PageBody>
     </div>
@@ -446,14 +574,15 @@ export function BillingSurface({ twin, saved, notice, compact }: BillingSurfaceP
 export function BillingReturnSurface({ twin }: { readonly twin: BffBillingReturnTwin }): ReactNode {
   const { checkoutReturn, cancelled } = twin;
   const state = cancelled ? "cancelled" : (checkoutReturn?.state ?? "open");
-  const back = checkoutReturn?.returnTo != null && checkoutReturn.returnTo.startsWith("/")
-    ? checkoutReturn.returnTo
-    : "/app/settings/billing";
+  const back =
+    checkoutReturn?.returnTo != null && checkoutReturn.returnTo.startsWith("/")
+      ? checkoutReturn.returnTo
+      : "/app/settings/billing";
   return (
     <div data-spa-surface>
       <PageBody>
         <PageHeader title={B.returnHeading} />
-        <p data-checkout-state={state} style={{ fontSize: "14px", margin: "12px 0" }}>
+        <p data-checkout-state={state} className="ui-set-h2 ui-set-sec">
           {state === "completed"
             ? B.returnDone
             : state === "cancelled"
@@ -462,7 +591,7 @@ export function BillingReturnSurface({ twin }: { readonly twin: BffBillingReturn
                 ? B.returnExpired
                 : B.returnPending}
         </p>
-        <p style={{ fontSize: "13px" }}>
+        <p className="ui-set-t">
           <a href={back} data-checkout-continue="true">
             {state === "completed" ? B.returnContinue : B.returnBack}
           </a>
