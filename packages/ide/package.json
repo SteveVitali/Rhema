@@ -22,6 +22,7 @@
   "dependencies": {
     "@rhema/tokens": "workspace:*",
     "@rhema/contracts": "workspace:*",
-    "@rhema/commands": "workspace:*"
+    "@rhema/commands": "workspace:*",
+    "@rhema/editor": "workspace:*"
   }
 }

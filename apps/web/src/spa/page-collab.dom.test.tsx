@@ -25,7 +25,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as Y from "yjs";
 import type { HocuspocusProvider } from "@hocuspocus/provider";
-import { PageEditor } from "@rhema/ui";
+import { PageEditor, PageStrip } from "@rhema/ui";
 import { markdownToDoc } from "@rhema/editor";
 import { undo as yUndo, undoCommand, yUndoPluginKey } from "y-prosemirror";
 import { pageLabels } from "../page-chrome.js";
@@ -117,46 +117,71 @@ async function mountEditor(opts: {
   const view: { current: import("prosemirror-view").EditorView | null } = { current: null };
   await act(async () => {
     root.render(
-      <PageEditor
-        docJson={DOC_JSON}
-        draftId={DRAFT}
-        draftN={7}
-        baseDraftN={6}
-        origin="human_revision"
-        state="open"
-        lock={opts.locked ? { runId: "r_1", kind: "writer", workflow: "Review" } : null}
-        findings={findings}
-        proposals={[]}
-        provenance={null}
-        danglingCites={[]}
-        readOnly={readOnly}
-        {...(collab ? { collabWsUrl: WS } : {})}
-        docUrl={`/p/the-piece/edit/${DRAFT}/doc`}
-        noteUrl={`/p/the-piece/edit/${DRAFT}/note`}
-        cancelUrl={`/p/the-piece/edit/${DRAFT}/cancel-run`}
-        reviseUrl={`/p/the-piece/edit/${DRAFT}/revise`}
-        labels={pageLabels}
-        embeds={false}
-        host={
-          <PageMount
-            draftId={DRAFT}
-            docJson={DOC_JSON}
-            findings={findings as never}
-            locked={opts.locked}
-            readOnly={readOnly}
-            collabUrl={collab ? WS : ""}
-            registry={registry}
-            onMounted={(v) => {
-              view.current = v;
-            }}
-          />
-        }
-      />,
+      // R7WRITE.1a — the pill/banners moved out of `.paper` into the `data-page-strip` header;
+      // the mount scopes to `[data-pane='page']`. The harness renders the same strip+paper pair.
+      <div data-pane="page">
+        <PageStrip
+          crumbs={[{ label: "The Piece", href: "/p/the-piece" }, { label: "Page" }]}
+          draftN={7}
+          baseDraftN={6}
+          origin="human_revision"
+          state="open"
+          lock={opts.locked ? { runId: "r_1", kind: "writer", workflow: "Review" } : null}
+          proposals={[]}
+          reviseUrl={`/p/the-piece/edit/${DRAFT}/revise`}
+          cancelUrl={`/p/the-piece/edit/${DRAFT}/cancel-run`}
+          labels={pageLabels}
+          stripLabels={{
+            breadcrumbAria: "Breadcrumb",
+            separator: "›",
+            workingBadge: "working",
+            frozenBadge: "frozen",
+            runLabel: "Run",
+            moreLabel: "More actions",
+          }}
+          {...(readOnly ? { readOnly: true } : {})}
+        />
+        <PageEditor
+          docJson={DOC_JSON}
+          draftId={DRAFT}
+          draftN={7}
+          baseDraftN={6}
+          origin="human_revision"
+          state="open"
+          lock={opts.locked ? { runId: "r_1", kind: "writer", workflow: "Review" } : null}
+          findings={findings}
+          proposals={[]}
+          provenance={null}
+          danglingCites={[]}
+          readOnly={readOnly}
+          {...(collab ? { collabWsUrl: WS } : {})}
+          docUrl={`/p/the-piece/edit/${DRAFT}/doc`}
+          noteUrl={`/p/the-piece/edit/${DRAFT}/note`}
+          cancelUrl={`/p/the-piece/edit/${DRAFT}/cancel-run`}
+          reviseUrl={`/p/the-piece/edit/${DRAFT}/revise`}
+          labels={pageLabels}
+          embeds={false}
+          host={
+            <PageMount
+              draftId={DRAFT}
+              docJson={DOC_JSON}
+              findings={findings as never}
+              locked={opts.locked}
+              readOnly={readOnly}
+              collabUrl={collab ? WS : ""}
+              registry={registry}
+              onMounted={(v) => {
+                view.current = v;
+              }}
+            />
+          }
+        />
+      </div>,
     );
   });
   const pageRoot = () => el.querySelector<HTMLElement>("[data-page-root]")!;
-  const pill = () => pageRoot().querySelector<HTMLElement>("[data-sync-pill]")!;
-  const lockBanner = () => pageRoot().querySelector<HTMLElement>('[data-page-banner="lock"]')!;
+  const pill = () => el.querySelector<HTMLElement>("[data-sync-pill]")!;
+  const lockBanner = () => el.querySelector<HTMLElement>('[data-page-banner="lock"]')!;
   return { el, root, registry, pageRoot, pill, lockBanner, view };
 }
 
@@ -402,7 +427,7 @@ describe("SPA.24 — the frozen-head fork rebase", () => {
     // the DOM follows the child — poll URL + ids rebase in place (no remount).
     expect(pageRoot().dataset["draftId"]).toBe("d_8");
     expect(pageRoot().dataset["draftN"]).toBe("8");
-    const banner = pageRoot().querySelector<HTMLElement>('[data-page-banner="version"]');
+    const banner = document.querySelector<HTMLElement>('[data-page-banner="version"]');
     expect(banner?.style.display).toBe("flex");
     expect(banner?.textContent).toContain("Editing v8 · findings from v7 follow your text");
     // the poll now targets the child's doc URL.

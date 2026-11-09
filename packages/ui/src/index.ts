@@ -106,6 +106,9 @@ export type {
   PageLockView,
   PageProposalView,
 } from "./page-editor.js";
+// R7WRITE.1a (REQ-WRITE-6) — the page header strip above `.paper`.
+export { PageStrip } from "./page-strip.js";
+export type { PageStripProps, PageStripCrumb, PageStripAction } from "./page-strip.js";
 
 // SPA.24 (REQ-ED-16) — the source editor's SSR region (`SourceEditor`/`SyncPill`/
 // `EditorLockBanner`/`EditorFindingsRail` + the `source-editor.tsx` module) is RETIRED: the

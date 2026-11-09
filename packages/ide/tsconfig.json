@@ -17,6 +17,9 @@
     },
     {
       "path": "../commands"
+    },
+    {
+      "path": "../editor"
     }
   ],
   "exclude": [
