@@ -62,4 +62,10 @@ module.exports = [
     reason:
       "the no-JS post's hidden id carriers (tier, packId) — Radix's own hidden carriers cover the named fields, so only these ids ride a raw input (RV-36); every visible control is a primitive.",
   },
+  {
+    file: "apps/web/src/spa/surfaces/voices.tsx",
+    component: "HiddenField",
+    reason:
+      "the no-JS post's hidden id/flag carriers (runId, provider, scope, tier, quarantineKey, known) — Radix's own hidden select/radio/checkbox carriers post the named fields, so only these ride a raw input (RV-36); every visible control is a primitive.",
+  },
 ];
