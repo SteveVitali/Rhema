@@ -73,9 +73,13 @@ infrastructure, separate from the product's request path.
 
 ## The web application is a permanent hybrid
 
-The public funnel and legal pages render on the server. Authenticated application documents
-normally receive the Vite-built TanStack Router/Query SPA shell. The Page family has a server
-exception for phone requests and showcase projects, which receive a read-only SSR view.
+The public funnel, legal pages, and the `/demo` hub render on the server. Authenticated
+application documents normally receive the Vite-built TanStack Router/Query SPA shell, which
+mounts one persistent `AppShell` chrome (sidebar, right panel, in-shell pending/error states).
+The Page family's only server exception is a phone request, which receives a read-only SSR
+view; showcase projects render inside the SPA through `ReadOnlyProject`, the single client
+read-only mechanism whose `demo`/`showcase`/`run_lock` reasons hide write controls before any
+request is made.
 
 React Router remains a server-side route manifest and matching dependency; it is not the browser
 router. Small browser entry points also remain for SSR documents: `ide`, `page`, and `landing`.
@@ -90,7 +94,20 @@ navigation. There is no renderer feature flag or query-string override to restor
 The editor uses ProseMirror for document state and Yjs for collaboration. Markdown conversion,
 citations, provenance and source-edit merging live in `packages/editor`; browser mounting lives
 in `apps/web`. Hocuspocus in `apps/collab` coordinates live documents and persists materialized
-content and restore points.
+content and restore points. Shared interface controls come from `@rhema/ui` — Radix/Lucide/cmdk
+primitives styled by a generated `uiCss()` — and a lint rule (`rhema/no-raw-controls`) keeps raw
+form controls out of surfaces.
+
+The public demo is a separate read path, not a tenant. A guard in
+[`apps/web/src/demo.ts`](../apps/web/src/demo.ts) claims `/demo*` and the reserved `demo~<essay>`
+slug namespace before any authenticated route; document GETs receive the outer shell with a demo
+boot, and JSON twin GETs forward to a nested app backed by
+[`demoDataSource`](../apps/web/src/demo-data.ts), which answers every read from committed
+snapshot files exported by `packages/demo-corpus`. Demo requests carry no session and perform no
+database reads; non-GET requests fail `demo_read_only`, and the anonymous-metrics beacon
+(`POST /a/demo` → `POST /analytics/demo`, insert-only) is the one sanctioned write. Twin
+responses are edge-cacheable and keyed by the build SHA, so a deploy ends with a recorded CDN
+invalidation of `/bff/p/demo~*`.
 
 ## Boundaries worth preserving
 

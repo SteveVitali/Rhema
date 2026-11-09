@@ -33,6 +33,7 @@ These settings are read by [`apps/web/src/main.ts`](../apps/web/src/main.ts).
 | `SIGNUP_MODE`            | `invite`                          | Admission mode; allowed values are `invite` and `open`.                                                    |
 | `INTERNAL_AUTH_AUDIENCE` | Unset                             | Enables the deployed web-to-API OIDC identity channel. It is not needed to inspect the local public pages. |
 | `RHEMA_BUILD_GIT_SHA`    | Unset                             | Build revision reported by health/provenance responses. Images supply it at build time.                    |
+| `RHEMA_DEMO_CORPUS_ROOT` | Installed `@rhema/demo-corpus`    | Demo corpus root (the dir holding `snapshots/` + `corpus/`). Point at `packages/demo-corpus/fixtures/synthetic` to serve the committed test fixture. |
 
 The [local web instructions](./development.md#inspect-the-web-host) start the host for public-page
 and asset work. Supplying an API URL alone does not provision an API, account, database, or model

@@ -18,6 +18,10 @@ infrastructure behind [rhema.tools](https://rhema.tools).
   obligations that keep feedback connected to the text.
 - **Controlled agent runs:** explicit approval gates, live run events, budget caps, and a separate
   execution environment for model-driven work.
+- **A public demo:** `/demo` serves four essays and their complete editorial record — drafts,
+  reviews, dossiers and what-changed diffs — as read-only static snapshots, with a guided tour on
+  *The Structure of Political Difference*. No account and no database reads are involved; the
+  corpus is separately licensed (CC BY-NC-ND 4.0; see [LICENSES](LICENSES.md)).
 - **A TypeScript application stack:** React, Hono, TanStack Router/Query, PostgreSQL, and a pnpm
   workspace built with Turborepo. Infrastructure is defined in TypeScript with Pulumi for GCP.
 
@@ -34,7 +38,8 @@ protocols in `packages/protocols` — after a full-history secrets and personal-
 Private evaluation content stays outside the repository (`RHEMA_EVALS_PATH`; `evals-stub` supplies
 the fallback), and is not required for the checkout below.
 
-The hosted service runs at [rhema.tools](https://rhema.tools). Deployed provenance, launch state,
+The hosted service runs at [rhema.tools](https://rhema.tools), and its public demo at
+[rhema.tools/demo](https://rhema.tools/demo). Deployed provenance, launch state,
 and the live verification record live in [docs/build](docs/build/README.md); GitHub Actions runs
 CI and the scheduled browser-journey suite against production.
 

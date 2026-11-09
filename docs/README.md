@@ -8,6 +8,7 @@ deployment receipts describe a particular revision at a particular time.
 | Task                                                       | Guide                                                                             |
 | ---------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | Understand the project                                     | [Project overview](../README.md)                                                  |
+| Explore the public demo                                    | Hosted [`/demo`](https://rhema.tools/demo) · corpus in `packages/demo-corpus`     |
 | Install, build, and work locally                           | [Development](development.md)                                                     |
 | Find the component responsible for a behavior              | [Architecture](architecture.md)                                                   |
 | Run focused tests and understand acceptance evidence       | [Testing](testing.md)                                                             |
