@@ -218,6 +218,26 @@ describe("R3 §7 tests 4–5 — writes refused; non-allowlisted GETs get a term
     }
     expect(calls).toEqual([]);
   });
+
+  it("a phone-UA demo document serves the SPA-compact demo — never the reader (ADR-126; R7RO.2 guard)", async () => {
+    // ADR-126's REQ-ED-12 amendment: demo Pages are SPA read-only on EVERY device class. The
+    // phone forced-SSR arm is a real-project contract only — a phone request here must land the
+    // shell with deviceClass=phone (the SPA leaf paints the compact read-only demo), never a
+    // data-ssr-cause="phone" reader document.
+    const calls: string[] = [];
+    const app = makeApp(calls);
+    for (const path of [`/demo/${ESSAY}`, `/p/${SLUG}`, `/p/${SLUG}/v/1`]) {
+      const res = await get(app, path, PHONE);
+      expect(res.status, path).toBe(200);
+      const html = await res.text();
+      expect(html, path).toContain('data-renderer="spa"');
+      expect(html, path).toContain('data-device="phone"');
+      expect(html, path).not.toContain("data-ssr-cause");
+      expect(html, path).not.toContain('data-ide="1"');
+      expect(html, path).toContain('id="spa-root"');
+    }
+    expect(calls).toEqual([]);
+  });
 });
 
 describe("REQ-DWEB-5/6 — twin + boot facts", () => {

@@ -1622,14 +1622,20 @@ describe("P1.01 — the IDE shell + theme stamping on /p/:project…", () => {
     expect(res.status).toBe(200);
     const html = await res.text();
     // the surviving regions — R7SHELL.2 deleted the rail and the Files strip outright.
-    for (const cls of [
-      "ide-page",
-      "ide-margin",
-      "ide-panel",
-      "ide-statusbar",
-      "ide-phonebar",
-    ]) {
+    // R7RO.2 — on the phone reader the desktop-only subtrees NEVER enter the DOM (panel, margin,
+    // status bar, menus, cheat sheet): the §10.1 disclosures mount inside the Page instead.
+    for (const cls of ["ide-page", "ide-phonebar"]) {
       expect(html).toContain(cls);
+    }
+    // markup forms only — the class tokens persist inside the emitted ideCss() stylesheet.
+    for (const cls of [
+      'data-pane="margin"',
+      'data-pane="panel"',
+      'class="ide-statusbar"',
+      'data-ide-menu="view"',
+      "data-ide-cheatsheet",
+    ]) {
+      expect(html, cls).not.toContain(cls);
     }
     expect(html).not.toContain("ide-rail");
     expect(html).not.toContain("ide-files");
@@ -2195,15 +2201,13 @@ describe("P1.05 — timeline, run page, steering", () => {
     const html = await (
       await createWebApp(deps).request("/p/the-politics-of-visibility", PHONE)
     ).text();
+    // R7RO.2 — the Timeline rides the reader's own `#phone-timeline` disclosure now; the run
+    // sheet's verb chips and the next-step launch href are §10.1 ✗ and never enter the DOM.
+    expect(html).toContain('id="phone-timeline"');
     expect(html).toContain("data-timeline-pane");
-    // §5.5's three verbs row — each opens the run sheet for that workflow
-    expect(html).toContain("data-timeline-verbs");
-    // R7KIT.3d — the verbs are now Chip action links: the hook + href ride the same anchor
-    // but React emits `data-verb` after `rel`, so assert both facts separately.
-    expect(html).toContain('href="/p/the-politics-of-visibility/run?workflow=draft"');
-    expect(html).toContain('data-verb="draft"');
-    expect(html).toContain('data-verb="review"');
-    expect(html).toContain('data-verb="revise"');
+    expect(html).not.toContain("data-timeline-verbs");
+    expect(html).not.toContain('href="/p/the-politics-of-visibility/run?workflow=draft"');
+    expect(html).not.toContain('data-verb="draft"');
     expect(html).toContain('data-next-step="revise"');
     expect(html).toContain('data-run-card="run_tl"');
     // the card's report href lands on the run page
@@ -2286,9 +2290,13 @@ describe("P1.05 — timeline, run page, steering", () => {
     const html = await (
       await createWebApp(deps).request("/p/the-politics-of-visibility", PHONE)
     ).text();
-    expect(html).toContain('data-feed-events="/p/the-politics-of-visibility/r/run_live/events"');
-    expect(html).toContain('data-feed-last-seq="2"');
-    expect(html).toContain("data-feed-labels="); // the island's embedded label maps
+    // R7RO.2 — the live-feed tail is SPA-owned now; the phone reader never opens an EventSource
+    // and the feed's replayed panel is a desktop subtree (not emitted on the compact document).
+    expect(html).not.toContain("data-feed-run");
+    expect(html).not.toContain("data-feed-events");
+    expect(html).not.toContain("data-feed-last-seq");
+    expect(html).not.toContain("data-feed-labels");
+    expect(html).not.toContain('data-panel="open"');
   });
 
   it("/p/:slug/r/:runId serves the shell; the twin splits the Level-3/Level-4 reads on ?advanced=1", async () => {

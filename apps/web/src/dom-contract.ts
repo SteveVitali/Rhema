@@ -1332,6 +1332,18 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
       "pages.tsx + spa/surfaces/dossier.tsx",
       "§10.1 phone dossier chat section (the Desk is display:none at phone width)",
     ),
+    a(
+      "data-phone-section",
+      "conditional",
+      "pages.tsx IdeFrame compact arm",
+      "R7RO.2 — the §10.1 entry-point disclosures (reading|timeline|findings) inside the phone reader's Page",
+    ),
+    a(
+      "data-phone-status",
+      "conditional",
+      "pages.tsx IdeFrame compact arm",
+      "R7RO.2 — the phone reader's meter line (the hidden status bar's facts)",
+    ),
     n(
       "next",
       "conditional",
