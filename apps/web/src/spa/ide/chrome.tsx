@@ -73,6 +73,8 @@ export function IdeChrome({ slug, children }: { slug: string; children?: ReactNo
   const session = useQuery({ ...sessionQuery, enabled: !demo });
   const maps = useQuery(feedLabelsQuery);
   const { data, published } = useIdeChromePublished();
+  const dataRef = useRef(data);
+  dataRef.current = data;
 
   const userId = demo ? "demo" : (session.data?.userId ?? boot?.principal?.userId ?? "local");
   const projectId = data.projectId ?? slug;
@@ -114,7 +116,15 @@ export function IdeChrome({ slug, children }: { slug: string; children?: ReactNo
   // decides which posts become JSON mutations (scroll + focus preserved — REQ-UX-4). A leaf's
   // own `onSubmit` claims its forms first (`defaultPrevented` skips here); the chat forms are
   // outside the grammar and keep their native leg until 232.
-  const paneWrite = usePaneWrite();
+  const paneWrite = usePaneWrite({
+    // 243a — a leaf may publish `onPaneError` (the dossier's `?ferr`-parity refusal repaint for
+    // its panel-housed finding writes). Read it off a ref so the sink is always the published
+    // bag's latest — the mutation's callbacks bind at render time, one render stale at worst.
+    onError: (err, vars) => {
+      const sink = dataRef.current.onPaneError;
+      if (sink != null) sink(err, vars);
+    },
+  });
   const onSubmit = useMemo(
     () => delegatedSubmitHandler({ router, write: paneWrite.write }),
     [router, paneWrite.write],

@@ -90,6 +90,7 @@ function DeskRow({
     <tr
       id={`desk-finding-${view.id}`}
       data-desk-row={view.id}
+      data-finding={view.id}
       data-severity={view.severity}
       data-kind={view.kind}
       {...(view.reconciliation === "rejected" ? { "data-rejected": "true" } : {})}
@@ -98,7 +99,7 @@ function DeskRow({
       style={{ scrollMarginTop: "24px" }}
     >
       <td>
-        <a href={`#finding-${view.id}`} data-finding-link={view.id} className="ui-d-inh">
+        <a href={`#desk-finding-${view.id}`} data-finding-link={view.id} className="ui-d-inh">
           {view.title}
         </a>
       </td>

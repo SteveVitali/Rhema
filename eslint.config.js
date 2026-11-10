@@ -69,6 +69,15 @@ const NO_RAW_CONTROLS_ENABLED = [
   "packages/ui/src/ide-shell.tsx",
   "packages/ui/src/run-sheet.tsx",
   "apps/web/src/approval-settings.tsx",
+  // 243a_R7KIT.3e — the dossier composition: the letter/claims/findings/sample-dossier ui files,
+  // the shared dossier-view, and the dossier + obligations-new leaf. Named exemptions only for
+  // the no-JS/SSR id carriers (HiddenField, BulkOnlyCheck).
+  "packages/ui/src/dossier.tsx",
+  "packages/ui/src/letter.tsx",
+  "packages/ui/src/claims.tsx",
+  "packages/ui/src/findings.tsx",
+  "apps/web/src/dossier-view.tsx",
+  "apps/web/src/spa/surfaces/dossier.tsx",
 ];
 
 export default tseslint.config(

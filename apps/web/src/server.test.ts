@@ -745,7 +745,10 @@ describe("AC3 — read-only sample dossier (REQ-POS-3)", () => {
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain("The Extinction of Man");
-    expect(html).toContain("Contradicted · Tier 1");
+    // 243a_R7KIT.3e (REQ-COPY-8) — the verdict renders ONCE (the duplicated "· Tier 1" badge is
+    // gone); `data-contradicted-tier1` keeps the integrity marker machine-readable.
+    expect(html).not.toContain("Contradicted · Tier 1");
+    expect(html).toContain('data-verdict="contradicted"');
     expect(html).toContain('data-contradicted-tier1="true"');
     expect(html).toContain('data-fetched="true"');
     expect(html).toContain("wikipedia.org");

@@ -93,7 +93,7 @@ const DOSSIER: DossierViewData = {
       severity: "note",
       title: "A note",
       suggestion: { replacement: "tweak" },
-      letterSection: "strength",
+      letterSection: "verdict",
     }),
     finding({ id: "f_3", severity: "minor", title: "A minor one" }),
     finding({ id: "f_s", title: "streaming", provisional: true }),
@@ -331,14 +331,16 @@ describe("GET /p/:slug/review/:runId mounted (SPA.21)", () => {
     await mountAt(`/p/${SLUG}/review/${RUN}`, BOOT, f.impl);
     const root = el()!;
     expect(root.querySelector("h1")?.textContent).toBe(DOSSIER.projectTitle);
-    // the shared article's sections.
+    // the shared article's sections (243a: the claim ledger is a SECTION OF the letter column;
+    // findings + the workflow furniture live inside the right panel's Findings tab — no dossier
+    // column, no findings rail/minimap, and the run card is the one-line run header).
     for (const hook of [
       "data-letter-view",
       "data-claims-table",
       "data-second-read",
       "data-rubric",
-      "data-findings-list",
-      "data-margin-surface",
+      "data-run-header",
+      "data-dossier-desk",
       "data-findings-desk",
       "data-findings-filters",
       "data-disposition-form",
@@ -346,6 +348,18 @@ describe("GET /p/:slug/review/:runId mounted (SPA.21)", () => {
     ]) {
       expect(root.querySelector(`[${hook}]`), `missing ${hook}`).not.toBeNull();
     }
+    // REQ-PANE-5 — the letter column owns the claim ledger; the findings rail/minimap is gone.
+    expect(root.querySelector("[data-letter-view] [data-claims-table]")).not.toBeNull();
+    expect(root.querySelector('[data-letter-view] [data-letter-section="claims"]')).not.toBeNull();
+    expect(root.querySelector("[data-findings-list]")).toBeNull();
+    expect(root.querySelector("[data-margin-surface]")).toBeNull();
+    expect(root.querySelector("[data-run-header]")?.textContent).toContain("Completed");
+    // the outline emits its TOC attributes at every width — ≥1440 visibility is the CSS gate.
+    expect(root.querySelector('[data-letter-toc] [data-toc-link="verdict"]')).not.toBeNull();
+    // a letter-section finding ref renders the passage link into the right panel's desk row.
+    expect(
+      root.querySelector('[data-passage-link="f_2"]')?.getAttribute("href"),
+    ).toBe("#desk-finding-f_2");
     // Apply on the two suggestion-carrying cards + obligations + the finding anchors.
     expect(root.querySelectorAll("[data-apply-form]").length).toBeGreaterThanOrEqual(2);
     expect(
@@ -360,10 +374,10 @@ describe("GET /p/:slug/review/:runId mounted (SPA.21)", () => {
         "data-claims-table",
         "data-second-read",
         "data-rubric",
-        "data-findings-list",
+        "data-run-header",
+        "data-dossier-desk",
         "data-findings-filters",
         "data-findings-desk",
-        "data-margin-surface",
         "data-disposition-form",
         "data-apply-form",
         "data-bulk-controls",

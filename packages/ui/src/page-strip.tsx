@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import { Button } from "./primitives/button.js";
 import { DropdownMenu, DropdownMenuItem, DropdownMenuSeparator } from "./primitives/index.js";
 import type { PageEditorLabels, PageLockView, PageProposalView } from "./page-editor.js";
 
@@ -245,7 +246,9 @@ export function PageStrip(props: PageStripProps): ReactNode {
           {props.lock ? (props.lock.kind === "writer" ? L.writerLockText(props.lock.workflow) : L.readerLockText(props.lock.workflow)) : ""}
         </span>
         <form method="post" action={props.cancelUrl} style={{ margin: 0 }}>
-          <button type="submit" style={{ fontSize: "12px" }}>{L.cancelRun}</button>
+          {/* 243a_R7KIT.3e — the U4 probe caught this raw submit on the IDE Page (a
+              primitive-sized no-JS release — Button posts the same grammar). */}
+          <Button type="submit" variant="ghost" size="sm">{L.cancelRun}</Button>
         </form>
       </div>
       {props.readOnly === true && !locked ? (

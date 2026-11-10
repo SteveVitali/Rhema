@@ -15,6 +15,8 @@ import { reviewPanelBodies } from "../../dossier-view.js";
 import { type FeedRow, type IdeShellProps, type RunCardLabels, type TimelineHrefs, type TimelineLabels, type TimelineViewWire } from "@rhema/ui";
 import type { PaletteData } from "@rhema/ide";
 import type { BffIdeBag } from "../queries.js";
+import type { BffError } from "../bff.js";
+import type { PaneWriteVars } from "../write-paths.js";
 
 /** The Desk feed slice — `labelMaps`/`labels` are chrome-owned (COPY + `["feed-labels"]` query). */
 export interface IdeChromeFeed {
@@ -60,6 +62,14 @@ export interface IdeChromeData {
   readonly status?: IdeShellProps["status"];
   /** R7WRITE.1a (REQ-WRITE-6) — the page header strip above `.paper`; only Page leaves publish. */
   readonly pageHeader?: ReactNode;
+  /**
+   * 243a_R7KIT.3e — the pane-write refusal sink. Pane-body forms post through the CHROME's
+   * `paneWrite` (the host div's delegated submit — R7RELOAD.1), whose default error arm silently
+   * invalidates; a leaf that moved its writes into the panel (the dossier's Findings tab) needs
+   * the `?ferr`-parity refusal repaint its own forms used to get — it publishes this callback
+   * and the chrome calls it instead of the silent arm.
+   */
+  readonly onPaneError?: (err: BffError | Error, vars: PaneWriteVars) => void;
 }
 
 const EMPTY: IdeChromeData = {};

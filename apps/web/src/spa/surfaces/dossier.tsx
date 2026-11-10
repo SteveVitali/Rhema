@@ -38,17 +38,17 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
-import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import type { GateCardDto } from "@rhema/api-client";
 import type { GateDecisionView, TimelineRun } from "@rhema/findings-core";
 import { COPY } from "../../copy.js";
+import { Button, Select, TextField } from "@rhema/ui";
 import {
   DossierArticle,
   dossierSurfaces,
   runCardLabels,
   timelineHrefs,
   timelineLabels,
-  visibleDossierFindings,
   type DossierViewState,
 } from "../../dossier-view.js";
 import { chatPanelLive as chatPanel } from "../chat-live.js";
@@ -73,24 +73,27 @@ import {
   usePaneWrite,
   PaneBusy,
   type MutationReply,
+  type PaneWriteVars,
 } from "../write-paths.js";
 
-/** One dossier write — the shared mutation with the dossier's `?ferr`-parity error arm. */
+/** One dossier write — the shared mutation with the dossier's `?ferr`-parity error arm. The
+ *  handler is exported to the published extras (`onPaneError`) so a pane-body form refused
+ *  through the CHROME's delegated write repaints identically (the finding writes live in the
+ *  right panel's Findings tab now — REQ-PANE-5). */
 function useDossierWrite() {
   const router = useRouter();
   const [mutError, setMutError] = useState<{ findingId: string; message: string } | null>(null);
-  const { pending, write } = usePaneWrite({
-    onError: (err, vars) => {
-      // The SSR's `?ferr=<fid>&fmsg=<msg>` arm verbatim: the notice line carries the api's stable
-      // detail/code (never a client literal); the card's under-form error shows when the refused
-      // write named a finding (bulk/gate misses land the notice alone — `ferr=bulk` parity).
-      const fid = /\/findings\/([^/]+)\//.exec(vars.action)?.[1] ?? "";
-      const message =
-        err instanceof BffError ? (err.detail ?? err.code) : COPY.spaError.body;
-      setMutError({ findingId: fid, message });
-    },
-  });
-  return { busy: pending, mutError, write, router };
+  const onPaneError = useCallback((err: BffError | Error, vars: PaneWriteVars) => {
+    // The SSR's `?ferr=<fid>&fmsg=<msg>` arm verbatim: the notice line carries the api's stable
+    // detail/code (never a client literal); the card's under-form error shows when the refused
+    // write named a finding (bulk/gate misses land the notice alone — `ferr=bulk` parity).
+    const fid = /\/findings\/([^/]+)\//.exec(vars.action)?.[1] ?? "";
+    const message =
+      err instanceof BffError ? (err.detail ?? err.code) : COPY.spaError.body;
+    setMutError({ findingId: fid, message });
+  }, []);
+  const { pending, write } = usePaneWrite({ onError: onPaneError });
+  return { busy: pending, mutError, write, router, onPaneError };
 }
 
 /** The Timeline run-card's gate mount — `renderGateCard` verbatim from the SSR `IdeFrame`, with
@@ -139,7 +142,7 @@ export interface DossierSurfaceProps {
 }
 
 export function DossierSurface({ data, search, compact }: DossierSurfaceProps): ReactNode {
-  const { busy, mutError, write, router } = useDossierWrite();
+  const { busy, mutError, write, router, onPaneError } = useDossierWrite();
   const dossier = data.dossier;
   const slug = dossier.slug;
   // R7RO.1 — the read-only fact (the twin's carrier, else the boot slot); `run_lock` never arms
@@ -204,7 +207,8 @@ export function DossierSurface({ data, search, compact }: DossierSurfaceProps): 
 
   // P1.07 — one list powers the Page, the Margin, and the Desk: the leaf re-derives the
   // server-identical filtered set off the raw findings (budget first, then the filters).
-  const visible = useMemo(() => visibleDossierFindings(dossier, filters), [dossier, filters]);
+  // REQ-PANE-5 — the leaf publishes no margin ticks at all; `visibleDossierFindings` runs inside
+  // dossierSurfaces (the desk's own body) — nothing derives the filtered list here anymore.
   const panes = useMemo(
     () =>
       dossierSurfaces({
@@ -223,13 +227,15 @@ export function DossierSurface({ data, search, compact }: DossierSurfaceProps): 
 
   const extras = useMemo<IdeChromeData>(
     () => ({
-      // The ticks echo the SHARED filtered list (the SSR handler's `comp.filteredRows` overlay).
-      findings: visible.map((f) => ({ id: f.id, severity: f.severity, kind: f.kind, excerpt: f.title })),
+      // 243a_R7KIT.3e (REQ-PANE-5) — findings live in the right panel's Findings tab, not as a
+      // dossier column: the leaf publishes NO margin ticks/body, so the Margin rail (and the
+      // colour-dot minimap) hides on the dossier. The empty array wins over the twin's bag.
+      findings: [],
       // R7RELOAD.1 — the pane bodies no longer carry their own submit intercepts: the IdeChrome
-      // host's ONE delegated handler covers them (the wrapper now only marks aria-busy).
-      ...(panes.marginBody != null
-        ? { marginBody: <PaneBusy busy={busy}>{panes.marginBody}</PaneBusy> }
-        : {}),
+      // host's ONE delegated handler covers them (the wrapper now only marks aria-busy). The
+      // refusal sink is the dossier's `?ferr`-parity arm — a pane write's 422 repaints the
+      // notice line + the under-card error exactly like the article's own forms used to.
+      onPaneError,
       ...(panes.deskFindingsBody != null
         ? { deskFindingsBody: <PaneBusy busy={busy}>{panes.deskFindingsBody}</PaneBusy> }
         : {}),
@@ -248,7 +254,7 @@ export function DossierSurface({ data, search, compact }: DossierSurfaceProps): 
           }
         : {}),
     }),
-    [visible, panes, data.ide, slug, compact, busy, onSubmit],
+    [panes, data.ide, slug, compact, busy, onSubmit, onPaneError],
   );
   useShellChrome(data, extras);
 
@@ -268,10 +274,9 @@ export function DossierSurface({ data, search, compact }: DossierSurfaceProps): 
           the Page (the SSR IdeFrame's `data-phone-chat` section verbatim). */}
       {compact === true && data.ide.chat != null ? (
         <section
-          className="ide-phone-only"
+          className="ide-phone-only ui-d-mt12 ui-d-sect"
           data-phone-chat="true"
           aria-label={COPY.ide.panel.tabs.chat}
-          style={{ marginTop: "24px", borderTop: "1px solid var(--paper-rule)", paddingTop: "12px" }}
         >
           {chatPanel(data.ide.chat, slug, data.ide, true)}
         </section>
@@ -282,19 +287,11 @@ export function DossierSurface({ data, search, compact }: DossierSurfaceProps): 
 
 // ---- `/p/:slug/obligations/new` — the one-field obligation sheet (unframed) ---------------------
 
-// pages.tsx `fieldStyle` verbatim — the obligation sheet's one input keeps the SSR styling.
-const obligationFieldStyle = {
-  display: "block",
-  width: "100%",
-  padding: "8px 10px",
-  marginTop: "4px",
-  borderRadius: "8px",
-  border: "1px solid var(--shell-border)",
-  background: "var(--shell-bg)",
-  color: "var(--shell-fg)",
-  fontSize: "14px",
-  boxSizing: "border-box" as const,
-};
+/** The no-JS post's hidden `next` carrier — the named GUARD-1 exemption (RV-36): the JSON
+ *  submit collects the form's fields verbatim, so this id rides a raw input. */
+function HiddenField({ name, value }: { readonly name: string; readonly value: string }): ReactNode {
+  return <input type="hidden" name={name} value={value} />;
+}
 
 /** The obligation sheet's severity options — `ObligationNewPage`'s literal `>blocking<`…`>note<`
  *  verbatim (the value IS the label; rendered as expressions for the copy-containment sweep). */
@@ -352,38 +349,39 @@ export function ObligationNewSurface({ data }: { readonly data: BffObligationNew
           title={COPY.obligation.heading}
           crumbs={[{ label: sheet.projectTitle, href: `/p/${slug}` }, { label: COPY.obligation.heading }]}
         />
-        <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", maxWidth: "68ch" }}>{COPY.obligation.lede}</p>
+        <p className="ui-d-fd ui-d-t ui-d-mw68">{COPY.obligation.lede}</p>
         {error != null ? (
-          <p role="alert" style={{ color: "var(--sev-major)", fontSize: "13px" }}>{error}</p>
+          <p role="alert" className="ui-d-w ui-d-fd">{error}</p>
         ) : null}
         {roTip != null ? (
           // R7RO.1 — the withheld create form (disabled + reason tooltip, before any request).
-          <fieldset disabled title={roTip} style={{ maxWidth: "68ch", border: 0, margin: 0, padding: 0 }}>
-            <p data-readonly-controls="obligation" style={{ fontSize: "13px", color: "var(--shell-fg-faint)" }}>{roTip}</p>
+          <fieldset disabled title={roTip} className="ui-d-mw68 ui-d-m0 ui-d-p0" style={{ border: 0 }}>
+            <p data-readonly-controls="obligation" className="ui-d-fd ui-vc-faint">{roTip}</p>
           </fieldset>
         ) : null}
-        <form method="post" action={`/p/${slug}/obligations`} data-obligation-form="true" style={{ maxWidth: "68ch" }} onSubmit={onSubmit} hidden={roTip != null}>
-          <input type="hidden" name="next" value={sheet.back || `/p/${slug}`} />
-          <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block" }}>
+        <form method="post" action={`/p/${slug}/obligations`} data-obligation-form="true" className="ui-d-mw68" onSubmit={onSubmit} hidden={roTip != null}>
+          <HiddenField name="next" value={sheet.back || `/p/${slug}`} />
+          <label className="ui-d-fd ui-d-t" style={{ display: "block" }}>
             {COPY.obligation.titleLabel}
-            <input name="title" required placeholder={COPY.obligation.titlePlaceholder} style={obligationFieldStyle} />
+            <TextField name="title" required placeholder={COPY.obligation.titlePlaceholder} />
           </label>
-          <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block", marginTop: "12px" }}>
+          <label className="ui-d-fd ui-d-t ui-d-mt12" style={{ display: "block" }}>
             {COPY.obligation.severityLabel}{" "}
-            <select name="severity" defaultValue="minor" style={{ fontSize: "13px" }}>
-              {/* the option VALUES are the labels — the SSR page's literal `>blocking<` verbatim
-                  (an expression keeps the REQ-SAFE-10 copy-containment sweep honest). */}
-              {OBLIGATION_SEVERITIES.map((v) => (
-                <option key={v} value={v}>{v}</option>
-              ))}
-            </select>
+            {/* the option VALUES are the labels — the SSR page's literal `>blocking<` verbatim
+                (an expression keeps the REQ-SAFE-10 copy-containment sweep honest); the Radix
+                carrier posts `severity` through the form grammar. */}
+            <Select
+              name="severity"
+              defaultValue="minor"
+              items={OBLIGATION_SEVERITIES.map((v) => ({ value: v, label: v }))}
+            />
           </label>
-          <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 0" }}>{COPY.obligation.severityHint}</p>
-          <div style={{ display: "flex", gap: "10px", marginTop: "16px" }}>
-            <button type="submit" style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}>
+          <p className="ui-d-i ui-d-mt4">{COPY.obligation.severityHint}</p>
+          <div className="ui-d-acts ui-d-mt12">
+            <Button type="submit" variant="primary">
               {COPY.obligation.createCta}
-            </button>
-            <a href={sheet.back || `/p/${slug}`} style={{ padding: "8px 16px", fontSize: "14px", color: "var(--shell-fg-muted)" }}>
+            </Button>
+            <a href={sheet.back || `/p/${slug}`} className="ui-d-fd ui-d-t ui-d-mw68" style={{ display: "inline-block" }}>
               {COPY.obligation.cancel}
             </a>
           </div>

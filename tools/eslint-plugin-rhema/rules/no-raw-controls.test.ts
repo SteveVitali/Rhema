@@ -157,7 +157,7 @@ const isOff = (v: unknown): boolean => severityOf(v) === 0 || severityOf(v) === 
 describe("registration in the real eslint.config.js (per-file enablement)", () => {
   it("is `off` over both scope globs, absent for primitives/** and out-of-scope files", async () => {
     const eslint = new ESLint({ cwd: REPO_ROOT });
-    for (const file of ["apps/web/src/spa/surfaces/dossier.tsx", "apps/web/src/pages.tsx"]) {
+    for (const file of ["apps/web/src/pages.tsx", "apps/web/src/chat-pane.tsx"]) {
       const cfg = await eslint.calculateConfigForFile(file);
       const entry = (cfg.rules as Record<string, unknown>)["rhema/no-raw-controls"];
       expect(entry, `rule configured for ${file}`).toBeDefined();
@@ -189,6 +189,14 @@ describe("registration in the real eslint.config.js (per-file enablement)", () =
       "packages/ui/src/ide-shell.tsx",
       "packages/ui/src/run-sheet.tsx",
       "apps/web/src/approval-settings.tsx",
+      // 243a_R7KIT.3e enabled the dossier composition: the letter/claims/findings/sample-dossier
+      // ui files, the shared dossier-view, and the dossier + obligations-new leaf.
+      "packages/ui/src/dossier.tsx",
+      "packages/ui/src/letter.tsx",
+      "packages/ui/src/claims.tsx",
+      "packages/ui/src/findings.tsx",
+      "apps/web/src/dossier-view.tsx",
+      "apps/web/src/spa/surfaces/dossier.tsx",
     ]) {
       const on = await eslint.calculateConfigForFile(file);
       const onEntry = (on.rules as Record<string, unknown>)["rhema/no-raw-controls"];
@@ -263,6 +271,13 @@ describe("registration in the real eslint.config.js (per-file enablement)", () =
       "packages/ui/src/ide-shell.tsx",
       "packages/ui/src/run-sheet.tsx",
       "apps/web/src/approval-settings.tsx",
+      // 243a_R7KIT.3e's seeded legs: a raw <button> fails the ENABLED rule on every dossier file.
+      "packages/ui/src/dossier.tsx",
+      "packages/ui/src/letter.tsx",
+      "packages/ui/src/claims.tsx",
+      "packages/ui/src/findings.tsx",
+      "apps/web/src/dossier-view.tsx",
+      "apps/web/src/spa/surfaces/dossier.tsx",
     ]) {
       const [res] = await eslint.lintText(`export const x = <button type="submit">Save</button>;`, {
         filePath: file,
@@ -274,7 +289,7 @@ describe("registration in the real eslint.config.js (per-file enablement)", () =
     }
     // Same code in a not-yet-migrated file: the rule stays off (enablement is per-file).
     const [off] = await eslint.lintText(code, {
-      filePath: "apps/web/src/spa/surfaces/dossier.tsx",
+      filePath: "apps/web/src/pages.tsx",
     });
     expect(off.messages.some((m) => m.ruleId === "rhema/no-raw-controls")).toBe(false);
     // Same code in an exempt file: enabled, but the exemption wins.

@@ -101,7 +101,7 @@ describe("FindingsDesk (§5.7 — the screen-reader landmark, one model)", () =>
     expect(html).toContain('data-findings-desk="true"');
     expect(html).toContain("Whole piece");
     expect(html).toContain('data-desk-row="p"');
-    expect(html).toContain('href="#finding-p"');
+    expect(html).toContain('href="#desk-finding-p"');
     expect(html).toContain("Open");
   });
 
