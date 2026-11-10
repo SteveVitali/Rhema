@@ -130,6 +130,7 @@ reload applied the selection today. Compensate via a `hashchange` listener in th
 `pointerover`/`focusin` + `PRELOAD_SAFE` routeId allowlist (per-route certified
 side-effect-free beforeLoad+loader) is a separate ticket with pin-verified `preloadRoute`
 stage coverage. *(A5's REQ-NAVC-7 is merged here — O2-F6.)*
+*(ADR-128, 2026-11-08 — 253_R7REC.1 banner: REQ-NAVM-7's named preload follow-up is **discharged by REQ-SPEED-3** (246_R7SYNC.1) — `PREFETCH_SAFE` hover/focus prefetch warms safe twins on the deployed tip; the delegated-allowlist contract this section names is the mechanism that shipped.)*
 
 **§2.7 Opt-out hook (REQ-NAVM-8 + A1-REQ-NAVC-13).** `data-spa-native` manifest row + emitters
 on the three non-document GETs (`data-usage-csv`, `data-export-download`, and the un-hooked
