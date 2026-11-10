@@ -238,6 +238,18 @@ describe("ideCss()", () => {
   it("the only modal styling is the Cancel-run shell modal — no generic modal utilities", () => {
     expect(css).toContain(".ide-modal");
   });
+  it("R7FIX.7 (F-R7DEP.2-11) — a closed off-canvas drawer exposes no visible/focusable links", () => {
+    // translateX(-100%) alone kept the drawer's anchors Playwright-visible + keyboard-focusable
+    // while invisible (the P1.* legs timed out clicking the parked first recent). `visibility`
+    // joins the slide in BOTH drawer blocks, flipping instantly on open and delayed on close.
+    const blocks = css.match(/\.app-shell-sidebar \{ position: fixed[^}]+\}/g) ?? [];
+    expect(blocks.length).toBeGreaterThanOrEqual(2);
+    for (const b of blocks) {
+      expect(b).toContain("transform: translateX(-100%)");
+      expect(b).toContain("visibility: hidden");
+    }
+    expect(css).toContain("[data-drawer='open'] .app-shell-sidebar { transform: none; visibility: visible");
+  });
   it("R7PANE.1 — the desk/status-bar collision is gone WITH the drawer (B2/B16)", () => {
     const css = ideCss();
     // the B2 fix was the drawer's last defect; the region that owned it is retired.

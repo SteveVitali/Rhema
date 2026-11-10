@@ -69,6 +69,18 @@ module.exports = [
       "the no-JS post's hidden id/flag carriers (runId, provider, scope, tier, quarantineKey, known) — Radix's own hidden select/radio/checkbox carriers post the named fields, so only these ride a raw input (RV-36); every visible control is a primitive.",
   },
   {
+    file: "apps/web/src/spa/surfaces/voices.tsx",
+    component: "VoiceSourceCard",
+    reason:
+      "250g_R7FIX.7 (F-R7DEP.2-14) — the source settings + review forms are native document POSTs, so `autoIncludeNew`/`dailySync`/`include` stay KIT-1-styled native checkboxes (RV-36): Radix's aria-hidden pointer-inert BubbleInput shadowed the named carriers under the card — untogglable and invisible to the form grammar.",
+  },
+  {
+    file: "apps/web/src/spa/surfaces/export.tsx",
+    component: "ExportSurface",
+    reason:
+      "250g_R7FIX.7 (F-R7DEP.2-13) — the export dialog is a native document POST (REQ-BFF-17), so `profile`/`cslStyle` stay KIT-1-styled native selects (RV-36): a Radix Select shadowed the declared `select[data-csl-style]`/`select[data-md-profile]` carriers behind a button trigger.",
+  },
+  {
     file: "apps/web/src/spa/surfaces/run-sheet.tsx",
     component: "HiddenField",
     reason:

@@ -16,7 +16,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import type { FormEvent, ReactNode } from "react";
-import { Button, Checkbox, PageTitle, RadioGroup, RadioGroupItem, Select, TextField } from "@rhema/ui";
+import { Button, Checkbox, PageTitle, RadioGroup, RadioGroupItem, TextField } from "@rhema/ui";
 import { COPY } from "../../copy.js";
 import { bffFetch } from "../bff.js";
 import { useShellChrome } from "../ide/chrome-data.js";
@@ -168,16 +168,19 @@ export function ExportSurface({
             {dialog.mdProfiles.length > 0 ? (
               <label className="ui-set-row ui-set-t ui-rs-mt">
                 {COPY.export.profileLegend}:{" "}
-                <Select
-                  name="profile"
-                  defaultValue=""
-                  data-md-profile="true"
-                  aria-label={COPY.export.profileLegend}
-                  items={[
-                    { value: "", label: COPY.export.profileCanonical },
-                    ...dialog.mdProfiles.map((p) => ({ value: p.id, label: p.label })),
-                  ]}
-                />
+                {/* R7FIX.7 (F-R7DEP.2-13) — the named GUARD-1 exemption: this form is a NATIVE
+                    document POST (REQ-BFF-17), so its field carriers stay KIT-1-styled native
+                    selects (RV-36). A Radix Select shadows the carrier: the `data-md-profile`
+                    hook landed on a button trigger and no `select[data-md-profile]` element —
+                    the declared contract — existed in the DOM at all. */}
+                <select name="profile" defaultValue="" data-md-profile="true" aria-label={COPY.export.profileLegend}>
+                  <option value="">{COPY.export.profileCanonical}</option>
+                  {dialog.mdProfiles.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
                 <span className="ui-set-note ui-set-t--f">
                   {COPY.export.profileNote}
                 </span>
@@ -187,13 +190,20 @@ export function ExportSurface({
             {dialog.citations.hasBibliography ? (
               <label className="ui-set-row ui-set-t ui-rs-mt">
                 {COPY.export.citationLegend}:{" "}
-                <Select
+                {/* same native-post carrier as the profile select — `select[data-csl-style]` is
+                    the declared hook the T4 leg drives (its <option> values POST `cslStyle`). */}
+                <select
                   name="cslStyle"
                   defaultValue={dialog.citations.styles[0]?.id}
                   data-csl-style="true"
                   aria-label={COPY.export.citationLegend}
-                  items={dialog.citations.styles.map((s) => ({ value: s.id, label: s.label }))}
-                />
+                >
+                  {dialog.citations.styles.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
                 <span className="ui-set-note ui-set-t--f">
                   {COPY.export.citationNote}
                 </span>
