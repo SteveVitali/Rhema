@@ -103,12 +103,12 @@ D-FIX.1-2, D-P1.19-2. Verify-then-disposition: D-P1.17-2 (Lighthouse/axe hero ar
 | 3 | Part A: preview up at T0, every paid:false D*/U* leg + screenshots; D-rows closed | staging-verified | PENDING | — |
 | 4 | HUMAN-H16 window recorded (walked/declined/not-dispositioned, `date -u`) | human-completed when walked | PAUSE | the operator's act inside the preview window |
 | 5 | Hero recording → T1 commit at HERO_RECORDING paths + ADR-127 row | staging-verified | PENDING | — |
-| 6 | T1 in-place update + re-walk + verified teardown + spend read | staging-verified | PENDING | — |
-| 7 | Part B: classified diff → migrations → `pulumi up` → provenance → invalidation → deployments row | live-executed | PENDING | — |
-| 8 | Stage B at prod: every D*/U* leg green at T1 + flips + N10/P1.public/smoke | live-executed/public | PENDING | — |
-| 9 | U6 paid run — exactly one, < $10 (target ≤ $0.50), mechanism recorded | live-executed | PENDING | R4 row (capUsd 0.5) planned |
-| 10 | REQ-SPEED-5 timings preview + prod (N≥20, `date -u`, SHA) | live-executed | PENDING | — |
-| 11 | Close-out: rollback recipe, nightly dispatch, provenance re-read, records | live-executed | PENDING | — |
+| 6 | T1 in-place update + re-walk + verified teardown + spend read | staging-verified | DONE | teardown verified (zero orphans, `rm`); spend ≈$14 vs $20 |
+| 7 | Part B: classified diff → migrations → `pulumi up` → provenance → invalidation → deployments row | live-executed | DONE | all 8 conditions evidenced; update 174; provenance all-PASS |
+| 8 | Stage B at prod: every D*/U* leg green at T1 + flips + N10/P1.public/smoke | live-executed/public | PART | U1–U7 all FLIP green; 12 honest reds recorded (F-R7DEP.2-9…17); D2.tour owed |
+| 9 | U6 paid run — exactly one, < $10 (target ≤ $0.50), mechanism recorded | live-executed | DONE-FAILED | one R4 dispatch: 402, metered $0.00; pause per ruling |
+| 10 | REQ-SPEED-5 timings preview + prod (N≥20, `date -u`, SHA) | live-executed | DONE | preview 147/119/-1; prod 123/116/-1 |
+| 11 | Close-out: rollback recipe, nightly dispatch, provenance re-read, records | live-executed | DONE | recipe committed; nightly 42465216426; provenance re-PASS at close |
 
 ## Progress
 
@@ -371,3 +371,207 @@ green at the same SHA. Preview stays UP at `e143828f`; ~$12 of $20; teardown at 
 **PAUSE — sixth defect-boundary.** `D-R7FIX.1-2…D-R7FIX.4-1` all verified; `D-R7FIX.5-1` partial
 (U2 closed; U5 remains at a deeper layer). ONE leg owes round 6. Preview stays UP at `5d001e6b`;
 ~$13.5 of $20; teardown at once at $20.
+
+## RESUME — defect boundary round 6 closed by `250f_R7FIX.6` (PR #299, unmerged OPERATOR)
+
+- 2026-11-08T05:xxZ — **250f_R7FIX.6 landed at `d0a77d0`** (CI pass #299, run `42436202046`,
+  first-read green; **`d0a77d0` = composed tip**: my Part-B records + all six fix rounds).
+  U5's last root cause was a REAL defect: `EditorEventBridge` (the `rhema:comment-added` →
+  invalidateQueries seam) mounted only in `VersionPageSurface`, not `ProjectPageSurface` — the
+  working-head Page POSTed the note but never refetched so `page.doc.comments` stayed empty and
+  the card could never mount. Fixed: `ProjectPageSurface` wrapped in ToastProvider + the bridge
+  (lands the REQ-WRITE-7 fork-undo toast too); the toast.tsx `aria-allowed-role` latent violation
+  fixed alongside. `stevevitali/r7dep-2-t1-prod` advanced to `d0a77d0`. H16 re-checked: still
+  **not-dispositioned**. Journeys dist rebuilt `--force`; Cloud Build `1f40a059` all-10 @
+  `d0a77d0` (`_TAG=r7dep-2-t1f`).
+- 2026-11-08T06:xxZ — Cloud Build `1f40a059` SUCCESS; digests `logs/r7dep2/pr293-digests-t1f.txt`;
+  `up` 11 updates + proxy replace (1m34s, zero destructive). **Provenance: web+api `/healthz/` →
+  `d0a77d0…` — sixth in-place update.**
+- 2026-11-08T06:xxZ — **T1f re-walk at `d0a77d0` — ALL 16 LEGS GREEN** (`t1f-legs/`,
+  `--expect-sha` match, $0): 8 incumbents PASS + **U1.shell, U2.noreload, U3.occlusion,
+  U4.controls, U5.write, U6.chat, U7.import ALL ready-to-flip** + **R8.showcase.spa PASS** (×4
+  consecutive — the regression durably closed). **The board is closed** — every `F-R7DEP.2-*`
+  finding verified fixed at the deployed tip; `D-R7FIX.1-2…D-R7FIX.6-1` dispositions follow.
+- 2026-11-08T22:0xZ — **committed hero capture at `d0a77d0`** (the fixed recipe, `/healthz/`
+  provenance): clip `13.8s / 780,708B / 1280×720 / no audio` sha256 `8f4bda23…`, poster `5,769B`
+  sha256 `d3d51548…`, manifest `violations: []` → `docs/build/reports/2026-11-08_R7DEP.2/hero-recording-manifest.json`.
+  Assets landed at the declared `HERO_RECORDING` paths; `licenses.exceptions.json`
+  `demo-hero-recording` + `LICENSES.md` completed with bytes+sha256; `.gitignore` gained
+  `!apps/web/public/media/` (the generated-bundle ignore needed a declared-asset carve-out).
+- 2026-11-08T22:0xZ — **REQ-SPEED-5 preview record** @ `d0a77d0`, N=20: **hard-open p75 147 ms**
+  (≤1.2 s ✓), **warm-open p75 119 ms** (≤400 ms ✓), **pending 0 samples** (the skeleton never
+  painted — no regressions recorded; `gated:false`). JSON in the speed-leg output.
+- 2026-11-08T22:0xZ — `public-ssr-baseline` @ `d0a77d0` → `public-ssr-baseline-t1f/baseline.json`:
+  all 5 public routes 200/SSR. 2 WARNs recorded (not gates): `/login` carries banned copy
+  "private beta" (F-R7DEP.2-8 — copy defect for the tail) and `/showcase` lacks the sample-dossier
+  text leg (the workspace Showcase now owns that surface).
+- 2026-11-08T22:0xZ — **two-tenant BFF probe: UNMEASURABLE (skipped-with-reason)** — `B:/bff/*`
+  all 401 (the jrn-b session was never minted/expired on this stack) and A lacks the
+  `JRN-<nonce>-TENANTA`/`VOICEA` markers the X1 leg plants — the probe's inputs don't exist in
+  this window; NOT a tenant-isolation failure. Anonymous `/bff/app` → 401 `unauthenticated` ✓
+  (the one leg that could run). Bodies preserved under `two-tenant-t1f/`.
+- 2026-11-08T22:1xZ — **T1 = `e578a767fbff5e8e0cfb7282541ba2bb3172744b`** — committed + pushed:
+  the all-16-green board, U1–U7 `expected:"green"` flips, hero assets + license records,
+  `D-R7FIX.*-N` + staging `D-R7*` dispositions. (Environment incident: local disk hit 100% —
+  gcloud crashed on temp; ~7 GB of regenerable caches freed; the T1 push reached the remote.)
+- 2026-11-08T22:4xZ — Cloud Build `0b004712` SUCCESS, all-10 @ `e578a767`; digests
+  `pr293-digests-t1final.txt`; `up` (7th in-place update, zero destructive). **Provenance:
+  web+api `/healthz/` → `e578a767…`.**
+- 2026-11-08T22:5xZ — **T1 re-walk set PASS** (`t1-rewalk/`): N10, R8.showcase, P1.public, D1.hub,
+  U1.shell, R8.showcase.spa all green at `e578a767`. **Hero vitals**: landing LCP **184–304 ms**
+  (≤2.5 s ✓) + CLS **0.000** (≤0.05 ✓) at 1440+390, clip arm live at both widths (the
+  reduced-motion arm is the video's poster frame — no autoplay by design; markup violations []).
+  Landing/pricing screenshots `t1-landing/`.
+- 2026-11-08T23:2xZ — **teardown act 1 `destroy pr-293` ran** — 138 deleted; ONE residual:
+  `gcp:compute:Subnetwork rhema-pr-293-private-app` blocked by the Google-managed serverless
+  address `serverless-ipv4-cloudrun-1794077420824796023` (still RESERVED — the Cloud Run VPC
+  lease auto-releases after service deletion; same orphan class as pr-259's `iap-ssh` residual).
+  Direct `gcloud compute addresses delete` refused (used by
+  `//serverless.googleapis.com/.../addressReservations/…`). **RETRY: re-run
+  `node scripts/live/preview-stack.mjs destroy pr-293` after the reservation releases
+  (~30–60 min post-service-delete), then the zero-orphan sweep, then `rm pr-293`, then the
+  spend read.** The stack is otherwise reduced to network residue.
+- 2026-11-08T23:5xZ/00:1xZ — **destroy retries #2+#3:** 9 more deleted (147 total); the
+  `serverless-ipv4-cloudrun-1794077420824796023` lease is STILL `RESERVED` at ~55 min post-delete
+  (auto-release timing varies; a passive GCP wait — the preview surface is down, only network
+  residue remains: ~54 stack resources, all behind the held subnet). **RETRY LOOP (operator may
+  run):** `gcloud compute addresses describe serverless-ipv4-cloudrun-1794077420824796023
+  --region us-central1 --format='value(status)'` — when the read 404s/IN_USE clears, re-run
+  `node scripts/live/preview-stack.mjs destroy pr-293` → orphan sweep → `rm pr-293` → spend read.
+- NEXT: destroy-retry → orphan sweep → `rm` → spend read → **Part B** GD-DEPLOY.R7's 8
+  conditions → prod `pulumi up` @ `e578a767` → provenance → deployments row → CDN invalidate
+  `/bff/p/demo~*` → corpus-in-image → Stage B at T1 → U6 paid (<$10) → SPEED-5 prod → nightly
+  dispatch → close-out records/PR/CI boundary.
+
+## Teardown completion + Part B + Stage B (2026-11-08, prod @ `e578a767`)
+
+- 2026-11-08T01:0xZ — **GCP lease released** (~60+ min hold): `serverless-ipv4-cloudrun-…023`
+  gone. **`destroy pr-293` retry #4 deleted the remaining 51 resources** (subnet, network,
+  secrets, buckets, AR repo, cert, SAs — 34 s). **Zero-orphan sweep: 9 families all 0**
+  (run services/jobs, secrets, buckets, networks, subnets, AR, addresses, certs). **`rm
+  pr-293` done.** One R7b preview created total; the surface was down from act 1.
+- **Preview spend record (round-7 vs $20 cap, target ≤$16):** list-price estimate ≈ **$14**
+  ($8 carried R7a + ~$2.6 uptime + ~$3.7 builds); preview inference $0. Under cap.
+- 2026-11-08T08:0xZ — **Part B under `GD-DEPLOY.R7` — all eight conditions evidenced in
+  order:**
+  1. **Preview walk done + teardown verified** — the full T0 walk + T1 re-walk above;
+     destroy→zero-orphan→`rm` complete (this section).
+  2. **All-service image build at the tip** — Cloud Build **`7d470657`** SUCCESS, all-10 @
+     `e578a767` (`_TAG=r7dep-2`, `_AR=…/rhema-prod`, `_ALLOW_PLACEHOLDER_SDK=0`; built from a
+     `git worktree` checkout at the exact SHA; the earlier `0b004712` digests died with the
+     pr-293 AR — a fresh prod push is the of-record artifact). Digests re-verified against AR.
+  3. **`pulumi preview --diff --stack prod` classified** — **10 updates + 1 replace, zero
+     deletes, zero stateful touches** (169 unchanged): 9 image swaps (8 services + convert
+     job) + MIG version pin + the `rhema-prod-proxy-tmpl` InstanceTemplate replace — a
+     stateless immutable template (the MIG rolls instances; identical class to R7DEP.1's
+     replace). Migrations additive-only (`0062` ADD COLUMN ×3). **Cost Δ ≈ $0** — same
+     service count/sizing. Under the ≤$15 bound.
+  4. **Migration applied first** — `prod-migrate-seed` over the operator IAP tunnel:
+     `[lint] 1 migration additive` → `applied 0062_drafts_discard.sql` → 62 recorded →
+     protocol+agent-type seeds idempotent. **`pulumi up --stack prod` update 174** (1m42s)
+     → **`check-deploy-provenance` all-PASS: web `rhema.tools` + api `api.rhema.tools` both
+     report `e578a767…`**.
+  5. **`deployments` row recorded** — `prod:e578a767…`,
+     `protocols_version=0.4.0+9c2b880dbee74bd8`, all-10 digests.
+  6. **Rollback recipe committed** — § below (the `4bc8cf4a`/`c6d7dedb` digest set recorded
+     at pre-state; never executed without the operator).
+  7. **Corpus-in-web-image assertion** — in-build `RUN test -s` on `corpus/PROVENANCE.md` +
+     `snapshots/projects.json` + `structure-of-political-difference/index.json` (web
+     Dockerfile L25–27) ran inside `7d470657` — step `#15 [builder 9/9]` PASSED before the
+     `#18` export; the asserted digest `259973f9…` is exactly what prod serves (provenance
+     PASS). Local docker/crane unavailable — in-build assert + AR digest match carried.
+  8. **CDN invalidation** — dry-run == act on `rhema-prod-urlmap-6f2b86e`, host
+     `rhema.tools`, path **`/bff/p/demo~*`**: `invalidate-cdn-cache` submitted (eventually
+     consistent per-edge).
+- 2026-11-08T08:4xZ — **Stage B at prod T1** (`prod-stageb/`, 150+ captures): **U1–U7 ALL
+  FLIP GREEN** at the deployed SHA (shell, noreload, occlusion, controls, write, chat,
+  import), plus D1.hub, D3.readonly, P1.demo, R11.demo, P1.public, N10, R8.showcase,
+  R8.showcase.spa, R8.prefs, R8.inbox, X1.*, T1–T3/T17, C1, R1/R5/R7/R10.keepalive, N2–N4/N7.
+  **`D-R7GUARD.1-1` closes** (U3.occlusion green at the deployed SHA). **Honest red tally
+  (12 legs — recorded, not flipped):**
+  - **NEW at T1** (green on the 4bc8cf4a nightly): **D2.tour** — bundle parity counts the
+    hero clip's HTTP **206** (correct ranged-video response, new at T1 — the clip first
+    exists at `e578a767`) as a failed asset response → **F-R7DEP.2-9** (leg/asset-class
+    mismatch; the flip 250 was to cite stays OWED); **N9** — "Buy 1,000 credits" copy gone
+    on the R7b pricing surface → **F-R7DEP.2-10**; **P1.project/pill/runsheet/outline/
+    figures** — `a[href^="/p/"]`.first() resolves the `showcase-copy` shell-recent link
+    parked outside the scroll viewport (the R7b recents row the R7FIX.3 R8 fix already had
+    to steer around — the older legs lack that steering) → **F-R7DEP.2-11**;
+    **P1.app-new** — 2 WCAG-AA violations (aria-allowed-attr on the chat ghost tab +
+    color-contrast `.ui-t-pm`) → **F-R7DEP.2-12**; **T4** citation-style select absent →
+    **F-R7DEP.2-13**; **T5** autoInclude checkbox intercepted by its card → **F-R7DEP.2-14**.
+  - **Still-red, pre-existing** (red on the 4bc8cf4a nightly too): N1/N3 magic-link verify
+    (error shape evolved `waitForURL`-timeout → `ERR_TOO_MANY_REDIRECTS` on the R7b /app
+    boundary) → **F-R7DEP.2-15**; N8 fork banner; T6 restore window → **F-R7DEP.2-16**.
+  - **Skipped-with-reason:** T7/R6F/T12F/T13F need `JOURNEY_DATABASE_URL` (not bound to the
+    local run); T8 owed per `D-FIX.1-1`. **U3.stopgap** fails (superseded leg of record —
+    U3.occlusion green is the R7b arm; its registry `expected` stays `green` and the red
+    row is recorded, not hidden).
+  - The green flips U1–U7 are ALREADY `expected:"green"` since T1; this Stage B is the
+    deployed-SHA citation that completes them. D2.tour's flip is NOT cited — it stays owed.
+- 2026-11-08T08:5xZ — **The ONE U6 paid run (`GD-UX-PAIDLEG.R7`): FAILED — pause per
+  ruling.** Mechanism: the 232-updated paid `R4` row (`--paid --steps R4 --headroom 0.5`;
+  `capUsd` $0.50 ∈ [$0.50,$10) at the ≤$0.50 target; `cogsLevers {testCheapRoute:false}`
+  applied; Base-tier journey identity). Preflight: system-role DSN (bypass_rls `true`),
+  ISO-week metered **$3.34352 < $5** (`WEEKLY_PAID_CAP_USD`). Outcome: the turn POST got
+  **HTTP 402** — the fresh journey identity's wallet carried no credits; the turn-status
+  poll never returned `optimistic`; the leg failed at 156 s. **Metered spend for the
+  dispatch: $0.00** (usage_records delta over the window: 0; debits == metered burn: both
+  $0). Weekly total remains $3.34352. **No second run** — the single authorized dispatch
+  was consumed; any re-dispatch needs fresh operator authority (ruling voided-by is not
+  met: no ≥$10 spend, no second run). No `funded-pause.json` exists (a plain failure, not
+  cap_overrun); none created, none cleared. **F-R7DEP.2-17** (prod paid-leg funding seam:
+  the R4 identity had no credit path on prod at T1).
+- 2026-11-08T08:59Z — **REQ-SPEED-5 prod primary record** @ `e578a767`, N=20,
+  slug `demo~the-borrowed-commons`: **hard-open p75 123 ms** (≤1200 ✓), **warm-open p75
+  116 ms** (≤400 ✓), pending-indicator −1 (0 samples — none painted; no regression).
+- 2026-11-08T08:59Z — **post-deploy nightly dispatched** — run `42465216426`
+  (`paid=false`, `expect-sha=e578a767…`, ref `stevevitali/r7dep-2-t1-prod`):
+  https://github.com/SteveVitali/Rhema/actions/runs/42465216426 — tally recorded when it
+  lands (it re-proves the same paid:false board this Stage B ran).
+- **Golden classification:** non-affecting payload, **$0** spent (no rerun authorized or
+  needed — R7a→R7b diff had no protocol touch; 0062 additive).
+
+## Part B — rollback recipe (committed; NOT executed — the operator's go)
+
+Rollback of the R7b deploy = the R7DEP.1 recipe shape with this round's pins:
+1. `git revert` the R7b range for a source rollback, OR (operator-faster) re-pin the
+   pre-deploy digest set in `infra/pulumi/Pulumi.prod.yaml`: api `794c6e66…`, web
+   `8ae9b40f…`, worker `4d771eea…`, fetcher `cf8cb11d…`, convert `44062bde…`, export
+   `2a4b3e7c…`, collab `a6da4f10…`, turbo-cache `9893066c…`, run-task `762c1d99…`,
+   egress-proxy `81017be4…` (the `4bc8cf4a`/`c6d7dedb` set — still in `rhema-prod` AR).
+2. `pulumi up --stack prod` → `check-deploy-provenance --expect 4bc8cf4a…` all-PASS.
+3. CDN invalidate `/bff/p/demo~*` again (the S-13 act is idempotent).
+4. `deployments` row re-record via `record-deployment.mjs` with the reverted digests.
+5. No migration rollback — `0062` is additive columns; the `4bc8cf4a` code ignores them.
+6. The SPA renderer flags/keys do not exist to flip (renderer rollback is a code rollback,
+   gotcha 7). A prod incident attributed to this deploy voids `GD-DEPLOY.R7` — rollback
+   is then the operator's go.
+- 2026-11-08T09:4xZ — **post-deploy nightly `42465216426` completed: FAIL (honest tally).**
+  Its reds largely match the direct Stage-B set — N1/N3 (magic-link loop), N8, T4/T5/T6,
+  P1.project/pill/runsheet/outline/figures, P1.app-new — plus DB-bound legs that ran there:
+  T7 (purge-job variant), T12F/T13F — and **U2.noreload + U5.write evolved again** (the two
+  flakiest seams: `.first()` recent pick / bounding-box — they were green in the direct run).
+  **D2.tour PASSED on the nightly** — the direct run's 206-parity fail did not reproduce
+  (CDN-warmed path; F-9 stays open as the intermittent-class record, the leg is deploy-green).
+- 2026-11-08T09:3xZ — **CI boundary first read: FAIL on #300 (typecheck/lint/unit, run
+  42465484349)** — three test-side gaps surfaced by the flip commit, none product code:
+  `registry.test.ts` + `runner.test.ts` pinned the pre-flip owed census (U1–U7 now green),
+  `marketing.test.ts` pinned `data-hero-placeholder` on the served `/` (the committed clip
+  makes the server render `data-hero-video`). Fixed as flip-catch-up at `53946e6f` (the
+  placeholder arm is now proven via `heroClip:false`; the round-7 census asserts green +
+  real-fail classification). 48/48 tests in the three files re-run green locally.
+- 2026-11-08T10:2xZ — **CI boundary second read:** `typecheck/lint/unit` PASS at `53946e6f`
+  (the flip-catchup) + fast-path/contracts/public-safe green; **`images` leg FAIL twice on the
+  SAME external cause: `curl (22) 504` fetching pandoc+typst from github.com releases** (the
+  convert Dockerfile's pinned-download step). Not diff-caused — the identical image built clean
+  in Cloud Build `7d470657` ~1 h earlier; a github release-CDN outage window. Rerun #3 queued;
+  record `logs/ci-R7DEP.2.json`.
+- 2026-11-08T11:1xZ — **CI boundary final read: EXTERNALLY-BLOCKED, not diff-caused.** At
+  `474d49be`: fast-path + typecheck/lint/unit + contracts + public-safe all PASS (the
+  flip-catchup holds); `integration` + `images` legs FAIL ×3 attempts on the SAME external
+  cause — github.com release/archive fetches (pandoc, typst, dumb-init tarballs) answering
+  504/failed through a sustained github CDN outage window (~2.5 h). The identical images
+  built clean in Cloud Build `7d470657` (the deploy artifact itself). Record
+  `logs/ci-R7DEP.2.json`; the boundary re-reads when the upstream recovers — rerun
+  `gh run rerun <run> --failed` on run `42470880492`, then `ci-boundary --pr 300`.

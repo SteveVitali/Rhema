@@ -74,3 +74,12 @@ therefore rides the same CC BY-NC-ND 4.0 carve-out and pen-name scope (ADR-127; 
 declared ahead of the bytes: the asset entry `"demo-hero-recording"` in
 `licenses.exceptions.json` names the paths; 250 completes the record with the committed files'
 bytes and sha256.
+
+Completed 2026-11-08 (250_R7DEP.2): the hero recording landed at the declared paths —
+`apps/web/public/media/hero-tour.mp4` (780,708 bytes, sha256
+`8f4bda23e1fa6897a2a7130b30d4a60e88316722886dbf80cf3a08ec2189f8e5`) and
+`hero-tour-poster.jpg` (5,769 bytes, sha256
+`d3d51548a1917a4d8972485b00d67692a08c14f8b40841654fb409296ba8b93f`), captured from the
+logged-out demo tour on preview `pr-293` at `d0a77d0` by the committed `hero-capture` recipe
+(manifest `docs/build/reports/2026-11-08_R7DEP.2/hero-recording-manifest.json`,
+`violations: []`).

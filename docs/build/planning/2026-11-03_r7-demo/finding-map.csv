@@ -1,113 +1,156 @@
 finding_id,source,severity,req_ids,owner_ticket,evidence,status
-A1,R5 §/app,P1,REQ-HOME-1,234_R7HOME.1,R5 /app QUIET collapsed list,open
-A2,R5 §/app,P1,REQ-KIT-1,210_R7KIT.1,R5 native unstyled controls on dark,open
-A3,R5 §/app,P1,REQ-HOME-1,234_R7HOME.1,R5 3-row filter form admin-console feel,open
-A4,R5 §/app,P2,REQ-COPY-7,210_R7KIT.1,R5 h1 focus ring on route change,open
-A5,R5 §/app,P1,REQ-SHELL-1;REQ-SHELL-2,226_R7SHELL.1a,R5 top-nav variants + no sidebar,open
-A6,R5 §/app,P2,-,BL-90,R5 narrow content column + empty footer,backlog (BL-90)
-A7,R5 §/app,P2,REQ-HOME-1,234_R7HOME.1,R5 stacked primary CTAs + chip noise,open
-A8,R5 §/app,P2,REQ-HOME-1,234_R7HOME.1,R5 empty filter params in URL — fixed in passing else BL-91,open
-A9,R5 §/app,P2,REQ-HOME-1,234_R7HOME.1,R5 QUIET re-collapses on return,open
-A10,R5 §/app,P1,REQ-HOME-1,234_R7HOME.1,R5 every project lands QUIET,open
-A11,R5 §/app,P2,REQ-HOME-1,234_R7HOME.1,R5 row menu no feedback + mixed verbs,open
-B1,R5 §/p,P0,REQ-PANE-0,212_R7FIX.1,R5 Files panel pushes page under Timeline,open
-B2,R5 §/p,P0,REQ-PANE-0,212_R7FIX.1,R5 Desk head behind status bar,open
-B3,R5 §/p,P1,REQ-SHELL-1;REQ-SHELL-2,226_R7SHELL.1a,R5 two cryptic icon rails,open
-B4,R5 §/p,P1,REQ-WRITE-6,237_R7WRITE.1a,R5 project actions as doc hyperlinks,open
-B5,R5 §/p,P1,REQ-WRITE-6,237_R7WRITE.1a,R5 frozen notice styled like an input,open
-B6,R5 §/p,P1,REQ-COPY-1;REQ-COPY-6;REQ-SYNC-6,244_R7COPY.1a,R5 workflow keys + 16/5 cr in Timeline (SYNC-6 arm → 233_R7TALK.1b),open
-B7,R5 §/p,P1,REQ-KIT-1,210_R7KIT.1,R5 raw system buttons on dark,open
-B8,R5 §/p,P2,REQ-KIT-2,225a_R7KIT.2b,R5 false dropdown carets on plain links — fixed in passing (Chip) else BL-92,open
-B9,R5 §/p,P2,-,BL-93,R5 undifferentiated timeline scroll,backlog (BL-93)
-B10,R5 §/p,P2,-,BL-94,R5 dense Files panel + lock glyphs,backlog (BL-94)
-B11,R5 §/p,P2,REQ-WRITE-6,237_R7WRITE.1a,R5 page-in-page card + floating chips,open
-B12,R5 §/p,P0,REQ-WRITE-4,212_R7FIX.1,R5 Focus-mode trap (keymap arm → REQ-KEYS-1 239_R7WRITE.2),open
-B13,R5 §/p,P1,REQ-KEYS-1,239_R7WRITE.2,R5 browser-reserved chords,open
-B14,R5 §/p,P1,REQ-SPEED-2,246_R7SYNC.1,R5 blank dark screen ~1.1 s hard load,open
-B15,R5 §/p,P2,REQ-WRITE-8,239_R7WRITE.2,R5 paper theme flips dark→light,open
-B16,R5 §/p,P1,REQ-PANE-3,229_R7PANE.1,R5 Desk bottom drawer over doc+timeline (chat UX arm → REQ-TALK-2 232_R7TALK.1a),open
-B17,R5 §/p,P1,REQ-TALK-4,233_R7TALK.1b,R5 Findings/Claims empty vs delivered record,open
-B18,R5 §/p,P2,REQ-WRITE-7,238_R7WRITE.1b,R5 caret in frozen version accidental-fork,open
-C1,R5 §showcase,P1,REQ-RELOAD-5,211_R7RO.1,R5 showcase hop flips renderer (full reload),open
-C2,R5 §showcase,P1,REQ-DWEB-14,211_R7RO.1,R5 read-only still shows write controls that 409,open
-C3,R5 §showcase,P0,REQ-COPY-4,213_R7COPY.0,R5 generated run summary wrong + leaks internals,open
-C4,R5 §showcase,P1,REQ-SYNC-1,213_R7COPY.0,R5 dossier vs timeline run-card desync,open
-C5,R5 §showcase,P1,REQ-SYNC-2,213_R7COPY.0,R5 6 vs 5 findings count mismatch,open
-C6,R5 §showcase,P1,REQ-KIT-2,225a_R7KIT.2b,R5 pill-styled dead timeline chips,open
-C7,R5 §showcase,P1,REQ-PANE-5,243a_R7KIT.3e,R5 letter pushed below banner+card at ~300px,open
-C8,R5 §showcase,P1,REQ-COPY-3,245_R7COPY.1b,R5 literal markdown + URL overflow + mixed pills,open
-C9,R5 §showcase,P2,REQ-COPY-8,243a_R7KIT.3e,R5 ordinal [0] + verdict shown twice,open
-C10,R5 §showcase,P2,REQ-COPY-7,210_R7KIT.1,R5 raw Duplicate button + h1 focus box,open
-C11,R5 §showcase,P2,REQ-SYNC-5,246_R7SYNC.1,R5 inconsistent estimates across screens,open
-C12,R5 §showcase,P2,REQ-COPY-1,244_R7COPY.1a,R5 internal lowercase phase keys mixed case,open
-D1,R5 §nav,P1,REQ-SHELL-1;REQ-SHELL-2,226_R7SHELL.1a,R5 four top-bar variants,open
-D2,R5 §inbox,P1,REQ-COPY-3,245_R7COPY.1b,R5 wall-of-text security notice + jargon (COPY-6 arm → 244),open
-D3,R5 §settings,P1,REQ-KIT-4,240_R7KIT.3a,R5 raw UA strings + internal copy,open
-D4,R5 §voices,P2,REQ-KIT-4,240_R7KIT.3a,R5 enum keys leak in meta line,open
-D5,R5 §usage,P1,REQ-COPY-5,241_R7KIT.3b,R5 4000-of-2000 + credits credits (skeleton arm → REQ-SPEED-2 246),open
-D6,R5 §billing,P1,REQ-SHELL-1,226_R7SHELL.1a,R5 /billing unstyled 404,open
-D7,R5 §all,P2,REQ-COPY-7,210_R7KIT.1,R5 focus rectangle on every h1,open
-D8,R5 §billing,P1,REQ-KIT-4,240_R7KIT.3a,R5 plan-value framing ≈0.7 review (economics → BL-101),open
-E1,R5 §run-sheet,P1,REQ-COPY-5,241_R7KIT.3b,R5 float garbage + $85.35 for 624 words (economics → BL-101),open
-E2,R5 §run-sheet,P1,REQ-SYNC-3,246_R7SYNC.1,R5 route-scoped timeline says No runs yet,open
-F1,R5 §responsive,P0,REQ-PANE-0,212_R7FIX.1,R5 1024w dossier Timeline overlay (PANE-5 redesign → 243a),open
-F2,R5 §responsive,P0,REQ-PANE-0,212_R7FIX.1,R5 820w bottom sheet covers ~70% (PANE-2 → 229),open
-F3,R5 §responsive,P1,REQ-PANE-5,243a_R7KIT.3e,R5 1280w 5 compressed columns,open
-F4,R5 §responsive,P2,REQ-SHELL-6,226_R7SHELL.1a,R5 ~500w phone layout drops entry points,open
-G1,R5 §compare,P1,-,GD-UX-P1-BACKLOG.R7,R5 no word-level diff marks,wontfix-this-round (GD-UX-P1-BACKLOG.R7; BL-88)
-G2,R5 §compare,P1,REQ-COPY-3,245_R7COPY.1b,R5 monospace markdown what-changed + coherence-read jargon,open
-G3,R5 §compare,P1,REQ-SYNC-3,246_R7SYNC.1,R5 sub-routes show No runs yet,open
-G4,R5 §compare,P2,REQ-SYNC-4,246_R7SYNC.1,R5 missing version no guidance + gap unexplained,open
-G5,R5 §outline,P1,REQ-HOME-6,236_R7HOME.2b,R5 outline route denies + chrome switch (SHELL-5 arm → 227),open
-G6,R5 §export,P1,REQ-COPY-6,244_R7COPY.1a,R5 AI-use statement leaks workflow/phase keys (KIT-3b migrate → 241),open
-H1,R5 §public,P1,REQ-PUB-1,249a_R7PUB.1,R5 signed-in cannot view /pricing,open
-H2,R5 §public,P1,REQ-PUB-2,249a_R7PUB.1,R5 text-only landing no recording + serif,open
-H3,R5 §public,P1,REQ-PUB-2,249a_R7PUB.1,R5 internal jargon in public copy,open
-H4,R5 §public,P2,-,BL-95,R5 two visual languages + native FAQ details,backlog (BL-95)
-H5,R5 §public,P2,-,BL-96,R5 credits teaser vs $85.35 run sheet,backlog (BL-96)
-I1,R5 §new-project,P1,REQ-SYNC-5,246_R7SYNC.1,R5 identical estimates + internal note (form arm → REQ-HOME-3 236 / KIT-3b 241),open
-I2,R5 §new-project,P0,REQ-HOME-3,236_R7HOME.2b,R5 new project = admin form, no writing surface,open
-I3,R5 §import,P1,REQ-HOME-5,235_R7HOME.2a,R5 H1 silently dropped + monospace preview + native file,open
-I4,R5 §import,P1,REQ-HOME-4,235_R7HOME.2a,R5 imported draft frozen on arrival,open
-I5,R5 §edit,P1,REQ-WRITE-2,238_R7WRITE.1b,R5 note form + approvals form below doc,open
-I6,R5 §edit,P1,REQ-WRITE-1,237_R7WRITE.1a,R5 no toolbar + occluding menu + disabled items,open
-I7,R5 §edit,P1,REQ-WRITE-5,239_R7WRITE.2,R5 Edit source link mislabeled,open
-I8,R5 §edit,P1,REQ-WRITE-5,239_R7WRITE.2,R5 source mode no soft wrap,open
-I9,R5 §edit,P2,REQ-SYNC-5,246_R7SYNC.1,R5 ≈$32 for 43 words + v1/v2 mismatch (economics → BL-101),open
-UXC-1,R6 §9 N,P0,REQ-RELOAD-1,232_R7TALK.1a,R6 chat send reloads whole IDE + raw JSON,open
-UXC-2,R6 §9 N,P1,REQ-RELOAD-2,231_R7RELOAD.1,R6 pane-form approve reloads + resets scroll,open
-UXC-3,R6 §9 N,P1,REQ-SHELL-2,226_R7SHELL.1a,R6 logo href=/ double reload (RELOAD-3 arm → 231),open
-UXC-4,R6 §9 N,P1,REQ-RELOAD-3,231_R7RELOAD.1,R6 write redirects hit /edit/:id reload stub,open
-UXC-5,R6 §9 N,P1,REQ-RELOAD-3,231_R7RELOAD.1,R6 stale reloadDocument:true,open
-UXC-6,R6 §9 N,P1,REQ-RELOAD-5,211_R7RO.1,R6 showcase forced-SSR every click reloads,open
-UXC-7,R6 §9 N,P2,REQ-RELOAD-7,247_R7RO.2,R6 two IDE controllers diverge,open
-UXC-8,R6 §9 N,P2,REQ-RELOAD-7,247_R7RO.2,R6 Android tablets get phone reader,open
-UXC-9,R6 §9 C,P1,REQ-SHELL-1,226_R7SHELL.1a,R6 no persistent authenticated layout,open
-UXC-10,R6 §9 C,P1,REQ-SHELL-2,226_R7SHELL.1a,R6 rail items diverge from DS,open
-UXC-11,R6 §9 C,P1,REQ-SHELL-5,227_R7SHELL.1b,R6 outline/figures drop out of IDE,open
-UXC-12,R6 §9 C,P2,REQ-SHELL-3,227_R7SHELL.1b,R6 wrong labels on hand-picked leaf navs,open
-UXC-13,R6 §9 C,P1,-,GD-UX-P1-BACKLOG.R7,R6 landing reuses beta shell — full marketing redesign remainder,wontfix-this-round (GD-UX-P1-BACKLOG.R7; BL-89)
-UXC-14,R6 §9 S,P1,REQ-KIT-1,210_R7KIT.1,R6 no base control CSS / color-scheme,open
-UXC-15,R6 §9 S,P1,REQ-KIT-2,225a_R7KIT.2b,R6 no Button/Field primitives,open
-UXC-16,R6 §9 S,P1,REQ-KIT-3d,243_R7KIT.3d,R6 most-used forms least finished — batch spans 240/241/242; 243 owns the worst named files (chat-panel, run-sheet),open
-UXC-17,R6 §9 S,P2,REQ-HOME-1,234_R7HOME.1,R6 separate Apply per filter,open
-UXC-18,R6 §9 S,P2,REQ-GUARD-1,249_R7GUARD.1,R6 no lint guard against raw controls,open
-UXC-19,R6 §9 L,P1,REQ-PANE-0,212_R7FIX.1,R6 Timeline covers draft+finding ticks (PANE-1/2 → 229),open
-UXC-20,R6 §9 L,P1,REQ-PANE-0,212_R7FIX.1,R6 sheet defaults open on iPad (PANE-2 → 229),open
-UXC-21,R6 §9 L,P2,REQ-SHELL-6,226_R7SHELL.1a,R6 narrow desktop hides every pane,open
-UXC-22,R6 §9 ED,P1,REQ-WRITE-1,237_R7WRITE.1a,R6 no formatting controls,open
-UXC-23,R6 §9 ED,P1,REQ-WRITE-2,238_R7WRITE.1b,R6 no selection→Guidance comment path,open
-UXC-24,R6 §9 ED,P2,REQ-WRITE-6,237_R7WRITE.1a,R6 chrome crowds the paper top,open
-UXC-25,R6 §9 ED,P2,REQ-HOME-2,236_R7HOME.2b,R6 opens to overview not draft (⌘K arm → REQ-SHELL-7 228),open
-UXC-26,R6 §9 L,P2,REQ-PANE-1,229_R7PANE.1,R6 no keyboard resize + glyph icons vary,open
-UXC-27,R6 §9 E,P1,REQ-COPY-2,245a_R7COPY.1c,R6 raw error codes shown to users,open
-UXC-28,R6 §9 E,P1,REQ-RELOAD-4,231_R7RELOAD.1,R6 raw JSON page on form failures,open
-UXC-29,R6 §9 E,P2,REQ-SHELL-1,226_R7SHELL.1a,R6 loading/404 screens have no chrome,open
-UXC-30,R6 §9 E,P2,REQ-COPY-1,244_R7COPY.1a,R6 hard-coded strings outside COPY,open
-UXC-31,R6 §9 D,P2,REQ-KIT-1,210_R7KIT.1,R6 no size/radius scale enforcement,open
-UXC-32,R6 §9 D,P2,REQ-KIT-1,210_R7KIT.1,R6 undefined diff/state tokens,open
-UXC-33,R6 §9 P,P1,REQ-SPEED-1,246_R7SYNC.1,R6 serial handoff POST delays open,open
-UXC-34,R6 §9 P,P1,REQ-SPEED-3,246_R7SYNC.1,R6 no hover/focus prefetch,open
-UXC-35,R6 §9 P,P2,REQ-SPEED-3,246_R7SYNC.1,R6 chrome flash + broad refetches,open
-UXC-36,R6 §9 P,P2,REQ-SPEED-4,246_R7SYNC.1,R6 no font preload FOUT,open
-B6,R5 §/p,P1,REQ-SYNC-6,233_R7TALK.1b,"SYNC-6 closed (a) conformance: cap 5/burn 16 + cap 40/burn 43 PGlite fixture — debited==cap both modes, residual absorbed COGS, failed turn net 0 (packages/ledger/src/chat-turn-burn.test.ts; apps/egress-proxy handler.test.ts B6 leg)",closed
+A1,R5 §/app,P1,closed,234_R7HOME.1,SHELL-1/2: U1.shell green @e578a767 docs/build/reports/2026-11-08_R7DEP.2/prod-stageb/u1-shell-1440.png + app-shell.dom.test.tsx,open
+A2,R5 §/app,P1,closed,210_R7KIT.1,KIT-1/2: U4.controls green @e578a767 (zero native controls) + control-base.dom.test.tsx,open
+A3,R5 §/app,P1,closed,234_R7HOME.1,SHELL-1: U1 green @e578a767,open
+A4,R5 §/app,P2,closed,210_R7KIT.1,COPY-7: programmatic-focus suppression dom-tested; surfaces walked in U4/U5,open
+A5,R5 §/app,P1,closed,226_R7SHELL.1a,SHELL-3: per-leaf headers removed (census test); bespoke → D-R7SHELL.1b-1,open
+A6,R5 §/app,P2,routed,BL-90,BL-90 dated,backlog (BL-90)
+A7,R5 §/app,P2,closed,234_R7HOME.1,KIT-1: focus+error styles in control base; U4 green,open
+A8,R5 §/app,P2,closed in passing,234_R7HOME.1,HOME-1: only non-default params in URL (project-home.dom.test); else BL-91,open
+A9,R5 §/app,P2,closed,234_R7HOME.1,HOME-1: QUIET/Unfiled/Sheet retired (dom test),open
+A10,R5 §/app,P1,closed,234_R7HOME.1,SHELL-1/3: in-shell pending/error/404; U1 green,open
+A11,R5 §/app,P2,closed,234_R7HOME.1,HOME-1: optimistic archive/delete + Undo (dom test + U-legs),open
+B1,R5 §/p,P0,closed,212_R7FIX.1,PANE-0/1: U3.occlusion green @e578a767 all five sizes,open
+B2,R5 §/p,P0,closed,212_R7FIX.1,PANE-0: desk-head stacking fix (R7FIX.2 @18a0df79); U3 green,open
+B3,R5 §/p,P1,closed,226_R7SHELL.1a,SHELL-2: item order+contents verbatim (app-shell.dom.test),open
+B4,R5 §/p,P1,closed,237_R7WRITE.1a,WRITE-1: U5.write bubble arm green @e578a767,open
+B5,R5 §/p,P1,closed,237_R7WRITE.1a,WRITE-2/6: U5 comment arm green; bespoke strip capture → D-R7WRITE.1a-1,open
+B6,R5 §/p,P1,closed,244_R7COPY.1a,SYNC-6 investigation: debited==cap both modes (recorded),open
+B7,R5 §/p,P1,closed,210_R7KIT.1,KIT-1/2: focus+disabled states on primitives; U4 green,open
+B8,R5 §/p,P2,closed in passing,225a_R7KIT.2b,KIT-2 Chip static-vs-interactive; else BL-92,open
+B9,R5 §/p,P2,routed,BL-93,BL-93 dated,backlog (BL-93)
+B10,R5 §/p,P2,routed,BL-94,BL-94 dated,backlog (BL-94)
+B11,R5 §/p,P2,closed,237_R7WRITE.1a,WRITE-1: agent items carry cost hints; U5 green,open
+B12,R5 §/p,P0,closed,212_R7FIX.1,WRITE-4: focus pill+Esc; U5 focus in/out green,open
+B13,R5 §/p,P1,closed,239_R7WRITE.2,KEYS-1: reserved-chords table + rule test + ? sheet,open
+B14,R5 §/p,P1,closed,246_R7SYNC.1,SPEED-2: shell+skeleton immediate paint (pending −1 @prod, no samples),open
+B15,R5 §/p,P2,closed,239_R7WRITE.2,WRITE-8: pre-paint paper theme (dom test),open
+B16,R5 §/p,P1,closed,229_R7PANE.1,TALK-2/3: bubbles+JSON send+SSE progress; U6.chat stub green @e578a767,open
+B17,R5 §/p,P1,closed,233_R7TALK.1b,TALK-4: /review/latest read + tabs; bespoke seeded capture → D-R7TALK.1b-1,open
+B18,R5 §/p,P2,closed,238_R7WRITE.1b,WRITE-7: fork toast+discard-fork+; U5 green,open
+C1,R5 §showcase,P1,closed,211_R7RO.1,RELOAD-5/DWEB-14: R8.showcase.spa green @e578a767 (zero doc loads),open
+C2,R5 §showcase,P1,closed,211_R7RO.1,DWEB-14: read-only notices + hidden/disabled write controls (read-only.dom.test),open
+C3,R5 §showcase,P0,closed,213_R7COPY.0,COPY-4: record-composed card (delivered-summary.test); bespoke → D-R7COPY.0-1,open
+C4,R5 §showcase,P1,closed,213_R7COPY.0,SYNC-1: single RunSummaryView source (run-state-parity.dom.test),open
+C5,R5 §showcase,P1,closed,213_R7COPY.0,SYNC-2: one-rule counts; strengths never double-counted (delivered-summary.test),open
+C6,R5 §showcase,P1,closed,225a_R7KIT.2b,KIT-2: Chip static vs interactive,open
+C7,R5 §showcase,P1,closed,243a_R7KIT.3e,PANE-5: dossier relayout (letter=Page column, minimap removed),open
+C8,R5 §showcase,P1,closed,245_R7COPY.1b,COPY-3: one sanitized renderer (markdown-prose.dom.test); bespoke → D-R7COPY.1b-1,open
+C9,R5 §showcase,P2,closed,243a_R7KIT.3e,COPY-8: claim ordinals 1-based, verdict once,open
+C10,R5 §showcase,P2,closed,210_R7KIT.1,COPY-7: no programmatic-focus rings (dom test),open
+C11,R5 §showcase,P2,closed,246_R7SYNC.1,SYNC-5: durations/costs only from shared estimator,open
+C12,R5 §showcase,P2,closed,244_R7COPY.1a,COPY-1: UI_LABELS single table,open
+D1,R5 §nav,P1,closed,226_R7SHELL.1a,SHELL-1: in-shell 404 + /billing→/app/settings/billing; U1 green,open
+D2,R5 §inbox,P1,closed,245_R7COPY.1b,COPY-3: sanitized markdown in all four seams (dom test),open
+D3,R5 §settings,P1,closed,240_R7KIT.3a,KIT-4: UA-parsed session labels,open
+D4,R5 §voices,P2,closed,240_R7KIT.3a,KIT-4: enum labels via committed maps,open
+D5,R5 §usage,P1,closed,241_R7KIT.3b,COPY-5: one number formatter,open
+D6,R5 §billing,P1,closed,226_R7SHELL.1a,SHELL-5: settings surface inside shell (U1 walks it),open
+D7,R5 §all,P2,closed,210_R7KIT.1,COPY-7: keyboard-only focus rings,open
+D8,R5 §billing,P1,routed,240_R7KIT.3a,economics → BL-101→BL-13 (copy float noise fixed by COPY-5),open
+E1,R5 §run-sheet,P1,routed,241_R7KIT.3b,copy fixed (COPY-5); plan-value economics → BL-101→BL-13,open
+E2,R5 §run-sheet,P1,closed,246_R7SYNC.1,SYNC-3: timeline on every sub-route (U2 walk),open
+F1,R5 §responsive,P0,closed,212_R7FIX.1,PANE-0/2: U3.occlusion green @1024,open
+F2,R5 §responsive,P0,closed,212_R7FIX.1,PANE-0/2: U3.occlusion green @820,open
+F3,R5 §responsive,P1,closed,243a_R7KIT.3e,PANE-5: dossier main column 45ch+,open
+F4,R5 §responsive,P2,closed,226_R7SHELL.1a,SHELL-6: narrow-desktop drawer/sheet; U1 @700px,open
+G1,R5 §compare,P1,wontfix,GD-UX-P1-BACKLOG.R7,GD-UX-P1-BACKLOG.R7 — pairs with prosemirror-changeset work,wontfix-this-round (GD-UX-P1-BACKLOG.R7; BL-88)
+G2,R5 §compare,P1,closed,245_R7COPY.1b,COPY-3: markdown prose,open
+G3,R5 §compare,P1,closed,246_R7SYNC.1,SYNC-3: timeline everywhere,open
+G4,R5 §compare,P2,closed,246_R7SYNC.1,SYNC-4: versions picker + ,open
+G5,R5 §outline,P1,closed,236_R7HOME.2b,HOME-6/SHELL-5: one outline source; framed leaves,open
+G6,R5 §export,P1,closed,244_R7COPY.1a,COPY-6: AI-use statement + jargon pass,open
+H1,R5 §public,P1,closed,249a_R7PUB.1,PUB-1: signed-in /pricing @e578a767 (P1.public legs),open
+H2,R5 §public,P1,closed,249a_R7PUB.1,PUB-2: landing refresh + hero clip at prod (t1-landing/),open
+H3,R5 §public,P1,closed,249a_R7PUB.1,PUB-2: hero recording committed (13.7s muted, manifest clean),open
+H4,R5 §public,P2,routed,BL-95,BL-95 dated,backlog (BL-95)
+H5,R5 §public,P2,routed,BL-96,BL-96 dated,backlog (BL-96)
+I1,R5 §new-project,P1,closed,246_R7SYNC.1,SYNC-5: estimator only,open
+I2,R5 §new-project,P0,closed,236_R7HOME.2b,HOME-3: blank create→focused inline title; U5 green, no writing surface,open
+I3,R5 §import,P1,closed,235_R7HOME.2a,HOME-4: editable imports, no fork; U7.import green @e578a767,open
+I4,R5 §import,P1,closed,235_R7HOME.2a,HOME-5: H1 title+one CTA+paper preview; U7 green,open
+I5,R5 §edit,P1,closed,238_R7WRITE.1b,WRITE-2: anchored comments; U5 green,open
+I6,R5 §edit,P1,closed,237_R7WRITE.1a,WRITE-1: bubble above selection; U5 green,open
+I7,R5 §edit,P1,closed,239_R7WRITE.2,WRITE-5: source prose mode; U5 green,open
+I8,R5 §edit,P1,closed,239_R7WRITE.2,WRITE-5: one Rich/Source toggle; U5 green,open
+I9,R5 §edit,P2,routed,246_R7SYNC.1,economics → BL-101→BL-13,open
+UXC-1,R6 §9 N,P0,closed,232_R7TALK.1a,RELOAD-1: chat send JSON 201; U6 green,open
+UXC-2,R6 §9 N,P1,closed,231_R7RELOAD.1,RELOAD-2: delegated submit + write allowlist; U2 green,open
+UXC-3,R6 §9 N,P1,closed,226_R7SHELL.1a,SHELL-2: shell wordmark,open
+UXC-4,R6 §9 N,P1,closed,231_R7RELOAD.1,RELOAD-3: /v/:n targets,open
+UXC-5,R6 §9 N,P1,closed,231_R7RELOAD.1,RELOAD-2: mutationOutcome census,open
+UXC-6,R6 §9 N,P1,closed,211_R7RO.1,RELOAD-5: showcase in SPA,open
+UXC-7,R6 §9 N,P2,closed,247_R7RO.2,RELOAD-7: ide island 176 lines,open
+UXC-8,R6 §9 N,P2,closed,247_R7RO.2,RELOAD-7: Android tablets → /Mobi/+Sec-CH-UA-Mobile,open
+UXC-9,R6 §9 C,P1,closed,226_R7SHELL.1a,SHELL-1: one AppShell all leaves,open
+UXC-10,R6 §9 C,P1,closed,226_R7SHELL.1a,SHELL-1: in-shell states,open
+UXC-11,R6 §9 C,P1,closed,227_R7SHELL.1b,SHELL-5: framed workspace+project leaves,open
+UXC-12,R6 §9 C,P2,closed,227_R7SHELL.1b,SHELL-1: in-shell 404,open
+UXC-13,R6 §9 C,P1,wontfix,GD-UX-P1-BACKLOG.R7,BL-89 — GD-UX-P1-BACKLOG.R7 (marketing remainder),wontfix-this-round (GD-UX-P1-BACKLOG.R7; BL-89)
+UXC-14,R6 §9 S,P1,closed,210_R7KIT.1,KIT-1: control base on tokens,open
+UXC-15,R6 §9 S,P1,closed,225a_R7KIT.2b,KIT-2: primitives + generated styles,open
+UXC-16,R6 §9 S,P1,closed,243_R7KIT.3d,KIT-3: full migration incl 29-file tail; U4 zero-native green, run-sheet),open
+UXC-17,R6 §9 S,P2,closed,234_R7HOME.1,GUARD-1: global error, 0 residue,open
+UXC-18,R6 §9 S,P2,closed,249_R7GUARD.1,GUARD-1: no inline style literals,open
+UXC-19,R6 §9 L,P1,closed,212_R7FIX.1,PANE-1/2/4: breakpoint table + U3 guard,open
+UXC-20,R6 §9 L,P1,closed,212_R7FIX.1,PANE-1: 45ch floor + scrim+Esc,open
+UXC-21,R6 §9 L,P2,closed,226_R7SHELL.1a,SHELL-6: narrow drawer/sheets,open
+UXC-22,R6 §9 ED,P1,closed,237_R7WRITE.1a,WRITE-1: bubble,open
+UXC-23,R6 §9 ED,P1,closed,238_R7WRITE.1b,WRITE-2: anchored comment,open
+UXC-24,R6 §9 ED,P2,closed,237_R7WRITE.1a,WRITE-6: page strip,open
+UXC-25,R6 §9 ED,P2,closed,236_R7HOME.2b,HOME-2: opens to Page,open
+UXC-26,R6 §9 L,P2,closed,229_R7PANE.1,PANE-1: role=separator,open
+UXC-27,R6 §9 E,P1,closed,245a_R7COPY.1c,COPY-2: errorCopy + 257-code inventory,open
+UXC-28,R6 §9 E,P1,closed,231_R7RELOAD.1,RELOAD-3: /v/:n,open
+UXC-29,R6 §9 E,P2,closed,226_R7SHELL.1a,SHELL-3: headers removed,open
+UXC-30,R6 §9 E,P2,closed,244_R7COPY.1a,COPY-1/2: labels + errorCopy,open
+UXC-31,R6 §9 D,P2,closed,210_R7KIT.1,KIT-1: tokens,open
+UXC-32,R6 §9 D,P2,closed,210_R7KIT.1,KIT-1: paper-diff tokens,open
+UXC-33,R6 §9 P,P1,closed,246_R7SYNC.1,SPEED-1: folded round-trip,open
+UXC-34,R6 §9 P,P1,closed,246_R7SYNC.1,SPEED-3: PREFETCH_SAFE prefetch,open
+UXC-35,R6 §9 P,P2,closed,246_R7SYNC.1,SPEED-3: scoped invalidation,open
+UXC-36,R6 §9 P,P2,closed,246_R7SYNC.1,SPEED-4: font preloads,open
+B6,R5 §/p,P1,closed,233_R7TALK.1b,SYNC-6 investigation: debited==cap both modes (recorded), residual absorbed COGS, failed turn net 0 (packages/ledger/src/chat-turn-burn.test.ts; apps/egress-proxy handler.test.ts B6 leg)",closed
+
+WRITE-3,P2,Slash menu (RV-31 deferred by spec),routed,2026-11-03,BL-97 dated,docs/build/BACKLOG.csv,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+PANE-1,P2,Drag-resize persistence + double-click reset,routed,2026-11-03,BL-98 dated,docs/build/BACKLOG.csv,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+STREAM-1,P2,Token-level chat streaming (GD-UX-STREAM.R7),routed,2026-11-03,BL-99 dated,docs/build/BACKLOG.csv,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+CONV-17,P2,parseDraftLedgerSections Roman numerals,routed,2026-11-04,BL-100 dated (D-R7DEM.2c-1 → 253_R7REC.1),docs/build/BACKLOG.csv,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-1,P1,REVIEW-round-7 finding 1 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-2,P1,REVIEW-round-7 finding 2 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-3,P1,REVIEW-round-7 finding 3 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-4,P1,REVIEW-round-7 finding 4 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-5,P1,REVIEW-round-7 finding 5 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-6,P1,REVIEW-round-7 finding 6 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-7,P1,REVIEW-round-7 finding 7 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-8,P1,REVIEW-round-7 finding 8 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-9,P1,REVIEW-round-7 finding 9 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-10,P1,REVIEW-round-7 finding 10 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-11,P1,REVIEW-round-7 finding 11 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-12,P1,REVIEW-round-7 finding 12 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-13,P1,REVIEW-round-7 finding 13 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-14,P1,REVIEW-round-7 finding 14 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-15,P1,REVIEW-round-7 finding 15 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-16,P1,REVIEW-round-7 finding 16 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-17,P1,REVIEW-round-7 finding 17 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-18,P1,REVIEW-round-7 finding 18 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-19,P1,REVIEW-round-7 finding 19 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-20,P1,REVIEW-round-7 finding 20 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-21,P1,REVIEW-round-7 finding 21 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-22,P1,REVIEW-round-7 finding 22 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-23,P1,REVIEW-round-7 finding 23 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-24,P1,REVIEW-round-7 finding 24 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-25,P1,REVIEW-round-7 finding 25 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-26,P1,REVIEW-round-7 finding 26 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-27,P1,REVIEW-round-7 finding 27 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-28,P1,REVIEW-round-7 finding 28 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-29,P1,REVIEW-round-7 finding 29 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-30,P1,REVIEW-round-7 finding 30 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-31,P1,REVIEW-round-7 finding 31 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-32,P1,REVIEW-round-7 finding 32 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-33,P1,REVIEW-round-7 finding 33 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-34,P1,REVIEW-round-7 finding 34 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-35,P1,REVIEW-round-7 finding 35 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-36,P1,REVIEW-round-7 finding 36 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-37,P1,REVIEW-round-7 finding 37 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md
+RV-38,P1,REVIEW-round-7 finding 38 (adversarial review),closed,2026-11-03,spec Appendix-E disposition landed via owning ticket (see CAPSTONE_GAP_ANALYSIS_R7 §finding accounting),docs/build/planning/2026-11-03_r7-demo/REVIEW-round-7-draft-spec.md,docs/build/reports/CAPSTONE_GAP_ANALYSIS_R7.md

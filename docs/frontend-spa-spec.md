@@ -215,6 +215,8 @@ The heaviest contract — feature parity is the floor, not the ceiling (⚑ I-6)
 - **Accessibility floor (⚑ I-9):** WCAG 2.2 AA — title updates on every nav; focus to the surface heading or polite announcer; live-region vocabulary preserved verbatim (sync pill, feed/chat/triage polite, spend gates assertive); reduced-motion enforced; the editor surface never auto-focused (REQ-UX-7/9).
 - **Phone capability is a mount-time contract:** `data-device` stamped server-side (`isPhoneRequest` → boot `deviceClass`); desktop-only subtrees never enter the DOM — CSS hiding is a contract violation; narrow desktop keeps desktop capability (REQ-UX-10, REQ-VFY-5, REQ-DAT-11).
 - **Keymap** ports verbatim — `dispatchIdeKey`, focus-zone scoping, ⌘S single-owner (REQ-UX-8, REQ-NAV-8, REQ-ISL-8).
+
+> **ADR-128 (2026-11-08, 253_R7REC.1 banner — REQ-UX-8 / REQ-IDE-49):** the `?` cheat sheet is **kept** as the sheet's trigger; REQ-KEYS-1/2 (239_R7WRITE.2) remapped the chords to a browser-safe set — `dispatchIdeKey` survives, the literal chords in this spec are superseded by the committed keymap table + generated hints (`packages/ide` reserved-chords checker).
 - **Copy** stays centrally owned — `@rhema/ui` text-agnostic, SPA strings from the `COPY` table; feed/pill/notice label maps are server-built data (REQ-UX-12, REQ-SAFE-4, R12).
 - **Live-state convergence:** the feed is ONE project-scoped layout-owned SSE subscription; polls become `refetchInterval` (REQ-UX-15, REQ-BFF-12/15); interaction invariants hold — Cancel-run is the only blocking modal (REQ-UX-14).
 
@@ -457,6 +459,13 @@ reach, not a new contract.
 **Authorized by:** GATE-ACCEPT.SPA row 4 (ACCEPTED). Verdict stays **PARTIAL**.
 
 ### 14.8 REQ-ED-12 amended via ADR-108 — forced-SSR is code, twin-flagged
+
+> **ADR-126 (2026-11-08, 253_R7REC.1 banner — decision 220_R7DEM.4, 2026-11-04):** this REQ-ED-12
+> amendment extends to the demo — **demo Pages render SPA read-only on every device class**
+> (the `demo~<essay>` reserved slugs behind public `/demo/<essay>` URLs, served by
+> `demoDataSource` static snapshots; no session, no tenant, no DB/API reads; the REQ-TOUR-9
+> insert-only write is the sole sanctioned exception). The phone-UA SSR reader remains for
+> real projects only.
 
 **v1.0 said (§4, §6):** phone/showcase keeps the server-decided read-only Page — the boot
 map + `SsrHandoff` covered the client side of that verdict.

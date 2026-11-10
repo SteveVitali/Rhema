@@ -13,6 +13,11 @@ import { Badge } from "./primitives/index.js";
 // The §5.13 artifact Browser (P1.08; REQ-IDE-35/36/37, REQ-VIS-3): typed sections, never a
 // filesystem tree. Every row carries the provenance badge (linked to run + phase — ledger D21),
 // a lock-state Badge (R7SHELL.2 — the B10 glyph icons are gone: "Working"/"Frozen"/"Inspect only"
+// R7FIX.7 (F-R7DEP.2-12) — muted text here rides `ui-t-mut` (--shell-fg-muted), never `ui-t-pm`
+// (--paper-fg-muted): the pane mounts inside the AppShell sidebar (shell ground), where the
+// paper-pinned muted token can land under-AA (observed ~3.1:1 on the pinned-light paper inside
+// the dark shell). Inside `.paper`, --shell-fg-muted remaps to --paper-fg-muted, so the token is
+// correct on both grounds.
 // badges replace 🔒/✎/👁), and the freshness note when a describing artifact's subject has moved
 // on. The DTO already enforces visibility: `rows` hold SE/SR only, `advancedRows` hold I kinds
 // (rendered inside `data-tier="advanced"` wrappers — the Advanced disclosure, REQ-IDE-10), and H
@@ -166,7 +171,7 @@ function Row({
       <span
         data-provenance
         {...(row.provenance.runId ? { "data-run": row.provenance.runId } : {})}
-        className="ui-d-s ui-t-pl20 ui-t-pm"
+        className="ui-d-s ui-t-pl20 ui-t-mut"
         style={{ display: "block" }}
       >
         {row.provenance.runId ? (
@@ -181,7 +186,7 @@ function Row({
         <span
           data-freshness
           data-stale={row.freshness.stale ? "1" : "0"}
-          className="ui-d-s ui-t-pl20 ui-t-pm"
+          className="ui-d-s ui-t-pl20 ui-t-mut"
           style={{ display: "block" }}
         >
           {labels.freshnessLabel(row.freshness.subjectDraftN, row.freshness.stale)}
@@ -201,7 +206,7 @@ export function FilesPane({ sections, hrefs, labels }: FilesPaneProps): ReactNod
   tabbableSeen = false; // reset the roving tab stop each render — first treeitem is tabbable
   return (
     <nav data-files-pane data-project-tree aria-label={labels.heading} className="ui-d-fs">
-      {!anyRows ? <p className="ui-t-pm ui-d-fs">{labels.empty}</p> : null}
+      {!anyRows ? <p className="ui-t-mut ui-d-fs">{labels.empty}</p> : null}
       <div role="tree" aria-label={labels.heading} data-files-tree>
         {sections.map((s) => {
           if (s.rows.length === 0 && s.advancedRows.length === 0 && s.sealedCount === 0)
@@ -225,7 +230,7 @@ export function FilesPane({ sections, hrefs, labels }: FilesPaneProps): ReactNod
                 // I kinds — links only, behind the section's Advanced disclosure (REQ-VIS-3).
                 <div data-tier="advanced" data-files-advanced>
                   <div
-                    className="ui-d-s ui-t-ls5 ui-t-p400 ui-t-pm"
+                    className="ui-d-s ui-t-ls5 ui-t-p400 ui-t-mut"
                     style={{ textTransform: "uppercase" }}
                   >
                     {labels.advancedDisclosure}
@@ -244,7 +249,7 @@ export function FilesPane({ sections, hrefs, labels }: FilesPaneProps): ReactNod
               ) : null}
               {s.sealedCount > 0 ? (
                 // §5.13's hidden kinds — "sealed as counts" (⛔), never a row or a route.
-                <div data-sealed-count={s.sealedCount} className="ui-d-s ui-t-p20 ui-t-pm">
+                <div data-sealed-count={s.sealedCount} className="ui-d-s ui-t-p20 ui-t-mut">
                   ⛔ {labels.sealedFmt(s.sealedCount)}
                 </div>
               ) : null}
@@ -256,7 +261,7 @@ export function FilesPane({ sections, hrefs, labels }: FilesPaneProps): ReactNod
                 // The Advanced section itself is a disclosure control (§5.13: "Advanced (disclosure)").
                 <details data-tier="advanced" data-files-advanced-section>
                   <summary
-                    className="ui-d-s ui-t-ls6 ui-t-pm"
+                    className="ui-d-s ui-t-ls6 ui-t-mut"
                     style={{ cursor: "pointer", textTransform: "uppercase" }}
                   >
                     {labels.sectionLabel(s.key)}
@@ -267,7 +272,7 @@ export function FilesPane({ sections, hrefs, labels }: FilesPaneProps): ReactNod
               ) : (
                 <>
                   <div
-                    className="ui-d-s ui-t-ls6 ui-d-p2 ui-t-pm"
+                    className="ui-d-s ui-t-ls6 ui-d-p2 ui-t-mut"
                     style={{ textTransform: "uppercase" }}
                   >
                     {labels.sectionLabel(s.key)}

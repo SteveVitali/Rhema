@@ -1,0 +1,37 @@
+{
+  "web": "https://rhema-pr-293-web-723313c-tkbl73n3tq-uc.a.run.app",
+  "nonce": "523e86229f04",
+  "markerA": "JRN-523E86229F04-TENANTA",
+  "voiceA": "JRN-523E86229F04-VOICEA",
+  "checks": {
+    "A:markers": {
+      "pass": false,
+      "detail": "A's /bff/app carries marker=false voice=false — the isolation probes would be vacuous"
+    },
+    "B:/bff/app": {
+      "pass": false,
+      "detail": "status 401 (expected 200 on B's own twin)"
+    },
+    "B:/bff/app/inbox": {
+      "pass": false,
+      "detail": "status 401 (expected 200 on B's own twin)"
+    },
+    "B:/bff/voices": {
+      "pass": false,
+      "detail": "status 401 (expected 200 on B's own twin)"
+    },
+    "B:/bff/usage": {
+      "pass": false,
+      "detail": "status 401 (expected 200 on B's own twin)"
+    },
+    "B:/bff/settings/billing": {
+      "pass": false,
+      "detail": "status 401 (expected 200 on B's own twin)"
+    },
+    "anon:/bff/app": {
+      "pass": true,
+      "detail": "401 {error:\"unauthenticated\"}"
+    }
+  },
+  "aSlug": null
+}

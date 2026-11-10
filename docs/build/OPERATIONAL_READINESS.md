@@ -237,3 +237,42 @@ definition.
 5. **Historical path unchanged.** Integration margin, spend-guard re-proof, named SLO reds, money
    rulings, exposure review, and the G2 hard gate are exactly as the 2026-10-04 read scored them
    (BL-01..BL-79).
+
+## Round-7 tail — 2026-11-08 (R7REC.1)
+
+> Dated addendum. Evidence: `reports/CAPSTONE_GAP_ANALYSIS_R7.md`, `readouts/GATE-ACCEPT.R7.md`,
+> `reports/2026-11-08_R7DEP.2/`, `docs/demo-side-effects.md`, `BACKLOG.csv` (reconciled this
+> pass — 420 expected sources, verdict-consistent). Live reads cited below.
+
+### Round-7 capability matrix
+
+| Capability | Code | Infra | Human (owner · date) | Highest layer | Proof |
+|---|---|---|---|---|---|
+| Public demo serving (`/demo` hub + four essays + tour) | shipped | demo corpus inside the web image (in-build content assertion); CDN invalidation `/bff/p/demo~*` on every deploy | none — deployed | live-executed | `runs/R7DEP.1.md`, `runs/R7DEP.2.md`; `D3.readonly`/`R11.demo`/`P1.demo`/`D1.hub`/`D2.tour` green at `4bc8cf4a`/`e578a767` |
+| `demo_events` insert-only metrics path | shipped | `0061_demo_events.sql` applied on prod PG16 (owner `rhema_demo_writer` NOLOGIN, prosecdef, INSERT-only; `rhema_app` select denied); readers: ops/analytics queries via system role only | none | live-executed | `runs/R7DEP.1.md` Part B census; `demo-events.test.ts`; live `POST /a/demo` rows incl. `src=jrn` |
+| R7b shell + keymap | shipped | none new | none | live-executed | `U1.shell`/`U2.noreload`/`U3.occlusion`/`U4.controls`/`U5.write`/`U6.chat`(stub)/`U7.import` green at `e578a767` (`prod-stageb/` + `t1f-legs/`) |
+| Recurrence guards GUARD-1…4 in CI | shipped | none new | none | engineered | `guards-wiring.test.mjs`; `rhema/no-raw-controls` `error` 0 residue; `noreload.ts` sanctioned list; `u3UnscrimmedViolation` + tour arm; `ci.md` names all four |
+| Hero-recording refresh rule | shipped | `hero-capture` recipe (`--web --expect-sha --out`, provenance + zero-cookie refusal + `checkHeroLimits`); re-capture only inside a phase preview, per 249a's recipe | none — assets committed | live-executed | `apps/web/public/media/hero-tour.mp4` 780,708 B + poster 5,769 B, sha256 in `licenses.exceptions.json`/`LICENSES.md`; manifest `violations: []` |
+| Round-7 preview posture | history | one owned preview per phase under GD-PREVIEW.R7 (pr-259, pr-293 — both destroyed, zero-orphan sweeps; ≈$14/$20 measured) | expired at GATE-ACCEPT.R7 — **not standing authority** | live-executed | `runs/R7DEP.1.md`, `runs/R7DEP.2.md` teardown + spend records |
+
+### Round-7 critical-path residuals (each names ticket + proof)
+
+1. **Bespoke-capture walk** — ~32 dated Stage-B screenshot/probe arms (BL-104). ticket:
+   `post-round Stage-B walk / HUMAN-H8` — proof: committed captures under `docs/build/reports/`
+   at a deployed SHA + flipped D-rows.
+2. **Defect insert** — F-9…F-14 + F-17 (BL-105). ticket: `post-round defect insert` — proof:
+   each leg `--expect-sha` green at a deployed tip; D2.tour flips (D-R7TOUR.2-1).
+3. **Paid U6 re-dispatch** — operator ruling only (BL-105, D-R7DEP.2-1). ticket: `operator` —
+   proof: JSON 201 + streamed events + debited footnote; metered USD recorded (REQ-SPEC-32).
+4. **`parseDraftLedgerSections` fix** — Roman-numeral `#` cells (BL-100, D-R7DEM.2c-1). ticket:
+   `packages/protocols owner` — proof: `## Sections` unit test parses every row.
+5. **Docs refresh** — REQ-CLOSE-4 (BL-107). ticket: `254_R7DOC.1` — proof: refreshed
+   `apps/web/AGENTS.md` + docs set at the chain tip.
+6. **Round-6 reconciliation** — nine OPEN rows (BL-106). ticket: `204_R6REC.1 / 205_R6REC.2`.
+
+### Live reads (read-only, $0)
+
+- `GET https://rhema.tools/healthz` → 200 `{"ok":true,"gitSha":"e578a767…"}` at
+  2026-11-08T19:4xZ — prod serves the R7b deployed tip; provenance all-PASS recorded at the
+  deploy (`deployments` row `prod:e578a767`, `runs/R7DEP.2.md`).
+- Stack CI read: `ci-boundary.sh --stack --no-wait` recorded in `runs/R7REC.1.md` (BM-CI-01).

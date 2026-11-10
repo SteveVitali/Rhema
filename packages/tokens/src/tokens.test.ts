@@ -238,6 +238,18 @@ describe("ideCss()", () => {
   it("the only modal styling is the Cancel-run shell modal — no generic modal utilities", () => {
     expect(css).toContain(".ide-modal");
   });
+  it("R7FIX.7 (F-R7DEP.2-11) — a closed off-canvas drawer exposes no visible/focusable links", () => {
+    // translateX(-100%) alone kept the drawer's anchors Playwright-visible + keyboard-focusable
+    // while invisible (the P1.* legs timed out clicking the parked first recent). `visibility`
+    // joins the slide in BOTH drawer blocks, flipping instantly on open and delayed on close.
+    const blocks = css.match(/\.app-shell-sidebar \{ position: fixed[^}]+\}/g) ?? [];
+    expect(blocks.length).toBeGreaterThanOrEqual(2);
+    for (const b of blocks) {
+      expect(b).toContain("transform: translateX(-100%)");
+      expect(b).toContain("visibility: hidden");
+    }
+    expect(css).toContain("[data-drawer='open'] .app-shell-sidebar { transform: none; visibility: visible");
+  });
   it("R7PANE.1 — the desk/status-bar collision is gone WITH the drawer (B2/B16)", () => {
     const css = ideCss();
     // the B2 fix was the drawer's last defect; the region that owned it is retired.
@@ -245,6 +257,18 @@ describe("ideCss()", () => {
     // the panel's head is plain in-flow chrome — the status bar never overlaps it.
     expect(css).toContain(".ide-statusbar");
     expect(css).toContain(".ide-panel .ide-panel-head");
+  });
+  // R7FIX.8 (F-R7DEP.3-1) — the focus-exit pill's hide rule must OUT-SPECIFY the primitive's
+  // `.ui-btn { display: inline-flex }`: the bare `.ide-focus-exit` selector tied on specificity
+  // and lost on source order, leaving the invisible fixed button a live hit-box at top-centre in
+  // every view (the P1.pill 1440×900 overlap: `sync pill covers text … "Exit focus · Esc"`).
+  // The `.ide`-scoped selector restores the authored gate; the focus-view reveal keeps its
+  // higher specificity, and no bare `.ide-focus-exit {` selector may lead a rule again.
+  it("R7FIX.8 — the focus-exit hide rule wins the cascade over .ui-btn (F-R7DEP.3-1)", () => {
+    const css = ideCss();
+    expect(css).toContain(".ide .ide-focus-exit { display: none;");
+    expect(css).toContain(".ide[data-view='focus'] .ide-focus-exit { display: inline-flex;");
+    expect(css).not.toMatch(/(^|\n)\s*\.ide-focus-exit \{/);
   });
   // D-CAP.2-3 (UX.2 / ADR-067) — the cascade seam: the phone override for `.ide .ide-actions a`
   // (≥44 px inside `@media (max-width: ${bpPhone-1}px)`) must be the LAST equal-specificity

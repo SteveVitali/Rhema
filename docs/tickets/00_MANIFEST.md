@@ -468,6 +468,9 @@ Dispatched **out of order** (`GD-ORDER.R7`): `200_R6WATCH.1` (clock-bound ≥ 20
 | 250d | `250d_R7FIX.4__defect-round-4.md` | R7b | **run-time insert** — defect boundary round 4 (U2 chat-tab click ordering + U5 format-bubble select arm; the T1d re-walk proves them deployed) | — |
 | 250e | `250e_R7FIX.5__defect-round-5.md` | R7b | **run-time insert** — defect boundary round 5 (U2 visible-recent pick + U5 comment-submit hook + optional U3 hardening; the T1e re-walk proves them deployed) | — |
 | 250f | `250f_R7FIX.6__defect-round-6.md` | R7b | **run-time insert** — defect boundary round 6 (U5 comment-card post-submit mount; the T1f re-walk proves it deployed) | — |
+| 250g | `250g_R7FIX.7__postround-defects.md` | R7b tail | **run-time insert** — the acceptance-routed post-round defects: F-9 hero-mp4 asset-parity + D2.tour prod flip, F-10…14 product defects (credit copy, P1 links, axe, select, checkbox) | — |
+| 250h | `250h_R7FIX.8__sync-pill-occlusion.md` | R7b tail | **run-time insert** — F-R7DEP.3-1: the sync-pill/focus-exit overlap at 1440×900 (deploy-bound arm rides the next deploy) | — |
+| 250i | `250i_R7FIX.9__paid-leg-pin.md` | R7b tail | **run-time insert** — F-PAIDU6-1: the paid R4 leg's `.last()` reads the `optimistic` placeholder (re-proof rides the Monday paid cron — no fresh ruling) | — |
 | 251 | `251_R7CAP.1__capstone-gap-analysis.md` | tail | **capstone** — round-7 REQ coverage + finding accounting (REQ-CLOSE-1) | — |
 | 252 | `252_GATE-ACCEPT.R7__accepted-deviations.md` | tail | **gate** — operator signs the R7 deviations list; GD-DEPLOY.R7 expires (REQ-CLOSE-2) | operator |
 | 253 | `253_R7REC.1__backlog-and-reconciliation.md` | tail | **reconcile** — backlog + spec fold-back, ADR-126…130 banners (REQ-CLOSE-3) | — |
@@ -845,6 +848,16 @@ has exactly one owner.
 | REQ-CLOSE-1 | R7CAP.1 · REQ-CLOSE-2 → GATE-ACCEPT.R7 · REQ-CLOSE-3 → R7REC.1 · REQ-CLOSE-4 → R7DOC.1 · REQ-CLOSE-5 → R7OPEN.1 |
 
 ## Spec amendments applied
+
+- **2026-11-08 (253_R7REC.1 — round-7 spec fold-back, REQ-CLOSE-3):** verified the ADR-126…130
+  banner set spec §3.2 mandates and applied the missing dated banners — `docs/rhema-design-spec.md`
+  §5.5 D20 + REQ-IDE-19/-41/-48 rows (ADR-130: walkthrough retired → REQ-COPY-4 composed card;
+  ADR-128: IDE-41 kept, IDE-48 opens-to-Page) + §15 (ADR-129 component stack);
+  `docs/frontend-spa-spec.md` §14.8 (ADR-126: demo Pages SPA read-only every device class) +
+  keymap (ADR-128: `?` kept, REQ-KEYS remaps chords); `docs/post-spa-disposition-spec.md` §2.6
+  (REQ-NAVM-7 discharged by REQ-SPEED-3); `docs/round-7-draft-spec.md` post-ratification notes
+  (GD-PUBDELTA.R7 at REQ-DACC-6; GD-PREVIEW/GOLDEN/TOURSIGN.R7 + §10-superseded at §6/§10).
+  Ticks: the ratified ADRs + their GATE DECISIONS rows. Gate: `docs/build/tools/check-adr-banners.mjs`.
 
 - **2026-09-02 (cloud provider + inference channel; Q-3 / §12 / §13 / REQ-ARCH-1/2/30/31):** the ratified
   "AWS-first" decision is superseded — **compute moves to GCP** and **inference moves to the direct

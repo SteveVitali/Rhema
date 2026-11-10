@@ -1,0 +1,32 @@
+{
+  "capturedAt": "2026-11-08T03:06:45.948Z",
+  "web": "https://rhema-pr-293-web-723313c-tkbl73n3tq-uc.a.run.app",
+  "expectSha": "d0a77d0744b968b5fb6053b143d8956ad9e61bd9",
+  "observedSha": "d0a77d0744b968b5fb6053b143d8956ad9e61bd9",
+  "clip": {
+    "file": "hero-tour.mp4",
+    "durationS": 13.76,
+    "hasAudio": false,
+    "bytes": 780708
+  },
+  "poster": {
+    "file": "hero-tour-poster.jpg",
+    "bytes": 5769
+  },
+  "commitTo": {
+    "clip": "apps/web/public/media/hero-tour.mp4",
+    "poster": "apps/web/public/media/hero-tour-poster.jpg"
+  },
+  "limits": {
+    "clipLocalRel": "media/hero-tour.mp4",
+    "posterLocalRel": "media/hero-tour-poster.jpg",
+    "clipUrl": "/assets/media/hero-tour.mp4",
+    "posterUrl": "/assets/media/hero-tour-poster.jpg",
+    "maxSeconds": 15,
+    "maxBytes": 2097152,
+    "aspectRatio": "16 / 9",
+    "width": 1280,
+    "height": 720
+  },
+  "violations": []
+}

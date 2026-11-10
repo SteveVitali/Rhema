@@ -1,0 +1,125 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "259ed6fe7604",
+  "startedAt": "2026-11-09T17:06:56.003Z",
+  "finishedAt": "2026-11-09T17:09:09.032Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "b8307a401ba21a08cd15a7abcab2eb7c5743a506",
+    "observed": {
+      "web": "b8307a401ba21a08cd15a7abcab2eb7c5743a506",
+      "api": "b8307a401ba21a08cd15a7abcab2eb7c5743a506"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "P1.project",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 11231,
+      "screenshot": "P1.project.png"
+    },
+    {
+      "id": "P1.pill",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 6277,
+      "error": "sync pill covers text at desktop: button \"Exit focus · Esc\"",
+      "screenshot": "P1.pill.png"
+    },
+    {
+      "id": "P1.runsheet",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 3472,
+      "screenshot": "P1.runsheet.png"
+    },
+    {
+      "id": "P1.outline",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 3592,
+      "screenshot": "P1.outline.png"
+    },
+    {
+      "id": "P1.figures",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 3967,
+      "screenshot": "P1.figures.png"
+    },
+    {
+      "id": "P1.app-new",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2543,
+      "screenshot": "P1.app-new.png"
+    },
+    {
+      "id": "T4",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 27676,
+      "screenshot": "T4.png"
+    },
+    {
+      "id": "T5",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 73665,
+      "error": "discovery listed 0 items, expected 2",
+      "screenshot": "T5.png"
+    }
+  ],
+  "passed": false
+}

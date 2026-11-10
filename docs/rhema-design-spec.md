@@ -586,6 +586,13 @@ User-facing phase names per workflow are listed in §6.2. Opt-out phases disable
 
 **Walkthrough and run report (ledger D20).** A completed run gains **Walkthrough** (≤200 words, model-written from the delivered artifacts: what was delivered and the one thing to read first; **MVP** — it is one package-class model call and three MVP behaviours depend on it, review 11 #23) and **Run report** (phase timings, credits by phase × seat, flags, unmet targets, suggested guidance for the next round). Tokens are Advanced-tier (REQ-IDE-19).
 
+> **ADR-130 (2026-11-08, 253_R7REC.1 banner — decision 213_R7COPY.0, 2026-11-03):** the generated
+> run walkthrough is **retired** — the `run.walkthrough` model call is removed end-to-end and the
+> run card is composed deterministically from the delivered record ("What it delivered" — REQ-COPY-4).
+> The D20 walkthrough row above and its dependents (≤200-word model call, walkthrough retry,
+> walkthrough-as-artifact consumers) are superseded, not amended — ADR-130 carries the ruling
+> (GD-UX-WALKTHROUGH.R7). The run report stands unchanged.
+
 **Live feed** (Desk tab) renders the run's user-visible events in two densities plus a developer flag: *Summary* (phase cards only), *Details* (default: phase cards + `source.read` cards, `claim.checked` verdict chips, `finding.emitted`, `artifact.written`, `subagent.started/finished`, `check.result`), and *Verbose* (Advanced disclosure only: every search query and fetch, blocked-domain notices, retries). No event carries prompt text, agent reasoning or private-memory content (REQ-IDE-14; event schema §12.5). Findings stream into the Margin as provisional (dashed) cards during a review and are finalized at delivery; **provisional cards carry no disposition controls**, and a finding the second-read reconciliation later marks *rejected* after the user pre-triaged it surfaces as a conflict row ("you accepted this; the Editor withdrew it — keep your disposition?") rather than silently dropping either (REQ-IDE-15 amended; review 12 #31).
 
 ### 5.6 The run sheet (launcher for everything)
@@ -2837,6 +2844,14 @@ Navigation: **Account** · **Preferences** · **Notifications** · **Integration
 
 ## 15. Landing page, onboarding, and growth
 
+> **ADR-129 (2026-11-08, 253_R7REC.1 banner — decision 225_R7KIT.2, 2026-11-05):** the round-7
+> component stack applies to this chapter's surfaces — Radix per-package primitives
+> (`@radix-ui/react-*`, no meta-package), `lucide-react`, `cmdk` for Combobox and palette, an
+> in-house SplitPane (R7PANE.1's choice under the REQ-KIT-5 budget rule), and the generated
+> `uiCss()`/`uiTailCss()` stylesheets in `@rhema/ui`; the no-raw-controls rule (REQ-GUARD-1)
+> and the per-ticket entry-delta allowance apply. REQ-PUB-2's landing refresh (249a_R7PUB.1)
+> landed under this stack, incl. the hero-recording slot (ADR-127 asset entry).
+
 ### 15.1 Landing page
 
 One long dark-default page with a real light theme, serif display type on a warm near-black ground (`#141311`–`#1a1917`, text `#e8e4dc`), one accent, the app's token set (REQ-GROWTH-2), and a **drop-zone hero** backed by a looping real-product recording of a dossier opening with anchored findings. Eleven of twelve surveyed landings are light-default; dark is a differentiator (Q-14), and serif display reads as "the written word", which no coding-agent page uses. Rejected: a pricing-first page with no proof; a sales-led "Get a demo" page; a prompt-box hero with no narrative sections.
@@ -3181,7 +3196,7 @@ Every `REQ-*` from the design documents, with its source, the section of this sp
 | REQ-IDE-16 | Named approvals as approve-with-deadline cards with pause-while-reading, "Wait for me", recorded decision; expiry runs the conservative path | 6.4 | amended (deadlines per gate; triage waits; presence timer; pre-filled) | to write (O6) |
 | REQ-IDE-17 | The spend gate never auto-continues | 6.4 | kept | to write (O6) |
 | REQ-IDE-18 | Running cards expose Pause, Queue guidance, Comment, Edit-plan (via comments), Cancel-keep-partials; cancelled/failed phases refunded | 6.5 | amended (MVP: Pause at phase boundaries, Stop, one note; section-granular steering 1.x) | to write (O6) |
-| REQ-IDE-19 | Completed runs expose a ≤200-word walkthrough and a run report; tokens behind Advanced | 5.5 | amended (walkthrough is MVP) | to write (O6) |
+| REQ-IDE-19 | Completed runs expose a ≤200-word walkthrough and a run report; tokens behind Advanced | 5.5 | amended (walkthrough is MVP); **ADR-130 2026-11-08 (213_R7COPY.0): the generated walkthrough is retired — the run card composes deterministically from the delivered record (REQ-COPY-4); the run report stands** | to write (O6) |
 | REQ-IDE-20 | Seats appear as badges and profile pages; no role tabs or per-seat chat personas | 6.6 | amended (seat profile pages 1.x) | to write (O6) |
 | REQ-IDE-21 | Drafter profile lists inspectable memory read-only; Editor profile shows counts and fetched URLs; both show boundary, config, spend, runs | 6.6 | amended (1.x) | to write (O6) |
 | REQ-IDE-22 | The Assistant operates with author-side access and cannot read Editor memory | 6.6, 7.1 | kept | to write (O6) |
@@ -3203,14 +3218,14 @@ Every `REQ-*` from the design documents, with its source, the section of this sp
 | REQ-IDE-38 | Token set with dark default and a complete light theme; paper theme pinnable per project | 5.9 | amended (paper pinned light by default) | to write (O6) |
 | REQ-IDE-39 | Paper typography: 17-px Literata/Lora or 16-px Inter, 1.55 leading, 68-ch target, heading ratios, size stepper | 5.9 | kept | to write (O6) |
 | REQ-IDE-40 | Motion limited to streaming, progress, pane transitions; none on the paper; reduced-motion honored | 5.9 | kept | to write (O6) |
-| REQ-IDE-41 | All catalogued states designed; no blocking modal except Cancel-run confirmation | 5.9 | kept | to write (O6) |
+| REQ-IDE-41 | All catalogued states designed; no blocking modal except Cancel-run confirmation | 5.9 | kept; **ADR-128 2026-11-03 (ratified): kept unchanged — round 7 introduced no new modal (inline title, settings page, non-modal tour)** | to write (O6) |
 | REQ-IDE-42 | WCAG 2.2 AA; live regions for findings and approvals; Desk list as the screen-reader surface | 5.9 | kept | to write (O6) |
 | REQ-IDE-43 | Sync pill is the only autosave UI; no Save, unsaved dialog, or beforeunload; `⌘S` marks a restore point | 5.10 | kept | to write (O6) |
 | REQ-IDE-44 | Launching a review freezes the target with a banner; typing forks a working copy; Revise offers the diff as suggestions | 5.10 | amended (Page read-only during runs at MVP; working copy 1.x) | to write (O6) |
 | REQ-IDE-45 | Agent in-place edits arrive as suggestion marks with a count chip, excluded from the human undo stack | 5.4, 5.10 | amended (proposal card at MVP; suggestion marks 1.x) | to write (O6) |
 | REQ-IDE-46 | Offline edits to a version frozen meanwhile land in a new working head with a banner; non-prose 409s inline per form | 5.10 | amended (new working head = v(N+1)) | to write (O6) |
 | REQ-IDE-47 | Notifications for approvals, spend gates, run finished/failed, auto-continue, voice stale, credit thresholds; deep-linked; collapsed per run; OS-level only when unfocused | 5.11 | kept | to write (O6) |
-| REQ-IDE-48 | Inbox lists cross-project approvals and unread deliverables with inline approve/read; returning shows the walkthrough card | 5.11 | kept | to write (O6) |
+| REQ-IDE-48 | Inbox lists cross-project approvals and unread deliverables with inline approve/read; returning shows the walkthrough card | 5.11 | kept; **ADR-128 2026-11-06 (236_R7HOME.2b): a project opens to its head draft's Page, the walkthrough-card landing kept — ADR-130 2026-11-08 (213_R7COPY.0): the card is the record-composed run card, not generated prose** | to write (O6) |
 | REQ-IDE-49 | Shortcut map with a cheat sheet and palette verbs; no verb launches a run without the sheet | 5.12 | kept | to write (O6) |
 | REQ-IDE-50 | The IDE's data contracts are the minimum from the data model; architecture may extend but not rename | 11.3 | amended (renames listed) | to write (O6) |
 

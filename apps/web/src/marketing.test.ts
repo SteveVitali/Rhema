@@ -116,20 +116,25 @@ describe("§15.1 — the landing page", () => {
   });
 
   it("REQ-PUB-2/REQ-GROWTH-3 — the hero slot: placeholder now, clip arm identical box, lazy+muted+loop", async () => {
-    // asset absent → the static placeholder frame, NO <video>, no corpus bytes — inside the
-    // SAME reserved aspect box the clip arm renders (the swap can never shift layout).
+    // asset PRESENT (committed at R7DEP.2 T1 `e578a767`) → the served landing carries the real
+    // clip arm; the placeholder arm is proven below via the same seam with `heroClip:false`.
     const out = await (await createWebApp(makeDeps()).request("/")).text();
     expect(out).toContain("data-hero-slot");
-    expect(out).toContain("data-hero-placeholder");
-    expect(out).not.toContain("data-hero-video");
-    expect(out).not.toContain("<video");
+    expect(out).toContain("data-hero-video");
+    expect(out).not.toContain("data-hero-placeholder");
     const box = /data-hero-slot[^>]*aspect-ratio:([^;"]+)/.exec(out);
     expect(box?.[1]).toBeTruthy();
 
-    // clip arm (the element renders it when the declared asset exists — renderDocument with
-    // heroClip set, the same seam server.ts feeds from the public/media presence check).
+    // placeholder arm (the element renders it when the declared asset is absent — renderDocument
+    // with heroClip:false, the same seam server.ts feeds from the public/media presence check).
     const { renderDocument } = await import("./render.js");
     const { landingElement } = await import("./routes.js");
+    const ph = renderDocument("/", landingElement, { heroClip: false }, { origin: "https://rhema.tools" });
+    expect(ph).toContain("data-hero-placeholder");
+    expect(ph).not.toContain("<video");
+    const phBox = /data-hero-slot[^>]*aspect-ratio:([^;"]+)/.exec(ph);
+    expect(phBox?.[1]).toBe(box?.[1]);
+
     const clip = renderDocument("/", landingElement, { heroClip: true }, { origin: "https://rhema.tools" });
     expect(clip).toContain("data-hero-video");
     const vtag = /<video[^>]*data-hero-video[^>]*>/.exec(clip)?.[0] ?? "";
