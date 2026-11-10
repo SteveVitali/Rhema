@@ -1,0 +1,32 @@
+# r7deploy-tip2 — composed-tip audit (captured 2026-11-09T21:12Z)
+
+## `git log --oneline b8307a40..13e7d9dc` (the named tip
+##   = stevevitali/r7fix-9-paid-leg-pin — commits the deploy would ship)
+13e7d9dc orchestrator — record the expedite rulings (early R6WATCH read + tip deploy)
+ed906040 R7FIX.9 — ci boundary line at 85e733d (pass #308, run 42688894151, all seven legs + anchor)
+85e733d4 250i R7FIX.9 — BUILD_INDEX 307 PR cell → #308
+12f6d889 250i R7FIX.9 — fix F-PAIDU6-1 paid-leg optimistic-turn pin: R4 resolves the REAL turn id off the send POST's data.runId (fallback: newest non-optimistic [data-chat-turn] row for the form arm) — .last() read R7b's pending-bubble marker → turns/optimistic 404; unresolvable id now throws; leg-verbatim local arm + D-R7FIX.9-1 → Monday paid cron
+68016d1d orchestrator — insert row 250i_R7FIX.9 (F-PAIDU6-1 paid-leg optimistic-turn pin)
+dc1ba197 orchestrator — insert row 250h_R7FIX.8 (F-R7DEP.3-1 sync-pill occlusion)
+3c46d682 R7DEP.3 — close: ci boundary pass #305@16a0eb0 (run 42663409706, all seven legs + anchor); provenance re-PASS at close
+c33b51bb R7DEP.3 — BUILD_INDEX 304 PR cell → #305
+16a0eb09 R7DEP.3 — post-acceptance prod deploy e578a767→b8307a40 (operator ruling 2026-11-08): build e8883414 all-10 · classified diff (10u+1 stateless tmpl replace, $0Δ) · up-175 · provenance all-PASS · deployments row · corpus-in-image · CDN invalidate · D-R7FIX.7-1 7/8 (F-11–14 verified; P1.pill new F-R7DEP.3-1 → D-R7DEP.3-1) · rollback recipe
+
+## `git merge-base --is-ancestor 96f6a2e7 13e7d9dc` → NO — the R7FIX.8 fix is NOT in the named tip
+## `git merge-base stevevitali/r7fix-8-sync-pill 13e7d9dc` → dc1ba1970325700790307bc7f7c47eb8c52a0cae (orchestrator — insert row 250h_R7FIX.8 (F-R7DEP.3-1 sync-pill occlusion))
+
+## product-code delta b8307a40..13e7d9dc (deployed surfaces):
+ infra/pulumi/Pulumi.prod.yaml                   |  24 ++--
+ packages/journeys/src/r4-turn-pin.local.test.ts | 181 ++++++++++++++++++++++++
+ packages/journeys/src/steps.ts                  |  95 ++++++++++---
+ 3 files changed, 266 insertions(+), 34 deletions(-)
+
+## ide-css.ts at 13e7d9dc — the UNFIXED unscoped hide rule:
+152:    ".ide-focus-exit { display: none; position: fixed; top: 10px; left: 50%; transform: translateX(-50%) translateY(
+## ide-css.ts at stevevitali/r7fix-8-sync-pill (5aacf011) — the FIX:
+158:    ".ide .ide-focus-exit { display: none; position: fixed; top: 10px; left: 50%; transform: translateX(-50%) transl
+
+## open PR heads (siblings — no composed tip exists):
+#308 stevevitali/r7fix-9-paid-leg-pin -> stevevitali/r7deploy-tip
+#307 stevevitali/r7fix-8-sync-pill -> stevevitali/r7deploy-tip
+#306 stevevitali/paid-u6-run -> stevevitali/r7deploy-tip
