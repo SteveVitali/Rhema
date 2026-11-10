@@ -179,6 +179,16 @@ describe("registration in the real eslint.config.js (per-file enablement)", () =
       "apps/web/src/spa/surfaces/outline.tsx",
       "apps/web/src/spa/surfaces/figures.tsx",
       "packages/ui/src/outline-sections.tsx",
+      // 243_R7KIT.3d enabled batch d's IDE surfaces (the dossier files stay 243a's — still off).
+      "packages/ui/src/gate-card.tsx",
+      "packages/ui/src/run-card.tsx",
+      "packages/ui/src/timeline.tsx",
+      "packages/ui/src/findings-desk.tsx",
+      "packages/ui/src/compare.tsx",
+      "packages/ui/src/page-editor.tsx",
+      "packages/ui/src/ide-shell.tsx",
+      "packages/ui/src/run-sheet.tsx",
+      "apps/web/src/approval-settings.tsx",
     ]) {
       const on = await eslint.calculateConfigForFile(file);
       const onEntry = (on.rules as Record<string, unknown>)["rhema/no-raw-controls"];
@@ -236,6 +246,27 @@ describe("registration in the real eslint.config.js (per-file enablement)", () =
       "packages/ui/src/outline-sections.tsx",
     ]) {
       const [res] = await eslint.lintText(code, { filePath: file });
+      expect(
+        res.messages.some((m) => m.ruleId === "rhema/no-raw-controls"),
+        `seeded raw control fails on ${file}`,
+      ).toBe(true);
+    }
+    // 243_R7KIT.3d's seeded legs: a raw <button> fails the ENABLED rule on every batch-d file
+    // (component-scoped exemptions don't rescue a control outside the named component).
+    for (const file of [
+      "packages/ui/src/gate-card.tsx",
+      "packages/ui/src/run-card.tsx",
+      "packages/ui/src/timeline.tsx",
+      "packages/ui/src/findings-desk.tsx",
+      "packages/ui/src/compare.tsx",
+      "packages/ui/src/page-editor.tsx",
+      "packages/ui/src/ide-shell.tsx",
+      "packages/ui/src/run-sheet.tsx",
+      "apps/web/src/approval-settings.tsx",
+    ]) {
+      const [res] = await eslint.lintText(`export const x = <button type="submit">Save</button>;`, {
+        filePath: file,
+      });
       expect(
         res.messages.some((m) => m.ruleId === "rhema/no-raw-controls"),
         `seeded raw control fails on ${file}`,

@@ -10,10 +10,37 @@
 
 import type { ReactNode } from "react";
 import type { ApprovalSettingsDto } from "@rhema/api-client";
+import { Button, TextField } from "@rhema/ui";
 import { COPY } from "./copy.js";
 
 const AP = COPY.approvals;
 const G = COPY.gates;
+
+// 243_R7KIT.3d — the policy radios, the per-kind override select and the hidden `returnTo` carrier
+// stay KIT-1-styled natives inside named components (GUARD-1 exemptions): the section posts natively
+// on the SSR /p/:slug settings page where a Radix RadioGroup/Select is inert (RV-36). Every text
+// field is a TextField primitive and every submit a Button.
+
+/** The no-JS radio carrier for the three policy values. */
+function PolicyRadio({ value, defaultChecked }: { value: string; defaultChecked: boolean }): ReactNode {
+  return <input type="radio" name="policy" value={value} defaultChecked={defaultChecked} />;
+}
+
+/** The no-JS select carrier — one per overridable kind; posts `ov_<kind>`. */
+function OverrideSelect({ kind, value, options, ariaLabel }: { kind: string; value: string; options: readonly { value: string; label: string }[]; ariaLabel: string }): ReactNode {
+  return (
+    <select name={`ov_${kind}`} defaultValue={value} aria-label={ariaLabel}>
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>{o.label}</option>
+      ))}
+    </select>
+  );
+}
+
+/** The hidden `returnTo` post-carrier (the prior batches' `HiddenField` shape). */
+function HiddenField({ name, value }: { name: string; value: string }): ReactNode {
+  return <input type="hidden" name={name} value={value} />;
+}
 
 const HOUR_MS = 60 * 60 * 1000;
 
@@ -54,34 +81,32 @@ export function ApprovalSettingsSection({
   const kindLabel = (kind: string) => G.kindLabel[kind] ?? kind;
   const defaultText = (deadlineMs: number | null): string =>
     deadlineMs == null ? AP.overrideWaitOpt : `${fmt(AP.overrideHoursFmt, { n: Math.round(deadlineMs / HOUR_MS) })}`;
-  const returnField = returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null;
+  const returnField = returnTo ? <HiddenField name="returnTo" value={returnTo} /> : null;
   return (
-    <section data-approval-settings="true" style={{ marginTop: "20px", maxWidth: "68ch" }}>
-      <h2 style={{ fontSize: "15px", fontWeight: 600, color: "var(--shell-fg)", margin: "0 0 10px" }}>
-        {AP.heading}
-      </h2>
-      <form method="post" action={`/p/${slug}/settings/approvals`} style={{ padding: "10px 14px", border: "1px solid var(--shell-border)", borderRadius: "8px" }}>
+    <section data-approval-settings="true" className="ui-c2-mt4 ui-set-t--meas">
+      <h2 className="ui-c2-m0 ui-d-mb10 ui-d-h">{AP.heading}</h2>
+      <form method="post" action={`/p/${slug}/settings/approvals`} className="ui-set-card">
         {returnField}
-        <fieldset style={{ border: "none", margin: 0, padding: 0 }}>
-          <legend style={{ fontSize: "13px", fontWeight: 600, color: "var(--shell-fg-muted)" }}>{AP.policyLegend}</legend>
+        <fieldset className="ui-os-fs">
+          <legend className="ui-d-t ui-d-b">{AP.policyLegend}</legend>
           {(["named", "wait_each", "run_to_completion"] as const).map((p) => (
-            <label key={p} data-policy={p} style={{ display: "block", fontSize: "13px", color: "var(--shell-fg)", marginTop: "6px" }}>
-              <input type="radio" name="policy" value={p} defaultChecked={settings.policy === p} />{" "}
+            <label key={p} data-policy={p} className="ui-d-mt6 ui-d-fd" style={{ display: "block" }}>
+              <PolicyRadio value={p} defaultChecked={settings.policy === p} />{" "}
               {AP.policyLabel[p]}
-              <span style={{ display: "block", marginLeft: "20px", fontSize: "12px", color: "var(--shell-fg-faint)" }}>
+              <span className="ui-d-i ui-d-ml20" style={{ display: "block" }}>
                 {AP.policyNote[p]}
               </span>
             </label>
           ))}
         </fieldset>
-        <fieldset style={{ border: "none", margin: "12px 0 0", padding: 0 }}>
-          <legend style={{ fontSize: "13px", fontWeight: 600, color: "var(--shell-fg-muted)" }}>{AP.overridesHeading}</legend>
-          <table data-override-grid="true" style={{ marginTop: "6px", borderCollapse: "collapse", fontSize: "12px" }}>
+        <fieldset className="ui-os-fs ui-d-mt12">
+          <legend className="ui-d-t ui-d-b">{AP.overridesHeading}</legend>
+          <table data-override-grid="true" className="ui-d-mt6 ui-d-fs" style={{ borderCollapse: "collapse" }}>
             <thead>
-              <tr>
-                <th style={{ textAlign: "left", padding: "2px 12px 2px 0", color: "var(--shell-fg-faint)" }}>{AP.overrideKindColumn}</th>
-                <th style={{ textAlign: "left", padding: "2px 12px 2px 0", color: "var(--shell-fg-faint)" }}>{AP.overrideDefaultColumn}</th>
-                <th style={{ textAlign: "left", padding: "2px 0", color: "var(--shell-fg-faint)" }}>{AP.overrideColumn}</th>
+              <tr className="ui-d-i">
+                <th className="ui-d-th">{AP.overrideKindColumn}</th>
+                <th className="ui-d-th">{AP.overrideDefaultColumn}</th>
+                <th className="ui-d-th">{AP.overrideColumn}</th>
               </tr>
             </thead>
             <tbody>
@@ -90,19 +115,15 @@ export function ApprovalSettingsSection({
                 const value = current === undefined ? "" : current === null ? "wait" : String(current);
                 return (
                   <tr key={d.kind} data-override-row={d.kind}>
-                    <td style={{ padding: "3px 12px 3px 0", color: "var(--shell-fg)" }}>{kindLabel(d.kind)}</td>
-                    <td style={{ padding: "3px 12px 3px 0", color: "var(--shell-fg-muted)" }}>{defaultText(d.deadlineMs)}</td>
-                    <td style={{ padding: "3px 0" }}>
+                    <td className="ui-d-td">{kindLabel(d.kind)}</td>
+                    <td className="ui-d-td ui-d-t">{defaultText(d.deadlineMs)}</td>
+                    <td>
                       {d.overridable ? (
                         // UX.2 (REQ-IDE-42) — select-name: the row's kind cell is the label's text
                         // but the control still needs a programmatic name (axe select-name ×8).
-                        <select name={`ov_${d.kind}`} defaultValue={value} aria-label={`${kindLabel(d.kind)} — ${AP.overrideColumn}`} style={{ fontSize: "12px" }}>
-                          {overrideOptions(d).map((o) => (
-                            <option key={o.value} value={o.value}>{o.label}</option>
-                          ))}
-                        </select>
+                        <OverrideSelect kind={d.kind} value={value} options={overrideOptions(d)} ariaLabel={`${kindLabel(d.kind)} — ${AP.overrideColumn}`} />
                       ) : (
-                        <span data-never-override="true" style={{ color: "var(--shell-fg-faint)" }}>{AP.overrideNeverLabel}</span>
+                        <span data-never-override="true" className="ui-d-i">{AP.overrideNeverLabel}</span>
                       )}
                     </td>
                   </tr>
@@ -111,35 +132,35 @@ export function ApprovalSettingsSection({
             </tbody>
           </table>
         </fieldset>
-        <button type="submit" style={{ marginTop: "10px", fontSize: "12px" }}>{AP.saveLabel}</button>
+        <Button type="submit" size="sm" className="ui-d-mt10">{AP.saveLabel}</Button>
       </form>
 
       {/* §6.5 standing guidance — listed with its narrowing + created date; Retire flips active=false
           (never deleted); "replace" posts a retire + a new rule (the edit path). */}
-      <div data-standing-guidance="true" style={{ marginTop: "14px", padding: "10px 14px", border: "1px solid var(--shell-border)", borderRadius: "8px" }}>
-        <h3 style={{ fontSize: "13px", fontWeight: 600, color: "var(--shell-fg-muted)", margin: "0 0 6px" }}>{AP.standingHeading}</h3>
+      <div data-standing-guidance="true" className="ui-c2-mt3 ui-set-card">
+        <h3 className="ui-c2-m0 ui-d-mt6 ui-d-t ui-d-b">{AP.standingHeading}</h3>
         {settings.standing.length === 0 ? (
-          <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0" }}>{AP.standingEmpty}</p>
+          <p className="ui-d-i ui-c2-mt ui-c2-mb">{AP.standingEmpty}</p>
         ) : (
-          <ul style={{ margin: "4px 0", paddingLeft: "18px", display: "flex", flexDirection: "column", gap: "6px" }}>
+          <ul className="ui-os-ul ui-d-g6 ui-c2-mt ui-c2-mb" style={{ display: "flex", flexDirection: "column" }}>
             {settings.standing.map((g) => (
-              <li key={g.id} data-guidance={g.id} style={{ fontSize: "13px", color: "var(--shell-fg)" }}>
+              <li key={g.id} data-guidance={g.id} className="ui-d-fd">
                 {g.body}
-                <span style={{ fontSize: "11px", color: "var(--shell-fg-faint)", marginLeft: "8px" }}>
+                <span className="ui-d-i ui-set-inline">
                   {g.workflows.length > 0 ? g.workflows.join(", ") : AP.standingAllWorkflows} · {g.createdAt.slice(0, 10)}
                 </span>
-                <form method="post" action={`/p/${slug}/guidance/${g.id}/retire`} style={{ display: "inline", marginLeft: "8px" }}>
+                <form method="post" action={`/p/${slug}/guidance/${g.id}/retire`} className="ui-set-inline" style={{ display: "inline" }}>
                   {returnField}
-                  <button type="submit" data-retire="true" style={{ fontSize: "11px" }}>{AP.standingRetireLabel}</button>
+                  <Button type="submit" size="sm" data-retire="true">{AP.standingRetireLabel}</Button>
                 </form>
                 {editable ? (
-                  <details data-guidance-edit="true" style={{ marginTop: "4px" }}>
-                    <summary style={{ fontSize: "11px", color: "var(--accent)", cursor: "pointer", display: "inline" }}>Edit</summary>
-                    <form method="post" action={`/p/${slug}/settings/guidance/${g.id}`} style={{ marginTop: "6px", display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "baseline" }}>
+                  <details data-guidance-edit="true" className="ui-os-mr">
+                    <summary className="ui-c2-ca ui-d-s" style={{ cursor: "pointer", display: "inline" }}>Edit</summary>
+                    <form method="post" action={`/p/${slug}/settings/guidance/${g.id}`} className="ui-d-mt6 ui-c2-g2" style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline" }}>
                       {returnField}
-                      <input type="text" name="body" required defaultValue={g.body} style={{ flex: "1 1 240px", fontSize: "13px", padding: "6px 10px", borderRadius: "7px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)" }} />
-                      <input type="text" name="workflows" aria-label={AP.standingWorkflowsLabel} defaultValue={g.workflows.join(", ")} placeholder={AP.standingAllWorkflows} style={{ fontSize: "12px", padding: "5px 8px", borderRadius: "7px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", width: "140px" }} />
-                      <button type="submit" data-guidance-save="true" style={{ fontSize: "12px" }}>{AP.saveLabel}</button>
+                      <TextField type="text" name="body" required defaultValue={g.body} style={{ flex: "1 1 240px" }} />
+                      <TextField type="text" name="workflows" aria-label={AP.standingWorkflowsLabel} defaultValue={g.workflows.join(", ")} placeholder={AP.standingAllWorkflows} className="ui-d-w140" />
+                      <Button type="submit" size="sm" data-guidance-save="true">{AP.saveLabel}</Button>
                     </form>
                   </details>
                 ) : null}
@@ -147,18 +168,18 @@ export function ApprovalSettingsSection({
             ))}
           </ul>
         )}
-        <form method="post" action={`/p/${slug}/guidance`} style={{ marginTop: "8px", display: "flex", gap: "8px", alignItems: "baseline", flexWrap: "wrap" }}>
+        <form method="post" action={`/p/${slug}/guidance`} className="ui-c2-mt ui-c2-g2" style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap" }}>
           {returnField}
-          <input type="text" name="body" required placeholder={AP.standingAddPlaceholder} style={{ flex: "1 1 240px", fontSize: "13px", padding: "6px 10px", borderRadius: "7px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)" }} />
-          <input type="text" name="workflows" aria-label={AP.standingWorkflowsLabel} placeholder={AP.standingAllWorkflows} style={{ fontSize: "12px", padding: "5px 8px", borderRadius: "7px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", width: "140px" }} />
-          <button type="submit" style={{ fontSize: "12px" }}>{AP.standingAddLabel}</button>
+          <TextField type="text" name="body" required placeholder={AP.standingAddPlaceholder} style={{ flex: "1 1 240px" }} />
+          <TextField type="text" name="workflows" aria-label={AP.standingWorkflowsLabel} placeholder={AP.standingAllWorkflows} className="ui-d-w140" />
+          <Button type="submit" size="sm">{AP.standingAddLabel}</Button>
         </form>
         {settings.retired.length > 0 ? (
-          <details data-retired-guidance="true" style={{ marginTop: "10px" }}>
-            <summary style={{ fontSize: "12px", color: "var(--shell-fg-faint)", cursor: "pointer" }}>{AP.retiredHeading} ({settings.retired.length})</summary>
-            <ul style={{ margin: "6px 0 0", paddingLeft: "18px", display: "flex", flexDirection: "column", gap: "4px" }}>
+          <details data-retired-guidance="true" className="ui-d-mt10">
+            <summary className="ui-d-i" style={{ cursor: "pointer" }}>{AP.retiredHeading} ({settings.retired.length})</summary>
+            <ul className="ui-os-ul ui-d-mt6 ui-c2-g1" style={{ display: "flex", flexDirection: "column" }}>
               {settings.retired.map((g) => (
-                <li key={g.id} data-guidance={g.id} style={{ fontSize: "12px", color: "var(--shell-fg-faint)", textDecoration: "line-through" }}>
+                <li key={g.id} data-guidance={g.id} className="ui-d-i" style={{ textDecoration: "line-through" }}>
                   {g.body}
                 </li>
               ))}

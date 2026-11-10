@@ -12,6 +12,8 @@ import type {
   RunCardView,
 } from "@rhema/findings-core";
 import { RunCard, type RunCardLabels, type RunCardHrefs } from "./run-card.js";
+import { Chip } from "./primitives/chips.js";
+import { IconButton } from "./primitives/button.js";
 
 /** A round as the wire sends it (the api's TimelineDto shape — parts precomputed by findings-core). */
 export interface TimelineRoundWire {
@@ -98,16 +100,11 @@ function VersionChip({
   hrefs?: TimelineHrefs;
 }): ReactNode {
   const text = labels.versionLabel(n);
-  const style = {
-    fontSize: "12px",
-    color: "var(--shell-fg-muted)",
-    fontVariantNumeric: "tabular-nums",
-  } as const;
   const href = hrefs?.versionHref?.(n);
   return (
-    <span data-version-chip={n} style={style}>
+    <span data-version-chip={n} className="ui-d-l" style={{ fontVariantNumeric: "tabular-nums" }}>
       {href ? (
-        <a href={href} style={{ color: "inherit" }}>
+        <a href={href} className="ui-d-inh">
           {text}
         </a>
       ) : (
@@ -125,7 +122,7 @@ function CollapsedSummary({
   labels: TimelineLabels;
 }): ReactNode {
   return (
-    <p data-round-summary style={{ margin: 0, fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+    <p data-round-summary className="ui-c2-m0 ui-d-l">
       {parts.map((p, i) => (
         <span key={i}>
           {i > 0 ? ` ${labels.arrow} ` : ""}
@@ -168,9 +165,9 @@ function RunRow({
   renderGateCard?: (run: TimelineRun) => ReactNode;
 }): ReactNode {
   return (
-    <li data-timeline-run={run.runId} style={{ marginBottom: "10px" }}>
+    <li data-timeline-run={run.runId} className="ui-d-mb10">
       {labels.runLineLabel ? (
-        <p style={{ margin: "0 0 4px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+        <p className="ui-c2-m0 ui-os-mr ui-d-l">
           {labels.runLineLabel(run.workflow, run.createdAt)}
         </p>
       ) : null}
@@ -206,26 +203,14 @@ export function TimelinePane({
   const next = view.nextStep;
   const nextLabel = labels.nextStepLabel(next.verb, next.headDraftN);
   return (
-    <div data-timeline-pane style={{ fontSize: "13px" }}>
-      {/* the three verbs (§5.5 header row) — each opens the run sheet for that workflow */}
+    <div data-timeline-pane className="ui-d-fd">
+      {/* the three verbs (§5.5 header row) — each opens the run sheet for that workflow.
+          C6/B8: they were pills on plain links with a false dropdown caret — now the Chip
+          action variant (a real link, chip styling, no caret). */}
       {labels.verbLabel && hrefs?.verbHref ? (
-        <div data-timeline-verbs style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+        <div data-timeline-verbs className="ui-c2-mb ui-d-acts" style={{ display: "flex" }}>
           {(["draft", "review", "revise"] as const).map((v) => (
-            <a
-              key={v}
-              href={hrefs.verbHref!(v)}
-              data-verb={v}
-              style={{
-                fontSize: "12px",
-                padding: "3px 10px",
-                borderRadius: "999px",
-                border: "1px solid var(--shell-border)",
-                color: "var(--shell-fg)",
-                textDecoration: "none",
-              }}
-            >
-              {labels.verbLabel!(v)} ▾
-            </a>
+            <Chip key={v} variant="action" href={hrefs.verbHref!(v)} data-verb={v} label={labels.verbLabel!(v)} />
           ))}
         </div>
       ) : null}
@@ -234,61 +219,43 @@ export function TimelinePane({
           plain form POST (the delegated submit re-issues it as JSON) to the server-authored
           `dismissAction`; a dismissed card never renders. */}
       {next.verb !== "none" && next.dismissed !== true ? (
-        <div
-          data-next-step={next.verb}
-          style={{
-            border: "1px solid var(--shell-border)",
-            borderRadius: "12px",
-            padding: "12px 16px",
-            marginBottom: "14px",
-            background: "var(--shell-raised)",
-          }}
-        >
+        <div data-next-step={next.verb} className="ui-vc-card" style={{ border: "1px solid var(--shell-border)" }}>
           {next.dismissAction ? (
             <form
               method="post"
               action={next.dismissAction}
               data-next-step-dismiss="true"
-              style={{ float: "right", margin: 0 }}
+              className="ui-c2-m0"
+              style={{ float: "right" }}
             >
-              <button
+              <IconButton
                 type="submit"
+                variant="ghost"
+                size="sm"
                 aria-label={next.dismissLabel ?? "Dismiss"}
                 title={next.dismissLabel ?? "Dismiss"}
-                style={{ background: "none", border: "none", padding: "0 0 0 8px", color: "var(--shell-fg-faint)", cursor: "pointer", fontSize: "14px", lineHeight: 1 }}
               >
                 ×
-              </button>
+              </IconButton>
             </form>
           ) : null}
           {hrefs?.nextStep ? (
-            <a href={hrefs.nextStep} style={{ fontWeight: 600, color: "var(--shell-fg)" }}>
+            <a href={hrefs.nextStep} className="ui-d-b ui-d-inh">
               {nextLabel}
             </a>
           ) : (
-            <span style={{ fontWeight: 600 }}>{nextLabel}</span>
+            <span className="ui-d-b">{nextLabel}</span>
           )}
           {next.estimateCredits != null && labels.estimateLabel ? (
-            <span
-              style={{
-                marginLeft: "8px",
-                fontSize: "12px",
-                color: "var(--shell-fg-muted)",
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
+            <span className="ui-set-inline ui-d-l" style={{ fontVariantNumeric: "tabular-nums" }}>
               {labels.estimateLabel(next.estimateCredits)}
             </span>
           ) : null}
           {next.duration != null ? (
             <span
               data-next-step-duration
-              style={{
-                marginLeft: "8px",
-                fontSize: "12px",
-                color: "var(--shell-fg-faint)",
-                fontVariantNumeric: "tabular-nums",
-              }}
+              className="ui-set-inline ui-d-i"
+              style={{ fontVariantNumeric: "tabular-nums" }}
             >
               ~{next.duration.lowMinutes}–{next.duration.highMinutes} min
             </span>
@@ -297,13 +264,13 @@ export function TimelinePane({
       ) : null}
 
       {view.rounds.length === 0 && view.ungrouped.length === 0 ? (
-        <p style={{ color: "var(--shell-fg-muted)" }}>{labels.emptyText}</p>
+        <p className="ui-d-l">{labels.emptyText}</p>
       ) : null}
 
       {view.rounds.map((round) => (
-        <section key={round.n} data-round={round.n} style={{ marginBottom: "16px" }}>
+        <section key={round.n} data-round={round.n} className="ui-d-mb16">
           <CollapsedSummary parts={round.parts} labels={labels} />
-          <ul style={{ listStyle: "none", margin: "8px 0", padding: 0 }}>
+          <ul className="ui-c2-mt ui-c2-mb ui-d-p0" style={{ listStyle: "none" }}>
             {round.runs.map((run) => (
               <RunRow
                 key={run.runId}
@@ -317,7 +284,7 @@ export function TimelinePane({
           </ul>
           {round.anchor ? <VersionChip n={round.anchor.n} labels={labels} hrefs={hrefs} /> : null}
           {round.producedN != null ? (
-            <span style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+            <span className="ui-d-l">
               {` ${labels.arrow} `}
               <VersionChip n={round.producedN} labels={labels} hrefs={hrefs} />
             </span>
@@ -326,7 +293,7 @@ export function TimelinePane({
       ))}
 
       {view.ungrouped.length > 0 ? (
-        <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+        <ul className="ui-c2-m0 ui-d-p0" style={{ listStyle: "none" }}>
           {view.ungrouped.map((run) => (
             <RunRow
               key={run.runId}
@@ -341,10 +308,7 @@ export function TimelinePane({
       ) : null}
 
       {view.originChip ? (
-        <p
-          data-origin-chip={view.originChip.kind}
-          style={{ marginTop: "8px", fontSize: "12px", color: "var(--shell-fg-faint)" }}
-        >
+        <p data-origin-chip={view.originChip.kind} className="ui-c2-mt ui-d-i">
           {labels.originChipLabel(view.originChip.kind)}
         </p>
       ) : null}

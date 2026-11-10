@@ -4,9 +4,10 @@
 // attribute-driven, and every breakpoint rule lives in @rhema/tokens' ideCss so SSR markup is correct at
 // any viewport before any script runs. Text-agnostic: every string is a prop from apps/web's COPY table.
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type { PanelTab, ViewMode } from "@rhema/ide";
 import { viewMenuModel, VIEW_MODES, CHEAT_SHEET, PANEL_TABS, shortcutFor } from "@rhema/ide";
+import { Button, IconButton } from "./primitives/button.js";
 import { EmptyFindings } from "./ide-states.js";
 import { LiveFeed, type FeedRow, type LiveFeedLabels, type RunCardLabels } from "./run-card.js";
 import { TimelinePane, type TimelineViewWire, type TimelineLabels, type TimelineHrefs } from "./timeline.js";
@@ -251,12 +252,12 @@ export function IdeShell(props: IdeShellProps): ReactNode {
           <aside className="ide-margin" data-pane="margin" aria-label={L.margin.heading} role="complementary">
             <span className="sr-only">{L.margin.ticksLabel}</span>
             {findings.map((f) => (
-              <a key={f.id} className="ide-tick" href={`#finding-${f.id}`} aria-label={f.excerpt}
-                 title={f.excerpt} style={{ background: `var(--sev-${f.severity})` }} />
+              <a key={f.id} className="ide-tick ui-d-sev" href={`#finding-${f.id}`} aria-label={f.excerpt}
+                 title={f.excerpt} style={{ "--d-sev": `var(--sev-${f.severity})` } as CSSProperties} />
             ))}
             {props.marginBody ??
               findings.map((f) => (
-                <div key={`card-${f.id}`} id={`finding-${f.id}`} data-finding-id={f.id} className="ide-fcard" style={{ borderLeftColor: `var(--sev-${f.severity})` }}>
+                <div key={`card-${f.id}`} id={`finding-${f.id}`} data-finding-id={f.id} className="ide-fcard ui-d-fcard" style={{ "--d-sev": `var(--sev-${f.severity})` } as CSSProperties}>
                   {f.excerpt}
                 </div>
               ))}
@@ -264,7 +265,7 @@ export function IdeShell(props: IdeShellProps): ReactNode {
         </div>
 
         {/* The right panel's drag handle — a real `separator` with keyboard resize (UXC-26). */}
-        <button type="button" className="ide-handle" data-ide-handle="panel" role="separator"
+        <Button type="button" variant="ghost" className="ide-handle" data-ide-handle="panel" role="separator"
                 aria-label={L.panel.resize} aria-orientation="vertical"
                 aria-valuenow={320} aria-valuemin={160} aria-valuemax={480} />
         {/* R7FIX.1 (REQ-PANE-0) — the scrim an open overlay/sheet draws over the Page region;
@@ -279,14 +280,14 @@ export function IdeShell(props: IdeShellProps): ReactNode {
           <div className="ide-panel-head">
             <div className="ide-panel-tabs" role="tablist" aria-label={L.panel.heading}>
               {PANEL_TABS.map((tab) => (
-                <button key={tab} type="button" role="tab" data-ide-panel-tab={tab} data-ide-desk-tab={tab}
+                <Button key={tab} variant="ghost" role="tab" data-ide-panel-tab={tab} data-ide-desk-tab={tab}
                         aria-selected={(panelOpen ? "feed" : "chat") === tab}
                         {...(props.demo && tab === "chat" ? { hidden: true, disabled: true, "data-demo-gated": "1" } : {})}>
                   {L.panel.tabs[tab]}
-                </button>
+                </Button>
               ))}
             </div>
-            <button type="button" data-ide-panel-toggle data-ide-desk-toggle aria-label={L.panel.close} className="ide-panel-close">×</button>
+            <IconButton variant="ghost" size="sm" data-ide-panel-toggle data-ide-desk-toggle aria-label={L.panel.close} className="ide-panel-close">×</IconButton>
           </div>
           <div className="ide-panel-body" role="tabpanel">
             {/* All five tab bodies render; data-panel-tab on .ide picks the visible one in CSS.
@@ -301,9 +302,9 @@ export function IdeShell(props: IdeShellProps): ReactNode {
               {props.deskFindingsBody ?? (findings.length === 0 ? (
                 <EmptyFindings label={L.panel.emptyFindings} />
               ) : (
-                <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 13 }}>
+                <table className="ui-vc-w ui-d-fd" style={{ borderCollapse: "collapse" }}>
                   <thead>
-                    <tr style={{ textAlign: "left", color: "var(--shell-fg-muted)" }}>
+                    <tr className="ui-d-t" style={{ textAlign: "left" }}>
                       <th scope="col">{L.panel.findingsTable.finding}</th>
                       <th scope="col">{L.panel.findingsTable.severity}</th>
                       <th scope="col">{L.panel.findingsTable.kind}</th>
@@ -338,13 +339,13 @@ export function IdeShell(props: IdeShellProps): ReactNode {
                     {...(props.renderGateCard ? { renderGateCard: props.renderGateCard } : {})}
                   />
                 ) : (props.timeline ?? []).length === 0 ? (
-                  <p style={{ color: "var(--shell-fg-muted)", fontSize: 13 }}>{L.timeline.empty}</p>
+                  <p className="ui-d-t">{L.timeline.empty}</p>
                 ) : (
-                  <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+                  <ul className="ui-c2-m0 ui-d-p0" style={{ listStyle: "none" }}>
                     {(props.timeline ?? []).map((r) => (
-                      <li key={r.id} style={{ padding: "4px 0", fontSize: 13 }}>
+                      <li key={r.id} className="ui-d-p2 ui-d-fd">
                         {r.href ? <a href={r.href}>{r.label}</a> : r.label}
-                        <span style={{ color: "var(--shell-fg-faint)", fontSize: 12 }}> · {r.state}</span>
+                        <span className="ui-d-i"> · {r.state}</span>
                       </li>
                     ))}
                   </ul>
@@ -383,26 +384,26 @@ export function IdeShell(props: IdeShellProps): ReactNode {
         {typeof props.status?.words === "number" ? <span className="ide-count" data-status-words data-fmt={L.statusBar.wordsFmt}>{fmt(L.statusBar.wordsFmt, props.status.words)}</span> : null}
         {typeof props.status?.readMin === "number" ? <span className="ide-count" data-status-readmin data-fmt={L.statusBar.readMinFmt}>{fmt(L.statusBar.readMinFmt, props.status.readMin)}</span> : null}
         {props.status?.venueCap ? <span data-status-venue>{props.status.venueCap}</span> : null}
-        <span style={{ marginLeft: "auto" }} />
+        <span className="ui-d-mla" />
         {typeof props.status?.credits === "number" ? <span className="ide-count">{fmt(L.statusBar.creditsFmt, props.status.credits)}</span> : null}
         {/* R7SHELL.1a (UXC-10) — the View menu's home while the rail is suppressed (`v` chord). */}
-        <button type="button" data-ide-view-menu aria-haspopup="menu" aria-expanded="false" title={shortcutFor("view-menu") ?? undefined}>{L.statusBar.view}</button>
-        <button type="button" data-ide-theme-menu aria-haspopup="menu" aria-expanded="false">{L.statusBar.theme}</button>
+        <Button variant="ghost" size="sm" data-ide-view-menu aria-haspopup="menu" aria-expanded="false" title={shortcutFor("view-menu") ?? undefined}>{L.statusBar.view}</Button>
+        <Button variant="ghost" size="sm" data-ide-theme-menu aria-haspopup="menu" aria-expanded="false">{L.statusBar.theme}</Button>
       </footer>
 
       {/* The View menu — exact §5.1 contents (Write·Read·Focus; finding cards; inline suggestions;
           Advanced ⌘⇧M; font preset + reader stepper). NO Source entry — it lives in Files. */}
       <div className="ide-menu" data-ide-menu="view" role="menu" aria-label={L.viewMenu.heading} hidden>
         {VIEW_MODES.map((m) => (
-          <button key={m.id} type="button" role="menuitemradio" aria-checked={view === m.id}
+          <Button key={m.id} variant="ghost" role="menuitemradio" aria-checked={view === m.id}
                   data-ide-view={m.id} className="ide-menu-row">
             <span>{L.viewMenu.views[m.id]}</span>
             {m.keys ? <kbd className="ide-menu-key">{m.keys}</kbd> : null}
-          </button>
+          </Button>
         ))}
         <div className="ide-menu-sep" />
         {viewMenuModel(view).map((t) => (
-          <button key={t.id} type="button" role="menuitemcheckbox"
+          <Button key={t.id} variant="ghost" role="menuitemcheckbox"
                   aria-checked={t.id === "advanced" || t.id === "authorship" || t.id === "timeline" ? "false" : "true"}
                   {...(t.id === "authorship" ? { "data-tier": "advanced" } : {})}
                   // R7PANE.1 (REQ-PANE-1/2) — the panel row rides `data-ide-panel-toggle`
@@ -416,41 +417,41 @@ export function IdeShell(props: IdeShellProps): ReactNode {
               : t.id === "authorship" ? L.viewMenu.authorship
               : L.viewMenu.advanced}</span>
             {t.keys ? <kbd className="ide-menu-key">{t.keys}</kbd> : null}
-          </button>
+          </Button>
         ))}
         <div className="ide-menu-sep" />
         <div className="ide-menu-note">{L.viewMenu.fontSerif} / {L.viewMenu.fontSans}</div>
-        <button type="button" className="ide-menu-row" data-ide-font="serif" role="menuitemradio" aria-checked="true">{L.viewMenu.fontSerif}</button>
-        <button type="button" className="ide-menu-row" data-ide-font="sans" role="menuitemradio" aria-checked="false">{L.viewMenu.fontSans}</button>
+        <Button variant="ghost" className="ide-menu-row" data-ide-font="serif" role="menuitemradio" aria-checked="true">{L.viewMenu.fontSerif}</Button>
+        <Button variant="ghost" className="ide-menu-row" data-ide-font="sans" role="menuitemradio" aria-checked="false">{L.viewMenu.fontSans}</Button>
         <div className="ide-menu-sep" />
-        <button type="button" className="ide-menu-row" data-ide-reader="down">{L.viewMenu.readerSmaller}</button>
-        <button type="button" className="ide-menu-row" data-ide-reader="up">{L.viewMenu.readerBigger}</button>
+        <Button variant="ghost" className="ide-menu-row" data-ide-reader="down">{L.viewMenu.readerSmaller}</Button>
+        <Button variant="ghost" className="ide-menu-row" data-ide-reader="up">{L.viewMenu.readerBigger}</Button>
       </div>
 
       {/* Theme menu — app theme (dark/light/auto) + the per-project paper pin (⌘⇧L). */}
       <div className="ide-menu" data-ide-menu="theme" role="menu" aria-label={L.statusBar.theme} hidden>
         <div className="ide-menu-note">{L.statusBar.theme}</div>
         {(["dark", "light", "auto"] as const).map((t) => (
-          <button key={t} type="button" role="menuitemradio" aria-checked={(props.appTheme ?? "dark") === t}
+          <Button key={t} variant="ghost" role="menuitemradio" aria-checked={(props.appTheme ?? "dark") === t}
                   data-ide-theme={t} className="ide-menu-row">
             {L.themes[t]}
-          </button>
+          </Button>
         ))}
         <div className="ide-menu-sep" />
         <div className="ide-menu-note">{L.statusBar.paper}</div>
         {(["light", "follow", "dark"] as const).map((t) => (
-          <button key={t} type="button" role="menuitemradio" aria-checked={(props.paperTheme ?? "light") === t}
+          <Button key={t} variant="ghost" role="menuitemradio" aria-checked={(props.paperTheme ?? "light") === t}
                   data-ide-paper={t} className="ide-menu-row">
             {L.themes[t === "follow" ? "paperFollow" : t === "light" ? "paperLight" : "paperDark"]}
-          </button>
+          </Button>
         ))}
       </div>
 
       {/* R7FIX.1 (REQ-WRITE-4, B12) — the focus-view exit pill: hover- and keyboard-revealed
           (CSS shows it only under data-view='focus'); Esc always exits too. */}
-      <button type="button" className="ide-focus-exit" data-ide-focus-exit>
+      <Button variant="secondary" className="ide-focus-exit" data-ide-focus-exit>
         {L.focusExit}
-      </button>
+      </Button>
 
       {/* P1.06 (§5.12) — the `?` cheat sheet: the full keymap rendered from the shared CHEAT_SHEET
           table (@rhema/ide) so the card can never drift from the dispatcher. */}
@@ -458,7 +459,7 @@ export function IdeShell(props: IdeShellProps): ReactNode {
         <div className="ide-cheatsheet-card">
           <div className="ide-pane-head">
             <span>{L.cheatsheet.heading}</span>
-            <button type="button" data-ide-cheatsheet-close aria-label={L.cheatsheet.closeLabel}>×</button>
+            <IconButton variant="ghost" size="sm" data-ide-cheatsheet-close aria-label={L.cheatsheet.closeLabel}>×</IconButton>
           </div>
           <ul>
             {CHEAT_SHEET.map((row) => (
