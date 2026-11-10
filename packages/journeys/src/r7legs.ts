@@ -19,7 +19,7 @@ import {
   AXE_SOURCE,
   IPHONE_USER_AGENT,
 } from "./steps.js";
-import { u3ProbePage } from "./u3-probe.js";
+import { u3ProbePage, u3UnscrimmedViolation } from "./u3-probe.js";
 import { U4_SURFACES, assertU4Clean, u4ProbePage } from "./u4-probe.js";
 import { assertActionable } from "./occlusion.js";
 
@@ -425,8 +425,11 @@ const U3_STOPGAP: StepFn = async (ctx) => {
 
 /** R7PANE.1 (REQ-PANE-4, REQ-DACC-7) — the real `U3.occlusion` body: the five-size geometry
  *  probe — the shared `u3ProbePage` over the signed-in surface at the four desktop sizes plus
- *  the demo width at 390×844 (emulated). The leg stays `expected:"red"` — the staging/live
- *  flip is D-R7PANE.1-1 at 250_R7DEP.2. */
+ *  the demo width at 390×844 (emulated). 249_R7GUARD.1 adds the tour-target arm: at 390×844
+ *  (the demo leg's emulated width — the tightest mark placement) the same
+ *  `u3UnscrimmedViolation` the local walk calls asserts every TOUR_STEPS target sits clear of
+ *  un-scrimmed overlays. The leg stays `expected:"red"` — the staging/live flip is
+ *  D-R7PANE.1-1 at 250_R7DEP.2. */
 const U3_OCCLUSION: StepFn = async (ctx) => {
   const { page } = await ctx.returningUser("a");
   for (const [w, h] of [[1440, 900], [1280, 800], [1024, 768], [820, 1180]] as const) {
@@ -441,6 +444,22 @@ const U3_OCCLUSION: StepFn = async (ctx) => {
     const dpage = await demo.newPage();
     await gotoOk(dpage, `${ctx.webBaseUrl}/demo/${FIRST_ESSAY.essay}?src=jrn`, ctx);
     await u3ProbePage(dpage, 390, 844, { demo: true, shot: `${ctx.outDir}/u3-occlusion-390x844.png` });
+    // REQ-PANE-4's "every tour target" — the tour lives on the SPD essay only
+    // (DEMO_TOUR_STEPS pins it); each step's own URL mounts its mark before the assert.
+    for (const step of TOUR_STEPS) {
+      await gotoOk(
+        dpage,
+        `${ctx.webBaseUrl}/demo/${TOUR_ESSAY}${step.route}?${step.search != null ? `${step.search}&` : ""}tour=${step.id}&src=jrn`,
+        ctx,
+      );
+      const mark = dpage.locator(`[data-demo-tour-step="${step.id}"]`);
+      await mark.waitFor({ timeout: 30_000 });
+      const bad = await u3UnscrimmedViolation(dpage, [{ id: step.id, selector: step.target }]);
+      if (bad != null) {
+        throw new Error(`U3.occlusion tour arm @390×844 — ${bad}`);
+      }
+    }
+    await dpage.screenshot({ path: `${ctx.outDir}/u3-occlusion-tour-390x844.png`, fullPage: true });
     await demo.close();
   }
   assertBundleParity(ctx);
@@ -681,7 +700,11 @@ const D1_HUB: StepFn = async (ctx) => {
  * /demo. Stays `expected:"red"` — 224 flips it with preview evidence.
  */
 const TOUR_ESSAY = "structure-of-political-difference";
-const TOUR_STEPS: readonly { id: string; route: string; search?: string; target: string }[] = [
+/** The leg-side mirror of `DEMO_TOUR_STEPS` (apps/web/src/spa/demo-tour.ts) — the full
+ *  selector form. Exported so the GUARD-4 tour-target arm (u3-occlusion.local.test.ts +
+ *  `U3_OCCLUSION`'s demo leg) walks the same step set the tour leg does; the
+ *  guards-wiring check pins this list to the engine's table. */
+export const TOUR_STEPS: readonly { id: string; route: string; search?: string; target: string }[] = [
   { id: "published", route: "", target: "[data-page-root]" },
   { id: "v1", route: "/v/1", target: "[data-page-host]" },
   { id: "verdict", route: "/review/v1-review", target: '[data-letter-section="verdict"]' },
