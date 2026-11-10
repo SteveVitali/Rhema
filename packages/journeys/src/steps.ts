@@ -1693,8 +1693,10 @@ async function assertAxeClean(page: Page, label: string): Promise<void> {
 
 /** UX.2 — the pill's rect must not cover any text-bearing leaf element (honest geometry, not the
  *  presence of position:fixed alone — in-flow layout makes overlap structurally impossible, but the
- *  assertion measures it so a regression in ANY positioning mode is caught). */
-async function pillTextOverlap(page: Page): Promise<string | null> {
+ *  assertion measures it so a regression in ANY positioning mode is caught). R7FIX.8 — exported so
+ *  the local arm (`p1-pill.local.test.ts`) runs the leg's verbatim measure over the hosted `.ide`
+ *  geometry the demo mounts. */
+export async function pillTextOverlap(page: Page): Promise<string | null> {
   const pill = page.locator("[data-sync-pill]").first();
   if ((await pill.count()) === 0) return "(no sync pill rendered)";
   return pill.evaluate((el) => {
