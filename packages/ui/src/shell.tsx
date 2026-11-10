@@ -18,45 +18,36 @@ export function Shell({
   footer?: ReactNode;
 }): ReactNode {
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+    <div className="ui-t-vh" style={{ display: "flex", flexDirection: "column" }}>
       <header
+        className="ui-c2-g3 ui-t-p1216 ui-d-rc"
         style={{
           display: "flex",
           alignItems: "baseline",
           flexWrap: "wrap",
-          gap: "12px",
-          padding: "12px 16px",
           borderBottom: "1px solid var(--shell-border)",
-          background: "var(--shell-surface)",
         }}
       >
-        <a href="/" style={{ fontWeight: 600, fontSize: "16px", color: "var(--shell-fg)", textDecoration: "none" }}>
+        <a href="/" className="ui-d-b ui-t-f16 ui-t-fg" style={{ textDecoration: "none" }}>
           {brand}
         </a>
-        {tagline ? <span style={{ color: "var(--shell-fg-muted)", fontSize: "13px" }}>{tagline}</span> : null}
-        {nav ? <nav style={{ marginLeft: "auto", display: "flex", gap: "12px", alignItems: "center" }}>{nav}</nav> : null}
+        {tagline ? <span className="ui-t-mut ui-d-fd">{tagline}</span> : null}
+        {nav ? (
+          <nav className="ui-d-mla ui-c2-g3" style={{ display: "flex", alignItems: "center" }}>
+            {nav}
+          </nav>
+        ) : null}
       </header>
       <main
-        style={{
-          flex: 1,
-          width: "100%",
-          maxWidth: "880px",
-          margin: "0 auto",
-          padding: "24px 16px",
-          boxSizing: "border-box",
-        }}
+        className="ui-vc-w ui-t-mw880 ui-t-m0a ui-t-p2416"
+        style={{ flex: 1, boxSizing: "border-box" }}
       >
         {children}
       </main>
       {footer ? (
         <footer
-          style={{
-            padding: "16px",
-            borderTop: "1px solid var(--shell-border)",
-            color: "var(--shell-fg-faint)",
-            fontSize: "12px",
-            textAlign: "center",
-          }}
+          className="ui-t-p16 ui-t-fnt ui-d-fs"
+          style={{ borderTop: "1px solid var(--shell-border)", textAlign: "center" }}
         >
           {footer}
         </footer>
@@ -67,15 +58,11 @@ export function Shell({
 
 /** The one page-level heading for the flat shell (UX.1 — exactly one `<h1>` per document). */
 export function PageTitle({ children }: { children: ReactNode }): ReactNode {
-  return (
-    <h1 style={{ fontSize: "20px", fontWeight: 600, margin: "0 0 16px", color: "var(--shell-fg)" }}>{children}</h1>
-  );
+  return <h1 className="ui-t-f20 ui-d-b ui-t-m04 ui-t-fg">{children}</h1>;
 }
 
 /** A quiet section heading — `<h2>` (UX.1): it used to render `<h1>`, which put a second page-level
  *  heading on every document the landing's hero or a section strip carried. */
 export function SectionTitle({ children }: { children: ReactNode }): ReactNode {
-  return (
-    <h2 style={{ fontSize: "20px", fontWeight: 600, margin: "0 0 16px", color: "var(--shell-fg)" }}>{children}</h2>
-  );
+  return <h2 className="ui-t-f20 ui-d-b ui-t-m04 ui-t-fg">{children}</h2>;
 }

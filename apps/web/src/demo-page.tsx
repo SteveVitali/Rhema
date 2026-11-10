@@ -99,31 +99,30 @@ function EssayCard({ card, hero = false }: { card: DemoCardFactsDto; hero?: bool
   return (
     <li
       data-demo-essay-card={card.essay}
-      style={{
-        border: "1px solid var(--shell-border)",
-        borderRadius: "12px",
-        padding: "18px 20px",
-        margin: "0 0 16px",
-        background: hero ? "var(--shell-raised)" : "transparent",
-      }}
+      className="ui-t-r3 ui-t-p1820 ui-t-m04 ui-d-sev"
+      style={
+        {
+          border: "1px solid var(--shell-border)",
+          "--d-sev": hero ? "var(--shell-raised)" : "transparent",
+        } as CSSProperties
+      }
     >
-      <h2 style={{ fontSize: "20px", margin: "0 0 4px" }}>{card.title}</h2>
+      <h2 className="ui-t-f20 ui-t-m01">{card.title}</h2>
       {card.subtitle != null ? (
-        <p style={{ color: "var(--shell-fg-muted)", fontStyle: "italic", margin: "0 0 4px" }}>
-          {displaySubtitle(card.subtitle)}
-        </p>
+        <p className="ui-t-mut ui-d-it ui-t-m01">{displaySubtitle(card.subtitle)}</p>
       ) : null}
       {card.retitle != null ? (
-        <p style={{ color: "var(--shell-fg-dim)", fontSize: "12px", margin: "0 0 4px" }}>
-          {fill(COPY.demo.hub.retitleFmt, { from: card.retitle.from, atLabel: card.retitle.atLabel })}
+        <p className="ui-t-dim ui-d-fs ui-t-m01">
+          {fill(COPY.demo.hub.retitleFmt, {
+            from: card.retitle.from,
+            atLabel: card.retitle.atLabel,
+          })}
         </p>
       ) : null}
       {card.publishedLabel != null ? (
-        <p style={{ color: "var(--shell-fg-dim)", fontSize: "12px", margin: "0" }}>
-          {card.publishedLabel}
-        </p>
+        <p className="ui-t-dim ui-d-fs ui-c2-m0">{card.publishedLabel}</p>
       ) : null}
-      <p style={{ color: "var(--shell-fg-dim)", fontSize: "12px", margin: "4px 0 0" }}>
+      <p className="ui-t-dim ui-d-fs ui-t-m10">
         {fill(COPY.demo.hub.wordsFmt, { n: String(card.words) })}
       </p>
       <ol data-demo-card-arc style={chipRow}>
@@ -131,25 +130,22 @@ function EssayCard({ card, hero = false }: { card: DemoCardFactsDto; hero?: bool
           <ArcStep key={`${step.kind}-${i}`} step={step} />
         ))}
       </ol>
-      <p style={{ fontSize: "13px", margin: "0 0 8px" }}>
-        {fill(COPY.demo.hub.countsFmt, slots)}
-      </p>
+      <p className="ui-d-fd ui-c2-mb">{fill(COPY.demo.hub.countsFmt, slots)}</p>
       {bullets != null && links != null ? (
-        <div style={{ margin: "8px 0" }}>
-          <h3 style={{ fontSize: "13px", margin: "0 0 6px", color: "var(--shell-fg-muted)" }}>
-            {COPY.demo.hub.lookAtHeading}
-          </h3>
-          <ul style={{ margin: 0, paddingLeft: "18px" }}>
+        <div className="ui-t-m80">
+          <h3 className="ui-d-fd ui-t-m06 ui-t-mut">{COPY.demo.hub.lookAtHeading}</h3>
+          <ul className="ui-c2-m0 ui-t-pl18">
             {bullets.map((text, i) => {
               const link = links[i];
               if (link == null) return null;
               return (
-                <li key={i} style={{ fontSize: "13px", lineHeight: 1.5 }}>
+                <li key={i} className="ui-d-fd ui-t-lh5">
                   <a
                     data-demo-look-at
                     data-spa-native
                     href={demoDeepLink(card.essay, link.route, link.hook)}
-                    style={{ color: reviewColor }}
+                    className="ui-d-sc"
+                    style={{ "--d-sev": reviewColor } as CSSProperties}
                   >
                     {fill(text, slots)}
                   </a>
@@ -159,13 +155,13 @@ function EssayCard({ card, hero = false }: { card: DemoCardFactsDto; hero?: bool
           </ul>
         </div>
       ) : null}
-      <p style={{ display: "flex", gap: "14px", flexWrap: "wrap", margin: "10px 0 0" }}>
+      <p className="ui-t-g14 ui-t-ma00" style={{ display: "flex", flexWrap: "wrap" }}>
         {card.publishedUrl != null ? (
-          <a href={card.publishedUrl} rel="noreferrer" style={{ color: "var(--accent)" }}>
+          <a href={card.publishedUrl} rel="noreferrer" className="ui-t-acc">
             {COPY.demo.hub.readOnSubstack}
           </a>
         ) : null}
-        <a href={demoDeepLink(card.essay)} data-spa-native style={{ color: "var(--accent)" }}>
+        <a href={demoDeepLink(card.essay)} data-spa-native className="ui-t-acc">
           {COPY.demo.hub.openInRhema}
         </a>
         {hero ? (
@@ -173,7 +169,7 @@ function EssayCard({ card, hero = false }: { card: DemoCardFactsDto; hero?: bool
             href={DEMO_TOUR_ENTRY_HREF}
             data-spa-native
             data-demo-tour-entry
-            style={{ color: "var(--accent)", fontWeight: 600 }}
+            className="ui-t-acc ui-d-b"
           >
             {COPY.demo.hub.heroTourCta}
           </a>
@@ -191,27 +187,29 @@ export function DemoHubPage({ cards = [] }: { cards?: readonly DemoCardFactsDto[
   const rest = cards.filter((c) => c !== hero);
   return (
     <main data-demo-root data-page-root>
-      <section data-demo-hub style={{ maxWidth: "720px", margin: "0 auto", padding: "72px 24px" }}>
-        <h1 style={{ fontSize: "32px", marginBottom: "12px" }}>{COPY.demo.hubTitle}</h1>
-        <p style={{ color: "var(--shell-fg-dim)", lineHeight: 1.6 }}>{COPY.demo.hubLede}</p>
-        <ol style={{ listStyle: "none", margin: "28px 0 0", padding: 0 }}>
+      <section data-demo-hub className="ui-t-mw720 ui-t-m0a ui-t-p7224">
+        <h1 className="ui-t-f32 ui-t-mb12">{COPY.demo.hubTitle}</h1>
+        <p className="ui-t-dim ui-t-lh6">{COPY.demo.hubLede}</p>
+        <ol className="ui-t-m280 ui-d-p0" style={{ listStyle: "none" }}>
           {hero != null ? <EssayCard card={hero} hero /> : null}
           {rest.map((card) => (
             <EssayCard key={card.essay} card={card} />
           ))}
         </ol>
-        <div data-demo-provenance style={{ marginTop: "24px" }}>
-          <p style={{ color: "var(--shell-fg-dim)", lineHeight: 1.6, fontSize: "13px" }}>
+        <div data-demo-provenance className="ui-set-sec">
+          <p className="ui-t-dim ui-t-lh6 ui-d-fd">
             {COPY.demo.hub.provenanceLead}
-            <a href="https://github.com/SteveVitali/agent-discourse" rel="noreferrer" style={{ color: "var(--accent)" }}>
+            <a
+              href="https://github.com/SteveVitali/agent-discourse"
+              rel="noreferrer"
+              className="ui-t-acc"
+            >
               {COPY.demo.hub.agentDiscourseLink}
             </a>
             {COPY.demo.hub.provenanceMid}
           </p>
-          <p style={{ color: "var(--shell-fg-dim)", lineHeight: 1.6, fontSize: "13px" }}>
-            {COPY.demo.hub.provenanceRoles}
-          </p>
-          <p style={{ color: "var(--shell-fg-muted)", fontSize: "13px" }}>{COPY.demo.hub.byline}</p>
+          <p className="ui-t-dim ui-t-lh6 ui-d-fd">{COPY.demo.hub.provenanceRoles}</p>
+          <p className="ui-t-mut ui-d-fd">{COPY.demo.hub.byline}</p>
         </div>
       </section>
     </main>
@@ -245,9 +243,9 @@ export function demoHubDocument(cards: readonly DemoCardFactsDto[]): ReactNode {
 export function DemoReadOnlyPage() {
   return (
     <main data-demo-readonly-notice data-page-root>
-      <section style={{ maxWidth: "640px", margin: "0 auto", padding: "96px 24px" }}>
-        <h1 style={{ fontSize: "24px", marginBottom: "12px" }}>{COPY.demo.readOnlyTitle}</h1>
-        <p style={{ color: "var(--shell-fg-dim)", lineHeight: 1.6 }}>{COPY.demo.readOnlyBody}</p>
+      <section className="ui-set-main ui-t-m0a ui-t-p9624">
+        <h1 className="ui-t-f24 ui-t-mb12">{COPY.demo.readOnlyTitle}</h1>
+        <p className="ui-t-dim ui-t-lh6">{COPY.demo.readOnlyBody}</p>
       </section>
     </main>
   );

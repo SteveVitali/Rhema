@@ -157,7 +157,7 @@ const isOff = (v: unknown): boolean => severityOf(v) === 0 || severityOf(v) === 
 describe("registration in the real eslint.config.js (per-file enablement)", () => {
   it("is `off` over both scope globs, absent for primitives/** and out-of-scope files", async () => {
     const eslint = new ESLint({ cwd: REPO_ROOT });
-    for (const file of ["apps/web/src/pages.tsx", "apps/web/src/chat-pane.tsx"]) {
+    for (const file of ["apps/web/src/pages.tsx", "apps/web/src/page-chrome.tsx"]) {
       const cfg = await eslint.calculateConfigForFile(file);
       const entry = (cfg.rules as Record<string, unknown>)["rhema/no-raw-controls"];
       expect(entry, `rule configured for ${file}`).toBeDefined();
@@ -197,6 +197,36 @@ describe("registration in the real eslint.config.js (per-file enablement)", () =
       "packages/ui/src/findings.tsx",
       "apps/web/src/dossier-view.tsx",
       "apps/web/src/spa/surfaces/dossier.tsx",
+      // 248a_R7KIT.3f enabled all 29 migrate-tail census files.
+      "packages/ui/src/run-report.tsx",
+      "packages/ui/src/what-changed.tsx",
+      "packages/ui/src/page-strip.tsx",
+      "packages/ui/src/version-rail.tsx",
+      "packages/ui/src/ide-states.tsx",
+      "packages/ui/src/conversion.tsx",
+      "packages/ui/src/dispositions.tsx",
+      "packages/ui/src/files-pane.tsx",
+      "packages/ui/src/second-read.tsx",
+      "packages/ui/src/approval-row.tsx",
+      "packages/ui/src/shell.tsx",
+      "packages/ui/src/decisions.tsx",
+      "packages/ui/src/rubric.tsx",
+      "packages/ui/src/chips.tsx",
+      "packages/ui/src/margin.tsx",
+      "apps/web/src/demo-page.tsx",
+      "apps/web/src/demo-markers.tsx",
+      "apps/web/src/legal.tsx",
+      "apps/web/src/chat-pane.tsx",
+      "apps/web/src/gate-card.tsx",
+      "apps/web/src/spa/app-shell.tsx",
+      "apps/web/src/spa/palette.tsx",
+      "apps/web/src/spa/chat-live.tsx",
+      "apps/web/src/spa/read-only.tsx",
+      "apps/web/src/spa/page-header.tsx",
+      "apps/web/src/spa/demo-banner.tsx",
+      "apps/web/src/spa/demo-effects.tsx",
+      "apps/web/src/spa/surfaces/run-report.tsx",
+      "apps/web/src/spa/surfaces/editor.tsx",
     ]) {
       const on = await eslint.calculateConfigForFile(file);
       const onEntry = (on.rules as Record<string, unknown>)["rhema/no-raw-controls"];
@@ -278,6 +308,36 @@ describe("registration in the real eslint.config.js (per-file enablement)", () =
       "packages/ui/src/findings.tsx",
       "apps/web/src/dossier-view.tsx",
       "apps/web/src/spa/surfaces/dossier.tsx",
+      // 248a_R7KIT.3f enabled all 29 migrate-tail census files.
+      "packages/ui/src/run-report.tsx",
+      "packages/ui/src/what-changed.tsx",
+      "packages/ui/src/page-strip.tsx",
+      "packages/ui/src/version-rail.tsx",
+      "packages/ui/src/ide-states.tsx",
+      "packages/ui/src/conversion.tsx",
+      "packages/ui/src/dispositions.tsx",
+      "packages/ui/src/files-pane.tsx",
+      "packages/ui/src/second-read.tsx",
+      "packages/ui/src/approval-row.tsx",
+      "packages/ui/src/shell.tsx",
+      "packages/ui/src/decisions.tsx",
+      "packages/ui/src/rubric.tsx",
+      "packages/ui/src/chips.tsx",
+      "packages/ui/src/margin.tsx",
+      "apps/web/src/demo-page.tsx",
+      "apps/web/src/demo-markers.tsx",
+      "apps/web/src/legal.tsx",
+      "apps/web/src/chat-pane.tsx",
+      "apps/web/src/gate-card.tsx",
+      "apps/web/src/spa/app-shell.tsx",
+      "apps/web/src/spa/palette.tsx",
+      "apps/web/src/spa/chat-live.tsx",
+      "apps/web/src/spa/read-only.tsx",
+      "apps/web/src/spa/page-header.tsx",
+      "apps/web/src/spa/demo-banner.tsx",
+      "apps/web/src/spa/demo-effects.tsx",
+      "apps/web/src/spa/surfaces/run-report.tsx",
+      "apps/web/src/spa/surfaces/editor.tsx",
     ]) {
       const [res] = await eslint.lintText(`export const x = <button type="submit">Save</button>;`, {
         filePath: file,

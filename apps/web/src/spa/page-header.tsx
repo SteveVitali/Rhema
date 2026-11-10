@@ -38,7 +38,7 @@ export function PageHeader({
         <nav
           aria-label={COPY.pageHeader.breadcrumbAria}
           data-page-breadcrumb="true"
-          style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "0 0 6px" }}
+          className="ui-d-fs ui-t-fnt ui-t-m06"
         >
           {crumbs.map((c, i) => {
             const last = i === crumbs.length - 1;
@@ -46,7 +46,7 @@ export function PageHeader({
               <Fragment key={`${i}-${c.label}`}>
                 {i > 0 ? <span aria-hidden="true">{` ${COPY.pageHeader.separator} `}</span> : null}
                 {!last && c.href != null ? (
-                  <a href={c.href} data-breadcrumb-link="true" style={{ color: "var(--shell-fg-muted)" }}>
+                  <a href={c.href} data-breadcrumb-link="true" className="ui-t-mut">
                     {c.label}
                   </a>
                 ) : (
@@ -66,14 +66,8 @@ export function PageHeader({
 export function PageBody({ children }: { children: ReactNode }): ReactNode {
   return (
     <main
-      style={{
-        flex: 1,
-        width: "100%",
-        maxWidth: "880px",
-        margin: "0 auto",
-        padding: "24px 16px",
-        boxSizing: "border-box",
-      }}
+      className="ui-vc-w ui-t-mw880 ui-t-m0a ui-t-p2416"
+      style={{ flex: 1, boxSizing: "border-box" }}
     >
       {children}
     </main>

@@ -14,6 +14,7 @@ import type { ReadOnlyProject, ReadOnlyReason } from "@rhema/contracts";
 import { readOnlyProjectOf } from "@rhema/contracts";
 import { COPY } from "../copy.js";
 import { getSpaBoot, type SpaBoot } from "./boot.js";
+import { Button } from "@rhema/ui";
 
 /** The minimal twin shape the derive reads — every Page-family twin's `project` bag. */
 export interface ReadOnlyTwinCarrier {
@@ -80,37 +81,28 @@ export function ReadOnlyNotice(props: {
     <div
       role="note"
       data-readonly-notice={reason}
-      style={{
-        border: "1px solid var(--shell-border)",
-        borderRadius: "10px",
-        padding: "12px 16px",
-        margin: "0 0 16px",
-        background: "var(--shell-raised)",
-        fontSize: "13px",
-      }}
+      className="ui-t-r10 ui-t-p1216 ui-t-m04 ui-rs-box ui-d-fd"
+      style={{ border: "1px solid var(--shell-border)" }}
     >
       {reason === "showcase" ? (
         <>
           <strong>{COPY.showcase.bannerTitle}</strong>
-          <span style={{ color: "var(--shell-fg-muted)" }}> — {COPY.showcase.bannerBody} </span>
+          <span className="ui-t-mut"> — {COPY.showcase.bannerBody} </span>
           {slug != null ? (
-            <form method="post" action={`/p/${slug}/duplicate`} data-duplicate-form="true" style={{ display: "inline" }}>
-              <button
+            <form
+              method="post"
+              action={`/p/${slug}/duplicate`}
+              data-duplicate-form="true"
+              style={{ display: "inline" }}
+            >
+              <Button
                 type="submit"
+                variant="primary"
                 data-readonly-duplicate="true"
-                style={{
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  padding: "4px 12px",
-                  borderRadius: "6px",
-                  border: "1px solid var(--accent)",
-                  background: "var(--accent)",
-                  color: "var(--shell-bg)",
-                  cursor: "pointer",
-                }}
+                className="ui-d-fd ui-t-p412 ui-t-r6"
               >
                 {COPY.showcase.duplicateCta}
-              </button>
+              </Button>
             </form>
           ) : null}
         </>

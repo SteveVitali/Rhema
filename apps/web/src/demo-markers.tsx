@@ -28,32 +28,25 @@ export function DemoDocMarkers({ demo }: { readonly demo: DemoMarkersDto }): Rea
   return (
     <section
       data-demo-markers="true"
-      style={{
-        border: "1px solid var(--shell-border)",
-        borderRadius: "10px",
-        padding: "10px 14px",
-        margin: "12px 0",
-        background: "var(--shell-raised)",
-        fontSize: "12px",
-        color: "var(--shell-fg-muted)",
-      }}
+      className="ui-t-r10 ui-t-p1014 ui-t-m30 ui-rs-box ui-d-fs ui-t-mut"
+      style={{ border: "1px solid var(--shell-border)" }}
     >
       {importRules.length > 0 ? (
-        <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+        <ul className="ui-c2-m0 ui-d-p0" style={{ listStyle: "none" }}>
           {importRules.map(([field, note]) => (
-            <li key={field} data-import-rule={field} style={{ padding: "1px 0" }}>
+            <li key={field} data-import-rule={field} className="ui-t-p10">
               {field} — {note}
             </li>
           ))}
         </ul>
       ) : null}
       {refs.map((r) => (
-        <p key={`${r.line}:${r.path}`} data-not-published={r.path} style={{ margin: "4px 0 0" }}>
+        <p key={`${r.line}:${r.path}`} data-not-published={r.path} className="ui-t-m10">
           {r.path} — {COPY.demo.notPublishedLabel}
         </p>
       ))}
       {demo.fragmentsNote != null ? (
-        <p data-fragments-note="true" style={{ margin: "4px 0 0" }}>
+        <p data-fragments-note="true" className="ui-t-m10">
           {demo.fragmentsNote}
         </p>
       ) : null}
@@ -185,7 +178,10 @@ export function parseLedgerEscalations(markdown: string): readonly LedgerEscalat
   const out: LedgerEscalation[] = [];
   for (const line of markdown.split("\n")) {
     if (!line.startsWith("|")) continue;
-    const cells = line.split("|").slice(1, -1).map((c) => c.trim());
+    const cells = line
+      .split("|")
+      .slice(1, -1)
+      .map((c) => c.trim());
     if (cells.length < 5) continue;
     const [row = "", source = "", disposition = "", status = "", note = ""] = cells;
     if (!/^(?:\*\*)?escalat/i.test(disposition) && !/escalat/i.test(disposition)) continue;
@@ -207,20 +203,13 @@ export function DemoLedgerDecisions({ markdown }: { readonly markdown: string })
   return (
     <section
       data-demo-decisions="true"
-      style={{
-        border: "1px solid var(--shell-border)",
-        borderRadius: "10px",
-        padding: "10px 14px",
-        margin: "12px 0",
-        background: "var(--shell-surface)",
-      }}
+      className="ui-t-r10 ui-t-p1014 ui-t-m30 ui-d-rc"
+      style={{ border: "1px solid var(--shell-border)" }}
     >
-      <h2 style={{ fontSize: "13px", fontWeight: 600, color: "var(--shell-fg)", margin: "0 0 6px" }}>
-        {COPY.demo.decisionsHeading}
-      </h2>
-      <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+      <h2 className="ui-d-fd ui-d-b ui-t-fg ui-t-m06">{COPY.demo.decisionsHeading}</h2>
+      <ul className="ui-c2-m0 ui-d-p0" style={{ listStyle: "none" }}>
         {rows.map((r) => (
-          <li key={r.row} data-demo-escalation={r.row} style={{ padding: "3px 0", fontSize: "13px", color: "var(--shell-fg)" }}>
+          <li key={r.row} data-demo-escalation={r.row} className="ui-t-p30 ui-d-fd ui-t-fg">
             <strong>{r.row}</strong>
             {r.source !== "" ? ` · ${r.source}` : ""}
             {r.status !== "" ? ` · ${r.status}` : ""}

@@ -102,19 +102,18 @@ export function PageStrip(props: PageStripProps): ReactNode {
   const frozen = props.state === "frozen";
   return (
     <div className="page-strip" data-page-strip="true">
-      <div className="page-strip-row" style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-        <nav
-          aria-label={S.breadcrumbAria}
-          data-page-breadcrumb="true"
-          style={{ fontSize: "12px", color: "var(--shell-fg-faint)", minWidth: 0 }}
-        >
+      <div
+        className="page-strip-row ui-d-g10"
+        style={{ display: "flex", alignItems: "center", flexWrap: "wrap" }}
+      >
+        <nav aria-label={S.breadcrumbAria} data-page-breadcrumb="true" className="ui-d-i ui-t-mw0">
           {props.crumbs.map((c, i) => {
             const last = i === props.crumbs.length - 1;
             return (
               <span key={`${i}-${c.label}`}>
                 {i > 0 ? <span aria-hidden="true">{` ${S.separator} `}</span> : null}
                 {!last && c.href != null ? (
-                  <a href={c.href} data-breadcrumb-link="true" style={{ color: "var(--shell-fg-muted)" }}>
+                  <a href={c.href} data-breadcrumb-link="true" className="ui-t-mut">
                     {c.label}
                   </a>
                 ) : (
@@ -128,19 +127,21 @@ export function PageStrip(props: PageStripProps): ReactNode {
         <span
           data-version-chip="true"
           data-version-state={frozen ? "frozen" : "working"}
-          style={{ fontSize: "12px", color: "var(--shell-fg-muted)", whiteSpace: "nowrap" }}
+          className="ui-d-fs ui-t-mut"
+          style={{ whiteSpace: "nowrap" }}
         >
           {`v${props.draftN}`}
           <span
             data-version-badge={frozen ? "frozen" : "working"}
-            style={{
-              marginLeft: "6px",
-              fontSize: "11px",
-              padding: "1px 7px",
-              borderRadius: "999px",
-              border: "1px solid var(--shell-border)",
-              color: frozen ? "var(--shell-fg-muted)" : "var(--state-ready, var(--shell-fg-muted))",
-            }}
+            className="ui-t-ml6 ui-d-s ui-t-p17 ui-t-rp ui-d-sc"
+            style={
+              {
+                border: "1px solid var(--shell-border)",
+                "--d-sev": frozen
+                  ? "var(--shell-fg-muted)"
+                  : "var(--state-ready, var(--shell-fg-muted))",
+              } as CSSProperties
+            }
           >
             {frozen ? S.frozenBadge : S.workingBadge}
           </span>
@@ -149,15 +150,28 @@ export function PageStrip(props: PageStripProps): ReactNode {
         {props.notice}
         {/* the ONE sync indicator (EDIT.1/ADR-049) — moved out of the paper (REQ-WRITE-6). The
             island finds it by attribute — placement-agnostic. */}
-        <div data-sync-pill role="status" aria-live="polite"
-             data-label-synced={L.sync.synced} data-label-syncing={L.sync.syncing}
-             data-label-offline={L.sync.offline} data-label-readonly={L.sync.readOnly}
-             data-label-queued={L.sync.queued} data-label-locked={L.sync.locked}
-             style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "2px 10px", borderRadius: "999px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", fontSize: "12px", color: "var(--shell-fg-muted)", whiteSpace: "nowrap" }}>
+        <div
+          data-sync-pill
+          role="status"
+          aria-live="polite"
+          data-label-synced={L.sync.synced}
+          data-label-syncing={L.sync.syncing}
+          data-label-offline={L.sync.offline}
+          data-label-readonly={L.sync.readOnly}
+          data-label-queued={L.sync.queued}
+          data-label-locked={L.sync.locked}
+          className="ui-d-g6 ui-t-p210 ui-t-rp ui-rs-box ui-d-fs ui-t-mut"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            border: "1px solid var(--shell-border)",
+            whiteSpace: "nowrap",
+          }}
+        >
           {L.sync.synced}
         </div>
         {props.source ? (
-          <button
+          <Button
             type="button"
             data-source-toggle="true"
             className="page-strip-btn"
@@ -166,22 +180,36 @@ export function PageStrip(props: PageStripProps): ReactNode {
             onClick={() => props.source?.onToggle()}
           >
             {props.source.on ? props.source.richLabel : props.source.sourceLabel}
-          </button>
+          </Button>
         ) : null}
         {props.actions ? (
-          <div className="page-strip-actions" data-page-actions="true" style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+          <div
+            className="page-strip-actions ui-c2-g1"
+            data-page-actions="true"
+            style={{ display: "inline-flex", alignItems: "center" }}
+          >
             <DropdownMenu
               trigger={
-                <button type="button" data-run-menu="true" className="page-strip-btn" aria-haspopup="menu">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  data-run-menu="true"
+                  className="page-strip-btn"
+                  aria-haspopup="menu"
+                >
                   {S.runLabel}
-                </button>
+                </Button>
               }
             >
               {props.actions.run.map((item) => (
                 <DropdownMenuItem key={item.label} asChild>
-                  <a href={item.href} style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
+                  <a
+                    href={item.href}
+                    className="ui-c2-g3"
+                    style={{ display: "flex", justifyContent: "space-between" }}
+                  >
                     <span>{item.label}</span>
-                    <span style={{ display: "inline-flex", gap: "8px", color: "var(--shell-fg-faint)" }}>
+                    <span className="ui-c2-g2 ui-t-fnt" style={{ display: "inline-flex" }}>
                       {item.keys ? <kbd>{item.keys}</kbd> : null}
                       {item.hint ? <span>{item.hint}</span> : null}
                     </span>
@@ -194,9 +222,16 @@ export function PageStrip(props: PageStripProps): ReactNode {
             </a>
             <DropdownMenu
               trigger={
-                <button type="button" data-more-menu="true" className="page-strip-btn" aria-haspopup="menu" aria-label={S.moreLabel}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  data-more-menu="true"
+                  className="page-strip-btn"
+                  aria-haspopup="menu"
+                  aria-label={S.moreLabel}
+                >
                   ⋯
-                </button>
+                </Button>
               }
             >
               {props.actions.more.map((item, i) => (
@@ -225,13 +260,15 @@ export function PageStrip(props: PageStripProps): ReactNode {
           </span>
           {props.origin === "human_revision" && props.reviseUrl ? (
             withholdWrites ? (
-              <button type="button" disabled title={tip} style={{ fontSize: "12px" }}>
+              <Button type="button" variant="ghost" disabled title={tip} className="ui-d-fs">
                 {L.revise}
-              </button>
+              </Button>
             ) : (
-            <form method="post" action={props.reviseUrl} style={{ margin: 0 }}>
-              <button type="submit" style={{ fontSize: "12px" }}>{L.revise}</button>
-            </form>
+              <form method="post" action={props.reviseUrl} className="ui-c2-m0">
+                <Button type="submit" className="ui-d-fs">
+                  {L.revise}
+                </Button>
+              </form>
             )
           ) : null}
         </div>
@@ -239,17 +276,27 @@ export function PageStrip(props: PageStripProps): ReactNode {
       {/* SPA.24 — the lock banner emits unconditionally (the §6.3 poll can grab a lock mid-session). */}
       <div
         data-page-banner="lock"
-        style={{ ...noticeStyle, display: locked ? "flex" : "none", borderLeftColor: "var(--sev-major)" }}
+        style={{
+          ...noticeStyle,
+          display: locked ? "flex" : "none",
+          borderLeftColor: "var(--sev-major)",
+        }}
         data-writer-text={L.writerLockText("{workflow}")}
         data-reader-text={L.readerLockText("{workflow}")}
       >
         <span data-page-banner-text>
-          {props.lock ? (props.lock.kind === "writer" ? L.writerLockText(props.lock.workflow) : L.readerLockText(props.lock.workflow)) : ""}
+          {props.lock
+            ? props.lock.kind === "writer"
+              ? L.writerLockText(props.lock.workflow)
+              : L.readerLockText(props.lock.workflow)
+            : ""}
         </span>
-        <form method="post" action={props.cancelUrl} style={{ margin: 0 }}>
+        <form method="post" action={props.cancelUrl} className="ui-c2-m0">
           {/* 243a_R7KIT.3e — the U4 probe caught this raw submit on the IDE Page (a
               primitive-sized no-JS release — Button posts the same grammar). */}
-          <Button type="submit" variant="ghost" size="sm">{L.cancelRun}</Button>
+          <Button type="submit" variant="ghost" size="sm">
+            {L.cancelRun}
+          </Button>
         </form>
       </div>
       {props.readOnly === true && !locked ? (
@@ -260,35 +307,46 @@ export function PageStrip(props: PageStripProps): ReactNode {
 
       {/* proposal cards — moved out of `.paper`; the informational style holds (B5/B11). */}
       {props.proposals.length > 0 ? (
-        <div data-proposals-rail style={{ marginBottom: "8px" }}>
-          <h2 style={{ fontSize: "13px", fontWeight: 600, margin: "0 0 8px" }}>{L.proposalsHeading}</h2>
+        <div data-proposals-rail className="ui-t-mb8">
+          <h2 className="ui-d-fd ui-d-b ui-c2-mb">{L.proposalsHeading}</h2>
           {props.proposals.map((p) => (
-            <div key={p.id} data-proposal-card={p.id} data-proposal-md={p.markdown} data-proposal-kind={p.kind}
-                 data-proposal-from={p.from} data-proposal-to={p.to} data-proposal-origin={p.origin}
-                 style={{ ...noticeStyle, borderLeftColor: "var(--sev-major)" }}>
+            <div
+              key={p.id}
+              data-proposal-card={p.id}
+              data-proposal-md={p.markdown}
+              data-proposal-kind={p.kind}
+              data-proposal-from={p.from}
+              data-proposal-to={p.to}
+              data-proposal-origin={p.origin}
+              style={{ ...noticeStyle, borderLeftColor: "var(--sev-major)" }}
+            >
               <div>
-                <div style={{ fontWeight: 600 }}>{p.label}</div>
+                <div className="ui-d-b">{p.label}</div>
                 <MarkdownProse text={p.markdown} />
               </div>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <button
+              <div className="ui-c2-g2" style={{ display: "flex" }}>
+                <Button
                   type="button"
                   data-proposal-accept={p.id}
                   {...(withholdWrites ? { disabled: true, title: tip } : {})}
-                  {...(props.onProposalAccept && !withholdWrites ? { onClick: () => props.onProposalAccept?.(p) } : {})}
-                  style={{ fontSize: "12px" }}
+                  {...(props.onProposalAccept && !withholdWrites
+                    ? { onClick: () => props.onProposalAccept?.(p) }
+                    : {})}
+                  className="ui-d-fs"
                 >
                   {L.accept}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   data-proposal-reject={p.id}
                   {...(withholdWrites ? { disabled: true, title: tip } : {})}
-                  {...(props.onProposalReject && !withholdWrites ? { onClick: () => props.onProposalReject?.(p.id) } : {})}
-                  style={{ fontSize: "12px" }}
+                  {...(props.onProposalReject && !withholdWrites
+                    ? { onClick: () => props.onProposalReject?.(p.id) }
+                    : {})}
+                  className="ui-d-fs"
                 >
                   {L.reject}
-                </button>
+                </Button>
               </div>
             </div>
           ))}

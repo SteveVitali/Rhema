@@ -20,7 +20,18 @@
 // document link out of the demo, the demo top bar hosting the R7a banner verbatim, and the static
 // sidebar frame — no workspace item renders and no session/workspace/credits/account read issues.
 
-import { createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  lazy,
+  Suspense,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useLocation, useRouter } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -42,7 +53,15 @@ import {
 } from "lucide-react";
 import { SPA_IDE_FRAMED_ROUTES, spaRouteFor } from "@rhema/contracts";
 import { dispatchIdeKey, parseAppTheme, shortcutFor, THEME_STORAGE_KEY } from "@rhema/ide";
-import { DropdownMenu, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, FilesPane, Tooltip, TooltipProvider } from "@rhema/ui";
+import {
+  DropdownMenu,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  FilesPane,
+  Tooltip,
+  TooltipProvider,
+} from "@rhema/ui";
 import { COPY } from "../copy.js";
 import { filesLabels } from "../files-labels.js";
 import { getSpaBoot, isSpaEnabled } from "./boot.js";
@@ -51,6 +70,7 @@ import { DemoBanner } from "./demo-banner.js";
 import { navigateDocument } from "./dom.js";
 import { readOnlyReasonText } from "./read-only.js";
 import { inboxQuery, projectHomeQuery, projectTreeQuery, sessionQuery } from "./queries.js";
+import { Button } from "@rhema/ui";
 
 const FRAMED: ReadonlySet<string> = new Set(SPA_IDE_FRAMED_ROUTES);
 
@@ -95,14 +115,20 @@ function writeCollapsed(userId: string, collapsed: boolean): void {
 export const SIDEBAR_TOGGLE_EVENT = "rhema:sidebar-toggle";
 
 function initialsFor(userId: string): string {
-  const chars = userId.replace(/[^a-zA-Z0-9]/g, "").slice(0, 2).toUpperCase();
+  const chars = userId
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .slice(0, 2)
+    .toUpperCase();
   return chars === "" ? "?" : chars;
 }
 
 /** Focus-zone check for the shell's own keydown arm (typing stays inert — §5.12). */
 function shellZone(): "input" | "none" {
   const el = document.activeElement;
-  if (el instanceof HTMLElement && el.closest("input, textarea, select, [contenteditable='true']")) {
+  if (
+    el instanceof HTMLElement &&
+    el.closest("input, textarea, select, [contenteditable='true']")
+  ) {
     return "input";
   }
   return "none";
@@ -119,7 +145,15 @@ function shellZone(): "input" | "none" {
  * markup; Up/Down move, Home/End jump, Left/Right collapse/expand the row's details group.
  */
 function onProjectTreeKeyDown(e: React.KeyboardEvent<HTMLElement>): void {
-  if (e.key !== "ArrowDown" && e.key !== "ArrowUp" && e.key !== "Home" && e.key !== "End" && e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+  if (
+    e.key !== "ArrowDown" &&
+    e.key !== "ArrowUp" &&
+    e.key !== "Home" &&
+    e.key !== "End" &&
+    e.key !== "ArrowLeft" &&
+    e.key !== "ArrowRight"
+  )
+    return;
   const items = Array.from(e.currentTarget.querySelectorAll<HTMLElement>("[role='treeitem']"));
   if (items.length === 0) return;
   const active = document.activeElement as HTMLElement | null;
@@ -144,7 +178,13 @@ function DemoAppShell({ children }: { children?: ReactNode }): ReactNode {
     <div className="app-shell" data-app-shell data-demo="1" data-sidebar="static">
       <aside className="app-shell-sidebar" data-app-sidebar aria-label={COPY.appShell.frameLabel}>
         {/* The demo exit is a DOCUMENT navigation (S-14): data-spa-native + the demo-exit hook. */}
-        <a className="app-shell-wordmark" href="/" data-spa-native data-demo-exit="wordmark" data-shell-wordmark>
+        <a
+          className="app-shell-wordmark"
+          href="/"
+          data-spa-native
+          data-demo-exit="wordmark"
+          data-shell-wordmark
+        >
           {COPY.brand}
         </a>
         {/* R7SHELL.2 — the demo project section renders ONLY from the demo twins
@@ -219,7 +259,10 @@ function ProjectSection(props: {
       label: COPY.appShell.project.page,
       href: `/p/${slug}`,
       icon: <FileText size={16} aria-hidden />,
-      active: pathname === `/p/${slug}` || pathname.startsWith(`/p/${slug}/a/`) || pathname.startsWith(`/p/${slug}/edit/`),
+      active:
+        pathname === `/p/${slug}` ||
+        pathname.startsWith(`/p/${slug}/a/`) ||
+        pathname.startsWith(`/p/${slug}/edit/`),
       demoAllowed: true,
     },
     {
@@ -234,7 +277,10 @@ function ProjectSection(props: {
       label: COPY.appShell.project.figures,
       href: `/p/${slug}/figures`,
       icon: <ImageIcon size={16} aria-hidden />,
-      active: pathname.startsWith(`/p/${slug}/figures`) || pathname.startsWith(`/p/${slug}/f/`) || pathname.startsWith(`/p/${slug}/visualize`),
+      active:
+        pathname.startsWith(`/p/${slug}/figures`) ||
+        pathname.startsWith(`/p/${slug}/f/`) ||
+        pathname.startsWith(`/p/${slug}/visualize`),
       demoAllowed: true,
     },
     {
@@ -266,7 +312,8 @@ function ProjectSection(props: {
       label: COPY.appShell.project.settings,
       href: `/p/${slug}/settings`,
       icon: <Settings2 size={16} aria-hidden />,
-      active: pathname.startsWith(`/p/${slug}/settings`) || pathname.startsWith(`/p/${slug}/voice/`),
+      active:
+        pathname.startsWith(`/p/${slug}/settings`) || pathname.startsWith(`/p/${slug}/voice/`),
       writeOnly: true,
     },
   ];
@@ -288,7 +335,13 @@ function ProjectSection(props: {
           if (blocked) {
             const reason = readOnlyReasonText(readOnly!.reason);
             return (
-              <span key={it.key} className="app-shell-item" data-project-item={it.key} data-disabled="1" aria-disabled="true">
+              <span
+                key={it.key}
+                className="app-shell-item"
+                data-project-item={it.key}
+                data-disabled="1"
+                aria-disabled="true"
+              >
                 {collapsed ? (
                   <Tooltip content={`${it.label} — ${reason}`} side="right">
                     <span>{it.icon}</span>
@@ -298,9 +351,7 @@ function ProjectSection(props: {
                     {it.icon}
                     <span className="app-shell-label">
                       {it.label}
-                      <span className="app-shell-label" style={{ marginLeft: "6px", color: "var(--shell-fg-faint)", fontSize: 11 }}>
-                        {reason}
-                      </span>
+                      <span className="app-shell-label ui-t-ml6 ui-t-fnt ui-d-s">{reason}</span>
                     </span>
                   </>
                 )}
@@ -361,34 +412,44 @@ function ShellItem(props: {
       {props.icon}
       <span className="app-shell-label">{props.label}</span>
       {typeof props.badge === "number" && props.badge > 0 ? (
-        <span className="app-shell-badge" data-count={props.badge}>{props.badge}</span>
+        <span className="app-shell-badge" data-count={props.badge}>
+          {props.badge}
+        </span>
       ) : null}
       {!props.collapsed && props.chord ? (
-        <span className="app-shell-label" style={{ marginLeft: "auto", color: "var(--shell-fg-faint)" }}>
-          {props.chord}
-        </span>
+        <span className="app-shell-label ui-d-mla ui-t-fnt">{props.chord}</span>
       ) : null}
     </>
   );
   const cls = "app-shell-item";
-  const el = props.href != null ? (
-    <a
-      href={props.href}
-      className={cls}
-      {...{ [props.hook]: props.hookValue ?? true }}
-      {...(props.docNav ? { "data-spa-native": true } : {})}
-      {...(props.current ? { "aria-current": "page" } : {})}
-    >
-      {body}
-    </a>
-  ) : (
-    <button type="button" className={cls} onClick={props.onClick} {...{ [props.hook]: props.hookValue ?? true }}>
-      {body}
-    </button>
-  );
+  const el =
+    props.href != null ? (
+      <a
+        href={props.href}
+        className={cls}
+        {...{ [props.hook]: props.hookValue ?? true }}
+        {...(props.docNav ? { "data-spa-native": true } : {})}
+        {...(props.current ? { "aria-current": "page" } : {})}
+      >
+        {body}
+      </a>
+    ) : (
+      <Button
+        type="button"
+        variant="ghost"
+        className={cls}
+        onClick={props.onClick}
+        {...{ [props.hook]: props.hookValue ?? true }}
+      >
+        {body}
+      </Button>
+    );
   // REQ-SHELL-2 — collapsed ⇒ the label is gone, so the tooltip carries it (+ the keymap chord).
   return props.collapsed ? (
-    <Tooltip content={`${props.tip ?? props.label}${props.chord ? ` · ${props.chord}` : ""}`} side="right">
+    <Tooltip
+      content={`${props.tip ?? props.label}${props.chord ? ` · ${props.chord}` : ""}`}
+      side="right"
+    >
       {el}
     </Tooltip>
   ) : (
@@ -418,7 +479,9 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
     const onPaletteOpen = (e: Event) => {
       const d = (e as CustomEvent<{ toggle?: boolean; initial?: string }>).detail ?? {};
       setPalette((p) =>
-        d.toggle === true ? { open: !p.open, initial: d.initial } : { open: true, initial: d.initial },
+        d.toggle === true
+          ? { open: !p.open, initial: d.initial }
+          : { open: true, initial: d.initial },
       );
     };
     window.addEventListener("rhema:palette-open", onPaletteOpen);
@@ -453,7 +516,13 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
       if (e.defaultPrevented) return;
       if (document.querySelector(".ide") != null) return; // the IDE controller owns its chords
       const action = dispatchIdeKey(
-        { key: e.key.length === 1 ? e.key.toLowerCase() : e.key, metaKey: e.metaKey, ctrlKey: e.ctrlKey, shiftKey: e.shiftKey, altKey: e.altKey },
+        {
+          key: e.key.length === 1 ? e.key.toLowerCase() : e.key,
+          metaKey: e.metaKey,
+          ctrlKey: e.ctrlKey,
+          shiftKey: e.shiftKey,
+          altKey: e.altKey,
+        },
         shellZone(),
         pending,
       );
@@ -472,9 +541,11 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
         toggleSidebar();
       } else if (action?.kind === "palette") {
         e.preventDefault();
-        window.dispatchEvent(new CustomEvent("rhema:palette-open", {
-          detail: { toggle: true, ...(e.key === "/" ? { initial: "/" } : {}) },
-        }));
+        window.dispatchEvent(
+          new CustomEvent("rhema:palette-open", {
+            detail: { toggle: true, ...(e.key === "/" ? { initial: "/" } : {}) },
+          }),
+        );
       } else if (action?.kind === "goto-projects") {
         e.preventDefault();
         router.history.push("/app");
@@ -513,7 +584,14 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
     const p = parseAppTheme(pref);
     const doc = document.documentElement;
     doc.setAttribute("data-app-theme", p);
-    doc.setAttribute("data-theme", p === "auto" ? (window.matchMedia?.("(prefers-color-scheme: light)")?.matches ? "light" : "dark") : p);
+    doc.setAttribute(
+      "data-theme",
+      p === "auto"
+        ? window.matchMedia?.("(prefers-color-scheme: light)")?.matches
+          ? "light"
+          : "dark"
+        : p,
+    );
     try {
       localStorage.setItem(THEME_STORAGE_KEY, p);
     } catch {
@@ -536,7 +614,10 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
     return m ? decodeURIComponent(m[1]!) : null;
   }, [loc.pathname]);
   const recents = useMemo(
-    () => (home.data?.rows ?? []).filter((r) => r.archivedAt == null && r.slug !== projectSlug).slice(0, 8),
+    () =>
+      (home.data?.rows ?? [])
+        .filter((r) => r.archivedAt == null && r.slug !== projectSlug)
+        .slice(0, 8),
     [home.data, projectSlug],
   );
   // R7SHELL.1c — the global palette is available on every signed-in page; Search always shows
@@ -558,13 +639,19 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
 
   return (
     <TooltipProvider>
-      <div className="app-shell" data-app-shell data-sidebar={collapsed ? "collapsed" : "expanded"} data-drawer={drawerOpen ? "open" : "closed"}>
+      <div
+        className="app-shell"
+        data-app-shell
+        data-sidebar={collapsed ? "collapsed" : "expanded"}
+        data-drawer={drawerOpen ? "open" : "closed"}
+      >
         <aside className="app-shell-sidebar" data-app-sidebar aria-label={COPY.appShell.frameLabel}>
           <a className="app-shell-wordmark" href="/app" data-shell-wordmark>
             {COPY.brand}
           </a>
-          <button
+          <Button
             type="button"
+            variant="ghost"
             className="app-shell-item"
             data-shell-toggle
             aria-label={collapsed ? COPY.appShell.expandTip : COPY.appShell.collapseTip}
@@ -572,20 +659,74 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
             onClick={toggleSidebar}
           >
             <Menu size={18} aria-hidden />
-            <span className="app-shell-label">{collapsed ? COPY.appShell.expandTip : COPY.appShell.collapseTip}</span>
-          </button>
+            <span className="app-shell-label">
+              {collapsed ? COPY.appShell.expandTip : COPY.appShell.collapseTip}
+            </span>
+          </Button>
           <div className="app-shell-nav" role="group" aria-label={COPY.appShell.frameLabel}>
-            <ShellItem hook="data-shell-new-project" href="/app/new" icon={<FilePlus2 size={18} aria-hidden />} label={COPY.appShell.newProject} collapsed={collapsed} />
-            <ShellItem hook="data-shell-search" onClick={openPalette} icon={<Search size={18} aria-hidden />} label={COPY.appShell.search} chord={shortcutFor("palette")} collapsed={collapsed} />
-            <ShellItem hook="data-shell-inbox" href="/app/inbox" icon={<InboxIcon size={18} aria-hidden />} label={COPY.appShell.inbox} badge={inbox.data?.badge ?? null} collapsed={collapsed} current={loc.pathname === "/app/inbox"} chord={shortcutFor("inbox")} />
-            <ShellItem hook="data-shell-voices" href="/voices" icon={<Mic size={18} aria-hidden />} label={COPY.appShell.voices} collapsed={collapsed} current={loc.pathname.startsWith("/v") || loc.pathname.startsWith("/voices")} chord={shortcutFor("goto-voices")} />
-            <ShellItem hook="data-shell-usage" href="/usage" icon={<Gauge size={18} aria-hidden />} label={COPY.appShell.usage} collapsed={collapsed} current={loc.pathname === "/usage"} />
-            <ShellItem hook="data-shell-settings" href="/app/settings/account" icon={<Settings size={18} aria-hidden />} label={COPY.appShell.settings} collapsed={collapsed} current={loc.pathname.startsWith("/app/settings") || loc.pathname === "/settings"} chord={shortcutFor("settings")} />
+            <ShellItem
+              hook="data-shell-new-project"
+              href="/app/new"
+              icon={<FilePlus2 size={18} aria-hidden />}
+              label={COPY.appShell.newProject}
+              collapsed={collapsed}
+            />
+            <ShellItem
+              hook="data-shell-search"
+              onClick={openPalette}
+              icon={<Search size={18} aria-hidden />}
+              label={COPY.appShell.search}
+              chord={shortcutFor("palette")}
+              collapsed={collapsed}
+            />
+            <ShellItem
+              hook="data-shell-inbox"
+              href="/app/inbox"
+              icon={<InboxIcon size={18} aria-hidden />}
+              label={COPY.appShell.inbox}
+              badge={inbox.data?.badge ?? null}
+              collapsed={collapsed}
+              current={loc.pathname === "/app/inbox"}
+              chord={shortcutFor("inbox")}
+            />
+            <ShellItem
+              hook="data-shell-voices"
+              href="/voices"
+              icon={<Mic size={18} aria-hidden />}
+              label={COPY.appShell.voices}
+              collapsed={collapsed}
+              current={loc.pathname.startsWith("/v") || loc.pathname.startsWith("/voices")}
+              chord={shortcutFor("goto-voices")}
+            />
+            <ShellItem
+              hook="data-shell-usage"
+              href="/usage"
+              icon={<Gauge size={18} aria-hidden />}
+              label={COPY.appShell.usage}
+              collapsed={collapsed}
+              current={loc.pathname === "/usage"}
+            />
+            <ShellItem
+              hook="data-shell-settings"
+              href="/app/settings/account"
+              icon={<Settings size={18} aria-hidden />}
+              label={COPY.appShell.settings}
+              collapsed={collapsed}
+              current={loc.pathname.startsWith("/app/settings") || loc.pathname === "/settings"}
+              chord={shortcutFor("settings")}
+            />
             {/* 248 R7TOUR.2 (REQ-TOUR-4 R7b part, REQ-DWEB-16, S-14) — the Demo item: a
                 DOCUMENT navigation into the demo namespace (a fresh document carrying
                 `boot.demo`; the workspace QueryClient is never shared). The target is a
                 demo-shell document — the SSR `/demo` hub carries no `boot.demo`. */}
-            <ShellItem hook="data-shell-demo" href="/demo/structure-of-political-difference" icon={<Compass size={18} aria-hidden />} label={COPY.appShell.demo} collapsed={collapsed} docNav />
+            <ShellItem
+              hook="data-shell-demo"
+              href="/demo/structure-of-political-difference"
+              icon={<Compass size={18} aria-hidden />}
+              label={COPY.appShell.demo}
+              collapsed={collapsed}
+              docNav
+            />
           </div>
           {projectSlug != null ? (
             <ProjectSection
@@ -596,28 +737,58 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
             />
           ) : null}
           <div className="app-shell-section app-shell-recents">{COPY.appShell.recents}</div>
-          <div className="app-shell-nav app-shell-recents" role="group" aria-label={COPY.appShell.recents}>
+          <div
+            className="app-shell-nav app-shell-recents"
+            role="group"
+            aria-label={COPY.appShell.recents}
+          >
             {recents.map((r) => (
-              <a key={r.slug} href={`/p/${r.slug}`} className="app-shell-item app-shell-recent" data-shell-recent={r.slug}>
+              <a
+                key={r.slug}
+                href={`/p/${r.slug}`}
+                className="app-shell-item app-shell-recent"
+                data-shell-recent={r.slug}
+              >
                 <span
                   className="app-shell-dot"
-                  data-tone={r.lastRunFailed === true ? "error" : r.activeRun != null ? "running" : r.group ?? "quiet"}
+                  data-tone={
+                    r.lastRunFailed === true
+                      ? "error"
+                      : r.activeRun != null
+                        ? "running"
+                        : (r.group ?? "quiet")
+                  }
                   aria-hidden
                 />
                 <span className="app-shell-label">{r.title}</span>
               </a>
             ))}
-            <ShellItem hook="data-shell-all-projects" href="/app" icon={<Menu size={18} aria-hidden />} label={COPY.appShell.allProjects} collapsed={collapsed} chord={shortcutFor("goto-projects")} />
+            <ShellItem
+              hook="data-shell-all-projects"
+              href="/app"
+              icon={<Menu size={18} aria-hidden />}
+              label={COPY.appShell.allProjects}
+              collapsed={collapsed}
+              chord={shortcutFor("goto-projects")}
+            />
           </div>
           <span className="app-shell-spacer" />
           <DropdownMenu
             side="top"
             align="start"
             trigger={
-              <button type="button" className="app-shell-account" data-shell-account aria-label={COPY.appShell.account}>
+              <Button
+                type="button"
+                variant="ghost"
+                className="app-shell-account"
+                data-shell-account
+                aria-label={COPY.appShell.account}
+              >
                 <span className="app-shell-avatar">{initialsFor(userId)}</span>
-                <span className="app-shell-label app-shell-credits">{creditsLabel ?? COPY.appShell.account}</span>
-              </button>
+                <span className="app-shell-label app-shell-credits">
+                  {creditsLabel ?? COPY.appShell.account}
+                </span>
+              </Button>
             }
           >
             <DropdownMenuLabel>{creditsLabel ?? COPY.appShell.account}</DropdownMenuLabel>
@@ -641,11 +812,14 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
             <DropdownMenuSeparator />
             {/* `/logout` is a native POST (design/22 §1 — never a fetch/GET): the item wraps the
                 same no-JS form seam the workspace home uses; keyboard selection requestSubmits it. */}
-            <DropdownMenuItem onSelect={() => signOutForm.current?.requestSubmit()} data-shell-signout>
-              <form ref={signOutForm} method="post" action="/logout" style={{ margin: 0, width: "100%" }}>
-                <button type="submit" className="app-shell-item" style={{ width: "100%" }}>
+            <DropdownMenuItem
+              onSelect={() => signOutForm.current?.requestSubmit()}
+              data-shell-signout
+            >
+              <form ref={signOutForm} method="post" action="/logout" className="ui-c2-m0 ui-vc-w">
+                <Button type="submit" variant="ghost" className="app-shell-item ui-vc-w">
                   {COPY.appShell.signOut}
-                </button>
+                </Button>
               </form>
             </DropdownMenuItem>
           </DropdownMenu>
@@ -653,31 +827,48 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
         <div className="app-shell-main">
           {/* The <768 top bar (desktop UA): the drawer menu button + the pane-sheet toggle. */}
           <div className="app-shell-topbar" data-shell-topbar>
-            <button type="button" data-shell-drawer-toggle aria-label={COPY.appShell.menuTip} onClick={() => setDrawerOpen((o) => !o)}>
+            <Button
+              type="button"
+              variant="ghost"
+              data-shell-drawer-toggle
+              aria-label={COPY.appShell.menuTip}
+              onClick={() => setDrawerOpen((o) => !o)}
+            >
               <Menu size={18} aria-hidden />
-            </button>
+            </Button>
             <strong>{COPY.brand}</strong>
-            <span style={{ marginLeft: "auto" }} />
+            <span className="ui-d-mla" />
             {paletteHere ? (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 data-shell-pane-toggle
                 aria-label={COPY.appShell.paneTip}
                 title={`${COPY.appShell.paneTip} · ${paneChord ?? "]"}`}
                 onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "]" }))}
               >
                 <Search size={18} aria-hidden />
-              </button>
+              </Button>
             ) : null}
           </div>
           <div className="app-shell-content">{children}</div>
           {palette.open ? (
             <Suspense fallback={null}>
-              <GlobalPalette {...(palette.initial != null ? { initial: palette.initial } : {})} onClose={closePalette} />
+              <GlobalPalette
+                {...(palette.initial != null ? { initial: palette.initial } : {})}
+                onClose={closePalette}
+              />
             </Suspense>
           ) : null}
           {drawerOpen ? (
-            <button type="button" className="app-shell-scrim" data-shell-scrim aria-label={COPY.appShell.closeMenu} onClick={() => setDrawerOpen(false)} />
+            <Button
+              type="button"
+              variant="ghost"
+              className="app-shell-scrim"
+              data-shell-scrim
+              aria-label={COPY.appShell.closeMenu}
+              onClick={() => setDrawerOpen(false)}
+            />
           ) : null}
         </div>
       </div>
@@ -687,6 +878,10 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
 
 /** The `/_authenticated` layout component — the single mount every authed leaf nests inside. */
 export function AppShell({ children }: { children?: ReactNode }): ReactNode {
-  const body = useDemoMode() ? <DemoAppShell>{children}</DemoAppShell> : <WorkspaceAppShell>{children}</WorkspaceAppShell>;
+  const body = useDemoMode() ? (
+    <DemoAppShell>{children}</DemoAppShell>
+  ) : (
+    <WorkspaceAppShell>{children}</WorkspaceAppShell>
+  );
   return <InShellContext.Provider value={true}>{body}</InShellContext.Provider>;
 }

@@ -4,7 +4,7 @@
 // disclosure idiom the Advanced toggle uses), the phase × seat × model-tier rows with tokens and provider
 // usage ids. No prompt, transcript, or source text exists on the view models, so none can render.
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type {
   RunReportView,
   RunReportAdvancedView,
@@ -24,7 +24,12 @@ export interface RunReportLabels {
   readonly seatLabel: (seat: string | null) => string;
   readonly offLabel: string;
   /** phase-row detail, e.g. (credits, ms) => "210 cr · 4m". */
-  readonly phaseDetail: (credits: number, durationMs: number | null, searches: number, fetches: number) => string;
+  readonly phaseDetail: (
+    credits: number,
+    durationMs: number | null,
+    searches: number,
+    fetches: number,
+  ) => string;
   readonly seatsHeading: string;
   /** seat split line, e.g. (seat, credits, share) => "editor — 300 cr (73%)". */
   readonly seatSplitLine: (seat: string, credits: number, share: number) => string;
@@ -110,37 +115,58 @@ export function RunReport({
   const replayed = "replayed" in view && view.replayed === true;
   if (replayed) {
     const rv = view as unknown as {
-      phases: readonly { key: string; ordinal: number; status: PhaseStatus; seat: string | null; source?: string }[];
+      phases: readonly {
+        key: string;
+        ordinal: number;
+        status: PhaseStatus;
+        seat: string | null;
+        source?: string;
+      }[];
       approvals: readonly { round: string; decision: string; note?: string }[] | "not_recorded";
       notRecorded?: readonly string[];
       claims?: { readonly checked: number; readonly verified: number } | null;
     };
     return (
-      <article id="report" data-run-report={view.runId} data-replayed style={{ fontSize: "14px" }}>
-        <h2 style={{ fontSize: "18px" }}>{L.heading}</h2>
+      <article id="report" data-run-report={view.runId} data-replayed className="ui-d-fs14">
+        <h2 className="ui-t-f18">{L.heading}</h2>
         {L.replayedBadge ? (
-          <p data-replayed-badge style={{ fontSize: "13px", color: "var(--shell-fg-muted)", fontWeight: 600 }}>
+          <p data-replayed-badge className="ui-d-fd ui-t-mut ui-d-b">
             {L.replayedBadge}
           </p>
         ) : null}
         {Array.isArray(rv.notRecorded) && rv.notRecorded.length > 0 && L.notRecordedLabel ? (
-          <p data-not-recorded style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>
+          <p data-not-recorded className="ui-d-fd ui-t-mut">
             {rv.notRecorded.map((f) => L.notRecordedLabel!(f)).join(" · ")}
           </p>
         ) : null}
         {rv.claims ? (
-          <p data-claims style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>
+          <p data-claims className="ui-d-fd ui-t-mut">
             {L.claimsLine(rv.claims.checked, rv.claims.verified, null)}
           </p>
         ) : null}
-        <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--shell-fg-muted)" }}>{L.phaseHeading}</h3>
-        <ul data-phase-bars style={{ listStyle: "none", margin: 0, padding: 0 }}>
+        <h3 className="ui-d-fd ui-t-ls6 ui-t-mut" style={{ textTransform: "uppercase" }}>
+          {L.phaseHeading}
+        </h3>
+        <ul data-phase-bars className="ui-c2-m0 ui-d-p0" style={{ listStyle: "none" }}>
           {rv.phases.map((p) => (
-            <li key={p.key} data-report-phase={p.key} data-phase-status={p.status} style={{ display: "flex", gap: "8px", padding: "4px 0", fontSize: "13px", color: p.status === "off" ? "var(--shell-fg-faint)" : "var(--shell-fg)" }}>
-              <span aria-hidden="true" style={{ width: "14px" }}>{STATUS_GLYPH[p.status]}</span>
+            <li
+              key={p.key}
+              data-report-phase={p.key}
+              data-phase-status={p.status}
+              className="ui-d-fd ui-d-sc ui-d-p2 ui-c2-g2"
+              style={
+                {
+                  display: "flex",
+                  "--d-sev": p.status === "off" ? "var(--shell-fg-faint)" : "var(--shell-fg)",
+                } as CSSProperties
+              }
+            >
+              <span aria-hidden="true" className="ui-d-w14">
+                {STATUS_GLYPH[p.status]}
+              </span>
               <span>{L.phaseLabel(p.key)}</span>
               {p.source != null && L.phaseInferredLabel ? (
-                <span data-phase-inferred style={{ marginLeft: "auto", color: "var(--shell-fg-faint)", fontSize: "12px", fontStyle: "italic" }}>
+                <span data-phase-inferred className="ui-d-mla ui-d-i">
                   {L.phaseInferredLabel}
                 </span>
               ) : null}
@@ -148,13 +174,13 @@ export function RunReport({
           ))}
         </ul>
         {rv.approvals === "not_recorded" && L.approvalsNotRecordedLabel ? (
-          <p data-approvals-not-recorded style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>
+          <p data-approvals-not-recorded className="ui-d-fd ui-t-mut">
             {L.approvalsNotRecordedLabel}
           </p>
         ) : null}
         {Array.isArray(rv.approvals)
           ? rv.approvals.map((a, i) => (
-              <p key={`approval-${i}`} data-replayed-approval style={{ margin: "0 0 6px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+              <p key={`approval-${i}`} data-replayed-approval className="ui-t-m06 ui-d-fs ui-t-mut">
                 {a.round}: {a.decision}
                 {a.note != null ? ` — ${a.note}` : ""}
               </p>
@@ -164,29 +190,33 @@ export function RunReport({
     );
   }
   return (
-    <article id="report" data-run-report={view.runId} style={{ fontSize: "14px" }}>
-      <h2 style={{ fontSize: "18px" }}>{L.heading}</h2>
+    <article id="report" data-run-report={view.runId} className="ui-d-fs14">
+      <h2 className="ui-t-f18">{L.heading}</h2>
       {/* RPT.1 (§15.3) — a Showcase-seeded run's report announces itself a worked example. */}
       {view.workedExample === true && L.workedExampleLabel != null ? (
-        <p data-worked-example style={{ fontSize: "13px", color: "var(--state-running)", fontWeight: 600 }}>
+        <p data-worked-example className="ui-d-fd ui-d-run ui-d-b">
           {L.workedExampleLabel}
         </p>
       ) : null}
-      <p data-estimate-line style={{ fontVariantNumeric: "tabular-nums", color: "var(--shell-fg)" }}>
+      <p data-estimate-line className="ui-t-fg" style={{ fontVariantNumeric: "tabular-nums" }}>
         {L.estimateLine(view.spentCredits, view.estimateCredits, view.estimateRatio)}
       </p>
       {/* RPT.1 — the metered figure + each reasoned metered-vs-charged difference (§14.4 wording). */}
       {L.meteredLine && view.meteredCredits !== view.spentCredits ? (
-        <p data-metered-line style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>
+        <p data-metered-line className="ui-d-fd ui-t-mut">
           {L.meteredLine(view.meteredCredits, view.spentCredits)}
         </p>
       ) : null}
       {view.differences.length > 0 && L.differenceLabel != null ? (
-        <ul data-differences style={{ listStyle: "none", margin: 0, padding: 0, fontSize: "13px", color: "var(--shell-fg-muted)" }}>
+        <ul
+          data-differences
+          className="ui-c2-m0 ui-d-p0 ui-d-fd ui-t-mut"
+          style={{ listStyle: "none" }}
+        >
           {view.differences.map((d, i) => {
             const diffLabel = L.differenceLabel;
             return (
-              <li key={i} data-difference={d.key} style={{ padding: "2px 0" }}>
+              <li key={i} data-difference={d.key} className="ui-t-p20">
                 {diffLabel?.(d)}
               </li>
             );
@@ -194,22 +224,42 @@ export function RunReport({
         </ul>
       ) : null}
       {view.refundedCredits > 0 && L.refundLine ? (
-        <p data-refund style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{L.refundLine(view.refundedCredits)}</p>
+        <p data-refund className="ui-d-fd ui-t-mut">
+          {L.refundLine(view.refundedCredits)}
+        </p>
       ) : null}
       {view.claims ? (
-        <p data-claims style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>
+        <p data-claims className="ui-d-fd ui-t-mut">
           {L.claimsLine(view.claims.checked, view.claims.verified, view.claims.creditsPerVerified)}
         </p>
       ) : null}
 
-      <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--shell-fg-muted)" }}>{L.phaseHeading}</h3>
-      <ul data-phase-bars style={{ listStyle: "none", margin: 0, padding: 0 }}>
+      <h3 className="ui-d-fd ui-t-ls6 ui-t-mut" style={{ textTransform: "uppercase" }}>
+        {L.phaseHeading}
+      </h3>
+      <ul data-phase-bars className="ui-c2-m0 ui-d-p0" style={{ listStyle: "none" }}>
         {view.phases.map((p) => (
-          <li key={p.key} data-report-phase={p.key} data-phase-status={p.status} style={{ display: "flex", gap: "8px", padding: "4px 0", fontSize: "13px", color: p.status === "off" ? "var(--shell-fg-faint)" : "var(--shell-fg)" }}>
-            <span aria-hidden="true" style={{ width: "14px" }}>{STATUS_GLYPH[p.status]}</span>
+          <li
+            key={p.key}
+            data-report-phase={p.key}
+            data-phase-status={p.status}
+            className="ui-d-fd ui-d-sc ui-d-p2 ui-c2-g2"
+            style={
+              {
+                display: "flex",
+                "--d-sev": p.status === "off" ? "var(--shell-fg-faint)" : "var(--shell-fg)",
+              } as CSSProperties
+            }
+          >
+            <span aria-hidden="true" className="ui-d-w14">
+              {STATUS_GLYPH[p.status]}
+            </span>
             <span>{L.phaseLabel(p.key)}</span>
-            {p.status === "off" ? <span style={{ color: "var(--shell-fg-faint)", fontSize: "12px" }}>{L.offLabel}</span> : null}
-            <span style={{ marginLeft: "auto", color: "var(--shell-fg-muted)", fontVariantNumeric: "tabular-nums", fontSize: "12px" }}>
+            {p.status === "off" ? <span className="ui-d-i">{L.offLabel}</span> : null}
+            <span
+              className="ui-d-mla ui-t-mut ui-d-fs"
+              style={{ fontVariantNumeric: "tabular-nums" }}
+            >
               {L.phaseDetail(p.credits, p.durationMs, p.searches, p.fetches)}
             </span>
           </li>
@@ -218,10 +268,12 @@ export function RunReport({
 
       {view.seatSplit.length > 0 ? (
         <>
-          <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--shell-fg-muted)" }}>{L.seatsHeading}</h3>
-          <ul data-seat-split style={{ listStyle: "none", margin: 0, padding: 0, fontSize: "13px" }}>
+          <h3 className="ui-d-fd ui-t-ls6 ui-t-mut" style={{ textTransform: "uppercase" }}>
+            {L.seatsHeading}
+          </h3>
+          <ul data-seat-split className="ui-c2-m0 ui-d-p0 ui-d-fd" style={{ listStyle: "none" }}>
             {view.seatSplit.map((s) => (
-              <li key={s.seat} data-seat={s.seat} style={{ padding: "2px 0" }}>
+              <li key={s.seat} data-seat={s.seat} className="ui-t-p20">
                 {L.seatSplitLine(s.seat, s.credits, s.share)}
               </li>
             ))}
@@ -231,10 +283,12 @@ export function RunReport({
 
       {view.drivers.length > 0 ? (
         <>
-          <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--shell-fg-muted)" }}>{L.driversHeading}</h3>
-          <ul data-drivers style={{ listStyle: "none", margin: 0, padding: 0, fontSize: "13px" }}>
+          <h3 className="ui-d-fd ui-t-ls6 ui-t-mut" style={{ textTransform: "uppercase" }}>
+            {L.driversHeading}
+          </h3>
+          <ul data-drivers className="ui-c2-m0 ui-d-p0 ui-d-fd" style={{ listStyle: "none" }}>
             {view.drivers.map((d, i) => (
-              <li key={i} data-driver={d.key} style={{ padding: "2px 0" }}>
+              <li key={i} data-driver={d.key} className="ui-t-p20">
                 {L.driverLabel(d.key, d.phase, d.share)}
               </li>
             ))}
@@ -244,10 +298,12 @@ export function RunReport({
 
       {view.flags.length > 0 ? (
         <>
-          <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--shell-fg-muted)" }}>{L.flagsHeading}</h3>
-          <ul data-flags style={{ listStyle: "none", margin: 0, padding: 0, fontSize: "13px" }}>
+          <h3 className="ui-d-fd ui-t-ls6 ui-t-mut" style={{ textTransform: "uppercase" }}>
+            {L.flagsHeading}
+          </h3>
+          <ul data-flags className="ui-c2-m0 ui-d-p0 ui-d-fd" style={{ listStyle: "none" }}>
             {view.flags.map((f, i) => (
-              <li key={i} data-flag={f.key} style={{ padding: "2px 0" }}>
+              <li key={i} data-flag={f.key} className="ui-t-p20">
                 {L.flagLabel(f)}
               </li>
             ))}
@@ -257,10 +313,16 @@ export function RunReport({
 
       {view.suggestedGuidance.length > 0 ? (
         <>
-          <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--shell-fg-muted)" }}>{L.guidanceHeading}</h3>
-          <ul data-suggested-guidance style={{ listStyle: "none", margin: 0, padding: 0, fontSize: "13px" }}>
+          <h3 className="ui-d-fd ui-t-ls6 ui-t-mut" style={{ textTransform: "uppercase" }}>
+            {L.guidanceHeading}
+          </h3>
+          <ul
+            data-suggested-guidance
+            className="ui-c2-m0 ui-d-p0 ui-d-fd"
+            style={{ listStyle: "none" }}
+          >
             {view.suggestedGuidance.map((g) => (
-              <li key={g} data-guidance={g} style={{ padding: "2px 0" }}>
+              <li key={g} data-guidance={g} className="ui-t-p20">
                 {L.guidanceLabel(g)}
               </li>
             ))}
@@ -270,12 +332,14 @@ export function RunReport({
 
       {/* Level 4 — the Advanced disclosure: phase × seat × model tier × credits × searches × fetches ×
           tokens × provider usage ids (§14.5; tokens live ONLY behind this fold). */}
-      <details data-report-advanced style={{ marginTop: "16px" }}>
-        <summary style={{ fontSize: "13px", color: "var(--shell-fg-muted)", cursor: "pointer" }}>{L.advancedHeading}</summary>
+      <details data-report-advanced className="ui-c2-mt4">
+        <summary className="ui-d-fd ui-t-mut" style={{ cursor: "pointer" }}>
+          {L.advancedHeading}
+        </summary>
         {advanced ? (
-          <table style={{ borderCollapse: "collapse", width: "100%", fontSize: "12px", marginTop: "8px" }}>
+          <table className="ui-vc-w ui-d-fs ui-c2-mt" style={{ borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ textAlign: "left", color: "var(--shell-fg-muted)" }}>
+              <tr className="ui-t-mut" style={{ textAlign: "left" }}>
                 <th scope="col">{L.advancedColumns.phase}</th>
                 <th scope="col">{L.advancedColumns.seat}</th>
                 <th scope="col">{L.advancedColumns.subagent}</th>
@@ -298,25 +362,39 @@ export function RunReport({
                   <td>{r.subagentLabel ?? "—"}</td>
                   <td>{r.model}</td>
                   <td>{r.modelTier}</td>
-                  <td style={{ fontVariantNumeric: "tabular-nums" }}>{r.credits.toLocaleString("en-US")}</td>
-                  <td style={{ fontVariantNumeric: "tabular-nums" }}>{r.searches.toLocaleString("en-US")}</td>
-                  <td style={{ fontVariantNumeric: "tabular-nums" }}>{r.fetches.toLocaleString("en-US")}</td>
-                  <td style={{ fontVariantNumeric: "tabular-nums" }}>{r.inputTokens.toLocaleString("en-US")}</td>
-                  <td style={{ fontVariantNumeric: "tabular-nums" }}>{r.outputTokens.toLocaleString("en-US")}</td>
-                  <td style={{ fontVariantNumeric: "tabular-nums" }}>{(r.cacheReadTokens + r.cacheWriteTokens).toLocaleString("en-US")}</td>
-                  <td style={{ fontSize: "11px", wordBreak: "break-all" }}>{r.providerRequestIds.join(", ")}</td>
+                  <td style={{ fontVariantNumeric: "tabular-nums" }}>
+                    {r.credits.toLocaleString("en-US")}
+                  </td>
+                  <td style={{ fontVariantNumeric: "tabular-nums" }}>
+                    {r.searches.toLocaleString("en-US")}
+                  </td>
+                  <td style={{ fontVariantNumeric: "tabular-nums" }}>
+                    {r.fetches.toLocaleString("en-US")}
+                  </td>
+                  <td style={{ fontVariantNumeric: "tabular-nums" }}>
+                    {r.inputTokens.toLocaleString("en-US")}
+                  </td>
+                  <td style={{ fontVariantNumeric: "tabular-nums" }}>
+                    {r.outputTokens.toLocaleString("en-US")}
+                  </td>
+                  <td style={{ fontVariantNumeric: "tabular-nums" }}>
+                    {(r.cacheReadTokens + r.cacheWriteTokens).toLocaleString("en-US")}
+                  </td>
+                  <td className="ui-d-s" style={{ wordBreak: "break-all" }}>
+                    {r.providerRequestIds.join(", ")}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         ) : advancedHref != null ? (
-          <p style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>
-            <a href={advancedHref} style={{ color: "inherit", textDecoration: "underline" }}>
+          <p className="ui-d-fs ui-t-mut">
+            <a href={advancedHref} className="ui-d-inh" style={{ textDecoration: "underline" }}>
               {L.loadAdvanced}
             </a>
           </p>
         ) : (
-          <p style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>{L.notAvailable}</p>
+          <p className="ui-d-fs ui-t-mut">{L.notAvailable}</p>
         )}
       </details>
     </article>

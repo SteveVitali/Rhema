@@ -27,10 +27,31 @@
 
 import { useRouter } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MutableRefObject,
+  type ReactNode,
+} from "react";
 import type { EditorView } from "prosemirror-view";
-import { acceptProposalTr, markdownToDoc, type EditOrigin, type FindingForDecoration, type Proposal } from "@rhema/editor";
-import { CompareView, ToastProvider, useToast, WhatChangedView, type IdeShellProps } from "@rhema/ui";
+import {
+  acceptProposalTr,
+  markdownToDoc,
+  type EditOrigin,
+  type FindingForDecoration,
+  type Proposal,
+} from "@rhema/editor";
+import {
+  CompareView,
+  ToastProvider,
+  useToast,
+  WhatChangedView,
+  type IdeShellProps,
+  Button,
+} from "@rhema/ui";
 import { COPY } from "../../copy.js";
 import { rewriteDemoDocLinks } from "../../demo-markers.js";
 import { deleteHold, getHold } from "../../client/hold-store.js";
@@ -142,12 +163,12 @@ function EditorEventBridge({ slug }: { readonly slug: string }): ReactNode {
       if (detail?.draftN == null) return;
       const n = detail.draftN;
       toast.push({
-        title: COPY.editor.forkToastFmt
-          .replace("{n}", String(n)),
+        title: COPY.editor.forkToastFmt.replace("{n}", String(n)),
         tone: "ok",
         action: (
-          <button
+          <Button
             type="button"
+            variant="ghost"
             data-fork-undo="true"
             className="ui-toast-action"
             onClick={() => {
@@ -159,8 +180,7 @@ function EditorEventBridge({ slug }: { readonly slug: string }): ReactNode {
                   const parent = env.data?.parentN;
                   invalidate();
                   toast.push({
-                    title: COPY.editor.forkUndoDoneFmt
-                      .replace("{n}", String(parent ?? n - 1)),
+                    title: COPY.editor.forkUndoDoneFmt.replace("{n}", String(parent ?? n - 1)),
                     tone: "ok",
                   });
                 })
@@ -180,7 +200,7 @@ function EditorEventBridge({ slug }: { readonly slug: string }): ReactNode {
             }}
           >
             {COPY.editor.forkUndo}
-          </button>
+          </Button>
         ),
       });
     };
@@ -210,12 +230,20 @@ function useCommentMargin(
       comments.length > 0
         ? [
             ...(ideFindings ?? []),
-            ...comments.map((cm) => ({ id: cm.id, severity: "minor", kind: "comment", excerpt: cm.text })),
+            ...comments.map((cm) => ({
+              id: cm.id,
+              severity: "minor",
+              kind: "comment",
+              excerpt: cm.text,
+            })),
           ]
         : ideFindings;
-    if (comments.length === 0) return { ...(tickFindings != null ? { findings: tickFindings } : {}) };
+    if (comments.length === 0)
+      return { ...(tickFindings != null ? { findings: tickFindings } : {}) };
     const blockOf = (a: unknown): string =>
-      a != null && typeof a === "object" && "blockId" in a ? String((a as { blockId: unknown }).blockId) : "";
+      a != null && typeof a === "object" && "blockId" in a
+        ? String((a as { blockId: unknown }).blockId)
+        : "";
     return {
       findings: tickFindings ?? [],
       marginBody: (
@@ -277,9 +305,10 @@ function usePageBag(
     // R7DEM.5 (REQ-TOUR-6 + REQ-DWEB-17) — the leaf-side docJson derivation rewrites corpus
     // refs: excluded artifacts lose their link mark ("not published" non-links) and published
     // `assetRefs` resolve to the demo asset route (never a relative-path 404).
-    () => (markdown == null
-      ? undefined
-      : rewriteDemoDocLinks(markdownToDoc(markdown).toJSON(), bag?.doc.demo, isDemo())),
+    () =>
+      markdown == null
+        ? undefined
+        : rewriteDemoDocLinks(markdownToDoc(markdown).toJSON(), bag?.doc.demo, isDemo()),
     [markdown, bag?.doc.demo],
   );
   const restoredN = merge?.restoredN;
@@ -306,7 +335,14 @@ function usePageBag(
  *  ONE agent-origin tr through `acceptProposalTr` (excluded from the human undo stack); reject is
  *  a document no-op (the card drops). `dismissed` holds the dropped card ids. */
 function useProposalSeams(viewRef: MutableRefObject<EditorView | null>): {
-  readonly accept: (p: { readonly id: string; readonly kind: "replace" | "insert"; readonly from: number; readonly to: number; readonly markdown: string; readonly origin: string }) => void;
+  readonly accept: (p: {
+    readonly id: string;
+    readonly kind: "replace" | "insert";
+    readonly from: number;
+    readonly to: number;
+    readonly markdown: string;
+    readonly origin: string;
+  }) => void;
   readonly reject: (id: string) => void;
   readonly filter: (id: string) => boolean;
 } {
@@ -389,13 +425,18 @@ function PageHost(props: {
       previewCtx={previewCtx}
       viewRef={props.viewRef}
       {...(props.sourceMode != null ? { sourceMode: props.sourceMode } : {})}
-      {...(props.onSourceModeChange != null ? { onSourceModeChange: props.onSourceModeChange } : {})}
+      {...(props.onSourceModeChange != null
+        ? { onSourceModeChange: props.onSourceModeChange }
+        : {})}
     />
   );
 }
 
 /** The `page` bag with dismissed proposal cards filtered out (the island's `card.remove()`). */
-function useFilteredPage(page: PageChromeBag | undefined, filter: (id: string) => boolean): PageChromeBag | undefined {
+function useFilteredPage(
+  page: PageChromeBag | undefined,
+  filter: (id: string) => boolean,
+): PageChromeBag | undefined {
   return useMemo(() => {
     if (!page) return undefined;
     const proposals = (page.doc.proposals ?? []).filter((p) => filter(p.id));
@@ -427,11 +468,18 @@ function useEditorChrome(
             timelineCardLabels: runCardLabels,
             timelineHrefs: timelineHrefs(slug),
             renderGateCard: (run: Parameters<NonNullable<IdeChromeData["renderGateCard"]>>[0]) => (
-              <TimelineGateCard run={run} slug={slug} compact={compact} readOnlyTitle={readOnlyTitle} />
+              <TimelineGateCard
+                run={run}
+                slug={slug}
+                compact={compact}
+                readOnlyTitle={readOnlyTitle}
+              />
             ),
           }
         : {}),
-      ...(shell.ide.chat != null ? { chatBody: chatPanel(shell.ide.chat, slug, shell.ide, compact, readOnlyTitle) } : {}),
+      ...(shell.ide.chat != null
+        ? { chatBody: chatPanel(shell.ide.chat, slug, shell.ide, compact, readOnlyTitle) }
+        : {}),
     }),
     [shell.ide, slug, compact, readOnlyTitle, pageHeader, margin],
   );
@@ -441,12 +489,14 @@ function useEditorChrome(
 /** R7SYNC.1 (REQ-SYNC-5) — the header Run menu's estimate hints: the twin's `ide.runHints`
  *  (api-composed shared-estimator figures) formatted through COPY — never a hand-typed cost
  *  literal. Keyed by the run menu's workflow names ("review"/"revise"). */
-function runHintsFor(ide: { readonly runHints?: Readonly<Record<string, number>> } | undefined): Record<string, string> | undefined {
+function runHintsFor(
+  ide: { readonly runHints?: Readonly<Record<string, number>> } | undefined,
+): Record<string, string> | undefined {
   if (ide?.runHints == null) return undefined;
   const out: Record<string, string> = {};
   for (const [wf, n] of Object.entries(ide.runHints)) {
-    if (typeof n === "number") out[wf] = COPY.projectHome.estimateFmt
-    .replace("{n}", n.toLocaleString("en-US"));
+    if (typeof n === "number")
+      out[wf] = COPY.projectHome.estimateFmt.replace("{n}", n.toLocaleString("en-US"));
   }
   return Object.keys(out).length > 0 ? out : undefined;
 }
@@ -465,7 +515,11 @@ export interface EditorSurfaceProps<T> {
   readonly search: Record<string, string | undefined>;
 }
 
-export function ProjectPageSurface({ data, compact, search }: EditorSurfaceProps<BffProjectTwin>): ReactNode {
+export function ProjectPageSurface({
+  data,
+  compact,
+  search,
+}: EditorSurfaceProps<BffProjectTwin>): ReactNode {
   const router = useRouter();
   const { pending, mutError, write } = useEditorWrite();
   const viewRef = useRef<EditorView | null>(null);
@@ -550,13 +604,25 @@ export function ProjectPageSurface({ data, compact, search }: EditorSurfaceProps
         {...(ro != null ? { readOnly: ro.reason } : {})}
         compact={compact}
         {...(pageView ? { page: pageView } : {})}
-        {...(page ? { pageHost: <PageHost page={page} compact={compact} viewRef={viewRef} sourceMode={sourceMode} onSourceModeChange={setSourceMode} /> } : {})}
+        {...(page
+          ? {
+              pageHost: (
+                <PageHost
+                  page={page}
+                  compact={compact}
+                  viewRef={viewRef}
+                  sourceMode={sourceMode}
+                  onSourceModeChange={setSourceMode}
+                />
+              ),
+            }
+          : {})}
         pageEmbeds={false}
         onProposalAccept={seams.accept}
         onProposalReject={seams.reject}
       />
       {mutError != null ? (
-        <p role="alert" style={{ fontSize: "12px", color: "var(--sev-major)", margin: "0 0 12px" }}>
+        <p role="alert" className="ui-d-fs ui-set-t--warn ui-t-m03">
           {mutError}
         </p>
       ) : null}
@@ -629,17 +695,25 @@ export function VersionPageSurface({
       <EditorEventBridge slug={slug} />
       <div data-spa-surface onSubmit={onSubmit} aria-busy={pending || undefined}>
         {search["hc"] ? <HeldConsumedMarker token={search["hc"]} /> : null}
-      <PageChrome
-        page={pageView}
-        compact={compact}
-        {...(ro != null ? { readOnlyReason: ro.reason } : {})}
-        host={<PageHost page={pageView} compact={compact} viewRef={viewRef} sourceMode={sourceMode} onSourceModeChange={setSourceMode} />}
-        embeds={false}
-        onProposalAccept={seams.accept}
-        onProposalReject={seams.reject}
-      />
+        <PageChrome
+          page={pageView}
+          compact={compact}
+          {...(ro != null ? { readOnlyReason: ro.reason } : {})}
+          host={
+            <PageHost
+              page={pageView}
+              compact={compact}
+              viewRef={viewRef}
+              sourceMode={sourceMode}
+              onSourceModeChange={setSourceMode}
+            />
+          }
+          embeds={false}
+          onProposalAccept={seams.accept}
+          onProposalReject={seams.reject}
+        />
         {mutError != null ? (
-          <p role="alert" style={{ fontSize: "12px", color: "var(--sev-major)", margin: "0 0 12px" }}>
+          <p role="alert" className="ui-d-fs ui-set-t--warn ui-t-m03">
             {mutError}
           </p>
         ) : null}
@@ -652,7 +726,10 @@ export function VersionPageSurface({
 // `/p/:slug/a/:artifactId` — the read-only artifact Page.
 // ---------------------------------------------------------------------------------------------------------------------
 
-export function ArtifactPageSurface({ data, compact }: EditorSurfaceProps<BffArtifactTwin>): ReactNode {
+export function ArtifactPageSurface({
+  data,
+  compact,
+}: EditorSurfaceProps<BffArtifactTwin>): ReactNode {
   const router = useRouter();
   const { pending, mutError, write } = useEditorWrite();
   const viewRef = useRef<EditorView | null>(null);
@@ -696,7 +773,7 @@ export function ArtifactPageSurface({ data, compact }: EditorSurfaceProps<BffArt
         embeds={false}
       />
       {mutError != null ? (
-        <p role="alert" style={{ fontSize: "12px", color: "var(--sev-major)", margin: "0 0 12px" }}>
+        <p role="alert" className="ui-d-fs ui-set-t--warn ui-t-m03">
           {mutError}
         </p>
       ) : null}
@@ -708,7 +785,11 @@ export function ArtifactPageSurface({ data, compact }: EditorSurfaceProps<BffArt
 // `/p/:slug/v/:n/diff/:m` — the §5.8 compare (three read-only layouts over the one projection).
 // ---------------------------------------------------------------------------------------------------------------------
 
-export function CompareSurface({ data, compact, search }: EditorSurfaceProps<BffCompareTwin>): ReactNode {
+export function CompareSurface({
+  data,
+  compact,
+  search,
+}: EditorSurfaceProps<BffCompareTwin>): ReactNode {
   const router = useRouter();
   const { pending, mutError, write } = useEditorWrite();
   const { compare } = data;
@@ -716,7 +797,12 @@ export function CompareSurface({ data, compact, search }: EditorSurfaceProps<Bff
   const ro = useReadOnlyProject(data);
 
   useDwell("page");
-  useEditorChrome(data, slug, compact, ro != null && ro.reason !== "run_lock" ? readOnlyReasonText(ro.reason) : null);
+  useEditorChrome(
+    data,
+    slug,
+    compact,
+    ro != null && ro.reason !== "run_lock" ? readOnlyReasonText(ro.reason) : null,
+  );
 
   const layoutQ = search["layout"];
   const layout = layoutQ === "inline" || layoutQ === "moves" ? layoutQ : "side";
@@ -746,12 +832,12 @@ export function CompareSurface({ data, compact, search }: EditorSurfaceProps<Bff
         labels={compareLabels}
       />
       {commented ? (
-        <p data-comment-saved="true" style={{ fontSize: "12px", color: "var(--state-ready)" }}>
+        <p data-comment-saved="true" className="ui-d-fs ui-set-t--ok">
           {COPY.revision.commentSavedLabel}
         </p>
       ) : null}
       {mutError != null ? (
-        <p role="alert" style={{ fontSize: "12px", color: "var(--sev-major)", margin: "0 0 12px" }}>
+        <p role="alert" className="ui-d-fs ui-set-t--warn ui-t-m03">
           {mutError}
         </p>
       ) : null}
@@ -763,7 +849,11 @@ export function CompareSurface({ data, compact, search }: EditorSurfaceProps<Bff
 // `/p/:slug/revisions/:cid` — the What-changed read.
 // ---------------------------------------------------------------------------------------------------------------------
 
-export function RevisionSurface({ data, compact, search }: EditorSurfaceProps<BffRevisionTwin>): ReactNode {
+export function RevisionSurface({
+  data,
+  compact,
+  search,
+}: EditorSurfaceProps<BffRevisionTwin>): ReactNode {
   const router = useRouter();
   const { pending, mutError, write } = useEditorWrite();
   const { revision } = data;
@@ -771,7 +861,12 @@ export function RevisionSurface({ data, compact, search }: EditorSurfaceProps<Bf
   const ro = useReadOnlyProject(data);
 
   // the SSR document carries no dwellSurface on this page — no useDwell here (verbatim).
-  useEditorChrome(data, slug, compact, ro != null && ro.reason !== "run_lock" ? readOnlyReasonText(ro.reason) : null);
+  useEditorChrome(
+    data,
+    slug,
+    compact,
+    ro != null && ro.reason !== "run_lock" ? readOnlyReasonText(ro.reason) : null,
+  );
 
   const commented = search["commented"] || undefined;
   const onSubmit = useMemo(() => delegatedSubmitHandler({ router, write }), [router, write]);
@@ -793,17 +888,15 @@ export function RevisionSurface({ data, compact, search }: EditorSurfaceProps<Bf
         labels={whatChangedLabels}
       />
       {commented ? (
-        <p data-comment-saved="true" style={{ fontSize: "12px", color: "var(--state-ready)" }}>
+        <p data-comment-saved="true" className="ui-d-fs ui-set-t--ok">
           {COPY.revision.commentSavedLabel}
         </p>
       ) : null}
       {mutError != null ? (
-        <p role="alert" style={{ fontSize: "12px", color: "var(--sev-major)", margin: "0 0 12px" }}>
+        <p role="alert" className="ui-d-fs ui-set-t--warn ui-t-m03">
           {mutError}
         </p>
       ) : null}
     </div>
   );
 }
-
-
