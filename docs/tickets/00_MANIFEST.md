@@ -462,6 +462,7 @@ Dispatched **out of order** (`GD-ORDER.R7`): `200_R6WATCH.1` (clock-bound ≥ 20
 | 249 | `249_R7GUARD.1__recurrence-guards.md` | R7b | no-raw-controls global + occlusion check in CI (REQ-GUARD-1/4, REQ-PANE-4) | — |
 | 249a | `249a_R7PUB.1__landing-pricing-refresh.md` | R7b | signed-in pricing + landing refresh code + recording slot (recording captured in 250's preview) (REQ-PUB-1/2) | — |
 | 250 | `250_R7DEP.2__r7b-deploy.md` | R7b deploy | the ONE R7b preview (walk D*+U*; H16; recording) → golden classification (≤1 rerun) → prod deploy → CDN invalidation → Stage B → U6 paid run (< $10) → provenance → teardown (REQ-DACC-7, REQ-DOPS-6, REQ-SPEED-5) | pre-auth (GD-DEPLOY.R7, GD-UX-PAIDLEG.R7, GD-GOLDEN.R7, GD-PREVIEW.R7) |
+| 250a | `250a_R7FIX.1__defect-boundary-fixes.md` | R7b | **run-time insert** — owner fixes for 250's Part-A defect boundary (F-R7DEP.2-1…5 + U3.stopgap re-disposition; the T1 re-walk proves them deployed) | — |
 | 251 | `251_R7CAP.1__capstone-gap-analysis.md` | tail | **capstone** — round-7 REQ coverage + finding accounting (REQ-CLOSE-1) | — |
 | 252 | `252_GATE-ACCEPT.R7__accepted-deviations.md` | tail | **gate** — operator signs the R7 deviations list; GD-DEPLOY.R7 expires (REQ-CLOSE-2) | operator |
 | 253 | `253_R7REC.1__backlog-and-reconciliation.md` | tail | **reconcile** — backlog + spec fold-back, ADR-126…130 banners (REQ-CLOSE-3) | — |

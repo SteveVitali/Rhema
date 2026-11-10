@@ -1,0 +1,148 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "045a1976c74c",
+  "startedAt": "2026-11-07T18:58:39.710Z",
+  "finishedAt": "2026-11-07T19:04:33.441Z",
+  "webBaseUrl": "https://rhema-pr-293-web-723313c-tkbl73n3tq-uc.a.run.app",
+  "apiBaseUrl": "https://rhema-pr-293-api-e35a071-tkbl73n3tq-uc.a.run.app",
+  "provenance": {
+    "expected": "18b79c30c2b8d730414ce8fbb67d015b6a599611",
+    "observed": {
+      "web": "18b79c30c2b8d730414ce8fbb67d015b6a599611",
+      "api": "18b79c30c2b8d730414ce8fbb67d015b6a599611"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "N10",
+      "journey": "new-visitor",
+      "owner": "UX.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 960,
+      "screenshot": "N10.png"
+    },
+    {
+      "id": "R8.showcase",
+      "journey": "returning",
+      "owner": "UX.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 1875,
+      "screenshot": "R8.showcase.png"
+    },
+    {
+      "id": "P1.public",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 1327,
+      "screenshot": "P1.public.png"
+    },
+    {
+      "id": "D1.hub",
+      "journey": "new-visitor",
+      "owner": "R7DEM.5b",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 1079,
+      "screenshot": "D1.hub.png"
+    },
+    {
+      "id": "D2.tour",
+      "journey": "new-visitor",
+      "owner": "R7DEM.6a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 17488,
+      "screenshot": "D2.tour.png"
+    },
+    {
+      "id": "D3.readonly",
+      "journey": "both",
+      "owner": "R7DEM.5",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 255432,
+      "screenshot": "D3.readonly.png"
+    },
+    {
+      "id": "P1.demo",
+      "journey": "phone",
+      "owner": "R7DEM.4b",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2601
+    },
+    {
+      "id": "R11.demo",
+      "journey": "returning",
+      "owner": "R7DEM.4b",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 36978,
+      "screenshot": "R11.demo.png"
+    },
+    {
+      "id": "U3.stopgap",
+      "journey": "returning",
+      "owner": "R7FIX.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 3130,
+      "error": "Desk tab chat @1440×900: not enabled",
+      "screenshot": "U3.stopgap.png"
+    },
+    {
+      "id": "R8.showcase.spa",
+      "journey": "returning",
+      "owner": "R7RO.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 31887,
+      "error": "locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('a[href*=\"/review/\"]').first()\n    - locator resolved to <a class=\"ui-d-l\" href=\"/p/showcase/review/01M6VNYZPYKZ677HHE7DC74HGJ\">Clear</a>\n  - attempting click action\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 100ms\n    58 × waiting for element to be visible, enabled and stable\n       - element is not visible\n     - retrying click action\n       - waiting 500ms\n",
+      "screenshot": "R8.showcase.spa.png"
+    }
+  ],
+  "passed": false
+}
