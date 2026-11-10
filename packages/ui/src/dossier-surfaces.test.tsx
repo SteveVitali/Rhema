@@ -364,3 +364,34 @@ describe("SecondReadView (REQ-IDE-26)", () => {
     expect(html).toContain("A withdrawn concern");
   });
 });
+
+// R7COPY.1b (REQ-COPY-3) — every prose site renders through the ONE sanitized renderer.
+describe("the one sanitized markdown renderer — per-site legs (R7COPY.1b)", () => {
+  const md = finding({ body: "scaled off *Paradoxides* — see <https://ex.com/a>" });
+  it("FindingCard bodies render markdown through MarkdownProse — emphasis, no asterisks", () => {
+    const html = renderToStaticMarkup(
+      <FindingCard view={md} labels={{ kindLabel: (k) => k, severityLabel: (s) => s, provisionalLabel: "p" }} />,
+    );
+    expect(html).toContain("data-md-block");
+    expect(html).toContain("<em>Paradoxides</em>");
+    expect(html).not.toContain("*Paradoxides*");
+  });
+  it("FindingCard evidence URLs are safe truncated links (C8)", () => {
+    const html = renderToStaticMarkup(
+      <FindingCard view={md} labels={{ kindLabel: (k) => k, severityLabel: (s) => s, provisionalLabel: "p" }}
+        evidence={{ urls: [{ url: "https://ex.com/".padEnd(80, "x"), fetched: true }], verdictLabel: "v" }} />,
+    );
+    expect(html).toContain("ui-md-url");
+    expect(html).toContain('target="_blank"');
+    expect(html).toContain("…");
+  });
+  it("LetterView paragraphs render markdown through the one renderer", () => {
+    const html = renderToStaticMarkup(
+      <LetterView title="L" trustChip={null}
+        sections={[{ id: "s1", title: "S", paragraphs: ["the *letter* reads"] }]}
+        labels={{ tocHeading: "Contents", attestationHeading: "Attestation" } as LetterViewLabels} />,
+    );
+    expect(html).toContain("data-md-block");
+    expect(html).toContain("<em>letter</em>");
+  });
+});

@@ -161,3 +161,20 @@ describe("RubricDelta golden render (PRB.06; REQ-IDE-30)", () => {
     expect(Object.keys(view)).toEqual(["rows"]);
   });
 });
+
+// R7COPY.1b (REQ-COPY-3; G2) — the what-changed hunks render the reading face, not monospace asterisks.
+describe("what-changed hunks render markdown (R7COPY.1b)", () => {
+  it("a hunk's block text renders *emphasis* through the one renderer — no <pre>, no asterisks", () => {
+    const html = renderToStaticMarkup(
+      <WhatChangedView view={view()} beforeN={2} afterN={3} labels={labels} />,
+    );
+    expect(html).toContain("data-md-block");
+    // the fixture hunk carries plain text; feed the seam a markdown-bearing view too
+    const md = view();
+    (md.moves[0]!.hunks[0]!.after[0] as { text: string }).text = "the *Paradoxides* passage";
+    const mdHtml = renderToStaticMarkup(<WhatChangedView view={md} beforeN={2} afterN={3} labels={labels} />);
+    expect(mdHtml).toContain("<em>Paradoxides</em>");
+    expect(mdHtml).not.toContain("*Paradoxides*");
+    expect(mdHtml).not.toContain("<pre");
+  });
+});

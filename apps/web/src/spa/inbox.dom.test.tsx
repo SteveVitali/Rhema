@@ -355,4 +355,29 @@ describe("GET /app/inbox mounted (REQ-SEQ-9 — the flipped surface)", () => {
     expect(el()?.querySelector("[data-inbox-badge]")).toBeNull();
     expect(f.mock.calls.some(([u]) => String(u) === "/bff/app/inbox")).toBe(false);
   });
+describe("R7COPY.1b — inbox notices render markdown through the one renderer (D2)", () => {
+  it("a security notice's markdown list becomes a real list, paragraphs become paragraphs", async () => {
+    const notice = twin({
+      items: [{
+        id: "i1", kind: "event", type: "security_notice", unread: true,
+        title: "A security notice about your workspace data",
+        body: "What was exposed.\n\n- voice profiles\n- project details\n\nMore follows.",
+        href: "/app", createdAt: "2026-11-01T00:00:00Z",
+      } as InboxItemDto],
+    });
+    const { render, screen } = await import("@testing-library/react");
+    const { QueryClient, QueryClientProvider } = await import("@tanstack/react-query");
+    const { InboxSurface } = await import("./surfaces/inbox.js");
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <InboxSurface inbox={notice} compact={false} />
+      </QueryClientProvider>,
+    );
+    const row = screen.getByText("A security notice about your workspace data").closest("[data-inbox-row]")!;
+    expect(row.querySelector("[data-md-block]")).not.toBeNull();
+    expect(row.querySelectorAll("ul li").length).toBe(2);
+    expect(row.querySelector("ul li")!.textContent).toContain("voice profiles");
+    expect(row.querySelectorAll("[data-md-block] p").length).toBeGreaterThan(1);
+  });
+});
 });

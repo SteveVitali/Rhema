@@ -1246,6 +1246,9 @@ importers:
       '@rhema/ide':
         specifier: workspace:*
         version: link:../ide
+      '@rhema/markdown':
+        specifier: workspace:*
+        version: link:../markdown
       '@rhema/run-sheet':
         specifier: workspace:*
         version: link:../run-sheet

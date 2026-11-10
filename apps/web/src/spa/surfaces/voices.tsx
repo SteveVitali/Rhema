@@ -52,6 +52,7 @@ import { PageBody, PageHeader } from "../page-header.js";
 import {
   Button,
   Checkbox,
+  MarkdownProse,
   RadioGroup,
   RadioGroupItem,
   Select,
@@ -869,9 +870,9 @@ function VoiceSampleDrawer({ pid, detail, compact = false }: { pid: string; deta
       ) : null}
       <h3 className="ui-set-h3">{VC.detail.previewHeading}</h3>
       {detail.document ? (
-        <pre data-sample-preview="true" className="ui-vc-pre ui-vc-pre--cap">
-          {detail.document}
-        </pre>
+        <div data-sample-preview="true" className="ui-vc-pre ui-vc-pre--cap">
+          <MarkdownProse text={detail.document} />
+        </div>
       ) : (
         <p className="ui-set-note">{VC.detail.noDocument}</p>
       )}
