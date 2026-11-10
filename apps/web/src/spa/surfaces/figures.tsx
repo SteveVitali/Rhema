@@ -101,18 +101,26 @@ function HiddenField({
 export interface FiguresSurfaceProps {
   /** the `GET /bff/p/:slug/figures` twin bag — `items` may be empty (the designed empty arm). */
   readonly data: BffFiguresTwin["figures"] | null;
+  /**
+   * F-R7DEP.2-5ev — the route's project param: the `!data` arm still mounts the Project ›
+   * Surface breadcrumb (the crumb is the leaf's nav idiom, never contingent on the twin row).
+   */
+  readonly slug: string;
 }
 
 /**
  * The §7.5 Figures pane on the BFF twin — every figure card's row (badge + insert/render state)
  * or the designed empty arm, verbatim `FiguresPanePage` markup.
  */
-export function FiguresSurface({ data }: FiguresSurfaceProps): ReactNode {
+export function FiguresSurface({ data, slug }: FiguresSurfaceProps): ReactNode {
   if (!data) {
     return (
       <div data-spa-surface>
         <PageBody>
-          <PageHeader title={F.heading} />
+          <PageHeader
+            title={F.heading}
+            crumbs={[{ label: slug, href: `/p/${slug}` }, { label: F.heading }]}
+          />
           <p className="ui-set-t--m">{F.empty}</p>
         </PageBody>
       </div>

@@ -603,47 +603,68 @@ export function ProjectPageSurface({
   const scratchEntry = search["created"] === "scratch";
   useEffect(() => {
     if (!scratchEntry) return;
-    const el = document.querySelector<HTMLInputElement>("[data-inline-title] input");
-    if (el == null) return;
-    el.focus();
-    const frame = window.requestAnimationFrame(() => {
-      if (el.isConnected && document.activeElement !== el) el.focus();
+    const focusTitle = (): boolean => {
+      const el = document.querySelector<HTMLInputElement>("[data-inline-title]");
+      if (el == null) return false;
+      if (document.activeElement !== el) el.focus();
+      return true;
+    };
+    focusTitle();
+    const frame = window.requestAnimationFrame(() => focusTitle());
+    // The round-1 re-assert still lost to a LATE claimer (the route-settle commit lands after
+    // the mount frame). Re-assert once when the route resolves — `data-mounted` re-stamps on
+    // the html element — then next frame, then disconnect.
+    const obs = new MutationObserver(() => {
+      if (!document.documentElement.hasAttribute("data-mounted")) return;
+      obs.disconnect();
+      window.requestAnimationFrame(() => focusTitle());
     });
-    return () => window.cancelAnimationFrame(frame);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-mounted"] });
+    return () => {
+      window.cancelAnimationFrame(frame);
+      obs.disconnect();
+    };
   }, [scratchEntry]);
 
   return (
-    <div data-spa-surface onSubmit={onSubmit} aria-busy={pending || undefined}>
-      {search["hc"] ? <HeldConsumedMarker token={search["hc"]} /> : null}
-      {/* R7WRITE.1a — the ReadOnlyProject notice moved into the page header strip (REQ-WRITE-6). */}
-      <ProjectOverviewBody
-        project={project}
-        {...(ro != null ? { readOnly: ro.reason } : {})}
-        compact={compact}
-        {...(pageView ? { page: pageView } : {})}
-        {...(page
-          ? {
-              pageHost: (
-                <PageHost
-                  page={page}
-                  compact={compact}
-                  viewRef={viewRef}
-                  sourceMode={sourceMode}
-                  onSourceModeChange={setSourceMode}
-                />
-              ),
-            }
-          : {})}
-        pageEmbeds={false}
-        onProposalAccept={seams.accept}
-        onProposalReject={seams.reject}
-      />
-      {mutError != null ? (
-        <p role="alert" className="ui-d-fs ui-set-t--warn ui-t-m03">
-          {mutError}
-        </p>
-      ) : null}
-    </div>
+    <ToastProvider dismissLabel={COPY.projectHome.undoLabel} viewportLabel={slug}>
+      {/* R7WRITE.1b — the comment-added invalidate + frozen-fork Undo toast on the
+          working-head Page too (REQ-WRITE-2/7): `/p/:slug`'s PageMount POSTs the same anchored
+          note and the collab wire can frozen-fork here — without the bridge the twin never
+          refetches and `data-comment-card` never lands (F-R7DEP.2-3's deepest layer). */}
+      <EditorEventBridge slug={slug} />
+      <div data-spa-surface onSubmit={onSubmit} aria-busy={pending || undefined}>
+        {search["hc"] ? <HeldConsumedMarker token={search["hc"]} /> : null}
+        {/* R7WRITE.1a — the ReadOnlyProject notice moved into the page header strip (REQ-WRITE-6). */}
+        <ProjectOverviewBody
+          project={project}
+          {...(ro != null ? { readOnly: ro.reason } : {})}
+          compact={compact}
+          {...(pageView ? { page: pageView } : {})}
+          {...(page
+            ? {
+                pageHost: (
+                  <PageHost
+                    page={page}
+                    compact={compact}
+                    viewRef={viewRef}
+                    sourceMode={sourceMode}
+                    onSourceModeChange={setSourceMode}
+                  />
+                ),
+              }
+            : {})}
+          pageEmbeds={false}
+          onProposalAccept={seams.accept}
+          onProposalReject={seams.reject}
+        />
+        {mutError != null ? (
+          <p role="alert" className="ui-d-fs ui-set-t--warn ui-t-m03">
+            {mutError}
+          </p>
+        ) : null}
+      </div>
+    </ToastProvider>
   );
 }
 

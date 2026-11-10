@@ -463,6 +463,11 @@ Dispatched **out of order** (`GD-ORDER.R7`): `200_R6WATCH.1` (clock-bound ≥ 20
 | 249a | `249a_R7PUB.1__landing-pricing-refresh.md` | R7b | signed-in pricing + landing refresh code + recording slot (recording captured in 250's preview) (REQ-PUB-1/2) | — |
 | 250 | `250_R7DEP.2__r7b-deploy.md` | R7b deploy | the ONE R7b preview (walk D*+U*; H16; recording) → golden classification (≤1 rerun) → prod deploy → CDN invalidation → Stage B → U6 paid run (< $10) → provenance → teardown (REQ-DACC-7, REQ-DOPS-6, REQ-SPEED-5) | pre-auth (GD-DEPLOY.R7, GD-UX-PAIDLEG.R7, GD-GOLDEN.R7, GD-PREVIEW.R7) |
 | 250a | `250a_R7FIX.1__defect-boundary-fixes.md` | R7b | **run-time insert** — owner fixes for 250's Part-A defect boundary (F-R7DEP.2-1…5 + U3.stopgap re-disposition; the T1 re-walk proves them deployed) | — |
+| 250b | `250b_R7FIX.2__defect-round-2.md` | R7b | **run-time insert** — defect boundary round 2 (F-1/F-3 residuals, F-5 evolved, F-6 U4 regression, F-7 hero-capture recipe; the T1b re-walk proves them deployed) | — |
+| 250c | `250c_R7FIX.3__defect-round-3.md` | R7b | **run-time insert** — defect boundary round 3 (4 leg-pin-vs-surface diagnoses; the T1c re-walk proves them deployed) | — |
+| 250d | `250d_R7FIX.4__defect-round-4.md` | R7b | **run-time insert** — defect boundary round 4 (U2 chat-tab click ordering + U5 format-bubble select arm; the T1d re-walk proves them deployed) | — |
+| 250e | `250e_R7FIX.5__defect-round-5.md` | R7b | **run-time insert** — defect boundary round 5 (U2 visible-recent pick + U5 comment-submit hook + optional U3 hardening; the T1e re-walk proves them deployed) | — |
+| 250f | `250f_R7FIX.6__defect-round-6.md` | R7b | **run-time insert** — defect boundary round 6 (U5 comment-card post-submit mount; the T1f re-walk proves it deployed) | — |
 | 251 | `251_R7CAP.1__capstone-gap-analysis.md` | tail | **capstone** — round-7 REQ coverage + finding accounting (REQ-CLOSE-1) | — |
 | 252 | `252_GATE-ACCEPT.R7__accepted-deviations.md` | tail | **gate** — operator signs the R7 deviations list; GD-DEPLOY.R7 expires (REQ-CLOSE-2) | operator |
 | 253 | `253_R7REC.1__backlog-and-reconciliation.md` | tail | **reconcile** — backlog + spec fold-back, ADR-126…130 banners (REQ-CLOSE-3) | — |

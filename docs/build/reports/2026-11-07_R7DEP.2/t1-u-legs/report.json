@@ -1,0 +1,128 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "43fd719e200a",
+  "startedAt": "2026-11-07T20:37:39.581Z",
+  "finishedAt": "2026-11-07T20:39:20.387Z",
+  "webBaseUrl": "https://rhema-pr-293-web-723313c-tkbl73n3tq-uc.a.run.app",
+  "apiBaseUrl": "https://rhema-pr-293-api-e35a071-tkbl73n3tq-uc.a.run.app",
+  "provenance": {
+    "expected": "3d790572599d87578e1a4edca307147591f01a7d",
+    "observed": {
+      "web": "3d790572599d87578e1a4edca307147591f01a7d",
+      "api": "3d790572599d87578e1a4edca307147591f01a7d"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "U1.shell",
+      "journey": "returning",
+      "owner": "R7SHELL.1a",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 3986,
+      "error": "/p/untitled/outline lost the Project › Surface breadcrumb (or the route 404'd)",
+      "screenshot": "U1.shell.png"
+    },
+    {
+      "id": "U2.noreload",
+      "journey": "returning",
+      "owner": "R7RELOAD.1",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 31986,
+      "error": "locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('a[href^=\"/p/untitled/review/\"]').first()\n",
+      "screenshot": "U2.noreload.png"
+    },
+    {
+      "id": "U3.occlusion",
+      "journey": "returning",
+      "owner": "R7PANE.1",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 9771,
+      "screenshot": "U3.occlusion.png"
+    },
+    {
+      "id": "U4.controls",
+      "journey": "returning",
+      "owner": "R7KIT.3e",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 5527,
+      "error": "U4.controls — 1 surface failure(s):\nide-page-panel (/p/untitled): U4.controls — 1 native-styled control(s) on ide-page-panel:\n  <button name=- type=button> radius=8px appearance=auto bg=rgba(0, 0, 0, 0) color=rgb(43, 99, 201) — <button type=\"button\" data-ide-panel-tab=\"chat\" style=\"background: none; border-width: medium; border-style: none; border-color: currentcolor; border-image: non",
+      "screenshot": "U4.controls.png"
+    },
+    {
+      "id": "U5.write",
+      "journey": "returning",
+      "owner": "R7WRITE.1b",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2424,
+      "error": "the inline title was not focused on the blank Page",
+      "screenshot": "U5.write.png"
+    },
+    {
+      "id": "U6.chat",
+      "journey": "returning",
+      "owner": "R7TALK.1a",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 3574,
+      "screenshot": "U6.chat.png"
+    },
+    {
+      "id": "U7.import",
+      "journey": "returning",
+      "owner": "R7HOME.2a",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 10727,
+      "screenshot": "U7.import.png"
+    },
+    {
+      "id": "R8.showcase.spa",
+      "journey": "returning",
+      "owner": "R7RO.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 32238,
+      "error": "locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('a[href*=\"/review/\"]').first()\n    - locator resolved to <a class=\"ui-d-l\" href=\"/p/showcase/review/01M6VNYZPYKZ677HHE7DC74HGJ\">Clear</a>\n  - attempting click action\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 100ms\n    58 × waiting for element to be visible, enabled and stable\n       - element is not visible\n     - retrying click action\n       - waiting 500ms\n",
+      "screenshot": "R8.showcase.spa.png"
+    }
+  ],
+  "passed": false
+}

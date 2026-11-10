@@ -1,0 +1,219 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "6db8bf9955fb",
+  "startedAt": "2026-11-08T01:36:13.880Z",
+  "finishedAt": "2026-11-08T01:42:57.794Z",
+  "webBaseUrl": "https://rhema-pr-293-web-723313c-tkbl73n3tq-uc.a.run.app",
+  "apiBaseUrl": "https://rhema-pr-293-api-e35a071-tkbl73n3tq-uc.a.run.app",
+  "provenance": {
+    "expected": "5d001e6bcaa53911a07ff11af04751d940415581",
+    "observed": {
+      "web": "5d001e6bcaa53911a07ff11af04751d940415581",
+      "api": "5d001e6bcaa53911a07ff11af04751d940415581"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "N10",
+      "journey": "new-visitor",
+      "owner": "UX.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 1468,
+      "screenshot": "N10.png"
+    },
+    {
+      "id": "R8.showcase",
+      "journey": "returning",
+      "owner": "UX.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2555,
+      "screenshot": "R8.showcase.png"
+    },
+    {
+      "id": "P1.public",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 1280,
+      "screenshot": "P1.public.png"
+    },
+    {
+      "id": "D1.hub",
+      "journey": "new-visitor",
+      "owner": "R7DEM.5b",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 1128,
+      "screenshot": "D1.hub.png"
+    },
+    {
+      "id": "D2.tour",
+      "journey": "new-visitor",
+      "owner": "R7DEM.6a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 17896,
+      "screenshot": "D2.tour.png"
+    },
+    {
+      "id": "D3.readonly",
+      "journey": "both",
+      "owner": "R7DEM.5",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 258068,
+      "screenshot": "D3.readonly.png"
+    },
+    {
+      "id": "P1.demo",
+      "journey": "phone",
+      "owner": "R7DEM.4b",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2325
+    },
+    {
+      "id": "R11.demo",
+      "journey": "returning",
+      "owner": "R7DEM.4b",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 37182,
+      "screenshot": "R11.demo.png"
+    },
+    {
+      "id": "U1.shell",
+      "journey": "returning",
+      "owner": "R7SHELL.1a",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 7238,
+      "screenshot": "U1.shell.png"
+    },
+    {
+      "id": "U2.noreload",
+      "journey": "returning",
+      "owner": "R7RELOAD.1",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 3913,
+      "screenshot": "U2.noreload.png"
+    },
+    {
+      "id": "U3.occlusion",
+      "journey": "returning",
+      "owner": "R7PANE.1",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 8556,
+      "screenshot": "U3.occlusion.png"
+    },
+    {
+      "id": "U4.controls",
+      "journey": "returning",
+      "owner": "R7KIT.3e",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 5724,
+      "screenshot": "U4.controls.png"
+    },
+    {
+      "id": "U5.write",
+      "journey": "returning",
+      "owner": "R7WRITE.1b",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 38917,
+      "error": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-comment-card]').first() to be visible\n",
+      "screenshot": "U5.write.png"
+    },
+    {
+      "id": "U6.chat",
+      "journey": "returning",
+      "owner": "R7TALK.1a",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 3630,
+      "screenshot": "U6.chat.png"
+    },
+    {
+      "id": "U7.import",
+      "journey": "returning",
+      "owner": "R7HOME.2a",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 10447,
+      "screenshot": "U7.import.png"
+    },
+    {
+      "id": "R8.showcase.spa",
+      "journey": "returning",
+      "owner": "R7RO.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2656,
+      "screenshot": "R8.showcase.spa.png"
+    }
+  ],
+  "passed": true
+}

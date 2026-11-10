@@ -1149,8 +1149,11 @@ export function ProjectSettingsBody({
   voiceLocked,
   contentKey,
   onSubmit,
+  routeSlug,
 }: {
   readonly projectSettings: BffProjectSettingsTwin["projectSettings"] | null;
+  /** the route param — the unavailable arm's crumb needs it (the twin is absent there). */
+  readonly routeSlug?: string;
   readonly saved: boolean;
   readonly notice: string | undefined;
   /** R7HOME.2b — the `?voice_locked=1` soft-lock echo (was the overview's). */
@@ -1165,7 +1168,13 @@ export function ProjectSettingsBody({
     return (
       <div data-spa-surface>
         <PageBody>
-          <PageHeader title={PS.heading} />
+          {/* F-R7DEP.2-5ev — the unavailable arm keeps the Project › Surface crumb. */}
+          <PageHeader
+            title={PS.heading}
+            {...(routeSlug != null
+              ? { crumbs: [{ label: routeSlug, href: `/p/${routeSlug}` }, { label: PS.heading }] }
+              : {})}
+          />
           {/* UXC-12 — the outage note is this page's own key, never billing's stripeDownNote. */}
           <p className="ui-set-note" data-settings-unavailable="project">
             {PS.unavailable}
@@ -1472,6 +1481,7 @@ export function ProjectSettingsBody({
 /** The `/p/:project/settings` leaf mount — supplies the body's delegated JSON submit upgrade. */
 export function ProjectSettingsSurface(props: {
   readonly projectSettings: BffProjectSettingsTwin["projectSettings"] | null;
+  readonly routeSlug?: string;
   readonly saved: boolean;
   readonly notice: string | undefined;
   readonly voiceLocked?: boolean;

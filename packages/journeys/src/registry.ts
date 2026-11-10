@@ -772,7 +772,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     asserts:
       "one AppShell wraps every authenticated leaf: the persistent collapsible left sidebar carries wordmark/New project/Search/recents/Inbox(badge)/Voices/Usage/Settings/Demo/account menu, and pending/error/404 states render inside it (REQ-SHELL-1/2, REQ-DACC-7)",
     owner: "R7SHELL.1a",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   {
@@ -781,7 +781,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     asserts:
       "the scripted walk list → project → dossier → compare → export → settings → inbox → chat send → gate approve → Showcase → back performs zero document loads (navigation entries stay 1, the window marker persists; S-14's named document navigations excluded) (REQ-RELOAD-6/REQ-GUARD-3, REQ-DACC-7)",
     owner: "R7RELOAD.1",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   {
@@ -790,7 +790,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     asserts:
       "at 1440×900, 1280×800, 1024×768, 820×1180 and 390×844 emulated: zero intersection between the Page text column / dossier letter column / tour targets and any un-scrimmed panel, and no main column below 45 ch at ≥768 px (REQ-PANE-4/REQ-GUARD-4, REQ-DACC-7)",
     owner: "R7PANE.1",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   {
@@ -802,7 +802,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     asserts:
       "the computed-style probe finds zero native-styled buttons/inputs/selects/textareas on the 12 migrated surfaces — /app, /app/inbox, /app/settings, /app/settings/billing, /app/usage, /app/voices, /app/new, /p/:p (the IDE Page + right panel), /p/:p/run, /p/:p/export, /p/:p/outline (the outline+figures sheet family), /p/:p/review/:runId — outside the named no-JS/SSR exemption containers (REQ-GUARD-1, REQ-DACC-7)",
     owner: "R7KIT.3e",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   {
@@ -811,7 +811,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     asserts:
       "new project → inline title → type in the blank Page → format bubble above the selection → comment lands anchored Guidance → focus mode in/out → source toggle (REQ-WRITE-1/2/4/5, REQ-HOME-3; REQ-DACC-7)",
     owner: "R7WRITE.1b",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   {
@@ -822,7 +822,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     asserts:
       "a stubbed chat turn returns the JSON 201 with its turn id, progress events stream over the run-event channel with no document reload, and the reply renders on completion (REQ-TALK-3, REQ-DACC-7)",
     owner: "R7TALK.1a",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   {
@@ -831,7 +831,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     asserts:
       "pasting markdown with a leading # H1 keeps the H1 as the title, the typeset preview lists any normalization in Conversion notes, and the imported draft is immediately editable (REQ-HOME-4/5, REQ-DACC-7)",
     owner: "R7HOME.2a",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   {

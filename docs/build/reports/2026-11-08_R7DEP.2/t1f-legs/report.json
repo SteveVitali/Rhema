@@ -1,0 +1,218 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "cfe6286b6d09",
+  "startedAt": "2026-11-08T03:00:07.720Z",
+  "finishedAt": "2026-11-08T03:06:19.584Z",
+  "webBaseUrl": "https://rhema-pr-293-web-723313c-tkbl73n3tq-uc.a.run.app",
+  "apiBaseUrl": "https://rhema-pr-293-api-e35a071-tkbl73n3tq-uc.a.run.app",
+  "provenance": {
+    "expected": "d0a77d0744b968b5fb6053b143d8956ad9e61bd9",
+    "observed": {
+      "web": "d0a77d0744b968b5fb6053b143d8956ad9e61bd9",
+      "api": "d0a77d0744b968b5fb6053b143d8956ad9e61bd9"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "N10",
+      "journey": "new-visitor",
+      "owner": "UX.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 1408,
+      "screenshot": "N10.png"
+    },
+    {
+      "id": "R8.showcase",
+      "journey": "returning",
+      "owner": "UX.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2594,
+      "screenshot": "R8.showcase.png"
+    },
+    {
+      "id": "P1.public",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 1234,
+      "screenshot": "P1.public.png"
+    },
+    {
+      "id": "D1.hub",
+      "journey": "new-visitor",
+      "owner": "R7DEM.5b",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 1121,
+      "screenshot": "D1.hub.png"
+    },
+    {
+      "id": "D2.tour",
+      "journey": "new-visitor",
+      "owner": "R7DEM.6a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 17265,
+      "screenshot": "D2.tour.png"
+    },
+    {
+      "id": "D3.readonly",
+      "journey": "both",
+      "owner": "R7DEM.5",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 252500,
+      "screenshot": "D3.readonly.png"
+    },
+    {
+      "id": "P1.demo",
+      "journey": "phone",
+      "owner": "R7DEM.4b",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2502
+    },
+    {
+      "id": "R11.demo",
+      "journey": "returning",
+      "owner": "R7DEM.4b",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 37294,
+      "screenshot": "R11.demo.png"
+    },
+    {
+      "id": "U1.shell",
+      "journey": "returning",
+      "owner": "R7SHELL.1a",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 7919,
+      "screenshot": "U1.shell.png"
+    },
+    {
+      "id": "U2.noreload",
+      "journey": "returning",
+      "owner": "R7RELOAD.1",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 4316,
+      "screenshot": "U2.noreload.png"
+    },
+    {
+      "id": "U3.occlusion",
+      "journey": "returning",
+      "owner": "R7PANE.1",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 9072,
+      "screenshot": "U3.occlusion.png"
+    },
+    {
+      "id": "U4.controls",
+      "journey": "returning",
+      "owner": "R7KIT.3e",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 6160,
+      "screenshot": "U4.controls.png"
+    },
+    {
+      "id": "U5.write",
+      "journey": "returning",
+      "owner": "R7WRITE.1b",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 9882,
+      "screenshot": "U5.write.png"
+    },
+    {
+      "id": "U6.chat",
+      "journey": "returning",
+      "owner": "R7TALK.1a",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 3782,
+      "screenshot": "U6.chat.png"
+    },
+    {
+      "id": "U7.import",
+      "journey": "returning",
+      "owner": "R7HOME.2a",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 10776,
+      "screenshot": "U7.import.png"
+    },
+    {
+      "id": "R8.showcase.spa",
+      "journey": "returning",
+      "owner": "R7RO.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 3129,
+      "screenshot": "R8.showcase.spa.png"
+    }
+  ],
+  "passed": true
+}

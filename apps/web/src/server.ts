@@ -6302,9 +6302,18 @@ export function createWebApp(deps: WebDeps): Hono {
       // default arm; `run_lock` is page-level (the tree twin reports document-level carriers
       // only — the sidebar's write-only gating is showcase/demo-scoped anyway).
       if (c.req.query("view") === "tree") {
-        const files = await Promise.resolve()
-          .then(() => deps.dataSource.getFiles?.(session, row.id))
-          .catch(() => undefined);
+        const [files, latestReviewEnvelope] = await Promise.all([
+          Promise.resolve()
+            .then(() => deps.dataSource.getFiles?.(session, row.id))
+            .catch(() => undefined),
+          // F-R7DEP.2-1r — the row fact's fallback: `listProjects`'s `latestReview.run_id`
+          // reads the correspondence join only; the delivered-record seam (the same
+          // `ide.latestReview` the overview twin uses — demo twins included) resolves the
+          // dossier run id whenever the join can't see it (e.g. the showcase dossier).
+          Promise.resolve()
+            .then(() => deps.dataSource.getLatestReview?.(session, row.id))
+            .catch(() => undefined),
+        ]);
         return c.json({
           project: {
             title: row.title,
@@ -6316,7 +6325,8 @@ export function createWebApp(deps: WebDeps): Hono {
             // dossier's run id, so the item carries `/p/:slug/review/:runId` (a visible,
             // actionable anchor) instead of the `/p/:slug` fallback. The files tree's provenance
             // rows do not carry it.
-            latestReviewRunId: row.latestReviewRunId ?? null,
+            latestReviewRunId:
+              row.latestReviewRunId ?? latestReviewEnvelope?.latestReview?.runId ?? null,
             ...(row.showcase === true ? { showcase: true } : {}),
             readOnlyProject:
               row.showcase === true

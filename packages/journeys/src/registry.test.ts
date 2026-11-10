@@ -98,6 +98,10 @@ describe("the journey step registry", () => {
         // @18a0df79 (the desk-head/statusbar stacking fix + the same-location commit; PASS →
         // ready-to-flip, screenshots reports/2026-11-05_R7FIX.2/, provenance match, $0).
         "U3.stopgap", "R8.showcase.spa",
+        // U1–U7 flipped red→green 2026-11-08 — 250_R7DEP.2 T1 `e578a767`: the all-16 preview
+        // board @`d0a77d0` + the prod Stage-B deployed-SHA pass (reports/2026-11-08_R7DEP.2/
+        // prod-stageb/, provenance all-PASS, $0). The round-7 red census is empty.
+        "U1.shell", "U2.noreload", "U3.occlusion", "U4.controls", "U5.write", "U6.chat", "U7.import",
         // B16 flipped green 2026-10-06 (funded window B continuation): the pinned phase-4,
         // sidecar-absent review committed exactly the craft phase + phase-result then stopped —
         // D-P0.03-2 DONE.
@@ -114,11 +118,11 @@ describe("the journey step registry", () => {
   // exactly one owner — the nightly reports `owed`, never a run failure, and no leg can flip
   // before its owner lands the body (the phase deploys 224/250 plus 248 for D2.tour are the
   // only sanctioned flippers under GD-PREVIEW.R7). U6 is never a paid row (P4-25).
-  it("every round-7 leg is red, free, single-owned, and its stub fails owed-loudly", async () => {
-    // 224 R7DEP.1 (the sanctioned flipper) flipped D1.hub/D2.tour/D3.readonly/P1.demo/R11.demo
-    // green on pr-259 preview evidence @4f66cebc — they are out of the red census; U3.stopgap +
-    // R8.showcase.spa followed on R7FIX.2's live proof at @18a0df79 (2026-11-05), leaving the
-    // seven R7b U* legs as the round-7 red census until 250.
+  it("every round-7 leg flipped green on 250's evidence, stays free + single-owned", async () => {
+    // 250_R7DEP.2 (the sanctioned flipper) flipped U1–U7 green at T1 `e578a767` — the all-16
+    // preview board @`d0a77d0` plus the prod Stage-B deployed-SHA pass (`prod-stageb/`). The
+    // round-7 red census is EMPTY; this test now pins the post-flip facts (green, free,
+    // single-owned, never a paid row) so a silent re-redden or paid-flip still fails.
     const R7_IDS = [
       "U1.shell", "U2.noreload", "U3.occlusion", "U4.controls", "U5.write", "U6.chat", "U7.import",
     ];
@@ -148,7 +152,7 @@ describe("the journey step registry", () => {
     for (const id of R7_IDS) {
       const s = stepById(id);
       expect(s, id).toBeDefined();
-      expect(s!.expected, id).toBe("red");
+      expect(s!.expected, id).toBe("green");
       expect(s!.paid, id).toBe(false);
       expect(s!.capUsd, id).toBeUndefined();
       expect(s!.owner, id).toBe(OWNERS[id]);

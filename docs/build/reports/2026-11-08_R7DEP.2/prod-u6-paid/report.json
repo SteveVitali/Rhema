@@ -1,0 +1,42 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "fa27f1871c1f",
+  "startedAt": "2026-11-08T08:55:24.357Z",
+  "finishedAt": "2026-11-08T08:58:01.040Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "e578a767fbff5e8e0cfb7282541ba2bb3172744b",
+    "observed": {
+      "web": "e578a767fbff5e8e0cfb7282541ba2bb3172744b",
+      "api": "e578a767fbff5e8e0cfb7282541ba2bb3172744b"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 3.34352,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "R4",
+      "journey": "returning",
+      "owner": "RUN.1",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 402 ()"
+      ],
+      "failedRequests": [],
+      "durationMs": 156532,
+      "error": "turn-status poll never returned the turn optimistic",
+      "screenshot": "R4.png"
+    }
+  ],
+  "passed": false
+}

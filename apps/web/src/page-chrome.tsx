@@ -18,6 +18,7 @@
 
 import { type ReactNode } from "react";
 import {
+  Button,
   EmptyProject,
   PageEditor,
   PageStrip,
@@ -488,7 +489,6 @@ export function ProjectOverviewBody(props: ProjectOverviewProps): ReactNode {
           method="post"
           action={`/p/${slug}/rename`}
           data-rename-form="true"
-          data-inline-title="true"
           style={{ margin: "4px 0" }}
         >
           <input
@@ -498,6 +498,11 @@ export function ProjectOverviewBody(props: ProjectOverviewProps): ReactNode {
             defaultValue={project.title}
             placeholder={COPY.newProject.untitledTitle}
             aria-label={COPY.newProject.untitledTitle}
+            // F-R7DEP.2-3r — the hook rides the FIELD (the element the contract
+            // names "the focused blank-Page title"), never the form wrapper:
+            // `document.activeElement` lands on the input, and every consumer
+            // (`[data-inline-title]`) resolves the element that owns focus.
+            data-inline-title="true"
             autoFocus
             className="ide-title-field"
             style={{
@@ -553,13 +558,18 @@ export function ProjectOverviewBody(props: ProjectOverviewProps): ReactNode {
               <a href={`/p/${slug}/import`}>{COPY.emptyPage.importFile}</a>
               <a href={`/p/${slug}/import`}>{COPY.emptyPage.pasteText}</a>
               <a href={`/p/${slug}/outline`}>{COPY.emptyPage.startOutline}</a>
-              <button
+              {/* F-R7DEP.2-6 — the "Ask in chat" affordance rides the panel tabs' delegated
+                  arm through the Button PRIMITIVE (never a raw <button> — GUARD-1/U4's census
+                  counts any visible control without a `ui-*` class as native-styled; the F-2
+                  fix re-enabled the real tab so this quiet-link stand-in finally showed). */}
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 data-ide-panel-tab="chat"
-                style={{ background: "none", border: "none", padding: 0, color: "var(--accent)", fontSize: "13px", cursor: "pointer" }}
               >
                 {COPY.emptyPage.askChat}
-              </button>
+              </Button>
             </p>
           ) : null}
           <PageChrome

@@ -51,6 +51,7 @@ export const Route = createFileRoute("/_authenticated/p/$project/outline")({
     return (
       <OutlineSurface
         data={q.data.outline}
+        slug={project}
         saved={search.saved === "1"}
         // the document's own flash-code→copy mapping verbatim (`?notice=cited` → the cited leaf).
         notice={search.notice === "cited" ? COPY.outlinePage.citedNote : undefined}

@@ -47,6 +47,7 @@ export const Route = createFileRoute("/_authenticated/p/$project/settings")({
     return (
       <ProjectSettingsSurface
         projectSettings={q.data.projectSettings}
+        routeSlug={project}
         saved={search.saved === "1"}
         notice={typeof search.notice === "string" ? search.notice : undefined}
         voiceLocked={search.voice_locked === "1"}

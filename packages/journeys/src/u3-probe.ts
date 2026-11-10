@@ -222,11 +222,22 @@ export async function u3ProbePage(
 
   // every tab is actionable — the ] chord is the primary open path; open the panel on demand
   // whenever it isn't already (closed-by-default below 1280, possibly findings-free ≥1280).
+  // The chord is a bare chrome key — inert while a field or the Page holds focus (the blank
+  // Page's title-focus claim can hold it at the first size), so the caret blurs out of any
+  // zone first — the same arm U2/U5 take. The press also raced the listener mount once at
+  // T1d (1440×900): bound the wait on the open state and allow one retry; a still-closed
+  // panel then throws honestly — a non-opening panel is a defect, never masked.
   if ((await ideAttr("data-panel")) !== "open") {
-    await page.keyboard.press("]");
-    if ((await ideAttr("data-panel")) !== "open") {
-      throw new Error(`the right panel did not open on demand at ${w}×${h}`);
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    let opened = false;
+    for (let attempt = 0; attempt < 2 && !opened; attempt++) {
+      await page.keyboard.press("]");
+      opened = await page
+        .waitForSelector("[data-ide][data-panel='open']", { timeout: 5_000 })
+        .then(() => true)
+        .catch(() => false);
     }
+    if (!opened) throw new Error(`the right panel did not open on demand at ${w}×${h}`);
   }
   if (opts.demo) {
     // REQ-DWEB-7 — a demo boot hides the Chat trigger; the other four stay actionable.
@@ -261,7 +272,18 @@ export async function u3ProbePage(
       throw new Error(`Esc did not close the overlay/sheet at ${w}×${h}`);
     }
   } else {
-    await page.keyboard.press("]"); // close again for the trailing intersection assert
+    // close again for the trailing intersection assert — the same bounded arm as the
+    // open: a raced toggle would carry an open panel into the next size's auto-open
+    // check and misreport it as a defect.
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    for (let attempt = 0; attempt < 2; attempt++) {
+      await page.keyboard.press("]");
+      const closed = await page
+        .waitForSelector("[data-ide][data-panel='closed']", { timeout: 5_000 })
+        .then(() => true)
+        .catch(() => false);
+      if (closed) break;
+    }
     const bad2 = await page.evaluate(() => {
       const scrim = document.querySelector<HTMLElement>("[data-ide-scrim]");
       const scrimShown = scrim != null && getComputedStyle(scrim).display !== "none";

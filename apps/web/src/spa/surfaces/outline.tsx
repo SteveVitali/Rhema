@@ -100,6 +100,12 @@ type AutosaveState = "idle" | "saving" | "saved" | "failed";
 export interface OutlineSurfaceProps {
   /** the `GET /bff/p/:slug/outline` twin bag (`null` ⇒ the SSR's `O.notFound` arm). */
   readonly data: BffOutlineTwin["outline"];
+  /**
+   * F-R7DEP.2-5ev — the route's project param, so the `!data` notFound arm still mounts the
+   * Project › Surface breadcrumb (a fresh project has no outline artifact — `outline:null`
+   * — and the crumb is the leaf's nav idiom, never contingent on the twin row existing).
+   */
+  readonly slug: string;
   /** the leaf's validated flash params (`?saved=1`/`?notice=…`) — URL state, never payload. */
   readonly saved: boolean;
   readonly notice?: string;
@@ -118,6 +124,7 @@ export interface OutlineSurfaceProps {
  */
 export function OutlineSurface({
   data,
+  slug,
   saved,
   notice,
   compact,
@@ -240,7 +247,10 @@ export function OutlineSurface({
     return (
       <div data-spa-surface>
         <PageBody>
-          <PageHeader title={O.heading} />
+          <PageHeader
+            title={O.heading}
+            crumbs={[{ label: slug, href: `/p/${slug}` }, { label: O.heading }]}
+          />
           <p className="ui-set-t--m">{O.notFound}</p>
         </PageBody>
       </div>

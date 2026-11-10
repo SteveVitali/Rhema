@@ -87,7 +87,15 @@ export function HeadManager(): ReactNode {
     // (the shell never stamps it statically; a served SSR document carries it by completeness).
     html.setAttribute("data-mounted", "");
     const hashTarget = hash !== "" ? document.getElementById(hash) : null;
-    const focusEl = hashTarget ?? document.querySelector("[data-spa-root] h1");
+    // F-R7DEP.2-3 (REQ-HOME-3 vs REQ-COPY-7) — a leaf that mounts `[data-inline-title]`
+    // declares its own entry focus (the create-and-type contract: the blank Page's inline
+    // title IS the focus target). The generic route-focus h1 arm must not steal it — this
+    // effect runs when `isLoading` settles, AFTER the leaf's mount/autoFocus claims.
+    const leafOwnsEntryFocus =
+      hashTarget == null && document.querySelector("[data-inline-title]") != null;
+    const focusEl = leafOwnsEntryFocus
+      ? null
+      : (hashTarget ?? document.querySelector("[data-spa-root] h1"));
     if (focusEl instanceof HTMLElement) {
       if (!focusEl.hasAttribute("tabindex")) focusEl.tabIndex = -1;
       // REQ-COPY-7 (R7KIT.1; R5 A4/D7) — route focus is PROGRAMMATIC, so it must not paint the
