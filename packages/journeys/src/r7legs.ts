@@ -973,8 +973,14 @@ const U1_SHELL: StepFn = async (ctx) => {
       throw new Error(`${path} is not framed inside the one AppShell`);
     }
   }
+  // F-R7DEP.2-5 — the recents ride the `/bff/app` twin, which lands after the leaf's own
+  // `data-page-header`: the immediate `count()===0` raced an unresolved query (the row was
+  // owed, not absent). Wait for the row like every other hook — a genuinely empty list
+  // still fails on the timeout, so the assertion is unchanged.
   const recent2 = page.locator("[data-shell-recent]").first();
-  if ((await recent2.count()) === 0) throw new Error("no recent project row to walk into");
+  await recent2.waitFor({ timeout: 30_000 }).catch(() => {
+    throw new Error("no recent project row to walk into");
+  });
   const slug = (await recent2.getAttribute("data-shell-recent")) ?? "";
   for (const path of [`/p/${slug}/outline`, `/p/${slug}/figures`, `/p/${slug}/usage`, `/p/${slug}/settings`]) {
     await gotoOk(page, `${ctx.webBaseUrl}${path}?src=jrn`, ctx);
@@ -1001,7 +1007,9 @@ const U1_SHELL: StepFn = async (ctx) => {
   }
   // the hosted IDE: a project leaf mounts `.ide` inside the shell with the rail suppressed.
   const recent = page.locator("[data-shell-recent]").first();
-  if ((await recent.count()) === 0) throw new Error("no recent project row to walk into");
+  await recent.waitFor({ timeout: 30_000 }).catch(() => {
+    throw new Error("no recent project row to walk into");
+  });
   const project = recent;
   await project.click();
   await page.locator("[data-ide-hosted]").first().waitFor({ timeout: 30_000 });

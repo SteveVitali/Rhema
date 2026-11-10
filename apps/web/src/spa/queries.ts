@@ -1223,6 +1223,8 @@ export interface BffProjectTreeTwin {
     readonly slug: string;
     readonly headDraftId?: string | null;
     readonly headDraftN?: number | null;
+    /** F-R7DEP.2-1 — the latest delivered dossier's run id; the sidebar Reviews item's href. */
+    readonly latestReviewRunId?: string | null;
     readonly showcase?: boolean;
     readonly readOnlyProject?: ReadOnlyProject | null;
   };
