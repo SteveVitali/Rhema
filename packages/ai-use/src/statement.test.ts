@@ -71,7 +71,7 @@ async function seedFixture() {
   });
   await seedRunWithSteps(db, {
     runId: "run_r1", workspaceId, projectId: project.projectId, workflow: "review",
-    createdAt: "2026-09-01T10:00:00Z", phases: ["read", "letter_writing"],
+    createdAt: "2026-09-01T10:00:00Z", phases: ["intake", "letter"],
   });
   await seedRunWithSteps(db, {
     runId: "run_v1", workspaceId, projectId: project.projectId, workflow: "revise",
@@ -79,7 +79,7 @@ async function seedFixture() {
   });
   await seedRunWithSteps(db, {
     runId: "run_r2", workspaceId, projectId: project.projectId, workflow: "review",
-    tier: "frontier", createdAt: "2026-09-03T10:00:00Z", phases: ["read", "letter_writing"],
+    tier: "frontier", createdAt: "2026-09-03T10:00:00Z", phases: ["intake", "letter"],
   });
   // the human-revision head (§5.4): the working child of the frozen v1 base.
   await db.exec.query(
@@ -108,7 +108,7 @@ describe("collectStatementFacts — run rows only (AC2)", () => {
     expect(facts).not.toBeNull();
     expect(facts!.runs.map((r) => r.workflow)).toEqual(["review", "revise", "review"]);
     expect(facts!.runs.map((r) => r.modelTier)).toEqual(["balanced", "balanced", "frontier"]);
-    expect(facts!.phases).toEqual(["read", "letter_writing", "triage", "draft"]);
+    expect(facts!.phases).toEqual(["intake", "letter", "triage", "draft"]);
     expect(facts!.humanRevisionNs).toEqual([2]);
     expect(facts!.approvals.map((a) => a.action)).toEqual(["approve", "edit", "proceed_as_proposed"]);
     await db.close();
@@ -128,9 +128,10 @@ describe("generatedSentences — the general template (REQ-VIS-10, REQ-POS-6)", 
     const sentences = generatedSentences(facts, { openObligations: 0, blockingOpen: 0 });
     expect(sentences).toEqual([
       "This manuscript was prepared in Rhēma, an editorial-review environment that runs editorial workflows on the text.",
-      "Rhēma ran 3 editorial workflows on the manuscript between 2026-09-01 and 2026-09-03: 2 review, 1 revise.",
-      "The workflows used the balanced and frontier model tiers.",
-      "Workflow phases on record: read, letter_writing, triage, draft.",
+      // R7COPY.1a (REQ-COPY-1; R5 G6) — workflow/phase keys render their UI_LABELS names.
+      "Rhēma ran 3 editorial workflows on the manuscript between 2026-09-01 and 2026-09-03: 2 Review, 1 Revise.",
+      "The workflows used the Balanced and Frontier model tiers.",
+      "Workflow phases on record: Intake, Letter, Triage, Draft.",
       "The author made 2 recorded decisions at the workflows' approval points (approve, edit).",
       "The author revised the manuscript directly, outside any workflow (version v2).",
     ]);

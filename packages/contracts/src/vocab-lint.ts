@@ -4,8 +4,8 @@
 // phrases (case-insensitive) so canonical nouns pass — "Project" is fine even though "Pro" is banned, and
 // "authority" is fine even though "author" is reserved for the human.
 
-import { BANNED_STRINGS } from "./reserved-strings.js";
-import type { BannedString } from "./reserved-strings.js";
+import { BANNED_INTERNAL_TERMS, BANNED_STRINGS } from "./reserved-strings.js";
+import type { BannedInternalTerm, BannedString, InternalTermAllow } from "./reserved-strings.js";
 
 export interface CopyViolation {
   /** The copy-table key that violated. */
@@ -78,4 +78,111 @@ export function lintCopy(
     }
   }
   return violations;
+}
+
+// ---------- REQ-COPY-6 / REQ-GUARD-2(a) (R7COPY.1a) — the banned internal-term lint ----------
+
+export interface InternalTermViolation {
+  /** The copy-table key that violated. */
+  readonly key: string;
+  /** The `BANNED_INTERNAL_TERMS.id`. */
+  readonly termId: string;
+  /** The banned term (verbatim from spec §4.13). */
+  readonly term: string;
+  /** The offending copy string. */
+  readonly value: string;
+  /** The plain-language replacement the jargon pass applies. */
+  readonly replacement: string;
+}
+
+function termMatcher(t: BannedInternalTerm): RegExp {
+  return new RegExp(t.pattern, t.flags);
+}
+
+function toPairs(
+  entries: Readonly<Record<string, string>> | Iterable<readonly [string, string]>,
+): [string, string][] {
+  return Symbol.iterator in Object(entries)
+    ? [...(entries as Iterable<readonly [string, string]>)].map(([k, v]): [string, string] => [k, v])
+    : Object.entries(entries as Record<string, string>);
+}
+
+/**
+ * The REQ-GUARD-2(a) copy lint: no COPY leaf's VALUE may carry a REQ-COPY-6 banned internal term.
+ * `allow` entries exempt exactly their (key, termId) pair — they are validated separately by
+ * `validateInternalTermAllow`, so a malformed allow never silently exempts: an unvalidated entry
+ * is simply ignored here and the violation still reports.
+ */
+export function lintInternalTerms(
+  entries: Readonly<Record<string, string>> | Iterable<readonly [string, string]>,
+  opts: { allow?: readonly InternalTermAllow[] } = {},
+): InternalTermViolation[] {
+  const pairs = toPairs(entries);
+  const allowed = new Set(
+    (opts.allow ?? [])
+      .filter((a) => validateInternalTermAllowEntries([a]).length === 0)
+      .map((a) => `${a.key}${a.termId}`),
+  );
+  const terms = BANNED_INTERNAL_TERMS.map((t) => ({ ...t, re: termMatcher(t) }));
+  const violations: InternalTermViolation[] = [];
+  for (const [key, value] of pairs) {
+    if (typeof value !== "string") continue;
+    for (const t of terms) {
+      if (t.re.test(value) && !allowed.has(`${key}${t.id}`)) {
+        violations.push({ key, termId: t.id, term: t.text, value, replacement: t.replacement });
+      }
+    }
+  }
+  return violations;
+}
+
+/**
+ * Validate the temporary allow list (REQ-COPY-6 + Phase-4 P4-24). Each entry must (1) name a
+ * `demo.*` leaf — only H15-signed demo copy may be exempted, (2) reference a real banned-term id,
+ * (3) carry a `D-<TICKET>-<n>` deferral key that owns removal, (4) carry a YYYY-MM-DD `added`
+ * date, and (5) cover at least one live violation — a stale or seeded allow fails. Call with the
+ * raw violations so leg (5) can run:
+ *   `validateInternalTermAllow(ALLOW, lintInternalTerms(all, { allow: [] }))`
+ */
+export function validateInternalTermAllow(
+  allow: readonly InternalTermAllow[],
+  rawViolations: readonly InternalTermViolation[],
+): string[] {
+  const errors: string[] = [];
+  const raw = new Set(rawViolations.map((v) => `${v.key}${v.termId}`));
+  for (const a of allow) {
+    errors.push(...validateInternalTermAllowEntries([a]));
+    if (a.deferral && /^D-[A-Za-z0-9.]+-\d+$/.test(a.deferral) && a.key.startsWith("demo.")) {
+      if (!raw.has(`${a.key}${a.termId}`)) {
+        errors.push(
+          `allow entry ${a.key}/${a.termId} covers no live violation — remove it (stale entries fail closed)`,
+        );
+      }
+    }
+  }
+  return errors;
+}
+
+/** Structural checks for one allow entry (shape only — live-violation coverage needs the caller's raw list). */
+function validateInternalTermAllowEntries(allow: readonly InternalTermAllow[]): string[] {
+  const errors: string[] = [];
+  const termIds = new Set(BANNED_INTERNAL_TERMS.map((t) => t.id));
+  for (const a of allow) {
+    if (typeof a.key !== "string" || !a.key.startsWith("demo.")) {
+      errors.push(`allow entry key '${a.key}' must be a demo.* leaf — only H15-signed copy is exemptible`);
+    }
+    if (typeof a.termId !== "string" || !termIds.has(a.termId)) {
+      errors.push(`allow entry ${a.key}: unknown term id '${a.termId}'`);
+    }
+    if (typeof a.deferral !== "string" || !/^D-[A-Za-z0-9.]+-\d+$/.test(a.deferral)) {
+      errors.push(`allow entry ${a.key}/${a.termId}: deferral '${a.deferral}' is not a D-row key (D-<TICKET>-<n>)`);
+    }
+    if (typeof a.added !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(a.added)) {
+      errors.push(`allow entry ${a.key}/${a.termId}: added '${a.added}' is not a YYYY-MM-DD date`);
+    }
+    if (typeof a.note !== "string" || a.note.length === 0) {
+      errors.push(`allow entry ${a.key}/${a.termId}: a named reason is required`);
+    }
+  }
+  return errors;
 }

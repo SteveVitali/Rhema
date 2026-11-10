@@ -1,5 +1,17 @@
 import { describe, it, expect } from "vitest";
-import { lintCopy } from "@rhema/contracts";
+import {
+  lintCopy,
+  lintInternalTerms,
+  validateInternalTermAllow,
+  BANNED_INTERNAL_TERM_ALLOW,
+  BANNED_INTERNAL_TERMS,
+  UI_LABELS,
+  WORKFLOW_KEYS,
+  PHASE_KEYS,
+  ARTIFACT_KINDS,
+  RUN_STATES,
+  SOURCE_PROVIDER_KEYS,
+} from "@rhema/contracts";
 import { collectCopyStrings } from "./copy.js";
 
 // AC4 — the i18n string table lints green against Appendix D.2 (REQ-PROD-6 / REQ-BILL-18). This consumes
@@ -125,6 +137,99 @@ describe("copy vocabulary lint (Appendix D.2)", () => {
       expect(keys.has("invite.headingOpen")).toBe(true);
       expect(keys.has("invite.accessNoteOpen")).toBe(true);
       expect(keys.has("login.noteOpen")).toBe(true);
+    });
+  });
+
+  // R7COPY.1a — REQ-COPY-1 (one label table) + REQ-COPY-6/REQ-GUARD-2(a) (the banned
+  // internal-term lint, verbatim from spec §4.13 — the list is not negotiable).
+  describe("REQ-COPY-1 — the ONE enum label table", () => {
+    it("is exhaustive over every contracts enum domain (a fake key is a type error)", () => {
+      // @ts-expect-error — a fake workflow key fails typecheck (the table is exhaustive by type)
+      expect(UI_LABELS.workflow["not_a_workflow"]).toBeUndefined();
+      // @ts-expect-error — a fake phase key fails typecheck
+      expect(UI_LABELS.phase["not_a_phase"]).toBeUndefined();
+      // @ts-expect-error — a fake artifact kind fails typecheck
+      expect(UI_LABELS.artifactKind["not_a_kind"]).toBeUndefined();
+      // @ts-expect-error — a fake run state fails typecheck (the `delivered` union member exists)
+      expect(UI_LABELS.runState["not_a_state"]).toBeUndefined();
+      for (const k of WORKFLOW_KEYS) expect(UI_LABELS.workflow[k]).toBeTruthy();
+      for (const k of PHASE_KEYS) expect(UI_LABELS.phase[k]).toBeTruthy();
+      for (const k of ARTIFACT_KINDS) expect(UI_LABELS.artifactKind[k]).toBeTruthy();
+      for (const k of RUN_STATES) expect(UI_LABELS.runState[k]).toBeTruthy();
+      for (const k of SOURCE_PROVIDER_KEYS) expect(UI_LABELS.sourceProvider[k]).toBeTruthy();
+    });
+    it("every label-table value is itself lint-clean (no reserved/banned strings in labels)", () => {
+      const pairs = Object.entries(UI_LABELS).flatMap(([domain, m]) =>
+        Object.entries(m).map(([k, v]) => [`labels.${domain}.${k}`, v] as [string, string]),
+      );
+      expect(lintCopy(pairs, { allow: ["Advanced", "unverified"] })).toEqual([]);
+      expect(lintInternalTerms(pairs)).toEqual([]);
+    });
+  });
+
+  describe("REQ-COPY-6 / REQ-GUARD-2(a) — no banned internal term in any COPY leaf", () => {
+    it("the whole table is clean against the verbatim banned list", () => {
+      expect(lintInternalTerms(collectCopyStrings(), { allow: BANNED_INTERNAL_TERM_ALLOW })).toEqual(
+        [],
+      );
+      // the allow list (expected: empty) stays well-formed — a seeded bogus entry fails.
+      const raw = lintInternalTerms(collectCopyStrings());
+      expect(validateInternalTermAllow(BANNED_INTERNAL_TERM_ALLOW, raw)).toEqual([]);
+    });
+    it("a seeded leaf with a banned term fails the lint", () => {
+      const seeded = lintInternalTerms({ "demo.tour.x": "Waiting on your call: 3" });
+      expect(seeded.length).toBeGreaterThan(0);
+      expect(seeded[0]!.term).toBe("Waiting on your call");
+      for (const [leaf, term] of [
+        ["x.a", "QUIET"],
+        ["x.b", "0 open obligations"],
+        ["x.c", "a blocking gate opens"],
+        ["x.d", "the coherence read"],
+        ["x.e", "the public funnel"],
+        ["x.f", "the sidecar file"],
+        ["x.g", "partial (0/1 phases)"],
+        ["x.h", "Have an invitation? Sign in"],
+        ["x.i", "the shared session contract"],
+      ] as const) {
+        const v = lintInternalTerms({ [leaf]: term });
+        expect(v.length, `${leaf} → '${term}'`).toBeGreaterThan(0);
+      }
+    });
+    it("a seeded allow entry without a D-row key fails validation", () => {
+      const bogus = [
+        { key: "demo.tour.x", termId: "waiting-call", deferral: "later", added: "2026-11-07", note: "seeded" },
+      ];
+      const errors = validateInternalTermAllow(bogus, [
+        { key: "demo.tour.x", termId: "waiting-call", term: "Waiting on your call", value: "x", replacement: "y" },
+      ]);
+      expect(errors.length).toBeGreaterThan(0);
+      // a non-demo leaf can never be exempted (H15-signed copy only)
+      const nonDemo = [
+        { key: "inbox.x", termId: "waiting-call", deferral: "D-R7COPY.1a-1", added: "2026-11-07", note: "seeded" },
+      ];
+      expect(validateInternalTermAllow(nonDemo, []).length).toBeGreaterThan(0);
+      // a stale allow (well-formed but covering nothing) fails closed
+      const stale = [
+        { key: "demo.tour.x", termId: "waiting-call", deferral: "D-R7COPY.1a-1", added: "2026-11-07", note: "seeded" },
+      ];
+      expect(validateInternalTermAllow(stale, []).length).toBeGreaterThan(0);
+    });
+    it("every spec §4.13 term is in the list, verbatim", () => {
+      const texts = BANNED_INTERNAL_TERMS.map((t) => t.text);
+      for (const t of [
+        "QUIET",
+        "obligations",
+        "gate",
+        "the coherence read",
+        "public funnel",
+        "sidecar",
+        "partial (0/1 phases)",
+        "Waiting on your call",
+        "Have an invitation?",
+        "the shared session contract…",
+      ]) {
+        expect(texts).toContain(t);
+      }
     });
   });
 
