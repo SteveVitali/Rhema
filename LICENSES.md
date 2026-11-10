@@ -66,3 +66,11 @@ REQ-DOPS-3). The legal code ships as `packages/demo-corpus/LICENSE`. Scope: corp
 derivatives only — the package's `src/` code, the invented synthetic fixture, and the rest of the
 repository remain MIT. The carve-out is recorded as a `"type":"asset"` entry in
 `licenses.exceptions.json`.
+
+Amended 2026-11-07 (249a R7PUB.1, REQ-PUB-2): the landing hero recording at
+`apps/web/public/media/hero-tour.mp4` and `apps/web/public/media/hero-tour-poster.jpg` — captured
+from the logged-out demo tour by 250_R7DEP.2's committed recipe — shows corpus content and
+therefore rides the same CC BY-NC-ND 4.0 carve-out and pen-name scope (ADR-127; S-11). It is
+declared ahead of the bytes: the asset entry `"demo-hero-recording"` in
+`licenses.exceptions.json` names the paths; 250 completes the record with the committed files'
+bytes and sha256.

@@ -207,6 +207,17 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-holdout-badge", "conditional", "pages.tsx"),
     a("data-holdout-hidden", "conditional", "pages.tsx"),
     a("data-section", "conditional", "marketing.tsx/pages.tsx"),
+    // ---- 249a R7PUB.1 (REQ-PUB-1/2; REQ-GROWTH-3) — the marketing chrome, serif display
+    // headline, hero-recording slot, FAQ accordion, and the signed-in /pricing nav ----
+    a("data-mk-nav", "conditional", "marketing.tsx MarketingShell", "the dedicated marketing nav (R7PUB.1)"),
+    a("data-display-headline", "conditional", "marketing.tsx LandingPage", "the §15.1 serif display h1"),
+    a("data-hero-slot", "conditional", "marketing.tsx HeroRecordingSlot", "the reserved 16:9 hero box — identical in both states (CLS 0)"),
+    a("data-hero-video", "conditional", "marketing.tsx HeroRecordingSlot", "the clip arm — muted/loop/playsinline/lazy; only while the declared asset exists"),
+    a("data-hero-placeholder", "conditional", "marketing.tsx HeroRecordingSlot", "the static frame while the clip is uncommitted"),
+    a("data-hero-src", "conditional", "marketing.tsx HeroRecordingSlot", "the lazy source carrier the island arms (never an inline src)"),
+    a("data-faq", "conditional", "marketing.tsx LandingPage", "the FAQ accordion root (native <details> no-JS fallback)"),
+    a("data-faq-item", "conditional", "marketing.tsx LandingPage", "one FAQ item — styled <details> on the accordion classes"),
+    a("data-pricing-app", "conditional", "marketing.tsx PricingPage", "signed-in /pricing nav — the way back to /app (REQ-PUB-1)"),
     r("status", "pages.tsx forms", "polite live region — sign-in/sent states (N2)"),
     n("email", "required", "pages.tsx sign-in form"),
     n("method", "required", "pages.tsx sign-in form", "google|magic_link channel field"),

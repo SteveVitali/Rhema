@@ -2087,6 +2087,9 @@ export const COPY = {
       // 222 R7DEM.6a (REQ-TOUR-4) — the hero's secondary CTA into the demo (a document
       // navigation, S-14).
       demoCta: "See it on four real essays →",
+      // 249a R7PUB.1 (REQ-PUB-2/REQ-GROWTH-3) — the hero-recording slot's accessible label +
+      // its placeholder frame's caption while the declared clip is uncommitted.
+      recordingAlt: "A recorded walk through a real review — replayed from the demo record.",
     },
     dropzone: {
       label: "Drop your draft here",
@@ -2237,6 +2240,8 @@ export const COPY = {
     factCheckOffLabel: "fact-check off",
     matrixHeading: "The ladder, compared",
     faqHeading: "Questions",
+    // 249a R7PUB.1 (REQ-PUB-1) — the signed-in nav's way back (the account menu lands here).
+    backToApp: "Back to the app",
     // HOT.1 — honest default; the "one included Review" variant is the gated claim
     // `trial.firstReviewIncluded` (PUBLIC_CLAIM_COPY), not a copy-table string.
     trialRuleFmt: "One trial per person — {days} days, no card.",

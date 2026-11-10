@@ -186,3 +186,46 @@ if (consumed) {
     if (rec && marker && marker === rec.token) await deleteHold();
   })();
 }
+
+// ---- job 4 (249a R7PUB.1; REQ-PUB-2/REQ-GROWTH-3) — the hero-recording arm ----------------
+//
+// The SSR slot ships a muted/looping/playsinline <video> with NO autoplay and a `data-hero-src`
+// placeholder instead of `src` — zero bytes fetch and the poster paints immediately, so the
+// placeholder↔clip swap is invisible to layout (the reserved aspect box never moves). This
+// island arms the clip ONLY when the visitor has not asked for reduced motion: a reduced-motion
+// browser keeps the poster frame and zero <video> elements play. Lazy: the source attaches on
+// first approach of the viewport edge, not on load.
+const heroVideo = document.querySelector<HTMLVideoElement>("video[data-hero-video]");
+if (heroVideo) {
+  const heroSrc = heroVideo.querySelector<HTMLElement>("source[data-hero-src]");
+  const armHero = (): void => {
+    if (heroSrc && !heroSrc.getAttribute("src")) {
+      heroSrc.setAttribute("src", heroSrc.getAttribute("data-hero-src") ?? "");
+    }
+    heroVideo.load();
+    void heroVideo.play().catch(() => undefined);
+  };
+  const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const maybeArm = (): void => {
+    if (motionQuery.matches) return; // the poster frame IS the reduced-motion render
+    if ("IntersectionObserver" in window) {
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            if (e.isIntersecting) {
+              armHero();
+              io.disconnect();
+              break;
+            }
+          }
+        },
+        { rootMargin: "240px" },
+      );
+      io.observe(heroVideo);
+    } else {
+      armHero();
+    }
+  };
+  maybeArm();
+  motionQuery.addEventListener("change", maybeArm);
+}

@@ -8,7 +8,7 @@
 
 import type { ReactNode } from "react";
 import { Shell, PageTitle, SectionTitle, DossierView, type DossierLabels } from "@rhema/ui";
-import { buildPricingPageData, rangeLabel, PUBLIC_CLAIM_COPY, publicClaimEnabled, MODEL_TIERS, MODEL_TIER_DISPLAY } from "@rhema/contracts";
+import { buildPricingPageData, rangeLabel, PUBLIC_CLAIM_COPY, publicClaimEnabled, MODEL_TIERS, MODEL_TIER_DISPLAY, HERO_RECORDING } from "@rhema/contracts";
 import { surfacePricer } from "@rhema/run-sheet";
 import { COPY } from "./copy.js";
 import { SAMPLE_DOSSIER } from "./sample-dossier.js";
@@ -55,6 +55,98 @@ const CTA_GHOST = {
   border: "1px solid var(--shell-border)",
 } as const;
 
+// ---- 249a R7PUB.1 (REQ-PUB-2) — the dedicated marketing chrome + the hero-recording slot ----
+
+/**
+ * The R7b marketing layout (REQ-PUB-2): a wider header/nav than the shared flat `Shell` — the
+ * wordmark, the product nav (Pricing · the /demo entry · Sign in), and the primary CTA — over
+ * the same public footer. The demo link is a document navigation like every other /demo entry
+ * (S-14; `data-spa-native` + `data-demo-entry="nav"`).
+ */
+function MarketingShell({ children }: { children: ReactNode }): ReactNode {
+  return (
+    <div className="ui-t-vh" style={{ display: "flex", flexDirection: "column" }}>
+      <header
+        data-mk-nav
+        style={{
+          display: "flex",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "16px",
+          borderBottom: "1px solid var(--shell-border)",
+          padding: "14px 24px",
+        }}
+      >
+        <a href="/" className="ui-d-b" style={{ fontSize: "16px", color: "var(--shell-fg)", textDecoration: "none" }}>
+          {COPY.brand}
+        </a>
+        <nav style={{ display: "flex", alignItems: "center", gap: "16px", marginLeft: "auto", fontSize: "14px" }}>
+          <a href="/pricing">{COPY.landing.nav.pricing}</a>
+          <a href="/demo" data-spa-native data-demo-entry="nav">
+            {COPY.footerDemo}
+          </a>
+          <a href="/login">{COPY.landing.nav.signIn}</a>
+          <a href="/signup" style={CTA}>{COPY.landing.hero.ctaPrimary}</a>
+        </nav>
+      </header>
+      <main style={{ flex: 1, width: "100%", maxWidth: "1120px", margin: "0 auto", padding: "24px 24px 0", boxSizing: "border-box" }}>
+        {children}
+      </main>
+      <footer style={{ borderTop: "1px solid var(--shell-border)", textAlign: "center", padding: "16px", fontSize: "12px", color: "var(--shell-fg-faint)" }}>
+        {publicFooter()}
+      </footer>
+    </div>
+  );
+}
+
+/**
+ * The hero-recording slot (REQ-PUB-2 + REQ-GROWTH-3). One box, ONE reserved aspect — the
+ * placeholder and the clip render the identical box so swapping states can never shift layout
+ * (CLS 0). Until 250 commits the declared asset the slot renders a static placeholder frame —
+ * no `<video>`, no corpus bytes. With the clip committed: a muted, looping, playsinline
+ * `<video>` whose source is `data-hero-src` (never a `src` — the bytes do not fetch until the
+ * landing island arms it) and whose poster paints immediately. No `autoplay`: the island adds
+ * the source and calls play() only when the visitor has NOT asked for reduced motion, so a
+ * reduced-motion browser shows the poster frame alone and zero `<video>` elements play.
+ */
+export function HeroRecordingSlot(): ReactNode {
+  const { heroClip } = usePageData();
+  const box = {
+    aspectRatio: HERO_RECORDING.aspectRatio,
+    width: "100%",
+    maxWidth: "560px",
+    border: "1px solid var(--shell-border)",
+    borderRadius: "12px",
+    overflow: "hidden",
+    background: "var(--shell-raised)",
+  } as const;
+  return (
+    <div data-hero-slot style={box}>
+      {heroClip === true ? (
+        <video
+          data-hero-video
+          muted
+          loop
+          playsInline
+          preload="none"
+          poster={HERO_RECORDING.posterUrl}
+          aria-label={COPY.landing.hero.recordingAlt}
+          style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
+        >
+          <source data-hero-src={HERO_RECORDING.clipUrl} type="video/mp4" />
+        </video>
+      ) : (
+        <div
+          data-hero-placeholder
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", padding: "24px", boxSizing: "border-box" }}
+        >
+          <span style={MUTED}>{COPY.landing.hero.recordingAlt}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /**
  * §15.1 — the landing page's twelve sections, v0.3 order: nav · hero · the dossier · workflow strip ·
  * the author's seat · voices · live runs · models · proof · pricing · changelog+FAQ · final CTA
@@ -69,21 +161,18 @@ export function LandingPage(): ReactNode {
   const essayCard = pricing.cards.find((card) => card.key === "essay") ?? pricing.cards[0];
   const reviewRow = essayCard?.rows.find((r) => r.key === "review");
   return (
-    <Shell
-      brand={COPY.brand}
-      tagline={COPY.tagline}
-      nav={
-        <>
-          <a href="/pricing" style={{ marginRight: "16px" }}>{COPY.landing.nav.pricing}</a>
-          <a href="/login" style={{ marginRight: "16px" }}>{COPY.landing.nav.signIn}</a>
-          <a href="/signup" style={CTA}>{COPY.landing.hero.ctaPrimary}</a>
-        </>
-      }
-      footer={publicFooter()}
-    >
+    <MarketingShell>
       {/* 1 — hero (the drop-zone IS the hero's primary affordance; REQ-GROWTH-1) */}
       <section data-section="hero">
-        <h1 style={{ fontSize: "40px", lineHeight: 1.15, maxWidth: "18ch", margin: "24px 0 16px" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "32px", alignItems: "center" }}>
+          <div style={{ flex: "1 1 380px", minWidth: "280px" }}>
+        {/* §15.1 — the display headline sets in the paper serif (Literata, already the reading
+            face): the marketing voice is the written word, not the UI grotesk. */}
+        <h1
+          data-display-headline
+          className="ui-t-ffp"
+          style={{ fontSize: "clamp(40px, 5.5vw, 72px)", lineHeight: 1.05, maxWidth: "16ch", margin: "24px 0 16px" }}
+        >
           {COPY.landing.hero.headline}
         </h1>
         <p style={{ ...MUTED, fontSize: "16px" }}>{COPY.landing.hero.lede}</p>
@@ -126,6 +215,13 @@ export function LandingPage(): ReactNode {
             {COPY.landing.hero.demoCta}
           </a>
         </p>
+          </div>
+          {/* REQ-PUB-2 + REQ-GROWTH-3 — the hero-recording slot beside the hero copy: one
+              reserved box; the placeholder until 250 commits the declared clip + poster. */}
+          <div style={{ flex: "1 1 420px", minWidth: "280px" }}>
+            <HeroRecordingSlot />
+          </div>
+        </div>
       </section>
 
       {/* 2 — the dossier (the real sample board read; REQ-POS-11) */}
@@ -214,19 +310,28 @@ export function LandingPage(): ReactNode {
       </section>
       <section data-section="faq" style={SECTION}>
         <SectionTitle>{COPY.landing.faq.heading}</SectionTitle>
-        {COPY.landing.faq.items.map((f) => {
-          // HOT.1 — a `claimId` item renders its PUBLIC_CLAIM_COPY variant only while enabled.
-          const answer =
-            "claimId" in f && f.claimId != null && publicClaimEnabled(f.claimId, claims)
-              ? PUBLIC_CLAIM_COPY[f.claimId].landingFaqAnswer
-              : f.a;
-          return (
-            <details key={f.q} style={{ marginBottom: "8px", maxWidth: "68ch" }}>
-              <summary style={{ cursor: "pointer", fontSize: "14px", fontWeight: 600 }}>{f.q}</summary>
-              <p style={{ ...MUTED, marginTop: "6px" }}>{answer}</p>
-            </details>
-          );
-        })}
+        {/* REQ-PUB-2 — the FAQ rides the Accordion's `.ui-accordion*` visual system; on the
+            no-JS funnel the items ARE styled native <details> (the KIT-1 fallback), so the
+            section opens identically with or without the island. */}
+        <div className="ui-accordion" data-faq style={{ maxWidth: "68ch" }}>
+          {COPY.landing.faq.items.map((f) => {
+            // HOT.1 — a `claimId` item renders its PUBLIC_CLAIM_COPY variant only while enabled.
+            const answer =
+              "claimId" in f && f.claimId != null && publicClaimEnabled(f.claimId, claims)
+                ? PUBLIC_CLAIM_COPY[f.claimId].landingFaqAnswer
+                : f.a;
+            return (
+              <details key={f.q} className="ui-accordion-item" data-faq-item>
+                <summary className="ui-accordion-trigger" style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: 600 }}>
+                  <span>{f.q}</span>
+                </summary>
+                <div className="ui-accordion-panel">
+                  <p style={{ ...MUTED, marginTop: "6px" }}>{answer}</p>
+                </div>
+              </details>
+            );
+          })}
+        </div>
       </section>
 
       {/* 11 — final CTA */}
@@ -241,13 +346,17 @@ export function LandingPage(): ReactNode {
       </section>
       {/* the drop-zone hold + landing.viewed beacon (progressive — absent bundle ⇒ no-JS links still work) */}
       <script src="/assets/landing.js" defer />
-    </Shell>
+    </MarketingShell>
   );
 }
 
-/** §15.2 — /pricing: the ladder + cost-range cards + matrix + FAQ, all derived (never hand-typed). */
+/**
+ * §15.2 — /pricing: the ladder + cost-range cards + matrix + FAQ, all derived (never hand-typed).
+ * REQ-PUB-1 (249a) — the page renders for a signed-in reader too: the account menu links here as
+ * a document navigation, so the nav swaps its sign-in affordance for the way back to /app.
+ */
 export function PricingPage(): ReactNode {
-  const { pricing: cycle, claims } = usePageData();
+  const { pricing: cycle, claims, signedIn } = usePageData();
   const data = buildPricingPageData(claims, surfacePricer());
   const annual = cycle?.annual === true;
   return (
@@ -257,7 +366,11 @@ export function PricingPage(): ReactNode {
       nav={
         <>
           <a href="/" style={{ marginRight: "16px" }}>{COPY.brand}</a>
-          <a href="/login" style={{ marginRight: "16px" }}>{COPY.landing.nav.signIn}</a>
+          {signedIn === true ? (
+            <a href="/app" data-pricing-app style={{ marginRight: "16px" }}>{COPY.pricing.backToApp}</a>
+          ) : (
+            <a href="/login" style={{ marginRight: "16px" }}>{COPY.landing.nav.signIn}</a>
+          )}
         </>
       }
       footer={publicFooter()}

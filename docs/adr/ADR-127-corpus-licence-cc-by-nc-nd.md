@@ -55,3 +55,14 @@ before the first real corpus byte can be committed (REQ-CORPUS-14 — itself gat
 
 The corpus licence changes, a non-operator-owned essay is added, the Showcase's
 public-domain scope is revisited, or the recording asset needs a different grant.
+
+---
+
+**Dated note — 2026-11-07 (249a R7PUB.1).** The landing hero recording
+(`apps/web/public/media/hero-tour.mp4` + `hero-tour-poster.jpg`, the declared
+`HERO_RECORDING` paths in `packages/contracts/src/hero-recording.ts`) is a licensed
+derivative: it is a screen recording of the logged-out demo tour and so shows corpus
+content. It inherits this carve-out — CC BY-NC-ND 4.0, licensor "S. J. Sebastian" (pen
+name, S-11). The declaration landed ahead of the asset (`licenses.exceptions.json`
+`"demo-hero-recording"`, LICENSES.md dated paragraph); 250_R7DEP.2 captures the clip with
+the committed recipe, commits the files, and completes the entry's bytes + sha256.

@@ -91,6 +91,11 @@
       "license": "CC-BY-NC-ND-4.0",
       "rationale": "The demo corpus (packages/demo-corpus/corpus/** plus derived snapshots/goldens) is licensed content by 'S. J. Sebastian', not source: CC BY-NC-ND 4.0 per GD-DEMO-LICENSE.R7 / ADR-127 / REQ-DOPS-3. Code in the package stays MIT; enumerated in LICENSES.md 'Content outside the MIT grant'."
     },
+    "demo-hero-recording": {
+      "type": "asset",
+      "license": "CC-BY-NC-ND-4.0",
+      "rationale": "249a R7PUB.1 / ADR-127 — the landing hero recording (apps/web/public/media/hero-tour.mp4 + hero-tour-poster.jpg) is captured from the logged-out demo tour and therefore SHOWS corpus content: a licensed derivative under the same CC BY-NC-ND 4.0 grant and pen-name scope (S-11). 250_R7DEP.2 commits the files and completes this entry's bytes/sha256 in the run record."
+    },
     "duck": {
       "type": "npm",
       "license": "BSD",
