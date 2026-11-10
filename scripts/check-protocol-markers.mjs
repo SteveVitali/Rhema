@@ -69,7 +69,7 @@ const TEXT_EXT = new Set([".js", ".mjs", ".cjs", ".json", ".html", ".css", ".map
  *  Anything else under apps/web/src (server.ts, data.ts, pages.tsx, render.tsx, client islands…)
  *  reaching a `public/spa` map is server/island code bundled for the browser — a violation. */
 const SPA_WEB_SRC_ALLOW =
-  /apps\/web\/src\/(spa\/|copy\.|doc-meta\.|dom-contract\.|spa-boot\.|gate-card\.|approval-settings\.|files-labels\.|client\/hold-store\.|client\/collab\.|state-map\.|billing-copy\.|run-sheet-labels\.|dossier-view\.|chat-pane\.|page-chrome\.|demo-markers\.|error-copy\.)/;
+  /apps\/web\/src\/(spa\/|copy\.|doc-meta\.|dom-contract\.|spa-boot\.|gate-card\.|approval-settings\.|files-labels\.|client\/hold-store\.|client\/collab\.|state-map\.|billing-copy\.|run-sheet-labels\.|dossier-view\.|dossier-labels\.|chat-pane\.|page-chrome\.|demo-markers\.|error-copy\.)/;
 
 /** Extra provenance bans applied only inside the SPA bundle's maps (REQ-FW-9's emitted-graph leg):
  *  `@rhema/api-client` is `import type`-only in the client — any dist file in the map means a

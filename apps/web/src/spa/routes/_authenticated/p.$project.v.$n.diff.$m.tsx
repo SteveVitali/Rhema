@@ -10,6 +10,7 @@ import { BffError } from "../../bff.js";
 import { compareQuery } from "../../queries.js";
 import { flagParam, oneParam, strParam, validateSearchParams } from "../../search.js";
 import { PendingShell, SsrHandoff, SurfaceShell } from "../../states.js";
+import { VersionPicker } from "../../version-picker.js";
 import { CompareSurface } from "../../surfaces/editor.js";
 
 export const Route = createFileRoute("/_authenticated/p/$project/v/$n/diff/$m")({
@@ -29,7 +30,9 @@ export const Route = createFileRoute("/_authenticated/p/$project/v/$n/diff/$m")(
         compareQuery(params.project, params.n, params.m, location.search as { focus?: string }),
       );
     } catch (e) {
-      if (e instanceof BffError && e.status === 404) throw notFound();
+      // R7SYNC.1 (REQ-SYNC-4; R5 G4) — a missed pair endpoint renders the versions picker
+      // inside the shell (the leaf's errored query below), never the bare 404.
+      if (e instanceof BffError && e.status === 404) return null;
       throw e;
     }
     return null;
@@ -42,8 +45,9 @@ export const Route = createFileRoute("/_authenticated/p/$project/v/$n/diff/$m")(
     const q = useQuery(compareQuery(project, n, m, search));
     if (q.isPending) return <SurfaceShell />;
     if (q.data == null && q.isError) {
-      // Parity with the document's 404 — a missed slug/pair is not-found, never a stack.
-      if (q.error instanceof BffError && q.error.status === 404) throw notFound();
+      // REQ-SYNC-4 — the versions picker inside the shell (name the missing end of the pair).
+      if (q.error instanceof BffError && q.error.status === 404)
+        return <VersionPicker slug={project} missing={!/^\d+$/.test(m) && m !== "working" ? m : n} />;
       throw q.error;
     }
     if (q.data == null) return <SurfaceShell />;

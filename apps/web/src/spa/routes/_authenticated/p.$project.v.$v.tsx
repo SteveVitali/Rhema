@@ -11,6 +11,7 @@ import { BffError } from "../../bff.js";
 import { versionPageQuery, type VersionPageTwinSearch } from "../../queries.js";
 import { flagParam, strParam, validateSearchParams } from "../../search.js";
 import { PendingShell, SsrHandoff, SurfaceShell } from "../../states.js";
+import { VersionPicker } from "../../version-picker.js";
 import { VersionPageSurface } from "../../surfaces/editor.js";
 
 export const Route = createFileRoute("/_authenticated/p/$project/v/$v")({
@@ -42,7 +43,10 @@ export const Route = createFileRoute("/_authenticated/p/$project/v/$v")({
         throw redirect({ href: twin.redirect });
       }
     } catch (e) {
-      if (e instanceof BffError && e.status === 404) throw notFound();
+      // R7SYNC.1 (REQ-SYNC-4; R5 G4) — a missed version is NOT the router's 404: the leaf's
+      // errored query renders the versions picker inside the shell (the existing versions,
+      // `· discarded` on the record's own gap markers).
+      if (e instanceof BffError && e.status === 404) return null;
       throw e;
     }
     return null;
@@ -55,8 +59,10 @@ export const Route = createFileRoute("/_authenticated/p/$project/v/$v")({
     const q = useQuery(versionPageQuery(project, v, search));
     if (q.isPending) return <SurfaceShell />;
     if (q.data == null && q.isError) {
-      // Parity with the document's 404 — a missed slug/draft is not-found, never a stack.
-      if (q.error instanceof BffError && q.error.status === 404) throw notFound();
+      // REQ-SYNC-4 — the versions picker (inside the shell) for a missed draft; the rail's own
+      // discarded rows still say why.
+      if (q.error instanceof BffError && q.error.status === 404)
+        return <VersionPicker slug={project} missing={v} />;
       throw q.error;
     }
     if (q.data == null) return <SurfaceShell />;

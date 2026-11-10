@@ -101,6 +101,12 @@ export const sessionQuery = queryOptions({
   retry: retryPolicy,
 });
 
+// ---- R7SYNC.1 (REQ-SPEED-3; R6 UXC-35) — the per-twin staleTime classes -------------------
+// Writes invalidate scoped keys, so a fresh-but-cached twin is honest inside its class.
+export const STALE_LIST_MS = 15_000; // list/badge twins (home, inbox, project tree)
+export const STALE_TWIN_MS = 30_000; // project leaf twins (version, compare, export…)
+export const STALE_STABLE_MS = 60_000; // workspace reads (settings, voices, billing, usage)
+
 /**
  * `GET /bff/feed-labels` — the server-built label maps (REQ-BFF-24; spec R12). Copy is
  * deploy-versioned: a fresh document boot rebuilds the client, so `Infinity` stale is honest.
@@ -142,7 +148,8 @@ export interface BffUsageTwin {
 export const usageQuery = queryOptions({
   queryKey: ["bff", "usage"],
   queryFn: () => bffFetch<BffUsageTwin>("/bff/usage"),
-  retry: retryPolicy,
+  staleTime: STALE_STABLE_MS,
+    retry: retryPolicy,
 });
 
 /**
@@ -163,6 +170,7 @@ export const projectUsageQuery = (slug: string) =>
   queryOptions({
     queryKey: ["bff", "p", slug, "usage"],
     queryFn: () => bffFetch<BffProjectUsageTwin>(`/bff/p/${encodeURIComponent(slug)}/usage`),
+    staleTime: STALE_TWIN_MS,
     retry: retryPolicy,
   });
 
@@ -186,7 +194,8 @@ export interface BffInboxTwin {
 export const inboxQuery = queryOptions({
   queryKey: ["bff", "app", "inbox"],
   queryFn: () => bffFetch<BffInboxTwin>("/bff/app/inbox"),
-  retry: retryPolicy,
+  staleTime: STALE_LIST_MS,
+    retry: retryPolicy,
 });
 
 // ---- SPA.12 — the `settings` surface's twins (REQ-BFF-1/8/9/11/16, REQ-DAT-4; design/22 §2
@@ -202,7 +211,8 @@ export interface BffSettingsAccountTwin {
 export const settingsAccountQuery = queryOptions({
   queryKey: ["bff", "settings", "account"],
   queryFn: () => bffFetch<BffSettingsAccountTwin>("/bff/settings/account"),
-  retry: retryPolicy,
+  staleTime: STALE_STABLE_MS,
+    retry: retryPolicy,
 });
 
 /** `GET /bff/settings/preferences` — the user.prefs blob + consent threshold + app theme. */
@@ -212,7 +222,8 @@ export interface BffSettingsPreferencesTwin {
 export const settingsPreferencesQuery = queryOptions({
   queryKey: ["bff", "settings", "preferences"],
   queryFn: () => bffFetch<BffSettingsPreferencesTwin>("/bff/settings/preferences"),
-  retry: retryPolicy,
+  staleTime: STALE_STABLE_MS,
+    retry: retryPolicy,
 });
 
 /**
@@ -230,7 +241,8 @@ export interface BffSettingsNotificationsTwin {
 export const settingsNotificationsQuery = queryOptions({
   queryKey: ["bff", "settings", "notifications"],
   queryFn: () => bffFetch<BffSettingsNotificationsTwin>("/bff/settings/notifications"),
-  retry: retryPolicy,
+  staleTime: STALE_STABLE_MS,
+    retry: retryPolicy,
 });
 
 /** `GET /bff/settings/integrations` — the uniform REQ-ACCT-2 provider cards + the voice list. */
@@ -240,7 +252,8 @@ export interface BffSettingsIntegrationsTwin {
 export const settingsIntegrationsQuery = queryOptions({
   queryKey: ["bff", "settings", "integrations"],
   queryFn: () => bffFetch<BffSettingsIntegrationsTwin>("/bff/settings/integrations"),
-  retry: retryPolicy,
+  staleTime: STALE_STABLE_MS,
+    retry: retryPolicy,
 });
 
 /**
@@ -256,7 +269,8 @@ export interface BffSettingsDataTwin {
 export const settingsDataQuery = queryOptions({
   queryKey: ["bff", "settings", "data"],
   queryFn: () => bffFetch<BffSettingsDataTwin>("/bff/settings/data"),
-  retry: retryPolicy,
+  staleTime: STALE_STABLE_MS,
+    retry: retryPolicy,
 });
 
 /**
@@ -271,6 +285,9 @@ export interface BffProjectSettingsTwin {
     readonly approvalSettings?: ApprovalSettingsDto;
     /** R7HOME.2b — the opt-in fallback's truth (the PRB.05 approve_triage 24-h checkbox). */
     readonly approvalOverrides?: ApprovalOverridesDto;
+    /** R7SYNC.1 (REQ-SYNC-5) — the full protocol cards (the shared estimator's typical
+     *  Review figures) joined onto the settings' {id,name} options leaf-side. */
+    readonly protocolCards?: readonly ProtocolCardDto[];
     /** R7HOME.2b (REQ-HOME-2) — the voice picker's {current, options} pair (moved from the
      *  overview's composition verbatim). */
     readonly projectVoice?: {
@@ -283,6 +300,7 @@ export const projectSettingsQuery = (slug: string) =>
   queryOptions({
     queryKey: ["bff", "p", slug, "settings"],
     queryFn: () => bffFetch<BffProjectSettingsTwin>(`/bff/p/${encodeURIComponent(slug)}/settings`),
+    staleTime: STALE_TWIN_MS,
     retry: retryPolicy,
   });
 
@@ -301,7 +319,8 @@ export interface BffVoicesTwin {
 export const voicesQuery = queryOptions({
   queryKey: ["bff", "voices"],
   queryFn: () => bffFetch<BffVoicesTwin>("/bff/voices"),
-  retry: retryPolicy,
+  staleTime: STALE_STABLE_MS,
+    retry: retryPolicy,
 });
 
 /**
@@ -316,7 +335,8 @@ export interface BffVoiceNewTwin {
 export const voiceNewQuery = queryOptions({
   queryKey: ["bff", "voices", "new"],
   queryFn: () => bffFetch<BffVoiceNewTwin>("/bff/voices/new"),
-  retry: retryPolicy,
+  staleTime: STALE_STABLE_MS,
+    retry: retryPolicy,
 });
 
 /**
@@ -348,6 +368,7 @@ export const voiceDetailQuery = (
     queryKey: ["bff", "voices", personaId, { tab: search.tab ?? null, sample: search.sample ?? null }],
     queryFn: () =>
       bffFetch<BffVoiceDetailTwin>(`/bff/voices/${encodeURIComponent(personaId)}${suffix}`),
+    staleTime: STALE_STABLE_MS,
     retry: retryPolicy,
   });
 };
@@ -369,6 +390,7 @@ export const projectVoiceReseedQuery = (slug: string) =>
     queryKey: ["bff", "p", slug, "voice-reseed"],
     queryFn: () =>
       bffFetch<BffVoiceReseedTwin>(`/bff/p/${encodeURIComponent(slug)}/voice/reseed`),
+    staleTime: STALE_TWIN_MS,
     retry: retryPolicy,
   });
 
@@ -392,7 +414,8 @@ export interface BffNewProjectTwin {
 export const newProjectQuery = queryOptions({
   queryKey: ["bff", "app", "new"],
   queryFn: () => bffFetch<BffNewProjectTwin>("/bff/app/new"),
-  retry: retryPolicy,
+  staleTime: STALE_STABLE_MS,
+    retry: retryPolicy,
 });
 
 /** The ready preview payload — `PageData.newProject.preview` verbatim + the resolved title. */
@@ -468,6 +491,9 @@ export interface BffIdeBag {
   readonly latestReview?: LatestReviewDto;
   readonly timeline?: readonly { readonly id: string; readonly label: string; readonly state: string; readonly href?: string }[];
   readonly timelineView?: TimelineDto;
+  /** R7SYNC.1 (REQ-SYNC-5) — the shared estimator's per-workflow figures (raw numbers; the
+   *  leaf formats through COPY — never a hand-typed literal). */
+  readonly runHints?: Readonly<Record<string, number>>;
   readonly feed?: {
     readonly runId: string;
     readonly eventsUrl: string;
@@ -506,6 +532,7 @@ export const projectImportQuery = (slug: string) =>
   queryOptions({
     queryKey: ["bff", "p", slug, "import"],
     queryFn: () => bffFetch<BffImportTwin>(`/bff/p/${encodeURIComponent(slug)}/import`),
+    staleTime: STALE_TWIN_MS,
     retry: retryPolicy,
   });
 
@@ -600,6 +627,7 @@ export const projectHomeQuery = (s: ProjectHomeSearch = {}) => {
   return queryOptions({
     queryKey: ["bff", "app", { q: s.q ?? null, deleted: s.deleted === "1" }],
     queryFn: () => bffFetch<BffAppHomeTwin>(`/bff/app${suffix}`),
+    staleTime: STALE_LIST_MS,
     retry: retryPolicy,
   });
 };
@@ -625,7 +653,8 @@ export interface BffBillingSettingsTwin {
 export const billingSettingsQuery = queryOptions({
   queryKey: ["bff", "settings", "billing"],
   queryFn: () => bffFetch<BffBillingSettingsTwin>("/bff/settings/billing"),
-  retry: retryPolicy,
+  staleTime: STALE_STABLE_MS,
+    retry: retryPolicy,
 });
 
 /** `GET /bff/billing/return` — the checkout-return row + the server-owned poll verdict. */
@@ -688,6 +717,7 @@ export const projectExportQuery = (slug: string) =>
   queryOptions({
     queryKey: ["bff", "p", slug, "export"],
     queryFn: () => bffFetch<BffExportTwin>(`/bff/p/${encodeURIComponent(slug)}/export`),
+    staleTime: STALE_TWIN_MS,
     retry: retryPolicy,
   });
 
@@ -719,6 +749,7 @@ export const projectOutlineQuery = (slug: string, opts?: { slug?: string }) =>
       bffFetch<BffOutlineTwin>(
         `/bff/p/${encodeURIComponent(slug)}/outline${opts?.slug ? `?slug=${encodeURIComponent(opts.slug)}` : ""}`,
       ),
+    staleTime: STALE_TWIN_MS,
     retry: retryPolicy,
   });
 
@@ -789,6 +820,7 @@ export const projectFiguresQuery = (slug: string) =>
   queryOptions({
     queryKey: ["bff", "p", slug, "figures"],
     queryFn: () => bffFetch<BffFiguresTwin>(`/bff/p/${encodeURIComponent(slug)}/figures`),
+    staleTime: STALE_TWIN_MS,
     retry: retryPolicy,
   });
 
@@ -810,6 +842,7 @@ export const projectFigureCardQuery = (slug: string, figureId: string) =>
       bffFetch<BffFigureCardTwin>(
         `/bff/p/${encodeURIComponent(slug)}/figures/${encodeURIComponent(figureId)}`,
       ),
+    staleTime: STALE_TWIN_MS,
     retry: retryPolicy,
   });
 
@@ -856,6 +889,7 @@ export const projectVisualizeQuery = (
         `/bff/p/${encodeURIComponent(slug)}/visualize${qs ? `?${qs}` : ""}`,
       );
     },
+    staleTime: STALE_TWIN_MS,
     retry: retryPolicy,
   });
 
@@ -1056,6 +1090,7 @@ export const obligationNewQuery = (slug: string, back?: string) =>
       bffFetch<BffObligationNewTwin>(
         `/bff/p/${encodeURIComponent(slug)}/obligations/new${back ? `?back=${encodeURIComponent(back)}` : ""}`,
       ),
+    staleTime: STALE_TWIN_MS,
     retry: retryPolicy,
   });
 
@@ -1198,6 +1233,36 @@ export const projectTreeQuery = (slug: string) =>
     queryKey: ["bff", "p", slug, "tree"] as const,
     queryFn: () =>
       bffFetch<BffProjectTreeTwin>(`/bff/p/${encodeURIComponent(slug)}?view=tree`),
+    staleTime: STALE_LIST_MS,
+    retry: retryPolicy,
+  });
+
+/**
+ * R7SYNC.1 (REQ-SYNC-3/4) — `GET /bff/p/:slug/versions`: the rail read + the chrome `ide` bag.
+ * Two consumers share it: the versions picker (a missing `/v/:n` renders it inside the shell)
+ * and `IdeChrome`'s unpublished-leaf fallback (the in-project 404 still shows the real
+ * timeline — the ONE project-scoped source, never a route-scoped empty).
+ */
+export interface BffVersionsTwin {
+  readonly versions: VersionRailDto | null;
+  readonly project: {
+    readonly title: string;
+    readonly pill: string;
+    readonly slug: string;
+    readonly headDraftId?: string | null;
+    readonly headDraftN?: number | null;
+    readonly showcase?: boolean;
+    readonly readOnlyProject?: ReadOnlyProject | null;
+  };
+  readonly paperTheme: string;
+  readonly appTheme?: string;
+  readonly ide: BffIdeBag;
+}
+export const projectVersionsQuery = (slug: string) =>
+  queryOptions({
+    queryKey: ["bff", "p", slug, "versions"] as const,
+    queryFn: () => bffFetch<BffVersionsTwin>(`/bff/p/${encodeURIComponent(slug)}/versions`),
+    staleTime: STALE_TWIN_MS,
     retry: retryPolicy,
   });
 
@@ -1377,6 +1442,7 @@ export const versionPageQuery = (slug: string, v: string, search: VersionPageTwi
         `/bff/p/${encodeURIComponent(slug)}/v/${encodeURIComponent(v)}${suffix}`,
       );
     },
+    staleTime: STALE_TWIN_MS,
     retry: retryPolicy,
   });
 
@@ -1390,6 +1456,7 @@ export const compareQuery = (slug: string, n: string, m: string, search: { reado
       bffFetch<BffCompareTwin>(
         `/bff/p/${encodeURIComponent(slug)}/v/${encodeURIComponent(n)}/diff/${encodeURIComponent(m)}${compareSearch(search)}`,
       ),
+    staleTime: STALE_TWIN_MS,
     retry: retryPolicy,
   });
 
@@ -1400,6 +1467,7 @@ export const artifactQuery = (slug: string, artifactId: string, search: { readon
       bffFetch<BffArtifactTwin>(
         `/bff/p/${encodeURIComponent(slug)}/a/${encodeURIComponent(artifactId)}${compareSearch(search)}`,
       ),
+    staleTime: STALE_TWIN_MS,
     retry: retryPolicy,
   });
 
@@ -1410,5 +1478,124 @@ export const revisionQuery = (slug: string, cid: string, search: { readonly focu
       bffFetch<BffRevisionTwin>(
         `/bff/p/${encodeURIComponent(slug)}/revisions/${encodeURIComponent(cid)}${compareSearch(search)}`,
       ),
+    staleTime: STALE_TWIN_MS,
     retry: retryPolicy,
   });
+
+// ---- R7SYNC.1 (REQ-SPEED-3; R6 UXC-34/35; ADR-128's REQ-NAVM-7 item) ---------------------
+// The declared prefetch-safe GET twins. Every member is certified free of read side effects:
+// its GET composes reads only — no mark-read, no mint, no telemetry emit. The EXCLUDED set is
+// named deliberately (a prefetch that mutates is a bug, not a perf win):
+//   - `dossierQuery`  (/bff/p/:slug/review/:runId) — marks the inbox row read + emits
+//     run.report_viewed/finding.viewed per read (the GET IS the read-receipt leg).
+//   - `runReportQuery` (/bff/p/:slug/r/:runId) — markInboxRunRead per mount.
+//   - `projectRunSheetQuery` (/bff/p/:slug/run) — mints voice.staleness_shown per composition.
+//   - `projectPageQuery` (/bff/p/:slug) — mints gate.presence_timer_shown per composition.
+//   - `postProjectHandoff` — POST-only by REQ-BFF-22, never a GET.
+// Router `defaultPreload` stays OFF (REQ-NAVM-7's reason stands): only these query-level
+// prefetchQuery calls fire, bound to hover/focus intent.
+export const PREFETCH_SAFE = [
+  "projectVersions",
+  "versionPage",
+  "compare",
+  "artifact",
+  "revision",
+  "projectExport",
+  "projectImport",
+  "projectOutline",
+  "projectFigures",
+  "projectFigureCard",
+  "projectVisualize",
+  "projectSettings",
+  "projectUsage",
+  "projectTree",
+  "projectVoiceReseed",
+  "obligationNew",
+  "projectHome",
+  "inbox",
+  "usage",
+  "settingsAccount",
+  "settingsPreferences",
+  "settingsNotifications",
+  "settingsIntegrations",
+  "settingsData",
+  "billingSettings",
+  "voices",
+  "voiceNew",
+  "voiceDetail",
+  "newProject",
+] as const;
+export type PrefetchSafeId = (typeof PREFETCH_SAFE)[number];
+
+/** Twins named OUT of the safe set — the certification test asserts each stays excluded. */
+export const PREFETCH_EXCLUDED = [
+  "dossier",
+  "runReport",
+  "runSheet",
+  "projectPage",
+  "handoff",
+  "search",
+] as const;
+
+/**
+ * Map an in-app href to its prefetch query — `null` for anything outside PREFETCH_SAFE
+ * (side-effecting twins, writes, external/unknown paths). Demo boots restrict prefetch to
+ * demo-slug twins only (Phase-4 P4-3: never a `/bff/p/<real slug>`, `/bff/search`, or any
+ * session-gated read — `demo~` twins are the only URLs this returns there).
+ */
+export function prefetchQueryForHref(
+  href: string,
+  opts?: { readonly demoSlug?: string | null },
+): unknown {
+  if (opts?.demoSlug != null) {
+    const m = /^\/p\/(demo~[^/?#]+)/.exec(href);
+    if (m == null || decodeURIComponent(m[1]!) !== opts.demoSlug) return null;
+    const slug = m[1]!;
+    if (/^\/p\/[^/]+\/v\/[^/]+\/diff\/[^/]+/.test(href)) return null; // diff needs both params — fallthrough below
+    if (/^\/p\/[^/]+\/?$/.test(href)) return null; // project page mints — excluded
+    if (/^\/p\/[^/]+\/v\/[^/]+/.test(href)) {
+      const v = /^\/p\/[^/]+\/v\/([^/?#]+)/.exec(href)![1]!;
+      return versionPageQuery(slug, decodeURIComponent(v));
+    }
+    if (href.startsWith(`/p/${slug}/figures`)) return projectFiguresQuery(slug);
+    return projectVersionsQuery(slug);
+  }
+  let m: RegExpExecArray | null;
+  if ((m = /^\/p\/([^/?#]+)\/v\/([^/?#]+)\/diff\/([^/?#]+)/.exec(href)) != null)
+    return compareQuery(m[1]!, m[2]!, m[3]!);
+  if ((m = /^\/p\/([^/?#]+)\/v\/([^/?#]+)/.exec(href)) != null)
+    return versionPageQuery(m[1]!, decodeURIComponent(m[2]!));
+  if ((m = /^\/p\/([^/?#]+)\/a\/([^/?#]+)/.exec(href)) != null)
+    return artifactQuery(m[1]!, m[2]!);
+  if ((m = /^\/p\/([^/?#]+)\/revisions\/([^/?#]+)/.exec(href)) != null)
+    return revisionQuery(m[1]!, m[2]!);
+  if ((m = /^\/p\/([^/?#]+)\/export/.exec(href)) != null) return projectExportQuery(m[1]!);
+  if ((m = /^\/p\/([^/?#]+)\/import(?:[/?#]|$)/.exec(href)) != null) return projectImportQuery(m[1]!);
+  if ((m = /^\/p\/([^/?#]+)\/outline(?:[/?#]|$)/.exec(href)) != null) return projectOutlineQuery(m[1]!);
+  if ((m = /^\/p\/([^/?#]+)\/figures\/([^/?#]+)/.exec(href)) != null)
+    return projectFigureCardQuery(m[1]!, m[2]!);
+  if ((m = /^\/p\/([^/?#]+)\/figures(?:[/?#]|$)/.exec(href)) != null) return projectFiguresQuery(m[1]!);
+  if ((m = /^\/p\/([^/?#]+)\/settings(?:[/?#]|$)/.exec(href)) != null) return projectSettingsQuery(m[1]!);
+  if ((m = /^\/p\/([^/?#]+)\/usage(?:[/?#]|$)/.exec(href)) != null) return projectUsageQuery(m[1]!);
+  if ((m = /^\/p\/([^/?#]+)\/versions(?:[/?#]|$)/.exec(href)) != null) return projectVersionsQuery(m[1]!);
+  if ((m = /^\/p\/([^/?#]+)\/voice\/reseed/.exec(href)) != null) return projectVoiceReseedQuery(m[1]!);
+  if ((m = /^\/p\/([^/?#]+)\/obligations\/new/.exec(href)) != null) return obligationNewQuery(m[1]!);
+  if ((m = /^\/p\/([^/?#]+)\/?$/.exec(href)) != null) return projectTreeQuery(m[1]!); // never projectPage (mint)
+  // `/app/new` — the create leaf POSTs immediately; its twin's GET is safe but prefetches
+  // nothing the leaf ever reads, so no href maps to it.
+  if (/^\/app\/new/.test(href)) return null;
+  if (/^\/app\/inbox/.test(href)) return inboxQuery;
+  if (/^\/app(?:[/?#]|$)/.test(href)) return projectHomeQuery();
+  if (/^\/usage/.test(href)) return usageQuery;
+  if (/^\/app\/settings\/billing/.test(href)) return billingSettingsQuery;
+  if (/^\/app\/settings\/notifications/.test(href)) return settingsNotificationsQuery;
+  if (/^\/app\/settings\/integrations/.test(href)) return settingsIntegrationsQuery;
+  if (/^\/app\/settings\/data/.test(href)) return settingsDataQuery;
+  if (/^\/app\/settings\/preferences/.test(href)) return settingsPreferencesQuery;
+  if (/^\/app\/settings/.test(href)) return settingsAccountQuery;
+  if ((m = /^\/voices\/([^/?#]+)/.exec(href)) != null && m[1] !== "new")
+    return voiceDetailQuery(decodeURIComponent(m[1]!));
+  if (/^\/voices\/new/.test(href)) return voiceNewQuery;
+  if (/^\/voices/.test(href) || /^\/v(?:[/?#]|$)/.test(href)) return voicesQuery;
+  return null;
+}

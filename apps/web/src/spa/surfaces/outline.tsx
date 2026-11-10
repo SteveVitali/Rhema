@@ -167,7 +167,7 @@ export function OutlineSurface({
     },
     onSettled: (_env, _err, vars) => {
       setFormBusy(vars.form, false);
-      void queryClient.invalidateQueries({ queryKey: ["bff"] });
+      void queryClient.invalidateQueries({ queryKey: ["bff", "p", data?.slug ?? ""] });
     },
   });
 
@@ -353,7 +353,7 @@ export function OutlinePromoteSurface({ data }: OutlinePromoteSurfaceProps): Rea
     onError: () => setNotice(P.notFound),
     onSettled: (_env, _err, vars) => {
       setFormBusy(vars.form, false);
-      void queryClient.invalidateQueries({ queryKey: ["bff"] });
+      void queryClient.invalidateQueries({ queryKey: ["bff", "p", data?.slug ?? ""] });
     },
   });
 

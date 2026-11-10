@@ -31,7 +31,7 @@ import {
   SPA_PUBLIC_ROUTES,
   type ReadOnlyProject,
 } from "@rhema/contracts";
-import { themeCss, ideCss } from "@rhema/tokens";
+import { themeCss, ideCss, FONT_FACES } from "@rhema/tokens";
 import { uiCss } from "@rhema/ui";
 import { docMetaFor, escapeHtml } from "./render.js";
 import { deviceClassFor } from "./device.js";
@@ -45,6 +45,17 @@ const IDE_CSS = ideCss();
 // shell document (bound ≤ 24 kB raw, asserted).
 const UI_CSS = uiCss();
 const BOOT = themeBootScript();
+// R7SYNC.1 (REQ-SPEED-4; R6 UXC-36) — preload the two reading faces (Literata normal + Inter)
+// in the shell document's head, killing the serif FOUT the audit filmed. Italic/mono stay
+// lazily fetched (uncached-on-purpose); CSP unchanged (a hint, never a script).
+const FONT_PRELOADS = FONT_FACES.filter(
+  (f) => (f.family === "Literata" && f.style === "normal") || f.family === "Inter",
+)
+  .map(
+    (f) =>
+      `<link rel="preload" as="font" href="/assets/fonts/${f.file}" type="font/woff2" crossorigin>`,
+  )
+  .join("");
 
 /**
  * The seam the route handlers + the catch-all call — a `Pick` of `DataSource` (test stubs carry
@@ -148,6 +159,12 @@ export async function loadSpaManifest(
     return EMPTY_ENTRY;
   }
   return entry;
+}
+
+/** The h1 the static frame paints — the client's `routeHeading` rule verbatim (doc title
+ *  minus the " · Rhēma" suffix). */
+function routeHeading(pathname: string): string {
+  return docMetaFor(pathname, {}).title.replace(/ — [^·]+ · Rhēma$/, "").replace(/ · Rhēma$/, "");
 }
 
 /** `/p/<slug>/…` or `/demo/<essay>/…` → `slug` for the boot's `project` key; anything else ⇒
@@ -266,7 +283,7 @@ export function renderSpaShell(
     `<head><meta charset="utf-8">` +
     `<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">` +
     `<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon.ico" sizes="any">` +
-    `<title>${escapeHtml(doc.title)}</title>` +
+    `<title>${escapeHtml(doc.title)}</title>${FONT_PRELOADS}` +
     `<script>${BOOT}</script>` +
     `<style>${THEME_CSS}</style><style>${IDE_CSS}</style><style>${UI_CSS}</style>` +
     entry.preloads.map((f) => `<link rel="modulepreload" href="${assetHref(f)}">`).join("") +
@@ -278,9 +295,25 @@ export function renderSpaShell(
   const noscript = `<noscript><p>${escapeHtml(COPY.spaShell.noJs)}</p></noscript>`;
   // `<` → `<` inside the JSON embed so a `<\/script>`-shaped string can't close the element.
   const bootJson = JSON.stringify(boot).replace(/</g, "\\u003c");
+  // R7SYNC.1 (REQ-SPEED-2; R5 B14/D5) — the static frame the FIRST bytes paint before any JS:
+  // the one app-shell's sidebar frame + a skeleton body inside the mount node, built from
+  // classes the already-inlined stylesheets carry (zero new CSS — the ≤ 24 kB kit bound is
+  // untouched). `createRoot(root).render` replaces it on mount; a demo boot gets the same
+  // honest frame (its chrome variant is close enough for a pre-JS paint).
+  const staticFrame =
+    `<div class="app-shell" data-app-shell data-shell-frame data-sidebar="expanded">` +
+    `<aside class="app-shell-sidebar" aria-hidden="true">` +
+    `<span class="app-shell-wordmark">${escapeHtml(COPY.brand)}</span>` +
+    `<div class="app-shell-nav">` +
+    Array.from({ length: 5 }, () => `<div class="ide-sk-row" style="width:72%"></div>`).join("") +
+    `</div></aside>` +
+    `<div class="app-shell-main"><div class="app-shell-content">` +
+    `<main data-spa-surface><h1>${escapeHtml(routeHeading(path))}</h1>` +
+    Array.from({ length: 4 }, (_, i) => `<div class="ide-sk-row" style="width:${88 - i * 14}%"></div>`).join("") +
+    `</main></div></div></div>`;
   return (
     `<!doctype html><html ${htmlAttrs}>${head}` +
-    `<body><div id="spa-root" data-spa-root></div>${noscript}` +
+    `<body><div id="spa-root" data-spa-root>${staticFrame}</div>${noscript}` +
     `<script type="application/json" data-spa-boot>${bootJson}</script>` +
     entry.moduleScripts
       .map((f) => `<script type="module" src="${assetHref(f)}"></script>`)

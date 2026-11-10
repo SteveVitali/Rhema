@@ -823,10 +823,17 @@ export function createWebApp(deps: WebDeps): Hono {
         ]).then(([current, options]) => (current ? { current, options } : undefined)),
       ]);
       if (!settings) return c.json({ error: "not_found" }, 404);
+      // R7SYNC.1 (REQ-SYNC-5; R5 I1/C11) — per-protocol estimator values on the settings pick:
+      // the cards carry the api-composed `typicalReviewCredits`/`typicalReviewDuration` (the
+      // shared estimator's own figures), joined onto the settings' {id,name} rows leaf-side.
+      const protocolCards = await Promise.resolve()
+        .then(() => deps.dataSource.listProtocolCards?.(session))
+        .catch(() => undefined);
       return c.json({
         projectSettings: {
           slug,
           settings,
+          ...(protocolCards ? { protocolCards } : {}),
           ...(approvalSettings ? { approvalSettings } : {}),
           ...(approvalOverrides ? { approvalOverrides } : {}),
           ...(projectVoice ? { projectVoice } : {}),
@@ -1418,6 +1425,8 @@ export function createWebApp(deps: WebDeps): Hono {
       paperTheme?: "light" | "follow" | "dark";
       headDraftId?: string | null;
       activeRun?: { runId: string; state: string } | null;
+      /** R7SYNC.1 — the api-composed per-workflow estimate figures (ProjectRow.estimates). */
+      estimates?: { review: number | null; revise: number | null; factCheck: number | null } | null;
     },
     opts: {
       inboxCount?: number;
@@ -1445,6 +1454,30 @@ export function createWebApp(deps: WebDeps): Hono {
       };
     } = {},
   ): Promise<Pick<PageData, "theme" | "paperTheme" | "ide" | "compact">> => {
+    // R7SYNC.1 (REQ-SYNC-3; R5 E2/G3) — the Timeline tab reads ONE project-scoped source on
+    // every framed route, never a route-scoped empty default: a composition that did not
+    // supply its own `timelineView` still carries the real round log through the same
+    // best-effort `getTimeline` read the overview runs (a degraded read lands no timeline,
+    // never an invented one).
+    if (opts.timelineView == null) {
+      const shared = await Promise.resolve()
+        .then(() => deps.dataSource.getTimeline?.(session, row.slug))
+        .catch(() => null);
+      if (shared != null) opts = { ...opts, timelineView: shared };
+    }
+    // R7SYNC.1 (REQ-SYNC-5; R5 I1) — the Run ▾ menu's estimate hints ride every framed bag
+    // when the project row carried the shared estimator's figures (`row.estimates` is
+    // api-composed — never a client-computed number).
+    const runHints =
+      row.estimates != null
+        ? Object.fromEntries(
+            Object.entries({
+              review: row.estimates.review,
+              revise: row.estimates.revise,
+              factCheck: row.estimates.factCheck,
+            }).filter(([, v]) => typeof v === "number"),
+          )
+        : undefined;
     const [principal, theme, files, chat, latestReviewEnvelope] = await Promise.all([
       Promise.resolve()
         .then(() => deps.dataSource.getSessionPrincipal?.(session))
@@ -1576,7 +1609,12 @@ export function createWebApp(deps: WebDeps): Hono {
         // R7DEM.4 — `run-next` targets the run sheet (outside the demo allowlist) and the
         // theme/paperTheme URLs are write endpoints the guard 405s; the nested app drops all
         // three. `paletteSearchUrl` stays: the demo answers it (`{results:[]}`).
-        ...(opts.runNextHref && deps.demo !== true ? { runNextHref: opts.runNextHref } : {}),
+        ...(opts.runNextHref && deps.demo !== true
+          ? { runNextHref: opts.runNextHref }
+          : timelineView != null && deps.demo !== true
+            ? { runNextHref: `/p/${row.slug}/run` }
+            : {}),
+        ...(runHints != null && Object.keys(runHints).length > 0 ? { runHints } : {}),
         ...(opts.status ? { status: opts.status } : {}),
         palette: JSON.stringify(paletteData),
         ...(deps.demo === true
@@ -6321,6 +6359,45 @@ export function createWebApp(deps: WebDeps): Hono {
   // REQ-BFF-22 — the handoff POST (the `?focus=1` suppression + the unread-run_finished consume live
   // inside `projectHandoffHandler`, verbatim with the document's redirect arm).
   app.post("/bff/p/:slug/handoff", projectHandoffHandler(deps));
+
+  // R7SYNC.1 (REQ-SYNC-3/4; R5 G3/G4) — `GET /bff/p/:slug/versions`: the light project-scoped
+  // twin the versions picker + the chrome's unpublished-leaf timeline fallback share. Carries
+  // the §5.8 rail read verbatim (`versions:null` on a degraded seam — never a fabricated list)
+  // plus the same `ide` chrome bag every framed twin emits (the timeline arrives through
+  // `ideContext`'s project-scoped default, so a leaf that publishes NOTHING — the in-project
+  // 404 included — still shows the real round log).
+  app.get(
+    "/bff/p/:slug/versions",
+    bffRoute(deps, async (c, session) => {
+      const slug = c.req.param("slug") ?? "";
+      const row = await bffProjectRow(c, deps.dataSource, session, slug);
+      if (!row) return c.json({ error: "not_found" }, 404);
+      const versions = await Promise.resolve()
+        .then(() => deps.dataSource.getVersions(session, row.id))
+        .catch(() => null);
+      const ctx = await ideContext(c, session, row);
+      return c.json({
+        versions: versions ?? null,
+        project: {
+          title: row.title,
+          pill: row.state.pill,
+          slug,
+          headDraftId: row.headDraftId ?? null,
+          headDraftN: row.headDraftN ?? null,
+          ...(row.showcase === true ? { showcase: true } : {}),
+          readOnlyProject:
+            row.showcase === true
+              ? { reason: "showcase" as const }
+              : deps.demo === true
+                ? { reason: "demo" as const }
+                : null,
+        },
+        paperTheme: ctx.paperTheme ?? "light",
+        ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
+        ide: ctx.ide,
+      });
+    }),
+  );
 
   // `GET /bff/p/:slug/v/:v` — the version Page. The `working`-miss arm answers
   // `{ok:true, redirect:"/p/:slug"}` (the document's 302 verbatim; REQ-BFF-8).

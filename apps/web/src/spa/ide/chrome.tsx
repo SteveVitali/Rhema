@@ -17,6 +17,7 @@ import { COPY, IDE_CHROME_LABELS, IDE_FEED_LABELS } from "../../copy.js";
 import { getSpaBoot, isSpaEnabled } from "../boot.js";
 import { DemoEffects } from "../demo-effects.js";
 import { feedLabelsQuery, sessionQuery } from "../queries.js";
+import { runCardLabels, timelineHrefs, timelineLabels } from "../../dossier-view.js";
 import { IdeChromeDataProvider, useIdeChromePublished } from "./chrome-data.js";
 import { useIdeChromeController, type IdeChromeNav } from "./controller.js";
 import { useIdeFeed } from "./feed.js";
@@ -33,10 +34,15 @@ const FRAMED: ReadonlySet<string> = new Set(SPA_IDE_FRAMED_ROUTES);
  */
 export function IdeProjectLayout({ project }: { project: string }): ReactNode {
   const pathname = useLocation({ select: (l) => l.pathname });
-  const { routeId } = spaRouteFor(pathname);
+  const { routeId, surfaces } = spaRouteFor(pathname);
   const boot = getSpaBoot();
   const demo = boot?.demo ?? null;
-  const framed = routeId != null && FRAMED.has(routeId) && isSpaEnabled(boot, routeId);
+  // R7SYNC.1 (REQ-SYNC-3; R5 G3) — an unmatched leaf UNDER the project still mounts the
+  // chrome: `spaRouteFor` answers `routeId:null` + a fallback `surfaces` map for the
+  // in-project 404, and the Timeline tab there reads the same project-scoped source as every
+  // framed leaf (the not-found leaf publishes the versions twin's `ide` bag itself).
+  const framed =
+    routeId != null ? FRAMED.has(routeId) && isSpaEnabled(boot, routeId) : surfaces != null;
   return (
     <IdeChromeDataProvider>
       {framed ? (
@@ -73,6 +79,12 @@ export function IdeChrome({ slug, children }: { slug: string; children?: ReactNo
   const session = useQuery({ ...sessionQuery, enabled: !demo });
   const maps = useQuery(feedLabelsQuery);
   const { data, published } = useIdeChromePublished();
+  // R7SYNC.1 (REQ-SYNC-3) — published twins win; the ONLY unpublished leaf (the in-project
+  // 404) publishes the versions twin's `ide` bag itself via `useProjectChromeFallback`
+  // (states.tsx/version-picker.tsx), so no chrome-level fallback GET exists — a framed mount
+  // never issues a stray project-scoped read.
+  const timelineView = data.timelineView;
+  const runNextHref = data.runNextHref;
   const dataRef = useRef(data);
   dataRef.current = data;
 
@@ -194,9 +206,12 @@ export function IdeChrome({ slug, children }: { slug: string; children?: ReactNo
           {...(data.deskFindingsBody != null ? { deskFindingsBody: data.deskFindingsBody } : {})}
           {...(data.chatBody != null ? { chatBody: data.chatBody } : {})}
           {...(data.timeline != null ? { timeline: data.timeline } : {})}
-          {...(data.timelineView != null
+          {...(timelineView != null
             ? {
-                timelineView: data.timelineView,
+                timelineView,
+                timelineLabels: data.timelineLabels ?? timelineLabels,
+                timelineCardLabels: data.timelineCardLabels ?? runCardLabels,
+                timelineHrefs: data.timelineHrefs ?? timelineHrefs(slug),
                 ...(data.timelineLabels != null ? { timelineLabels: data.timelineLabels } : {}),
                 ...(data.timelineCardLabels != null ? { timelineCardLabels: data.timelineCardLabels } : {}),
                 ...(data.timelineHrefs != null ? { timelineHrefs: data.timelineHrefs } : {}),
@@ -205,7 +220,7 @@ export function IdeChrome({ slug, children }: { slug: string; children?: ReactNo
             : {})}
           {...(data.activeRun != null ? { activeRun: data.activeRun } : {})}
           {...(feed != null ? { feed } : {})}
-          {...(data.runNextHref != null ? { runNextHref: data.runNextHref } : {})}
+          {...(runNextHref != null ? { runNextHref } : {})}
           {...(data.palette != null ? { palette: JSON.stringify(data.palette) } : {})}
           themeUrl="/ide/theme"
           paperThemeUrl={`/p/${slug}/paper-theme`}

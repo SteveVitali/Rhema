@@ -332,7 +332,7 @@ export function ObligationNewSurface({ data }: { readonly data: BffObligationNew
     },
     onSettled: (_e, _er, vars) => {
       setFormBusy(vars.form, false);
-      void queryClient.invalidateQueries({ queryKey: ["bff"] });
+      void queryClient.invalidateQueries({ queryKey: ["bff", "p", slug] });
     },
   });
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {

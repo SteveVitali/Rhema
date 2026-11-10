@@ -176,7 +176,7 @@ function useBillingFormSubmit(): (e: FormEvent<HTMLElement>) => void {
     onSettled: (_env, _err, vars) => {
       setFormBusy(vars.form, false);
       // Server-truth repaint — the twin refetches; a refused write keeps its persisted values.
-      void queryClient.invalidateQueries({ queryKey: ["bff"] });
+      void queryClient.invalidateQueries({ queryKey: ["bff", "settings", "billing"] });
     },
   });
   return (e) => {

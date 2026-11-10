@@ -674,11 +674,14 @@ describe("the SSE feed tail (REQ-ISL-14, REQ-BFF-24, REQ-UX-9/15)", () => {
     await act(async () => {
       await new Promise((r) => setTimeout(r, 220));
     });
-    const bff = spy.mock.calls.filter((c) => {
-      const arg = c[0] as { queryKey?: unknown[] };
-      return Array.isArray(arg?.queryKey) && arg.queryKey[0] === "bff";
-    });
-    expect(bff.length).toBe(1);
+    const bff = spy.mock.calls.map((c) => (c[0] as { queryKey?: unknown[] }).queryKey).filter(
+      (k): k is unknown[] => Array.isArray(k) && k[0] === "bff",
+    );
+    // R7SYNC.1 (REQ-SPEED-3) — still ONE debounced invalidation event, now the SCOPED pair:
+    // the run's project subtree + the inbox badge — never the bare ["bff"] flush.
+    expect(bff).toContainEqual(["bff", "p", "alpha"]);
+    expect(bff).toContainEqual(["bff", "app", "inbox"]);
+    expect(bff.length).toBe(2);
   });
 
   it("at most ONE live EventSource at any moment; unmount closes it", async () => {

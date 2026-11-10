@@ -192,7 +192,7 @@ function useSettingsFormSubmit(): (e: FormEvent<HTMLElement>) => void {
     onSettled: (_env, _err, vars) => {
       setFormBusy(vars.form, false);
       // Server-truth repaint — the twins refetch; a refused write keeps its persisted values.
-      void queryClient.invalidateQueries({ queryKey: ["bff"] });
+      void queryClient.invalidateQueries({ queryKey: ["bff", "settings"] });
     },
   });
   return (e) => {
@@ -1313,10 +1313,18 @@ export function ProjectSettingsBody({
                     name="protocolId"
                     defaultValue={p.protocolId ?? ""}
                     aria-label={PS.protocolLabel}
-                    items={ps.settings.protocols.map((proto) => ({
-                      value: proto.id,
-                      label: proto.name,
-                    }))}
+                    // R7SYNC.1 (REQ-SYNC-5) — each option carries its OWN estimator figure
+                    // (the api-composed typical Review credits + duration band), never the
+                    // audit's one shared review-band constant for every protocol.
+                    items={ps.settings.protocols.map((proto) => {
+                      const card = ps.protocolCards?.find((c) => c.id === proto.id);
+                      const est =
+                        card?.typicalReviewCredits != null && card?.typicalReviewDuration != null
+                          ? ` — ${COPY.projectHome.estimateFmt
+    .replace("{n}", card.typicalReviewCredits.toLocaleString("en-US"))} · ~${card.typicalReviewDuration.lowMinutes}–${card.typicalReviewDuration.highMinutes} min`
+                          : "";
+                      return { value: proto.id, label: `${proto.name}${est}` };
+                    })}
                   />
                 </label>
               ) : null}
