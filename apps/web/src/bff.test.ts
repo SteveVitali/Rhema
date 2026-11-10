@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { ApiError } from "@rhema/api-client";
 import type { FigureCardDto, FigureListItemDto, ProjectRow } from "@rhema/api-client";
 import { createWebApp } from "./server.js";
+import { errorSentence } from "./error-copy.js";
 import type { WebDeps } from "./server.js";
 import { requestContext } from "./observability.js";
 import {
@@ -3185,7 +3186,7 @@ describe("the seven figure POSTs — the JSON branches (SPA.19; REQ-BFF-1/2/3)",
       body: JSON.stringify({ mark: "arc" }),
     });
     const env = await refused.json();
-    expect(env.redirect).toBe("/p/the-politics-of-visibility/figures/fig01?notice=chip_not_supported");
+    expect(env.redirect).toBe(`/p/the-politics-of-visibility/figures/fig01?notice=${encodeURIComponent(errorSentence("chip_not_supported"))}`);
   });
 
   it("restore: JSON → {ok,redirect:card} with n off the path; propose: {ok,redirect,data} + the 409 readiness notice", async () => {
@@ -3210,7 +3211,7 @@ describe("the seven figure POSTs — the JSON branches (SPA.19; REQ-BFF-1/2/3)",
       figureDeps({ proposeFigure: async () => { throw new ApiError(409, "x", "figure_not_ready"); } }),
     ).request("/p/the-politics-of-visibility/figures/fig01/propose", { ...jsonPost, body: "{}" });
     expect((await notReady.json()).redirect).toBe(
-      "/p/the-politics-of-visibility/figures/fig01?notice=figure_not_ready",
+      `/p/the-politics-of-visibility/figures/fig01?notice=${encodeURIComponent(errorSentence("figure_not_ready"))}`,
     );
   });
 

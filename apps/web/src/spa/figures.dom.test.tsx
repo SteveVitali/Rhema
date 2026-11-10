@@ -21,6 +21,7 @@ import { fireEvent } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { FigureCardDto, FigureImageCardDto, FigureListItemDto } from "@rhema/api-client";
 import { COPY } from "../copy.js";
+import { errorSentence } from "../error-copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
 import type { BffFigureCardTwin, BffFiguresTwin, BffVisualizeTwin } from "./queries.js";
@@ -905,7 +906,7 @@ describe("GET /p/:slug/visualize mounted (SPA.19)", () => {
     await submit(form);
     await vi.waitFor(() => {
       expect(el()!.querySelector("[data-notice]")?.textContent).toBe(
-        COPY.visualize.requestRequired,
+        errorSentence("request_required"),
       );
       expect(router.state.location.pathname).toBe(`/p/${SLUG}/visualize`);
       // REQ-UX-16 — the controls re-enable on settle.
@@ -922,7 +923,7 @@ describe("GET /p/:slug/visualize mounted (SPA.19)", () => {
     await mountAt(VIZ_URL, BOOT, f.impl);
     await submit(await settled("form[data-visualize-form]"));
     await vi.waitFor(() => {
-      expect(el()!.querySelector("[data-notice]")?.textContent).toBe("insufficient_balance");
+      expect(el()!.querySelector("[data-notice]")?.textContent).toBe(errorSentence("insufficient_balance"));
     });
   });
 

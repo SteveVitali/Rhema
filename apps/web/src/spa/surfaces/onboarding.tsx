@@ -41,6 +41,7 @@ import type { PresignedImportDto } from "@rhema/api-client";
 import { COPY } from "../../copy.js";
 import { PageBody, PageHeader } from "../page-header.js";
 import { BffError, bffFetch } from "../bff.js";
+import { errorMessage } from "../../error-copy.js";
 import { navigateDocument } from "../dom.js";
 import { useShellChrome } from "../ide/chrome-data.js";
 import {
@@ -280,7 +281,7 @@ function useOnboardingSubmit(opts?: {
       }
     },
     onError: (err) => {
-      if (err instanceof BffError) opts?.onRefusal?.(err.detail ?? err.code);
+      if (err instanceof BffError) opts?.onRefusal?.(errorMessage(err));
     },
     onSettled: (_env, _err, vars) => {
       setFormBusy(vars.form, false);

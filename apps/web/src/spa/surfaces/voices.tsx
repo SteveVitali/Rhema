@@ -72,6 +72,7 @@ import type {
 } from "@rhema/api-client";
 import { COPY } from "../../copy.js";
 import { BffError, bffFetch } from "../bff.js";
+import { errorMessage } from "../../error-copy.js";
 import { navigateDocument } from "../dom.js";
 import type { BffVoiceDetailTwin, BffVoiceReseedTwin } from "../queries.js";
 
@@ -252,7 +253,7 @@ function useVoiceFormSubmit(opts?: {
     onError: (err) => {
       // REQ-BFF-5 — the refusal is data on the surfaces that render it; a transport failure is a
       // no-op repaint (the SSR's swallow-and-redirect parity).
-      if (err instanceof BffError) opts?.onRefusal?.(err.detail ?? err.code);
+      if (err instanceof BffError) opts?.onRefusal?.(errorMessage(err));
     },
     onSettled: (_env, _err, vars) => {
       setFormBusy(vars.form, false);

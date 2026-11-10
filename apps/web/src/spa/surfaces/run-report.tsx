@@ -34,6 +34,7 @@ import { COPY } from "../../copy.js";
 import { chatPanelLive as chatPanel } from "../chat-live.js";
 import { reportLabels, runCardLabels, timelineHrefs, timelineLabels } from "../../dossier-view.js";
 import { BffError } from "../bff.js";
+import { errorMessage } from "../../error-copy.js";
 import { useReadOnlyProject, readOnlyReasonText, ReadOnlyNotice } from "../read-only.js";
 import { useDwell } from "../dwell.js";
 import type { IdeChromeData } from "../ide/chrome-data.js";
@@ -65,7 +66,7 @@ function useRunReportWrite() {
       // (400/403/404/409) — is the SSR's silent re-render: `onSettled`'s invalidate re-reads the
       // twin and the post-decision block is the answer. Only a real fault lands the alert line.
       if (err instanceof BffError && [400, 403, 404, 409].includes(err.status)) return;
-      setMutError(err instanceof BffError ? (err.detail ?? err.code) : COPY.spaError.body);
+      setMutError(err instanceof BffError ? errorMessage(err) : COPY.spaError.body);
     },
   });
   return { pending, mutError, write };

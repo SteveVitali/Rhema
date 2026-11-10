@@ -45,6 +45,7 @@ import {
   type PageChromeBag,
 } from "../../page-chrome.js";
 import { BffError, bffFetch } from "../bff.js";
+import { errorMessage, logBffError } from "../../error-copy.js";
 import { useDwell } from "../dwell.js";
 import type { IdeChromeData, IdeTwinShell } from "../ide/chrome-data.js";
 import { useShellChrome } from "../ide/chrome-data.js";
@@ -82,7 +83,7 @@ function useEditorWrite() {
       // 404/409) — is the SSR's silent re-render: `onSettled`'s invalidate re-reads the twin and
       // the post-decision page is the answer. Only a real fault lands the alert line.
       if (err instanceof BffError && [400, 403, 404, 409].includes(err.status)) return;
-      setMutError(err instanceof BffError ? (err.detail ?? err.code) : COPY.spaError.body);
+      setMutError(err instanceof BffError ? errorMessage(err) : COPY.spaError.body);
     },
   });
   return { pending, mutError, write };
@@ -164,6 +165,7 @@ function EditorEventBridge({ slug }: { readonly slug: string }): ReactNode {
                   });
                 })
                 .catch((err: unknown) => {
+                  if (err instanceof BffError) logBffError(err);
                   const code = err instanceof BffError ? err.code : "";
                   toast.push({
                     title:
