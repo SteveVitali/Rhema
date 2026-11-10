@@ -863,8 +863,10 @@ describe("GET /v/:persona?tab=… mounted", () => {
     expect(src.querySelector("[data-discover]")).not.toBeNull();
     expect(src.querySelector("[data-resync]")).not.toBeNull();
     expect(src.querySelector("[data-remove-source]")).not.toBeNull();
-    expect(src.querySelector("[data-source-settings-form] [name=\"autoIncludeNew\"]")).not.toBeNull();
-    expect(src.querySelector('[name="dailySync"]')).not.toBeNull();
+    // R7FIX.7 (F-R7DEP.2-14) — the settings/review checkboxes are real <input type="checkbox">
+    // carriers (the Radix BubbleInput was aria-hidden + pointer-inert under the card).
+    expect(src.querySelector('[data-source-settings-form] input[type="checkbox"][name="autoIncludeNew"]')).not.toBeNull();
+    expect(src.querySelector('input[type="checkbox"][name="dailySync"]')).not.toBeNull();
     // Re-sync all + the three link flows.
     expect(main.querySelector("[data-resync-all]")).not.toBeNull();
     expect(main.querySelector("[data-link-substack]")).not.toBeNull();

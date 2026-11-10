@@ -329,9 +329,11 @@ describe("GET /p/:slug/export mounted (SPA.17)", () => {
     expect(form!.querySelector('input[name="format"][value="md"]')).not.toBeNull();
     expect(form!.querySelector('input[name="format"][value="latex"]')).not.toBeNull();
     expect(form!.querySelector('select[name="profile"]')).not.toBeNull();
-    expect(form!.querySelector('[data-md-profile]')).not.toBeNull();
+    // R7FIX.7 (F-R7DEP.2-13) — the declared hooks ride the native <select> carriers themselves
+    // (a Radix trigger button shadowed them behind a hidden BubbleSelect the leg cannot drive).
+    expect(form!.querySelector('select[data-md-profile]')).not.toBeNull();
     expect(form!.querySelector('select[name="cslStyle"]')).not.toBeNull();
-    expect(form!.querySelector('[data-csl-style]')).not.toBeNull();
+    expect(form!.querySelector('select[data-csl-style]')).not.toBeNull();
     expect(form!.querySelector('input[name="attachAiUse"]')).not.toBeNull();
     expect(form!.querySelector('input[name="attachProvenance"]')).not.toBeNull();
     expect(main.querySelector('[data-provenance-toggle="available"]')).not.toBeNull();

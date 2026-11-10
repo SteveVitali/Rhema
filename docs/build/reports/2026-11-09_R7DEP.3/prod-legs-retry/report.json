@@ -1,0 +1,52 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "0e94c10ba127",
+  "startedAt": "2026-11-09T17:09:39.597Z",
+  "finishedAt": "2026-11-09T17:12:57.134Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "b8307a401ba21a08cd15a7abcab2eb7c5743a506",
+    "observed": {
+      "web": "b8307a401ba21a08cd15a7abcab2eb7c5743a506",
+      "api": "b8307a401ba21a08cd15a7abcab2eb7c5743a506"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "P1.pill",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 10646,
+      "error": "sync pill covers text at desktop: button \"Exit focus · Esc\"",
+      "screenshot": "P1.pill.png"
+    },
+    {
+      "id": "T5",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 186578,
+      "screenshot": "T5.png"
+    }
+  ],
+  "passed": false
+}

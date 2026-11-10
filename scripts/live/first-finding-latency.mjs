@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
+import { resolve, dirname } from "node:path";
 // R5OPS.1 (REQ-OPS-4; §13.5's "first finding ≤ 4 min" activation SLO) — the committed
 // measurement query. The telemetry beacons exist (`signup.completed` server-emitted at signup,
 // `finding.viewed` client-emitted through POST /analytics/events); what is missing is organic
@@ -50,10 +53,9 @@ select count(*)::int as signups_with_findings,
   from per_user;
 `;
 
-if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
-  const { createRequire } = await import("node:module");
-  const { resolve, dirname } = await import("node:path");
-  const { fileURLToPath } = await import("node:url");
+const isMain =
+  process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1]);
+if (isMain) {
   const require = createRequire(
     resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "integration", "package.json"),
   );

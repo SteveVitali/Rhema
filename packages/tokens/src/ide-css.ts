@@ -149,7 +149,13 @@ export function ideCss(): string {
     // R7FIX.1 (REQ-WRITE-4, B12) — the focus-view exit pill: hover- and keyboard-revealed. It is a
     // fixed button top-centre; outside focus view it never mounts an affordance (display:none).
     // opacity:0 keeps it hit-testable — a pointer entering its box (or Tab reaching it) reveals.
-    ".ide-focus-exit { display: none; position: fixed; top: 10px; left: 50%; transform: translateX(-50%) translateY(-6px); z-index: 65; align-items: center; gap: var(--s1); padding: 5px 14px; border-radius: var(--radius-pill); border: 1px solid var(--shell-border); background: var(--shell-raised); color: var(--shell-fg); font-size: var(--fs-micro, 12px); font-family: var(--font-shell); cursor: pointer; opacity: 0; transition: opacity var(--dur-pane) ease, transform var(--dur-pane) ease; box-shadow: 0 4px 16px rgba(0,0,0,0.35); }",
+    // R7FIX.8 (F-R7DEP.3-1) — the hide rule must WIN the cascade: the carrier is a ui-btn
+    // (`.ui-btn { display: inline-flex }`), so the bare `.ide-focus-exit` selector tied on
+    // specificity and lost on source order — the invisible button kept a live hit-box at
+    // top-centre in EVERY view and occluded the page strip's [data-sync-pill] at 1440×900
+    // (P1.pill prod red). `.ide` scoping beats the primitive's single class; the
+    // `.ide[data-view='focus']` reveal below still out-specifies it.
+    ".ide .ide-focus-exit { display: none; position: fixed; top: 10px; left: 50%; transform: translateX(-50%) translateY(-6px); z-index: 65; align-items: center; gap: var(--s1); padding: 5px 14px; border-radius: var(--radius-pill); border: 1px solid var(--shell-border); background: var(--shell-raised); color: var(--shell-fg); font-size: var(--fs-micro, 12px); font-family: var(--font-shell); cursor: pointer; opacity: 0; transition: opacity var(--dur-pane) ease, transform var(--dur-pane) ease; box-shadow: 0 4px 16px rgba(0,0,0,0.35); }",
     ".ide[data-view='focus'] .ide-focus-exit { display: inline-flex; }",
     ".ide[data-view='focus'] .ide-focus-exit:hover, .ide[data-view='focus'] .ide-focus-exit:focus-visible { opacity: 1; transform: translateX(-50%); }",
     ".ide[data-view='focus'] .ide-focus-exit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }",
@@ -432,8 +438,11 @@ export function ideCss(): string {
     `@media (min-width: ${B.bpPhonePx}px) and (max-width: ${B.bpSingleColumnPx - 1}px) {`,
     `  .app-shell[data-ide-sidebar='drawer'] .app-shell-topbar { display: flex; flex: 0 0 ${B.topBarPx}px; align-items: center; gap: var(--s3); padding: 0 var(--s3); background: var(--shell-surface); border-bottom: 1px solid var(--shell-border); font-size: var(--fs-dense, 13px); }`,
     "  .app-shell[data-ide-sidebar='drawer'] .app-shell-topbar button { display: inline-flex; align-items: center; justify-content: center; min-width: 36px; min-height: 36px; border: none; border-radius: var(--radius-2); background: none; color: var(--shell-fg-muted); cursor: pointer; }",
-    `  .app-shell[data-ide-sidebar='drawer'] .app-shell-sidebar { position: fixed; left: 0; top: ${B.topBarPx}px; bottom: 0; transform: translateX(-100%); transition: transform var(--dur-pane, 160ms) ease; }`,
-    "  .app-shell[data-ide-sidebar='drawer'][data-drawer='open'] .app-shell-sidebar { transform: none; box-shadow: 8px 0 24px rgba(0,0,0,0.35); }",
+    // R7FIX.7 (F-R7DEP.2-11) — an off-canvas drawer must not leave its links visible/focusable
+    // while closed: `visibility` joins the slide so keyboard focus and hit-testing can never
+    // reach a control the user cannot see. The delayed visibility flip lets the slide finish.
+    `  .app-shell[data-ide-sidebar='drawer'] .app-shell-sidebar { position: fixed; left: 0; top: ${B.topBarPx}px; bottom: 0; transform: translateX(-100%); visibility: hidden; transition: transform var(--dur-pane, 160ms) ease, visibility 0s linear var(--dur-pane, 160ms); }`,
+    "  .app-shell[data-ide-sidebar='drawer'][data-drawer='open'] .app-shell-sidebar { transform: none; visibility: visible; transition: transform var(--dur-pane, 160ms) ease; box-shadow: 8px 0 24px rgba(0,0,0,0.35); }",
     "  .app-shell[data-ide-sidebar='drawer'][data-drawer='open'] .app-shell-scrim { display: block; position: fixed; inset: 0; z-index: 25; background: rgba(0,0,0,0.45); border: none; }",
     "}",
     // <768 (desktop UA): off-canvas drawer behind a 48-px top bar; the IDE's side panes open as
@@ -442,8 +451,8 @@ export function ideCss(): string {
     `  .app-shell-topbar { display: flex; flex: 0 0 ${B.topBarPx}px; align-items: center; gap: var(--s3); padding: 0 var(--s3); background: var(--shell-surface); border-bottom: 1px solid var(--shell-border); font-size: var(--fs-dense, 13px); }`,
     "  .app-shell-topbar button { display: inline-flex; align-items: center; justify-content: center; min-width: 36px; min-height: 36px; border: none; border-radius: var(--radius-2); background: none; color: var(--shell-fg-muted); cursor: pointer; }",
     "  .app-shell-topbar button:hover { background: var(--shell-raised); color: var(--shell-fg); }",
-    `  .app-shell-sidebar { position: fixed; left: 0; top: ${B.topBarPx}px; bottom: 0; transform: translateX(-100%); transition: transform var(--dur-pane, 160ms) ease; box-shadow: none; }`,
-    "  .app-shell[data-drawer='open'] .app-shell-sidebar { transform: none; box-shadow: 8px 0 24px rgba(0,0,0,0.35); }",
+    `  .app-shell-sidebar { position: fixed; left: 0; top: ${B.topBarPx}px; bottom: 0; transform: translateX(-100%); visibility: hidden; transition: transform var(--dur-pane, 160ms) ease, visibility 0s linear var(--dur-pane, 160ms); box-shadow: none; }`,
+    "  .app-shell[data-drawer='open'] .app-shell-sidebar { transform: none; visibility: visible; transition: transform var(--dur-pane, 160ms) ease; box-shadow: 8px 0 24px rgba(0,0,0,0.35); }",
     "  .app-shell[data-drawer='open'] .app-shell-scrim { display: block; position: fixed; inset: 0; z-index: 25; background: rgba(0,0,0,0.45); border: none; }",
     "  .app-shell-content { padding-top: 0; }",
     `  .ide[data-ide-hosted] .ide-panel[data-open] { position: absolute; left: auto; right: 0; top: 0; bottom: 0; width: min(var(--panel-w, ${B.timelinePx}px), 90vw); height: auto; z-index: 20; box-shadow: -8px 0 24px rgba(0,0,0,0.35); }`,
