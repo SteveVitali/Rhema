@@ -53,6 +53,10 @@ const NO_RAW_CONTROLS_ENABLED = [
   "apps/web/src/spa/surfaces/run-sheet.tsx",
   "apps/web/src/spa/surfaces/export.tsx",
   "apps/web/src/spa/surfaces/onboarding.tsx",
+  // 242_R7KIT.3c2 — KIT-3 batch c2: outline / figures + the shared outline sections migrated.
+  "apps/web/src/spa/surfaces/outline.tsx",
+  "apps/web/src/spa/surfaces/figures.tsx",
+  "packages/ui/src/outline-sections.tsx",
 ];
 
 export default tseslint.config(

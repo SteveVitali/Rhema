@@ -1,5 +1,6 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import type { GateOutlineView } from "@rhema/findings-core";
+import { TextField } from "./primitives/fields.js";
 
 // P1.12 — the spine-and-sections structured editor (§7.3). ONE component powers two surfaces:
 //   · the Approve-outline gate card (inside the decision form — its `ed.*` fields post with Approve),
@@ -8,6 +9,11 @@ import type { GateOutlineView } from "@rhema/findings-core";
 // `editable: false` renders the phone/read-only surface (§10.1): badges + text, no inputs.
 // Provenance + `[unverified]` are DATA badges on every claim row — never editable fields and never
 // styled-away (REQ-DATA-23). Text is lint-checked copy via `labels`.
+//
+// 242_R7KIT.3c2 (REQ-KIT-3 batch c2): fields ride the 225a `TextField` primitive (a real
+// `<input>` — the no-JS gate-card post and the autosave `input` event are untouched); the strike
+// checkbox stays a KIT-1-styled native `<input type="checkbox">` inside `EdCheckbox` (the named
+// GUARD-1 exemption — the gate card renders to static HTML where a Radix toggle is inert, RV-36).
 
 export interface OutlineSectionsLabels {
   /** the lever fields (post as `ed.values.*`). */
@@ -43,34 +49,14 @@ export interface OutlineSectionsLabels {
   readonly answerPlaceholder: string;
 }
 
-const fieldInput: CSSProperties = {
-  padding: "5px 8px",
-  borderRadius: "6px",
-  border: "1px solid var(--shell-border)",
-  background: "var(--shell-bg)",
-  color: "var(--shell-fg)",
-  fontSize: "12px",
-};
-
-const fieldLabel: CSSProperties = {
-  fontSize: "12px",
-  color: "var(--shell-fg-muted)",
-};
-
-const badge: CSSProperties = {
-  display: "inline-block",
-  padding: "1px 6px",
-  borderRadius: "999px",
-  border: "1px solid var(--shell-border)",
-  fontSize: "10px",
-  color: "var(--shell-fg-muted)",
-};
-
-const unverifiedBadgeStyle: CSSProperties = {
-  ...badge,
-  borderColor: "var(--sev-major)",
-  color: "var(--sev-major)",
-};
+/**
+ * The no-JS strike checkbox — the ONLY raw control left in this file, and the named GUARD-1
+ * exemption owns it (this component renders inside the Approve-outline gate card's no-JS decision
+ * form, where `ed.claim.*.strike` must toggle with zero client JS — RV-36's KIT-1-styled native).
+ */
+function EdCheckbox({ name }: { readonly name: string }): ReactNode {
+  return <input type="checkbox" name={name} value="1" />;
+}
 
 /**
  * The shared spine-and-sections editor. `editable` flips every row between form fields (`ed.*`
@@ -96,17 +82,16 @@ export function OutlineSections({
     label: string,
     value: string | number | undefined,
   ): ReactNode => (
-    <label key={name} style={{ ...fieldLabel, display: "flex", flexDirection: "column", gap: "3px" }}>
+    <label key={name} className="ui-os-lf" style={{ display: "flex", flexDirection: "column" }}>
       {label}
       {editable ? (
-        <input
+        <TextField
           type={name === "targetLength" ? "number" : "text"}
           name={`ed.values.${name}`}
           defaultValue={value ?? ""}
-          style={fieldInput}
         />
       ) : (
-        <span data-lever={name} style={{ fontSize: "13px", color: "var(--shell-fg)" }}>
+        <span data-lever={name} className="ui-os-d">
           {value ?? "—"}
         </span>
       )}
@@ -114,9 +99,16 @@ export function OutlineSections({
   );
 
   return (
-    <div data-outline-sections="true" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+    <div
+      data-outline-sections="true"
+      className="ui-c2-g3"
+      style={{ display: "flex", flexDirection: "column" }}
+    >
       {/* ---- the levers (thesis / venue / target length / protocol / voice) ---- */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "8px" }}>
+      <div
+        className="ui-c2-g2"
+        style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}
+      >
         {leverField("thesis", labels.thesisLabel, outline.thesis)}
         {leverField("venue", labels.venueLabel, outline.venue)}
         {leverField("targetLength", labels.targetLengthLabel, outline.targetLength)}
@@ -127,8 +119,8 @@ export function OutlineSections({
       {/* ---- the spine: claim ids in reading order (display — edits recompute it) ---- */}
       {outline.spine.length > 0 ? (
         <div data-outline-spine="true">
-          <span style={fieldLabel}>{labels.spineHeading}</span>
-          <ol style={{ margin: "4px 0 0", paddingLeft: "20px", fontSize: "12px", color: "var(--shell-fg-muted)", display: "flex", flexDirection: "column", gap: "2px" }}>
+          <span className="ui-c2-ts">{labels.spineHeading}</span>
+          <ol className="ui-os-ol" style={{ display: "flex", flexDirection: "column" }}>
             {outline.spine.map((id) => (
               <li key={id} data-spine-id={id}>
                 {claimText.get(id) ?? id}
@@ -139,78 +131,176 @@ export function OutlineSections({
       ) : null}
 
       {/* ---- the sections + their claim rows ---- */}
-      <fieldset data-outline-seclist="true" style={{ border: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
-        <legend style={fieldLabel}>{labels.sectionsHeading}</legend>
+      <fieldset
+        data-outline-seclist="true"
+        className="ui-os-fs ui-c2-g2"
+        style={{ display: "flex", flexDirection: "column" }}
+      >
+        <legend className="ui-c2-ts">{labels.sectionsHeading}</legend>
         {outline.sections.map((sec, si) => (
-          <section key={si} data-outline-section={sec.ref} style={{ border: "1px solid var(--shell-border)", borderRadius: "8px", padding: "8px" }}>
-            <div style={{ display: "flex", gap: "8px", alignItems: "baseline", flexWrap: "wrap" }}>
-              <strong style={{ fontSize: "13px", color: "var(--shell-fg)" }}>
+          <section
+            key={si}
+            data-outline-section={sec.ref}
+            className="ui-os-card"
+            style={{ border: "1px solid var(--shell-border)" }}
+          >
+            <div
+              className="ui-c2-g2"
+              style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap" }}
+            >
+              <strong className="ui-os-d">
                 {sec.ref} · {sec.title}
               </strong>
               {editable ? (
-                <span style={{ display: "inline-flex", gap: "8px", alignItems: "baseline", flexWrap: "wrap" }}>
-                  <label style={fieldLabel}>
+                <span
+                  className="ui-c2-g2"
+                  style={{ display: "inline-flex", alignItems: "baseline", flexWrap: "wrap" }}
+                >
+                  <label className="ui-c2-ts">
                     {labels.orderLabel}
-                    <input type="number" name={`ed.sec.${si}.ord`} min={1} defaultValue={si + 1} aria-label={labels.orderLabel} style={{ ...fieldInput, width: "44px", marginLeft: "4px" }} />
+                    <TextField
+                      type="number"
+                      name={`ed.sec.${si}.ord`}
+                      min={1}
+                      defaultValue={si + 1}
+                      aria-label={labels.orderLabel}
+                      className="ui-os-n4 ui-os-ml1"
+                      style={{ display: "inline-block" }}
+                    />
                   </label>
-                  <label style={fieldLabel}>
+                  <label className="ui-c2-ts">
                     {labels.targetWordsLabel}
-                    <input type="number" name={`ed.sec.${si}.targetWords`} min={0} defaultValue={sec.targetWords ?? ""} aria-label={labels.targetWordsLabel} style={{ ...fieldInput, width: "72px", marginLeft: "4px" }} />
+                    <TextField
+                      type="number"
+                      name={`ed.sec.${si}.targetWords`}
+                      min={0}
+                      defaultValue={sec.targetWords ?? ""}
+                      aria-label={labels.targetWordsLabel}
+                      className="ui-os-n7 ui-os-ml1"
+                      style={{ display: "inline-block" }}
+                    />
                   </label>
                 </span>
               ) : (
-                <span style={{ fontSize: "11px", color: "var(--shell-fg-faint)" }}>
+                <span className="ui-os-i">
                   {sec.targetWords != null ? `${labels.targetWordsLabel} ${sec.targetWords}` : ""}
                 </span>
               )}
             </div>
             {editable ? (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "6px", marginTop: "6px" }}>
-                <label style={fieldLabel}>
+              <div
+                className="ui-os-g2"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+                }}
+              >
+                <label className="ui-c2-ts">
                   {labels.functionLabel}
-                  <input type="text" name={`ed.sec.${si}.purpose`} defaultValue={sec.function ?? ""} aria-label={labels.functionLabel} style={{ ...fieldInput, width: "100%", boxSizing: "border-box" }} />
+                  <TextField
+                    type="text"
+                    name={`ed.sec.${si}.purpose`}
+                    defaultValue={sec.function ?? ""}
+                    aria-label={labels.functionLabel}
+                  />
                 </label>
-                <label style={fieldLabel}>
+                <label className="ui-c2-ts">
                   {labels.entryLabel}
-                  <input type="text" name={`ed.sec.${si}.entry`} defaultValue={sec.entry ?? ""} aria-label={labels.entryLabel} style={{ ...fieldInput, width: "100%", boxSizing: "border-box" }} />
+                  <TextField
+                    type="text"
+                    name={`ed.sec.${si}.entry`}
+                    defaultValue={sec.entry ?? ""}
+                    aria-label={labels.entryLabel}
+                  />
                 </label>
-                <label style={fieldLabel}>
+                <label className="ui-c2-ts">
                   {labels.exitLabel}
-                  <input type="text" name={`ed.sec.${si}.exit`} defaultValue={sec.exit ?? ""} aria-label={labels.exitLabel} style={{ ...fieldInput, width: "100%", boxSizing: "border-box" }} />
+                  <TextField
+                    type="text"
+                    name={`ed.sec.${si}.exit`}
+                    defaultValue={sec.exit ?? ""}
+                    aria-label={labels.exitLabel}
+                  />
                 </label>
               </div>
             ) : (
-              <div style={{ marginTop: "4px", fontSize: "11px", color: "var(--shell-fg-faint)", display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                {sec.function ? <span>{labels.functionLabel} {sec.function}</span> : null}
-                {sec.entry ? <span>{labels.entryLabel} {sec.entry}</span> : null}
-                {sec.exit ? <span>{labels.exitLabel} {sec.exit}</span> : null}
+              <div className="ui-os-mr ui-c2-g2" style={{ display: "flex", flexWrap: "wrap" }}>
+                {sec.function ? (
+                  <span className="ui-os-i">
+                    {labels.functionLabel} {sec.function}
+                  </span>
+                ) : null}
+                {sec.entry ? (
+                  <span className="ui-os-i">
+                    {labels.entryLabel} {sec.entry}
+                  </span>
+                ) : null}
+                {sec.exit ? (
+                  <span className="ui-os-i">
+                    {labels.exitLabel} {sec.exit}
+                  </span>
+                ) : null}
               </div>
             )}
-            <ul data-outline-claims="true" style={{ margin: "8px 0 0", paddingLeft: "0", listStyle: "none", display: "flex", flexDirection: "column", gap: "6px" }}>
+            <ul
+              data-outline-claims="true"
+              className="ui-c2-vl"
+              style={{ listStyle: "none", display: "flex", flexDirection: "column" }}
+            >
               {sec.claims.map((cl, ci) => (
-                <li key={cl.id} data-outline-claim={cl.id} style={{ fontSize: "12px" }}>
-                  <span style={{ color: "var(--shell-fg)" }}>{cl.text}</span>{" "}
-                  <span data-provenance={cl.provenanceKind} style={badge}>
+                <li key={cl.id} data-outline-claim={cl.id} className="ui-os-t">
+                  <span>{cl.text}</span>{" "}
+                  <span data-provenance={cl.provenanceKind} className="ui-badge ui-os-b">
                     {labels.provenanceBadge(cl.provenanceKind)}
-                    {cl.provenance?.url ? ` · ${cl.provenance.url}` : cl.provenance?.notePath ? ` · ${cl.provenance.notePath}` : ""}
+                    {cl.provenance?.url
+                      ? ` · ${cl.provenance.url}`
+                      : cl.provenance?.notePath
+                        ? ` · ${cl.provenance.notePath}`
+                        : ""}
                   </span>{" "}
                   {cl.unverified ? (
-                    <span data-unverified="true" style={unverifiedBadgeStyle}>{labels.unverifiedBadge}</span>
+                    <span data-unverified="true" className="ui-badge ui-os-bw">
+                      {labels.unverifiedBadge}
+                    </span>
                   ) : null}
                   {editable ? (
-                    <span style={{ marginLeft: "6px", display: "inline-flex", gap: "8px", alignItems: "baseline", flexWrap: "wrap" }}>
-                      <label style={fieldLabel}>
+                    <span
+                      className="ui-os-ml ui-c2-g2"
+                      style={{ display: "inline-flex", alignItems: "baseline", flexWrap: "wrap" }}
+                    >
+                      <label className="ui-c2-ts">
                         {labels.orderLabel}
-                        <input type="number" name={`ed.claim.${si}.${ci}.ord`} min={1} defaultValue={ci + 1} aria-label={labels.orderLabel} style={{ ...fieldInput, width: "40px", marginLeft: "4px" }} />
+                        <TextField
+                          type="number"
+                          name={`ed.claim.${si}.${ci}.ord`}
+                          min={1}
+                          defaultValue={ci + 1}
+                          aria-label={labels.orderLabel}
+                          className="ui-os-n1 ui-os-ml1"
+                          style={{ display: "inline-block" }}
+                        />
                       </label>
-                      <label style={fieldLabel}>
+                      <label className="ui-c2-ts">
                         {labels.moveLabel}
-                        <input type="number" name={`ed.claim.${si}.${ci}.to`} min={1} max={outline.sections.length} placeholder={`${si + 1}`} aria-label={labels.moveLabel} style={{ ...fieldInput, width: "40px", marginLeft: "4px" }} />
+                        <TextField
+                          type="number"
+                          name={`ed.claim.${si}.${ci}.to`}
+                          min={1}
+                          max={outline.sections.length}
+                          placeholder={`${si + 1}`}
+                          aria-label={labels.moveLabel}
+                          className="ui-os-n1 ui-os-ml1"
+                          style={{ display: "inline-block" }}
+                        />
                       </label>
-                      <label style={fieldLabel}>
-                        <input type="checkbox" name={`ed.claim.${si}.${ci}.strike`} value="1" /> {labels.strikeLabel}
+                      <label className="ui-c2-ts">
+                        <EdCheckbox name={`ed.claim.${si}.${ci}.strike`} /> {labels.strikeLabel}
                       </label>
-                      <input type="text" name={`ed.claim.${si}.${ci}.note`} placeholder={labels.notePlaceholder} style={fieldInput} />
+                      <TextField
+                        type="text"
+                        name={`ed.claim.${si}.${ci}.note`}
+                        placeholder={labels.notePlaceholder}
+                      />
                     </span>
                   ) : null}
                 </li>
@@ -222,13 +312,35 @@ export function OutlineSections({
 
       {/* ---- add a claim (lands with user_typed provenance; `section` = its 1-based slot) ---- */}
       {editable ? (
-        <div data-add-claim="true" style={{ display: "flex", gap: "8px", alignItems: "baseline", flexWrap: "wrap" }}>
-          <span style={fieldLabel}>{labels.addClaimLabel}</span>
-          <input type="text" name="ed.spine.new.text" placeholder={labels.addClaimPlaceholder} style={{ ...fieldInput, flex: "1 1 220px" }} />
-          <input type="text" name="ed.spine.new.note" placeholder={labels.addNotePlaceholder} style={{ ...fieldInput, flex: "1 1 160px" }} />
-          <label style={fieldLabel}>
+        <div
+          data-add-claim="true"
+          className="ui-c2-g2"
+          style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap" }}
+        >
+          <span className="ui-c2-ts">{labels.addClaimLabel}</span>
+          <TextField
+            type="text"
+            name="ed.spine.new.text"
+            placeholder={labels.addClaimPlaceholder}
+            style={{ flex: "1 1 220px" }}
+          />
+          <TextField
+            type="text"
+            name="ed.spine.new.note"
+            placeholder={labels.addNotePlaceholder}
+            style={{ flex: "1 1 160px" }}
+          />
+          <label className="ui-c2-ts">
             {labels.addClaimSectionLabel}
-            <input type="number" name="ed.spine.new.section" min={1} max={outline.sections.length} placeholder={`${outline.sections.length}`} style={{ ...fieldInput, width: "44px", marginLeft: "4px" }} />
+            <TextField
+              type="number"
+              name="ed.spine.new.section"
+              min={1}
+              max={outline.sections.length}
+              placeholder={`${outline.sections.length}`}
+              className="ui-os-n4 ui-os-ml1"
+              style={{ display: "inline-block" }}
+            />
           </label>
         </div>
       ) : null}
@@ -236,8 +348,8 @@ export function OutlineSections({
       {/* ---- alternatives considered (read-only — a record, not an edit surface) ---- */}
       {outline.alternativesConsidered && outline.alternativesConsidered.length > 0 ? (
         <div data-alternatives="true">
-          <span style={fieldLabel}>{labels.alternativesHeading}</span>
-          <ul style={{ margin: "4px 0 0", paddingLeft: "18px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+          <span className="ui-c2-ts">{labels.alternativesHeading}</span>
+          <ul className="ui-os-ul">
             {outline.alternativesConsidered.map((a, i) => (
               <li key={i}>{a}</li>
             ))}
@@ -248,17 +360,28 @@ export function OutlineSections({
       {/* ---- the gaps only the author can fill — each Answer posts `ed.gap.<id>` ---- */}
       {outline.gaps.length > 0 ? (
         <div data-outline-gaps="true">
-          <span style={fieldLabel}>{labels.gapsHeading}</span>
-          <ul style={{ margin: "6px 0 0", paddingLeft: "0", listStyle: "none", display: "flex", flexDirection: "column", gap: "8px" }}>
+          <span className="ui-c2-ts">{labels.gapsHeading}</span>
+          <ul
+            className="ui-os-gl"
+            style={{ listStyle: "none", display: "flex", flexDirection: "column" }}
+          >
             {outline.gaps.map((g) => (
-              <li key={g.id} data-outline-gap={g.id} style={{ fontSize: "12px" }}>
-                <span style={{ color: "var(--shell-fg)" }}>{g.needed}</span>
-                {g.sectionRef ? (
-                  <span style={{ marginLeft: "6px", color: "var(--shell-fg-faint)" }}>({g.sectionRef})</span>
-                ) : null}
+              <li key={g.id} data-outline-gap={g.id} className="ui-os-t">
+                <span>{g.needed}</span>
+                {g.sectionRef ? <span className="ui-os-fnt">({g.sectionRef})</span> : null}
                 {editable ? (
-                  <span style={{ marginLeft: "8px", display: "inline-flex", gap: "6px", alignItems: "baseline" }}>
-                    <input type="text" name={`ed.gap.${g.id}`} placeholder={labels.answerPlaceholder} aria-label={labels.answerLabel} style={{ ...fieldInput, width: "260px" }} />
+                  <span
+                    className="ui-os-ml ui-c2-g2"
+                    style={{ display: "inline-flex", alignItems: "baseline" }}
+                  >
+                    <TextField
+                      type="text"
+                      name={`ed.gap.${g.id}`}
+                      placeholder={labels.answerPlaceholder}
+                      aria-label={labels.answerLabel}
+                      className="ui-os-n26"
+                      style={{ display: "inline-block" }}
+                    />
                   </span>
                 ) : null}
               </li>
@@ -270,13 +393,15 @@ export function OutlineSections({
       {/* ---- the provenance url ledger (read-only; failed re-fetches carry the badge) ---- */}
       {outline.urls && outline.urls.length > 0 ? (
         <div data-outline-sources="true">
-          <span style={fieldLabel}>{labels.sourcesHeading}</span>
-          <ul style={{ margin: "4px 0 0", paddingLeft: "18px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+          <span className="ui-c2-ts">{labels.sourcesHeading}</span>
+          <ul className="ui-os-ul">
             {outline.urls.map((u) => (
               <li key={u.url}>
                 {u.url}
                 {u.unverified ? (
-                  <span data-unverified="true" style={{ ...unverifiedBadgeStyle, marginLeft: "6px" }}>{labels.unverifiedBadge}</span>
+                  <span data-unverified="true" className="ui-badge ui-os-bw ui-os-ml">
+                    {labels.unverifiedBadge}
+                  </span>
                 ) : null}
               </li>
             ))}
