@@ -2038,7 +2038,9 @@ export const COPY = {
       steps: {
         published:
           "This is The Structure of Political Difference as published — the end of the record this tour walks back through.",
-        v1: "The draft the writer submitted was titled “Politics Has Five Questions”. Everything after this page is what the record did to it.",
+        // 248 R7TOUR.2 — beat 2 introduces the ADR-128 regions once (sidebar | Page | right
+        // panel); the rest of the tour assumes them.
+        v1: "The draft the writer submitted was titled “Politics Has Five Questions”. The record reads inside the same three regions your workspace uses — the sidebar, this Page, and the right panel.",
         verdict:
           "The editor's verdict was Major revisions: “the fact-check came back cleaner than any draft of this ambition I have seen (zero contradicted claims; your own statistical exercise reproduces from the raw data)”.",
         oneThing:
@@ -2352,6 +2354,9 @@ export const COPY = {
     voices: "Voices",
     usage: "Usage",
     settings: "Settings",
+    // 248 R7TOUR.2 (REQ-TOUR-4 R7b part, REQ-SHELL-2, S-14) — the Demo item after Settings:
+    // a document navigation into the demo namespace.
+    demo: "Demo",
     account: "Account",
     billing: "Billing",
     pricing: "Pricing",
