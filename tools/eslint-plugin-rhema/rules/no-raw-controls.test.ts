@@ -165,12 +165,16 @@ describe("registration in the real eslint.config.js (per-file enablement)", () =
     }
     // R7TALK.1a enabled the first batch-d file — the rule is ON (never off) for it; R7KIT.3a
     // enabled batch a's settings/billing/usage and 240a_R7KIT.3a2 completed batch a with voices.
+    // 241_R7KIT.3b enabled batch b's run-sheet / export / onboarding.
     for (const file of [
       "packages/ui/src/chat-panel.tsx",
       "apps/web/src/spa/surfaces/settings.tsx",
       "apps/web/src/spa/surfaces/billing.tsx",
       "apps/web/src/spa/surfaces/usage.tsx",
       "apps/web/src/spa/surfaces/voices.tsx",
+      "apps/web/src/spa/surfaces/run-sheet.tsx",
+      "apps/web/src/spa/surfaces/export.tsx",
+      "apps/web/src/spa/surfaces/onboarding.tsx",
     ]) {
       const on = await eslint.calculateConfigForFile(file);
       const onEntry = (on.rules as Record<string, unknown>)["rhema/no-raw-controls"];
@@ -209,6 +213,18 @@ describe("registration in the real eslint.config.js (per-file enablement)", () =
       filePath: "apps/web/src/spa/surfaces/voices.tsx",
     });
     expect(voices.messages.some((m) => m.ruleId === "rhema/no-raw-controls")).toBe(true);
+    // 241_R7KIT.3b's seeded legs: a raw <button> fails the ENABLED rule on every batch-b file.
+    for (const file of [
+      "apps/web/src/spa/surfaces/run-sheet.tsx",
+      "apps/web/src/spa/surfaces/export.tsx",
+      "apps/web/src/spa/surfaces/onboarding.tsx",
+    ]) {
+      const [res] = await eslint.lintText(code, { filePath: file });
+      expect(
+        res.messages.some((m) => m.ruleId === "rhema/no-raw-controls"),
+        `seeded raw control fails on ${file}`,
+      ).toBe(true);
+    }
     // Same code in a not-yet-migrated file: the rule stays off (enablement is per-file).
     const [off] = await eslint.lintText(code, {
       filePath: "apps/web/src/spa/surfaces/dossier.tsx",

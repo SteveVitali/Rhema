@@ -68,4 +68,22 @@ module.exports = [
     reason:
       "the no-JS post's hidden id/flag carriers (runId, provider, scope, tier, quarantineKey, known) — Radix's own hidden select/radio/checkbox carriers post the named fields, so only these ride a raw input (RV-36); every visible control is a primitive.",
   },
+  {
+    file: "apps/web/src/spa/surfaces/run-sheet.tsx",
+    component: "HiddenField",
+    reason:
+      "the no-JS run post's hidden carriers (workflow, idempotencyKey, estimateCredits, scope, rateTableVersion, words, claims, toggleKeys, toggleRigor, entitlementId, voice_persona) — Radix's own hidden radio/checkbox/select carriers post the named lever fields, so only these ride a raw input (RV-36); every visible control is a primitive.",
+  },
+  {
+    file: "apps/web/src/spa/surfaces/onboarding.tsx",
+    component: "HiddenField",
+    reason:
+      "the no-JS import post's hidden heldToken carrier — Radix's own hidden carriers post the named fields, so only this id rides a raw input (RV-36); every visible control is a primitive.",
+  },
+  {
+    file: "apps/web/src/spa/surfaces/onboarding.tsx",
+    component: "FileDropzone",
+    reason:
+      "the visually-hidden file proxy the styled dropzone (role=button) drives via DataTransfer — no file-input primitive exists and the accessible control is the dropzone, not the input (RV-36).",
+  },
 ];

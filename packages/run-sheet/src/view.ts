@@ -9,6 +9,7 @@ import {
   creditsLine,
   estimateLine,
   formatCredits,
+  formatRate,
   resolveInsufficientBalance,
   resolveScopeGate,
   MODEL_TIER_DISPLAY,
@@ -383,7 +384,8 @@ export interface BuildRunSheetViewArgs {
  * "4 claims × 40 ≈ 440" shape cannot occur — a term's credits field IS its quantity × rate).
  */
 function renderWhyLine(why: EstimateWhy): string {
-  const rate = (r: number) => (Number.isInteger(r) ? formatCredits(r) : String(r));
+  // REQ-COPY-5 (E1) — the ONE formatter: float noise ("0.023000000000000003") is impossible.
+  const rate = (r: number) => formatRate(r);
   const termStr = (t: EstimateWhyTerm) =>
     t.quantity == null
       ? `fixed ${formatCredits(t.credits)} cr`

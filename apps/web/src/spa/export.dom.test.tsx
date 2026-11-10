@@ -323,11 +323,15 @@ describe("GET /p/:slug/export mounted (SPA.17)", () => {
     // REQ-BFF-17 — the binary leg stays a REAL document POST, never a fetch.
     expect(form!.getAttribute("method")).toBe("post");
     expect(form!.getAttribute("action")).toBe("/p/the-piece/export");
+    // R7KIT.3b — the visible controls are primitives; their hidden carriers keep the field names.
     expect(form!.querySelectorAll('input[name="format"]').length).toBe(7);
+    expect(form!.querySelector('[role="radio"]')).not.toBeNull();
     expect(form!.querySelector('input[name="format"][value="md"]')).not.toBeNull();
     expect(form!.querySelector('input[name="format"][value="latex"]')).not.toBeNull();
-    expect(form!.querySelector('select[name="profile"][data-md-profile]')).not.toBeNull();
-    expect(form!.querySelector('select[name="cslStyle"][data-csl-style]')).not.toBeNull();
+    expect(form!.querySelector('select[name="profile"]')).not.toBeNull();
+    expect(form!.querySelector('[data-md-profile]')).not.toBeNull();
+    expect(form!.querySelector('select[name="cslStyle"]')).not.toBeNull();
+    expect(form!.querySelector('[data-csl-style]')).not.toBeNull();
     expect(form!.querySelector('input[name="attachAiUse"]')).not.toBeNull();
     expect(form!.querySelector('input[name="attachProvenance"]')).not.toBeNull();
     expect(main.querySelector('[data-provenance-toggle="available"]')).not.toBeNull();

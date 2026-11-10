@@ -32,8 +32,10 @@ import {
 import { useRouter } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  Button,
   ConversionPreview,
   PageTitle,
+  TextArea,
 } from "@rhema/ui";
 import type { PresignedImportDto } from "@rhema/api-client";
 import { COPY } from "../../copy.js";
@@ -91,7 +93,7 @@ function FileDropzone({ compact }: { readonly compact?: boolean }): ReactNode {
   };
 
   return (
-    <div style={{ marginTop: "4px" }}>
+    <div className="ui-rs-mt">
       <div
         role="button"
         tabIndex={0}
@@ -114,24 +116,15 @@ function FileDropzone({ compact }: { readonly compact?: boolean }): ReactNode {
           setOver(false);
           assign(e.dataTransfer.files);
         }}
-        style={{
-          display: "block",
-          maxWidth: compact ? "100%" : "560px",
-          padding: "18px 16px",
-          borderRadius: "8px",
-          border: `1px dashed ${over ? "var(--accent)" : "var(--shell-border)"}`,
-          background: over ? "var(--shell-raised)" : "var(--shell-surface)",
-          color: "var(--shell-fg)",
-          fontSize: "13px",
-          cursor: "pointer",
-          textAlign: "center",
-        }}
+        className={`ui-ob-drop${compact ? " ui-ob-drop--full" : ""}${over ? " ui-ob-drop--over" : ""}`}
       >
         {selected ? fmt(COPY.import.dropzoneSelectedFmt, { name: selected }) : COPY.import.dropzoneLabel}
-        <span style={{ display: "block", marginTop: "4px", fontSize: "11px", color: "var(--shell-fg-faint)" }}>
+        <span className="ui-set-note ui-set-t--f ui-ob-sub">
           {COPY.import.dropzoneFormats}
         </span>
       </div>
+      {/* GUARD-1 exemption (FileDropzone): the visually-hidden file proxy the dropzone drives via
+          DataTransfer — the styled dropzone (role=button) is the accessible control (RV-36). */}
       <input
         ref={inputRef}
         type="file"
@@ -141,28 +134,27 @@ function FileDropzone({ compact }: { readonly compact?: boolean }): ReactNode {
         // the dropzone (role=button + aria-label) is the accessible control; this is its proxy.
         aria-hidden="true"
         tabIndex={-1}
-        style={{ position: "absolute", width: "1px", height: "1px", opacity: 0, overflow: "hidden" }}
+        className="ui-visually-hidden"
         onChange={(e) => setSelected(e.currentTarget.files?.[0]?.name ?? null)}
       />
     </div>
   );
 }
 
-const textAreaStyle = {
-  display: "block",
-  marginTop: "4px",
-  width: "100%",
-  maxWidth: "560px",
-  minHeight: "120px",
-  padding: "8px 10px",
-  borderRadius: "8px",
-  border: "1px solid var(--shell-border)",
-  background: "var(--shell-bg)",
-  color: "var(--shell-fg)",
-  fontSize: "13px",
-  fontFamily: "monospace",
-  boxSizing: "border-box",
-} as const;
+/**
+ * The no-JS form grammar's hidden carrier — GUARD-1's named exemption owns this one component
+ * (the held-draft `heldToken` id rides a raw input; the visible controls are primitives, RV-36).
+ */
+function HiddenField({
+  name,
+  value,
+  ...rest
+}: {
+  readonly name: string;
+  readonly value: string;
+} & Record<`data-${string}`, string | undefined>): ReactNode {
+  return <input type="hidden" name={name} value={value} {...rest} />;
+}
 
 // ---- the shared mutation plumbing (voices.tsx's grammar, generalized) -------------------------
 
@@ -322,11 +314,11 @@ function useOnboardingSubmit(opts?: {
 
 function ConvertingSection({ sourceLabel }: { sourceLabel: string }): ReactNode {
   return (
-    <section style={{ maxWidth: "68ch" }} data-conversion-pending="true">
-      <p role="status" style={{ color: "var(--shell-fg)", fontSize: "15px", lineHeight: 1.6 }}>
+    <section className="ui-set-t--meas" data-conversion-pending="true">
+      <p role="status" className="ui-set-t ui-rs-lead">
         {fmt(convertingCopy(sourceLabel), { name: sourceLabel })}
       </p>
-      <p style={{ color: "var(--shell-fg-faint)", fontSize: "13px" }}>{COPY.import.convertingNote}</p>
+      <p className="ui-set-t ui-set-t--f">{COPY.import.convertingNote}</p>
     </section>
   );
 }
@@ -372,7 +364,7 @@ export function NewProjectPreviewSurface({
       <PageBody>
         <div data-spa-surface>
           <PageHeader title={COPY.import.previewHeading} />
-        <p data-phone-blocked="true" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", maxWidth: "68ch" }}>
+        <p data-phone-blocked="true" className="ui-set-t ui-set-t--m ui-set-t--meas">
           {COPY.phoneBlocked.note}
         </p>
         </div>
@@ -500,22 +492,23 @@ export function ImportSurface({
     <div data-spa-surface onSubmit={onSubmit}>
       <PageTitle>{COPY.import.heading}</PageTitle>
       {compact ? (
-        <p data-phone-blocked="true" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", maxWidth: "68ch" }}>
+        <p data-phone-blocked="true" className="ui-set-t ui-set-t--m ui-set-t--meas">
           {COPY.phoneBlocked.note}
         </p>
       ) : (
         <>
-          <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px", maxWidth: "68ch" }}>{COPY.import.lede}</p>
+          <p className="ui-set-t ui-set-t--m ui-set-t--meas">{COPY.import.lede}</p>
           {error ? (
-            <p data-import-notice="failed" role="alert" style={{ fontSize: "12px", color: "var(--sev-major)", marginTop: "8px" }}>{error}</p>
+            <p data-import-notice="failed" role="alert" className="ui-set-note ui-set-t--warn">{error}</p>
           ) : null}
           {heldNotice ? (
-            <p data-held-notice="true" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", marginTop: "8px" }}>
+            <p data-held-notice="true" className="ui-set-t ui-set-t--m ui-rs-mt">
               {heldNotice.text}{" "}
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 data-held-discard="true"
-                style={{ background: "none", border: "none", padding: 0, color: "var(--accent)", fontSize: "13px", cursor: "pointer" }}
                 onClick={() => {
                   void deleteHold().then(() => {
                     const input = formRef.current?.querySelector<HTMLInputElement>('input[name="file"]');
@@ -527,23 +520,23 @@ export function ImportSurface({
                 }}
               >
                 {HELD_DISCARD_CTA}
-              </button>
+              </Button>
             </p>
           ) : null}
           <form ref={formRef} method="post" action={`/p/${slug}/import/preview`} encType="multipart/form-data">
-            {stampedToken ? <input type="hidden" name="heldToken" data-held-token="true" value={stampedToken} /> : null}
+            {stampedToken ? <HiddenField name="heldToken" data-held-token="true" value={stampedToken} /> : null}
             <div>
-              <span style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{COPY.import.fileLabel}</span>
+              <span className="ui-set-t--m">{COPY.import.fileLabel}</span>
               <FileDropzone />
             </div>
-            <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block", marginTop: "16px" }}>
+            <label className="ui-vc-lab ui-rs-mt">
               {COPY.import.pasteLabel}
-              <textarea name="paste" style={textAreaStyle} />
+              <TextArea name="paste" className="ui-field--mono ui-rs-mt" aria-label={COPY.import.pasteLabel} />
             </label>
-            <div style={{ marginTop: "16px" }}>
-              <button type="submit" style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}>
+            <div className="ui-rs-mt">
+              <Button type="submit" variant="primary">
                 {COPY.import.convertCta}
-              </button>
+              </Button>
             </div>
           </form>
         </>
@@ -574,13 +567,13 @@ export function ImportPreviewSurface({
     <div data-spa-surface onSubmit={onSubmit}>
       <PageHeader title={COPY.import.previewHeading} />
       {compact ? (
-        <p data-phone-blocked="true" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", maxWidth: "68ch" }}>
+        <p data-phone-blocked="true" className="ui-set-t ui-set-t--m ui-set-t--meas">
           {COPY.phoneBlocked.note}
         </p>
       ) : (
         <>
           {conversion.created ? (
-            <p role="status" style={{ color: "var(--state-ready)", fontSize: "13px" }}>
+            <p role="status" className="ui-set-t ui-set-t--ok">
               {COPY.import.created}
             </p>
           ) : null}

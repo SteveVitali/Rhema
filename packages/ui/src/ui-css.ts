@@ -34,26 +34,26 @@ export function uiCss(): string {
 
     // ---- Button / IconButton ----
     ".ui-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--s2); cursor: pointer; text-decoration: none; white-space: nowrap; }",
-    ".ui-btn:hover:not(:disabled) { border-color: var(--shell-fg-faint); }",
-    ".ui-btn:active:not(:disabled) { background: var(--shell-border); }",
-    ".ui-btn:disabled { opacity: 0.55; cursor: not-allowed; }",
+    ".ui-btn:hover:not(:disabled), .ui-field:hover:not(:disabled) { border-color: var(--shell-fg-faint); }",
+    ".ui-btn:active:not(:disabled), .ui-menu-item:hover, .ui-menu-item:focus, .ui-menu-item[data-highlighted], .ui-select-item[data-highlighted] { background: var(--shell-border); }",
+    ".ui-btn:disabled, .ui-select-trigger[data-disabled], .ui-tabs-trigger[data-disabled], .ui-checkbox[data-disabled], .ui-radio-item[data-disabled], .ui-switch[data-disabled], .ui-field:disabled, .ui-radio-card[aria-disabled='true'], .ui-accordion-trigger:disabled { opacity: 0.55; cursor: not-allowed; }",
     ".ui-btn:focus-visible, .ui-select-trigger:focus-visible, .ui-field:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-color: var(--accent); }",
     ".ui-btn--primary { background: var(--accent); border-color: transparent; color: var(--shell-bg); font-weight: 600; }",
     ".ui-btn--primary:hover:not(:disabled) { border-color: transparent; }",
     ".ui-btn--ghost { background: transparent; border-color: transparent; color: var(--shell-fg-muted); }",
     ".ui-btn--ghost:hover:not(:disabled) { background: var(--shell-raised); border-color: var(--shell-border); color: var(--shell-fg); }",
-    ".ui-btn--danger { border-color: var(--sev-blocking); color: var(--sev-blocking); }",
+    ".ui-btn--danger, .ui-badge--danger { border-color: var(--sev-blocking); color: var(--sev-blocking); }",
     ".ui-btn--danger:hover:not(:disabled) { background: var(--sev-blocking); color: var(--shell-bg); }",
     ".ui-btn--sm { padding: var(--s1) var(--s2); font-size: var(--fs-caption); }",
     ".ui-btn--icon { padding: var(--s1); line-height: 1; }",
-    ".ui-btn--icon > svg { width: 1em; height: 1em; }",
+    ".ui-btn--icon > svg, .ui-icon { width: 1em; height: 1em; }",
 
     // ---- Badge ----
     ".ui-badge { display: inline-flex; align-items: center; gap: var(--s1); padding: 1px var(--s2); border-radius: var(--radius-pill); color: var(--shell-fg); font-size: var(--fs-caption); line-height: 1.5; white-space: nowrap; }",
     ".ui-badge--accent { border-color: var(--accent); color: var(--accent); }",
     ".ui-badge--ok { border-color: var(--state-ok); color: var(--state-ok); }",
     ".ui-badge--attention { border-color: var(--state-needs-you); color: var(--state-needs-you); }",
-    ".ui-badge--danger { border-color: var(--sev-blocking); color: var(--sev-blocking); }",
+    
 
     // ---- Kbd ----
     ".ui-kbd { display: inline-block; padding: 0 var(--s1); border-bottom-width: 2px; border-radius: var(--radius-1); background: var(--shell-surface); color: var(--shell-fg); font-family: var(--font-mono); font-size: var(--fs-micro); line-height: 1.5; }",
@@ -66,29 +66,29 @@ export function uiCss(): string {
     // pinned unchanged; radius/size steps resolve to the tokens where the value is identical) ----
     ".ui-pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: var(--radius-pill); color: var(--shell-fg); font-size: var(--fs-micro); font-variant-numeric: tabular-nums; white-space: nowrap; }",
     ".ui-pill-dot { width: 7px; height: 7px; border-radius: var(--radius-pill); background: var(--shell-fg-muted); }",
-    ".ui-pill--running .ui-pill-dot { background: var(--state-running); }",
-    ".ui-pill--needs-you .ui-pill-dot { background: var(--state-needs-you); }",
-    ".ui-pill--ready .ui-pill-dot { background: var(--state-ready); }",
+    ".ui-pill--running .ui-pill-dot, .ui-prow-dot--running { background: var(--state-running); }",
+    ".ui-pill--needs-you .ui-pill-dot, .ui-prow-dot--needs { background: var(--state-needs-you); }",
+    ".ui-pill--ready .ui-pill-dot, .ui-prow-dot--ready { background: var(--state-ready); }",
     ".ui-pill--attention .ui-pill-dot { background: var(--sev-major); }",
     ".ui-chip { display: inline-flex; align-items: center; gap: 5px; padding: 1px 8px; border-radius: 6px; background: var(--shell-surface); color: var(--ui-chip-fg, var(--shell-fg-muted)); font-size: var(--fs-micro); text-decoration: none; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }",
     ".ui-fetch-chip { display: inline-flex; align-items: center; gap: 5px; padding: 1px 8px; border-radius: 6px; border: 1px solid var(--state-ready); background: var(--shell-surface); color: var(--shell-fg); font-size: var(--fs-micro); text-decoration: none; font-variant-numeric: tabular-nums; }",
     '.ui-fetch-chip[data-fetched="search"] { border-color: var(--paper-rule); }',
-    ".ui-fetch-chip-mark { color: var(--state-ready); }",
-    ".ui-fetch-chip-label { color: var(--shell-fg-muted); }",
+    ".ui-fetch-chip-mark, .ui-set-t--ok { color: var(--state-ready); }",
+    ".ui-fetch-chip-label, .ui-prow-heading-link, .ui-inbox-title--read, .ui-set-nav a, .ui-set-t--m, .ui-matrix td.ui-matrix-m, .ui-rs-time, .ui-rs-lab { color: var(--shell-fg-muted); }",
     ".ui-action-link { display: inline-block; padding: 6px 14px; border-radius: var(--radius-2); background: var(--accent); color: var(--shell-bg); font-size: var(--fs-dense); font-weight: 600; text-decoration: none; white-space: nowrap; }",
 
     // ---- Tooltip (Radix) ----
     ".ui-tooltip { z-index: 60; max-width: 260px; padding: var(--s1) var(--s2); border-radius: var(--radius-1); color: var(--shell-fg); font-size: var(--fs-micro); line-height: 1.4; box-shadow: 0 4px 16px color-mix(in srgb, var(--shell-bg) 60%, transparent); }",
-    ".ui-tooltip-arrow { fill: var(--shell-raised); }",
+    ".ui-tooltip-arrow, .ui-popover-arrow { fill: var(--shell-raised); }",
     '.ui-tooltip[data-state="delayed-open"], .ui-tooltip[data-state="instant-open"] { animation: ui-fade-in 120ms ease-out; }',
 
     // ---- DropdownMenu (Radix) ----
     ".ui-menu { z-index: 60; min-width: 160px; padding: var(--s1); box-shadow: 0 6px 24px color-mix(in srgb, var(--shell-bg) 60%, transparent); }",
     '.ui-menu[data-state="open"] { animation: ui-fade-in 120ms ease-out; }',
     ".ui-menu-item { display: flex; align-items: center; gap: var(--s2); padding: var(--s1) var(--s2); border-radius: var(--radius-1); color: var(--shell-fg); font-size: var(--fs-dense); line-height: 1.4; cursor: default; outline: none; user-select: none; }",
-    ".ui-menu-item:hover, .ui-menu-item:focus, .ui-menu-item[data-highlighted] { background: var(--shell-border); }",
-    ".ui-menu-item[data-disabled] { opacity: 0.55; pointer-events: none; }",
-    ".ui-menu-label { padding: var(--s1) var(--s2); color: var(--shell-fg-muted); font-size: var(--fs-caption); }",
+    
+    ".ui-menu-item[data-disabled], .ui-select-item[data-disabled] { opacity: 0.55; pointer-events: none; }",
+    ".ui-menu-label, .ui-command-group [cmdk-group-heading] { padding: var(--s1) var(--s2); color: var(--shell-fg-muted); font-size: var(--fs-caption); }",
     ".ui-menu-separator { height: 1px; margin: var(--s1) 0; background: var(--shell-border); }",
 
     // ---- Dialog (Radix) + Sheet ----
@@ -116,34 +116,35 @@ export function uiCss(): string {
     ".ui-toast--ok { border-left-color: var(--state-ok); }",
     ".ui-toast--attention { border-left-color: var(--state-needs-you); }",
     ".ui-toast--danger { border-left-color: var(--sev-blocking); }",
-    ".ui-toast-body-wrap { flex: 1; min-width: 0; }",
+    ".ui-toast-body-wrap, .ui-vc-grow { flex: 1; min-width: 0; }",
     ".ui-toast-title { font-size: var(--fs-dense); font-weight: 600; }",
     ".ui-toast-body { margin-top: 2px; color: var(--shell-fg-muted); font-size: var(--fs-dense); }",
     ".ui-toast-dismiss { flex: none; }",
 
     // ---- 225a_R7KIT.2b — the form/menu primitives ----
     // Shared Lucide icon sizing (the check/chevron glyphs render at text size).
-    ".ui-icon { width: 1em; height: 1em; }",
+    
 
     // C6 — the interactive chip variant is the ONLY chip with a pointer affordance (a static
     // `.ui-chip` keeps none); the button resets to the chip's own typography.
     "button.ui-chip { cursor: pointer; }",
+    ".ui-vc-sum { cursor: pointer; }",
 
     // ---- Popover (Radix) ----
     ".ui-popover { z-index: 60; min-width: 180px; max-width: 320px; padding: var(--s2); color: var(--shell-fg); box-shadow: 0 6px 24px color-mix(in srgb, var(--shell-bg) 60%, transparent); }",
     '.ui-popover[data-state="open"] { animation: ui-fade-in 120ms ease-out; }',
-    ".ui-popover-arrow { fill: var(--shell-raised); }",
+    
 
     // ---- Select (Radix) ----
     ".ui-select-trigger { display: inline-flex; align-items: center; justify-content: space-between; gap: var(--s2); cursor: pointer; }",
-    ".ui-select-trigger[data-placeholder] { color: var(--shell-fg-faint); }",
-    ".ui-select-trigger[data-disabled] { opacity: 0.55; cursor: not-allowed; }",
+    ".ui-select-trigger[data-placeholder], .ui-empty-icon, .ui-inbox-body--faint, .ui-set-note, .ui-set-t--f, .ui-set-list--faint { color: var(--shell-fg-faint); }",
+    
     ".ui-select-icon { display: inline-flex; color: var(--shell-fg-muted); }",
     ".ui-select-content { z-index: 60; min-width: var(--radix-select-trigger-width); padding: var(--s1); box-shadow: 0 6px 24px color-mix(in srgb, var(--shell-bg) 60%, transparent); }",
     '.ui-select-content[data-state="open"] { animation: ui-fade-in 120ms ease-out; }',
     ".ui-select-item { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); padding: var(--s1) var(--s2); border-radius: var(--radius-1); color: var(--shell-fg); font-size: var(--fs-dense); line-height: 1.4; cursor: default; outline: none; user-select: none; }",
-    ".ui-select-item[data-highlighted] { background: var(--shell-border); }",
-    ".ui-select-item[data-disabled] { opacity: 0.55; pointer-events: none; }",
+    
+    
     ".ui-select-item-indicator { display: inline-flex; color: var(--accent); }",
 
     // ---- Tabs (Radix) ----
@@ -151,23 +152,23 @@ export function uiCss(): string {
     ".ui-tabs-trigger { padding: var(--s1) var(--s3); border: none; border-bottom: 2px solid transparent; background: transparent; color: var(--shell-fg-muted); cursor: pointer; }",
     '.ui-tabs-trigger[data-state="active"] { color: var(--shell-fg); border-bottom-color: var(--accent); }',
     ".ui-tabs-trigger:focus-visible, .ui-command-input:focus-visible, .ui-accordion-trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }",
-    ".ui-tabs-trigger[data-disabled] { opacity: 0.55; cursor: not-allowed; }",
+    
     ".ui-tabs-content { padding-top: var(--s3); }",
 
     // ---- Checkbox / RadioGroup / Switch (Radix) ----
     ".ui-checkbox { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; padding: 0; border-radius: var(--radius-1); cursor: pointer; }",
     '.ui-checkbox[data-state="checked"] { background: var(--accent); border-color: var(--accent); color: var(--shell-bg); }',
     ".ui-checkbox:focus-visible, .ui-radio-item:focus-visible, .ui-switch:focus-visible, .ui-radio-card:focus-visible, .ui-prow-open:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }",
-    ".ui-checkbox[data-disabled] { opacity: 0.55; cursor: not-allowed; }",
+    
     ".ui-checkbox-indicator { display: inline-flex; }",
     ".ui-radio-group { display: flex; flex-direction: column; gap: var(--s2); }",
     ".ui-radio-item { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; padding: 0; border-radius: var(--radius-pill); cursor: pointer; }",
     '.ui-radio-item[data-state="checked"] { border-color: var(--accent); }',
     ".ui-radio-indicator { width: 8px; height: 8px; border-radius: var(--radius-pill); background: var(--accent); }",
-    ".ui-radio-item[data-disabled] { opacity: 0.55; cursor: not-allowed; }",
+    
     ".ui-switch { position: relative; display: inline-flex; align-items: center; width: 32px; height: 18px; padding: 0; border-radius: var(--radius-pill); background: var(--shell-border); cursor: pointer; }",
     '.ui-switch[data-state="checked"] { background: var(--accent); border-color: var(--accent); }',
-    ".ui-switch[data-disabled] { opacity: 0.55; cursor: not-allowed; }",
+    
     ".ui-switch-thumb { display: block; width: 12px; height: 12px; border-radius: var(--radius-pill); background: var(--shell-fg); transform: translateX(3px); transition: transform 120ms ease-out; }",
     '.ui-switch[data-state="checked"] .ui-switch-thumb { transform: translateX(16px); background: var(--shell-bg); }',
 
@@ -179,13 +180,13 @@ export function uiCss(): string {
     '.ui-command-item[data-selected="true"] { background: var(--shell-border); }',
     '.ui-command-item[data-disabled="true"] { opacity: 0.55; pointer-events: none; }',
     ".ui-command-empty { padding: var(--s3); color: var(--shell-fg-muted); font-size: var(--fs-dense); }",
-    ".ui-command-group [cmdk-group-heading] { padding: var(--s1) var(--s2); color: var(--shell-fg-muted); font-size: var(--fs-caption); }",
+    
 
     // ---- TextField / TextArea ----
     ".ui-field { display: block; width: 100%; }",
-    ".ui-field:hover:not(:disabled) { border-color: var(--shell-fg-faint); }",
-    ".ui-field:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-color: var(--accent); }",
-    ".ui-field:disabled { opacity: 0.55; cursor: not-allowed; }",
+    
+    
+    
     ".ui-field--invalid, .ui-field[aria-invalid='true'] { border-color: var(--sev-blocking); }",
     // Auto-grow TextArea: the JS writes height, so manual resize is off to avoid a tug-of-war.
     ".ui-field--area { resize: none; }",
@@ -193,23 +194,23 @@ export function uiCss(): string {
     // ---- RadioCards (in-house) ----
     ".ui-radio-cards { display: grid; gap: var(--s2); }",
     ".ui-radio-card { display: flex; flex-direction: column; gap: var(--s1); padding: var(--s2) var(--s3); color: var(--shell-fg); font-size: var(--fs-dense); cursor: pointer; }",
-    ".ui-radio-card[aria-checked='true'] { border-color: var(--accent); }",
-    ".ui-radio-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }",
-    ".ui-radio-card[aria-disabled='true'] { opacity: 0.55; cursor: not-allowed; }",
+    ".ui-radio-card[aria-checked='true'], .ui-vc-card--acc { border-color: var(--accent); }",
+    
+    
     ".ui-radio-card-desc { color: var(--shell-fg-muted); font-size: var(--fs-caption); }",
 
     // ---- EmptyState ----
     ".ui-empty { display: flex; flex-direction: column; align-items: center; gap: var(--s2); padding: var(--s6) var(--s4); text-align: center; color: var(--shell-fg-muted); }",
-    ".ui-empty-icon { color: var(--shell-fg-faint); }",
+    
     ".ui-empty-title { margin: 0; color: var(--shell-fg); font-size: var(--fs-lead); font-weight: 600; }",
     ".ui-empty-body { margin: 0; max-width: 46ch; font-size: var(--fs-dense); }",
-    ".ui-empty-action { margin-top: var(--s2); }",
+    ".ui-empty-action, .ui-rs-det { margin-top: var(--s2); }",
 
     // ---- Accordion (in-house) ----
     ".ui-accordion { overflow: hidden; }",
     ".ui-accordion-item + .ui-accordion-item { border-top: 1px solid var(--shell-border); }",
     ".ui-accordion-trigger { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); width: 100%; padding: var(--s2) var(--s3); border: none; background: transparent; font-weight: 600; text-align: left; cursor: pointer; }",
-    ".ui-accordion-trigger:disabled { opacity: 0.55; cursor: not-allowed; }",
+    
     ".ui-accordion-chevron { color: var(--shell-fg-muted); transition: transform 120ms ease-out; }",
     ".ui-accordion-trigger[aria-expanded='true'] .ui-accordion-chevron { transform: rotate(180deg); }",
     ".ui-accordion-panel { padding: 0 var(--s3) var(--s3); color: var(--shell-fg); font-size: var(--fs-dense); }",
@@ -220,26 +221,26 @@ export function uiCss(): string {
     ".ui-prow-heading { margin: 0 0 var(--s2); color: var(--shell-fg-muted); font-size: var(--fs-caption); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }",
     ".ui-prow-heading-pill { margin-left: var(--s2); text-transform: none; letter-spacing: 0; }",
     ".ui-prow-heading-note { font-weight: 400; text-transform: none; letter-spacing: 0; }",
-    ".ui-prow-heading-link { color: var(--shell-fg-muted); }",
+    
     ".ui-prow-list { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; border-radius: var(--radius-3); overflow: hidden; background: var(--shell-surface); }",
     ".ui-prow { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--shell-border); }",
     ".ui-prow:last-child { border-bottom: none; }",
     ".ui-prow-dot { flex: 0 0 auto; width: 9px; height: 9px; border-radius: var(--radius-pill); background: var(--shell-fg-faint); }",
-    ".ui-prow-dot--running { background: var(--state-running); }",
-    ".ui-prow-dot--needs { background: var(--state-needs-you); }",
-    ".ui-prow-dot--ready { background: var(--state-ready); }",
+    
+    
+    
     ".ui-prow-dot--quiet { background: var(--shell-fg-faint); }",
     ".ui-prow-dot--failed { background: var(--sev-blocking); }",
     ".ui-prow-main { flex: 1 1 240px; min-width: 0; display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; }",
     ".ui-prow-title { color: var(--shell-fg); font-weight: 500; font-size: var(--fs-lead); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }",
     ".ui-prow-title:hover { text-decoration: underline; }",
-    ".ui-prow-version { color: var(--shell-fg-faint); font-size: var(--fs-micro); }",
+    ".ui-prow-version, .ui-vc-faint { color: var(--shell-fg-faint); font-size: var(--fs-micro); }",
     ".ui-prow-status { flex-basis: 100%; color: var(--shell-fg-muted); font-size: var(--fs-caption); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }",
     ".ui-prow-edited { flex: 0 0 auto; color: var(--shell-fg-faint); font-size: var(--fs-caption); white-space: nowrap; }",
     ".ui-prow-open { flex: 0 0 auto; padding: var(--s1) var(--s3); color: var(--shell-fg-muted); font-size: var(--fs-dense); text-decoration: none; opacity: 0; }",
-    ".ui-prow:hover .ui-prow-open, .ui-prow:focus-within .ui-prow-open { opacity: 1; }",
-    ".ui-prow-open:focus-visible { opacity: 1; }",
-    ".ui-prow-menu-link { color: var(--shell-fg); text-decoration: none; }",
+    ".ui-prow:hover .ui-prow-open, .ui-prow:focus-within .ui-prow-open, .ui-prow-open:focus-visible { opacity: 1; }",
+    
+    ".ui-prow-menu-link, .ui-vc-link { color: var(--shell-fg); text-decoration: none; }",
     ".ui-prow-menu-est { margin-left: auto; padding-left: var(--s3); color: var(--shell-fg-faint); font-size: var(--fs-micro); font-variant-numeric: tabular-nums; }",
     ".ui-menu-item--danger { color: var(--sev-blocking); }",
 
@@ -256,9 +257,9 @@ export function uiCss(): string {
     ".ui-inbox-row--unread { border-left: 3px solid var(--accent); }",
     ".ui-inbox-row--read { opacity: 0.8; }",
     ".ui-inbox-title { margin: 0 0 var(--s1); color: var(--shell-fg); font-size: var(--fs-lead); }",
-    ".ui-inbox-title--read { color: var(--shell-fg-muted); }",
+    
     ".ui-inbox-body { margin: 0 0 var(--s2); color: var(--shell-fg-muted); font-size: var(--fs-dense); }",
-    ".ui-inbox-body--faint { color: var(--shell-fg-faint); }",
+    
     ".ui-inbox-meta { margin: var(--s1) 0 0; color: var(--shell-fg-faint); font-size: var(--fs-caption); }",
     ".ui-inbox-open { font-size: var(--fs-dense); }",
     ".ui-inbox-section { margin-bottom: var(--s5); max-width: 72ch; }",
@@ -273,7 +274,7 @@ export function uiCss(): string {
     // var(--shell-fg) by default, so the rules declare it only when it differs. ----
     ".ui-set-main { max-width: 640px; }",
     ".ui-set-nav { display: flex; gap: var(--s3); font-size: var(--fs-dense); }",
-    ".ui-set-nav a, .ui-set-t--m, .ui-matrix td.ui-matrix-m { color: var(--shell-fg-muted); }",
+    
     '.ui-set-nav a[aria-current="page"] { color: var(--shell-fg); font-weight: 600; }',
     ".ui-set-sec { margin-top: var(--s6); }",
     ".ui-set-h2 { font-size: var(--fs-lead); margin: 0 0 var(--s2); }",
@@ -284,8 +285,8 @@ export function uiCss(): string {
     ".ui-set-note { font-size: var(--fs-caption); margin: var(--s1) 0; }",
     ".ui-set-t, .ui-set-list { font-size: var(--fs-dense); margin: var(--s1) 0; }",
     ".ui-set-t--sm, .ui-set-list--faint { font-size: var(--fs-caption); }",
-    ".ui-set-note, .ui-set-t--f, .ui-set-list--faint { color: var(--shell-fg-faint); }",
-    ".ui-set-t--ok { color: var(--state-ready); }",
+    
+    
     ".ui-set-t--warn { color: var(--sev-major); }",
     ".ui-set-t--meas { max-width: 68ch; }",
     ".ui-set-card { padding: var(--s2) var(--s3); margin: var(--s2) 0; }",
@@ -293,7 +294,7 @@ export function uiCss(): string {
     ".ui-set-list, .ui-set-stack { display: flex; flex-direction: column; gap: var(--s1); }",
     ".ui-set-list { padding-left: 1em; }",
     ".ui-set-list--plain { list-style: none; padding-left: 0; gap: var(--s2); }",
-    ".ui-set-inline { margin-left: var(--s2); }",
+    ".ui-set-inline, .ui-vc-tag { margin-left: var(--s2); }",
     ".ui-set-form { display: flex; gap: var(--s2); align-items: center; flex-wrap: wrap; }",
     ".ui-field--w { max-width: 9em; }",
     ".ui-matrix { border-collapse: collapse; }",
@@ -310,18 +311,18 @@ export function uiCss(): string {
     // own active selector onto the anchors). `.ui-vc-card`/`.ui-vc-pre`/`.ui-vc-diff` take border +
     // radius from the shared-chrome groups above. ----
     ".ui-vc-card { padding: var(--s2) var(--s3); margin-bottom: var(--s2); font-size: var(--fs-dense); }",
-    ".ui-vc-card--acc { border-color: var(--accent); }",
+    
     ".ui-vc-lab { display: block; color: var(--shell-fg-muted); font-size: var(--fs-dense); }",
-    ".ui-vc-lab .ui-field, .ui-vc-lab .ui-select-trigger { margin-top: var(--s1); }",
+    ".ui-vc-lab .ui-field, .ui-vc-lab .ui-select-trigger, .ui-rs-mt { margin-top: var(--s1); }",
     ".ui-vc-form > * + * { margin-top: var(--s3); }",
     ".ui-vc-btns { display: flex; flex-wrap: wrap; gap: var(--s2); margin: var(--s2) 0; }",
     ".ui-vc-list { display: flex; flex-direction: column; gap: var(--s1); margin: 0; padding: 0; list-style: none; }",
-    ".ui-vc-grow { flex: 1; min-width: 0; }",
-    ".ui-vc-faint { color: var(--shell-fg-faint); font-size: var(--fs-micro); }",
-    ".ui-vc-tag { margin-left: var(--s2); }",
+    
+    
+    
     ".ui-vc-up { text-transform: uppercase; letter-spacing: 0.04em; }",
     ".ui-vc-acc { color: var(--accent); text-decoration: none; }",
-    ".ui-vc-link { color: var(--shell-fg); text-decoration: none; }",
+    
     ".ui-vc-ct { margin-top: var(--s2); padding-top: var(--s2); border-top: 1px solid var(--shell-border); }",
     ".ui-vc-sec { margin-top: var(--s4); }",
     ".ui-vc-pre { margin: 0; padding: var(--s2); max-height: 320px; overflow: auto; border-radius: var(--radius-1); font-size: var(--fs-caption); white-space: pre-wrap; }",
@@ -331,7 +332,30 @@ export function uiCss(): string {
     ".ui-vc-tab { text-decoration: none; }",
     ".ui-vc-name { font-weight: 600; font-size: var(--fs-dense); }",
     ".ui-vc-b { font-weight: 600; }",
-    ".ui-vc-sum { cursor: pointer; }",
+    
     ".ui-vc-w { width: 100%; }",
+
+    // ---- 241_R7KIT.3b (batch b) — run sheet / export / onboarding. Reuses `.ui-set-*`,
+    // `.ui-vc-*`, `.ui-bill-head`, `.ui-pill`, `.ui-set-card` (the export fieldset's chrome);
+    // only the batch-b-only shapes get rules. Focus outlines come from the global
+    // `:focus-visible` rule in themeCss — no per-class restatement. ----
+    ".ui-rs-h,.ui-rs-lead { font-size: var(--fs-lead); }",
+    ".ui-rs-h { margin: 0; }",
+    ".ui-rs-h,.ui-vc-b,.ui-rs-bold { font-weight: 600; }",
+    ".ui-rs-lead { line-height: 1.6; }",
+    ".ui-rs-time,.ui-rs-lab { color: var(--shell-fg-muted); }",
+    ".ui-rs-time { font-weight: 400; }",
+    ".ui-rs-lab { flex: 0 0 170px; }",
+    ".ui-rs-box,.ui-ob-drop--over { background: var(--shell-raised); }",
+    ".ui-rs-pill { border: 1px solid var(--shell-border); color: var(--shell-fg-muted); }",
+    
+    
+    ".ui-rs-end { display: flex; gap: var(--s2); justify-content: flex-end; }",
+    ".ui-rs-radio { display: inline-flex; gap: var(--s1); align-items: center; }",
+    ".ui-ob-drop { display: block; max-width: 560px; padding: var(--s4); border: 1px dashed var(--shell-border); border-radius: var(--radius-2); background: var(--shell-surface); font-size: var(--fs-dense); cursor: pointer; text-align: center; }",
+    ".ui-ob-drop--over { border-color: var(--accent); }",
+    ".ui-ob-drop--full { max-width: 100%; }",
+    ".ui-ob-sub { display: block; }",
+    ".ui-field--mono { font-family: var(--font-mono); }",
   ].join("\n");
 }
