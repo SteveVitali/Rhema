@@ -7,7 +7,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
-import type { Locator, Page } from "playwright";
+import type { Locator, Page, Response } from "playwright";
 import type { StepCtx, StepFn } from "./runner.js";
 import { assertActionable, clickActionable } from "./occlusion.js";
 // SPA.6 (REQ-VFY-3/4) — the settle contract: journeys wait on `data-mounted`/`data-route`, never
@@ -1108,6 +1108,41 @@ async function pinCogsLevers(page: Page, stepId: string, pathRe: RegExp): Promis
   });
 }
 
+/**
+ * F-PAIDU6-1 — the chat send's RESOLVED turn id, never the optimistic placeholder. R7b's panel
+ * renders the pending bubble as `<li class="chat-turn" data-chat-turn="optimistic">`
+ * (`ui/chat-panel.tsx`) — a marker row, not a turn; the real `data-chat-turn` stamp (the run id)
+ * lands only when the send's 201 refetches the twin. A transcript `.last()` reads that literal
+ * marker and `turns/optimistic` 404s the whole poll. The primary arm reads the created turn's
+ * `data.runId` off the POST's mutation envelope — the same resolved id the stubbed legs key on
+ * (`u6-stub-turn`'s `created.data.runId`). The form-post / SSR arm answers a redirecting HTML
+ * document, not JSON, so the fallback waits on the NEWEST non-`optimistic` transcript row — a
+ * pending placeholder is never a pickable turn.
+ */
+export async function resolveChatTurnId(
+  page: Page,
+  posted: Promise<Response>,
+  timeoutMs = 10_000,
+): Promise<string | null> {
+  const runId = await posted
+    .then(async (r) => {
+      const body = (await r.json().catch(() => null)) as {
+        data?: { runId?: unknown };
+      } | null;
+      return typeof body?.data?.runId === "string" && body.data.runId !== ""
+        ? body.data.runId
+        : null;
+    })
+    .catch(() => null);
+  if (runId != null) return runId;
+  // transcript rows render newest-first (`order by created_at desc`); the placeholder sits last.
+  const row = page.locator('[data-chat-turn]:not([data-chat-turn="optimistic"])').first();
+  return row
+    .waitFor({ state: "attached", timeout: timeoutMs })
+    .then(() => row.getAttribute("data-chat-turn").catch(() => null))
+    .catch(() => null);
+}
+
 /** N6 (RED→green under RES.1; paid) — the planted-error Quick/Base Review end-to-end through the
  *  real surfaces on the funded test tenant (jrn-a): paste the essay → run sheet (rigor=quick,
  *  this-run autorun) → deliver → the dossier shows ≥1 fetched-✓ claim AND the planted error row
@@ -1283,15 +1318,33 @@ const R4: StepFn = async (ctx) => {
   const send = page.locator('form[data-chat-composer] button[type="submit"]').first();
   await assertActionable(send, "chat Send @1440×900"); // RUN.1 — was occluded by footer.ide-statusbar
   await input.fill(`${ctx.marker("CHAT")} — one-word reply please`);
+  // F-PAIDU6-1 — the pick resolves the REAL turn, never the placeholder: R7b renders the pending
+  // bubble as `<li data-chat-turn="optimistic">` until the send's 201 reconciles it into a stamped
+  // row, and the transcript's `.last()` read that literal marker → `turns/optimistic` 404s. Watch
+  // the POST before the click so the created turn's `data.runId` lands as the resolved id; the
+  // SSR/form arm answers HTML, where `resolveChatTurnId` falls back to the newest non-placeholder
+  // row.
+  const turnPosted = page.waitForResponse(
+    (r) =>
+      r.request().method() === "POST" &&
+      /\/p\/[^/]+\/chat\/turns$/.test(new URL(r.url()).pathname),
+    { timeout: 15_000 },
+  );
   await send.click();
   await settleNav(page, ctx);
-  // the turn's answer: the reloaded transcript carries [data-chat-turn] rows; poll the turn-status
-  // endpoint until the run leaves queued/running (a bounded wait — the paid turn is the point).
+  // the turn's answer: poll the turn-status endpoint until the run leaves queued/running
+  // (a bounded wait — the paid turn is the point).
   const slug = /\/p\/([a-z0-9-]+)/i.exec(page.url())?.[1];
   if (slug) {
-    const turnRow = page.locator("[data-chat-turn]").last();
-    await turnRow.waitFor({ state: "attached", timeout: 10_000 }).catch(() => undefined);
-    const turnId = await turnRow.getAttribute("data-chat-turn").catch(() => null);
+    const turnId = await resolveChatTurnId(page, turnPosted);
+    // A send that produced no resolvable turn id must FAIL the leg, never silently skip the poll —
+    // the paid turn is the point of the arm (the old `.last()` hole reported honest red only by
+    // accident: `turns/optimistic` 404ing).
+    if (turnId == null) {
+      throw new Error(
+        "the chat send's turn id never resolved (no runId in the POST envelope and no stamped [data-chat-turn] row)",
+      );
+    }
     // the desk root stamps the ACTIVE thread (data-chat-thread) — the status route keys on it;
     // an empty ?thread= misses the api's /threads/:tid/turns/:runId path and 404s the whole poll.
     const threadId =
@@ -1300,23 +1353,21 @@ const R4: StepFn = async (ctx) => {
         .first()
         .getAttribute("data-chat-thread")
         .catch(() => null)) ?? "";
-    if (turnId) {
-      const deadline = Date.now() + 150_000;
-      let state = "";
-      while (Date.now() < deadline) {
-        const r = await page.request.get(
-          `${ctx.webBaseUrl}/p/${slug}/chat/turns/${turnId}?thread=${encodeURIComponent(threadId)}`,
-        );
-        if (r.ok()) {
-          state = ((await r.json()) as { state?: string }).state ?? "";
-          if (!["queued", "running", "provisioning"].includes(state)) break;
-        }
-        await page.waitForTimeout(4_000);
+    const deadline = Date.now() + 150_000;
+    let state = "";
+    while (Date.now() < deadline) {
+      const r = await page.request.get(
+        `${ctx.webBaseUrl}/p/${slug}/chat/turns/${turnId}?thread=${encodeURIComponent(threadId)}`,
+      );
+      if (r.ok()) {
+        state = ((await r.json()) as { state?: string }).state ?? "";
+        if (!["queued", "running", "provisioning"].includes(state)) break;
       }
-      if (!state) throw new Error(`turn-status poll never returned the turn ${turnId}`);
-      if (["failed", "cancelled"].includes(state)) {
-        throw new Error(`chat turn ${turnId} terminal state ${state} — it did not answer`);
-      }
+      await page.waitForTimeout(4_000);
+    }
+    if (!state) throw new Error(`turn-status poll never returned the turn ${turnId}`);
+    if (["failed", "cancelled"].includes(state)) {
+      throw new Error(`chat turn ${turnId} terminal state ${state} — it did not answer`);
     }
   }
   // the phone half — a real MOBILE context (the compact mount is UA-driven — `isPhoneRequest` —
