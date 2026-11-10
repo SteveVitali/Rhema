@@ -80,6 +80,14 @@ pnpm exec vitest run infra scripts/live/preview-stack.test.mjs
    Documentation cleanup grants no new spending or deployment authorization.
 7. **Renderer rollback is a code rollback.** Use `git revert` + redeploy; the SPA renderer flags,
    request overrides, and Pulumi `rhema:spaSurfaces` key are deleted and must stay deleted.
+8. **A web deploy ends with two recorded acts.** The image build asserts the demo corpus rides
+   the web image (`apps/web/Dockerfile` fails without `corpus/PROVENANCE.md`,
+   `snapshots/projects.json`, and an essay `index.json` — REQ-DOPS-2), and the deploy finishes
+   with the scoped CDN invalidation `scripts/live/cdn-invalidate-demo.mjs --path '/bff/p/demo~*'`
+   (dry-run equals the act; commit both outputs). Demo twins are edge-cached `public` with a
+   `?b=<sha>` key, so skipping the invalidation leaves stale twin bodies on already-cached
+   query-less URLs. Both acts were exercised at the 224/250/R7DEP.3 deploys; they are standing
+   steps, not one-offs.
 
 ## Do / Don't
 

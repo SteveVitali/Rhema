@@ -108,6 +108,25 @@ pnpm --filter @rhema/web exec node build-client.mjs
 The compiled entry point matters: `src/main.ts` auto-starts only when invoked as `main.js`.
 Running `tsx watch src/main.ts` does not start this server.
 
+## Inspect the public demo
+
+The demo is served by the same web host — no API, account, database, or model is involved. Build
+the workspace (which installs `@rhema/demo-corpus`), start the host as above, and open
+[localhost:3000/demo](http://localhost:3000/demo). With no override, the host resolves the corpus
+root from the installed `@rhema/demo-corpus` package and serves the committed corpus snapshots.
+
+To run the demo against the committed **synthetic fixture** instead — the invented
+`the-borrowed-commons` essay every demo test exercises — point the corpus root at it:
+
+```bash
+PORT=3000 API_BASE_URL=http://127.0.0.1:8081 APP_BASE_URL=http://localhost:3000 \
+  RHEMA_DEMO_CORPUS_ROOT=packages/demo-corpus/fixtures/synthetic \
+  pnpm --filter @rhema/web start
+```
+
+The fixture slug is `demo~the-borrowed-commons` (`/demo/the-borrowed-commons`); it is served but
+never listed as a public hub card. Demo pages are read-only on every device class.
+
 ## Before opening a pull request
 
 Run the full build, lint and type checks, plus the tests relevant to your change. For the full

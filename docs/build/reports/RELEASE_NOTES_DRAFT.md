@@ -173,3 +173,32 @@ has run pre-merge chain code throughout (see INTEGRATION_PLAN §9 for provenance
   reset — honest refusal, not a defect.
 - **Real-money legs:** Stripe live-mode re-verify, admin-key reconcile, external pen test —
   operator/external deps (BL-33/34/35).
+
+---
+
+## Addendum — round 7 (draft section, dated 2026-11-09)
+
+*Covers the round-7 chain (PRs #240–#310 plus insert rows, all open and unmerged at this writing —
+`mergePolicy: OPERATOR`). Prod served `b8307a40` at the R7DEP.3 provenance check; the section
+describes the source tree plus that recorded deployment evidence, not a later state.*
+
+### Highlights
+
+- **A public demo at `/demo`.** Four essays — *The Structure of Political Difference*, *The
+  Governable Mind*, *The Constitution of Reason*, *The Politics of Visibility* — served as
+  read-only static snapshots behind the reserved `demo~<essay>` slug namespace. No session, no
+  tenant, no database reads; the anonymous-metrics beacon is the one sanctioned write. A guided
+  tour walks SPD's record (published draft → v1 → verdict → claims → what-changed), and the
+  corpus rides a separate licence: CC BY-NC-ND 4.0 by "S. J. Sebastian" (ADR-127).
+- **The R7b application shell.** One persistent `AppShell` (sidebar, right panel with
+  Chat/Findings/Claims/Timeline/Live feed tabs, in-shell states), a shared Radix/Lucide/cmdk
+  primitive kit styled by generated `uiCss()`, `ReadOnlyProject` (`demo`/`showcase`/`run_lock`),
+  a browser-safe keymap pinned by committed rule sets, and four recurrence guards (no raw
+  controls, no internal keys, no document reloads, no occlusion) wired into required CI jobs.
+- **Signed deviations (GATE-ACCEPT.R7, 2026-11-08):** the REQ-KIT-5 entry-size allowance
+  (+15.3 kB vs ≤15 kB), the `U3.stopgap` leg's supersession by `U3.occlusion`, the `D2.tour`
+  prod asset-parity class (hero mp4 correctly serves 206), and the HUMAN-H16 UX-session waiver.
+- **Post-launch watch, early read only.** The 2026-11-09 expedite ruling ran R6WATCH.1's
+  committed queries at launch +12.7 d — all 11 named rows `not-yet-elapsed` (the organic cohort
+  is still empty end-to-end; machinery corroborated: `slo.review.weekly` firing). The
+  contractual launch +14 d read remains owed ≥ 2026-11-11T04:0xZ (`D-R6WATCH-ON-TIME`).

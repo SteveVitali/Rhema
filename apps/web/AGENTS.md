@@ -72,6 +72,104 @@ pnpm check:protocol-markers
 - Edit routes under `apps/web/src/spa/routes`; Vite regenerates committed
   `apps/web/src/spa/routeTree.gen.ts`. Never hand-edit that tree or generated public bundles.
 
+## Shell
+
+- `apps/web/src/spa/app-shell.tsx` — `AppShell` is the one chrome: the `/_authenticated` layout
+  route wraps every signed-in leaf, so navigation never unmounts it and pending/error/404 states
+  render inside it. The sidebar carries wordmark, New project, Search (only with a registered
+  palette provider), ≤8 recent projects + "All projects", the Inbox badge, Voices/Usage/Settings,
+  the account menu (Billing, Pricing, Theme via `/ide/theme`, Sign out as a document navigation),
+  and the sidebar "Demo" entry. Collapse persists per user at `rhema:sidebar:v1:<userId>`;
+  `[`/`]` toggle sidebar/panel from the keymap.
+- `packages/ide/src/layout.ts` `paneLayout(width, input)` owns the breakpoints: docked ≥1280,
+  scrimmed overlay 1024–1279, sheet <1024; ≥1440 defaults the panel open when findings exist;
+  the sidebar auto-rails at 1280–1439; no main column falls below 45 ch at ≥768 px
+  (REQ-PANE-2/4, pinned by the GUARD-4 probe).
+- `apps/web/src/spa/palette.tsx` `GlobalPalette` is a **lazy** chunk — the entry graph carries
+  only the binding; `check:spa-entry-graph` denies cmdk/palette in entry chunks. Its search rides
+  `GET /bff/search` → the tenant-scoped `GET /search` on the api (`apps/api/src/search.ts`),
+  `?project=<slug>` resolved through the same `bffProjectRow` tenant check as every /bff twin.
+- The demo-boot variant renders the wordmark as a `data-spa-native` document link out of the
+  demo, the R7a banner, and a static sidebar frame — no workspace item or account read issues.
+
+## Primitives
+
+- Component stack (ADR-129, REQ-DOPS-8): per-package `@radix-ui/react-*` primitives (no
+  meta-package), `lucide-react`, and `cmdk` for Combobox/palette — exact-pinned in
+  `packages/ui/package.json`, all MIT, verified by `check:licenses`. The SplitPane engine is
+  in-house (`packages/ide/src/layout.ts`).
+- `packages/ui/src/ui-css.ts` `uiCss()` is the generated stylesheet for `primitives/**`;
+  `packages/ui/src/ui-tail-css.ts` `uiTailCss()` is the second generated block the migrate-tail
+  rides (`.ui-t-*` utilities). Both inline into shell documents under their size bounds.
+- **GUARD-1** (`rhema/no-raw-controls`, `error` over `packages/ui/src/**` except `primitives/**`
+  and `apps/web/src/**/*.tsx`, tests excluded): raw form controls are banned outside
+  `primitives/`. The committed no-JS/SSR exemption list
+  `tools/eslint-plugin-rhema/rules/no-raw-controls-exemptions.js` names each file/component with
+  its KIT-1-fallback reason; exemptions act inside the rule, so an unlisted raw control fails.
+
+## ReadOnlyProject
+
+- `packages/contracts/src/read-only-project.ts` — `ReadOnlyProject{reason:"demo"|"showcase"|"run_lock"}`
+  is the ONE read-only mechanism (REQ-DWEB-14, S-3). It arrives on two carriers — the boot
+  payload (`readOnlyProject`, the document-level demo/showcase stamp) and the Page-family JSON
+  twins (`project.readOnlyProject`, incl. `run_lock`); both decode fail-closed and the twin wins.
+- `apps/web/src/spa/read-only.tsx` — `readOnlyProjectFor(boot, twin)` / `useReadOnlyProject` /
+  `readOnlyProjectNow` / `<ReadOnlyNotice>` (one notice per reason; `run_lock` reuses the Page's
+  existing lock banner). Write controls hide/disable **before any request**; the server guards
+  stay as defence in depth (the demo guard 405s every non-GET on its namespace).
+- **Frozen versions are not read-only** — typing in a frozen version forks v(N+1)
+  (REQ-WRITE-7). Never model "frozen" as a fourth reason.
+
+## Demo
+
+- `packages/contracts/src/demo.ts` owns the vocabulary: `DEMO_SLUG_PREFIX` (`demo~<essay>` —
+  `~` is outside the api slug grammar so no tenant can collide), `DEMO_ESSAYS` (four public
+  essays + the `fixture:true` synthetic), `DEMO_ROUTE_IDS` / `DEMO_DOCUMENT_ROUTE_IDS` (the
+  document allowlist; `/p/$project/palette-search` is the only JSON-only member),
+  `demoInternalPath`/`demoPublicPath`/`isDemoNamespacePath`, `DEMO_HUB_ESSAYS` (card order),
+  `demoDeepLink`, `DEMO_TOUR_PARAM`.
+- `apps/web/src/demo.ts` is the guard, registered before `/session` and every `/p`/`/bff`
+  handler: non-GET/HEAD → 405 `demo_read_only`; unregistered `demo~` slug or a path outside the
+  allowlist → terminal 404; document GETs → the outer app's `spaShellDocument` with the demo
+  boot (one CSP nonce, REQ-DWEB-8); twin GETs → the nested `createWebApp({demo:true})` with
+  cookie/authorization stripped and `set-cookie` deleted on return.
+- `apps/web/src/demo-data.ts` `demoDataSource(root)` answers every twin read from committed
+  `snapshots/` chunks — **no DB and no API reads on any demo path**. `defaultDemoCorpusRoot()`
+  resolves the installed `@rhema/demo-corpus` package; `RHEMA_DEMO_CORPUS_ROOT` overrides (tests
+  and the recording harness pass `fixtures/synthetic`). `GET /bff/demo/asset/:essay/:file` is
+  the allowlisted immutable asset route (png/jpg/jpeg/webp only).
+- **The one sanctioned write** (REQ-TOUR-9): the beacon `POST /a/demo` → api
+  `POST /analytics/demo` → `demo_events` via the insert-only role. sendBeacon `text/plain` JSON
+  ≤256 B, per-instance 60/min token bucket, no session forwarded, always 204. It sits OUTSIDE
+  the demo guard's claimed paths.
+- Caching (S-13): twins stamp `public, max-age=300, s-maxage=86400` + ETag and the boot carries
+  `?b=<sha>` so cross-deploy staleness is impossible; the shell is `no-cache`. Deploys end with
+  the recorded CDN invalidation of `/bff/p/demo~*` (`scripts/live/cdn-invalidate-demo.mjs`).
+- Entry/exit (S-14): every link *into* `/demo*` is `data-spa-native` — a document navigation —
+  so the demo boot always carries `demo` and the workspace QueryClient is never shared. The
+  SPA's TanStack `rewrite` maps `/demo/<essay>/…` ↔ `/p/demo~<essay>/…` (`demoInternalPath`).
+- The recording proxy (`demoDataSourceTrace` via `RHEMA_DEMO_DS_TRACE`) logs the DataSource
+  methods a walk reaches, regenerating the implemented-call table; never set it in a deployed env.
+- The tour (`apps/web/src/spa/demo-tour.ts` `DEMO_TOUR_STEPS`, 11 steps on SPD) rides
+  `?tour=<stepId>` on the public URL — never a cookie — and never auto-starts (REQ-GROWTH-12);
+  ←/→/Esc bind only while a step is active and never inside text input.
+
+## Keymap
+
+- `packages/ide/src/keymap.ts` `IDE_KEYMAP` is the committed binding table; `dispatchIdeKey`
+  is the pure (event, focus zone, pending prefix) → `IdeAction` dispatcher. `input`/`page`/
+  `source` focus narrows dispatch (only ⌘K in input; only ⌘S in the CodeMirror source zone);
+  findings chords fire only in `margin`/`findings` zones.
+- REQ-KEYS-1's five rules live as data in `packages/ide/src/reserved-chords.json`:
+  `nonCapturable` (Rule 1 — chords browsers never deliver), `conventionalAvoid` (Rule 2),
+  `keep` (Rule 4 — ⌘K/⌘⏎/⌘S), `transitional` (empty since the remap completed). Rule 3's
+  bare-key/`g`/`r`-sequence idiom and Rule 5's source-focus precedence are in the dispatcher.
+  `packages/ide/src/reserved-chords.ts` is the TEST-only checker the pin test runs
+  (`chordViolations` must be empty over `IDE_KEYMAP` + `ISLAND_CHORDS`); never import it from
+  runtime code — it must stay out of the entry bundle.
+- The `?` sheet is **generated**: `CHEAT_SHEET` maps every `IDE_KEYMAP` row, and
+  `shortcutFor(actionKind)` is the only way a tooltip or menu shows a chord — never a literal.
+
 ## Critical Gotchas
 
 1. **Do not resurrect renderer controls.** `?ssr=1`, `?renderer=spa`, `x-rhema-renderer`,
@@ -89,7 +187,9 @@ pnpm check:protocol-markers
 3. **Use the document-navigation seam.** `navigateDocument` / `replaceDocument` in
    `apps/web/src/spa/dom.ts` share the `spaRuntime` arms. Logout, external handoffs, and binaries
    are document navigations. Keep the IDE controller's native `hashchange` listener: those hops
-   can bypass TanStack entirely.
+   can bypass TanStack entirely. The demo boundary is the other sanctioned class (S-14): every
+   link into or out of `/demo*` is `data-spa-native` by name — sidebar "Demo", landing, the
+   Showcase link, the demo wordmark — never an SPA hop that would leak the workspace boot.
 4. **Preserve settle evidence.** Every served document starts `data-nav-count="0"`; HeadManager
    ticks committed transitions and removes `data-mounted` while navigation is pending.
    `data-page-session` on `[data-page-root]` identifies the keep-alive session. Keep `data-renderer`

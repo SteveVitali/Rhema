@@ -55,6 +55,11 @@ node packages/journeys/dist/cli.js \
   Wrong ✗: pass because a bundle exists, a selector count is nonzero, or a run produced no error.
 - Use `apps/web/src/dom-contract.ts` vocabulary. IDs retain their family prefixes:
   `N*`, `R*`, `T*`, `B*`, `P1.*`, `X1.*`, `C1`; sub-assertions use suffixes such as `N2.invite`.
+  The round-7 families live in `src/r7legs.ts` beside `src/registry.ts`: `D*` demo legs
+  (`D1.hub`, `D2.tour`, `D3.readonly`), `R*.demo` reads (`P1.demo`, `R11.demo`,
+  `R8.showcase.spa`), and `U*` R7b surface legs (`U1.shell`, `U2.noreload`, `U3.occlusion`,
+  `U4.controls`, `U5.write`, `U6.chat`, `U7.import`). `U3.stopgap` is superseded history —
+  `U3.occlusion` is the standing REQ-PANE arm (GATE-ACCEPT.R7 signed the supersession).
 - Preserve `data-renderer`, `data-route`, `data-mounted`, `data-nav-count`, and `data-page-session`
   on both renderers. SPA-space documents are `spa`; public and forced-SSR documents are `ssr`.
 
@@ -101,6 +106,18 @@ node packages/journeys/dist/cli.js \
 8. **Schedules do not grant extra spend.** `.github/workflows/journeys.yml` schedules free legs at
    06:05 UTC daily and the paid leg Monday 04:35 UTC with standing headroom $3. Keep dispatch,
    provenance, and spend constraints together when changing the workflow.
+9. **A `ready-to-flip` leg in the nightly is a hazard, not a pass.** When an `expected:"red"`
+   leg goes green on a scheduled run, the sweep reports it `ready-to-flip` — evidence the owner
+   uses to flip the registry row — but the red expectation is still the committed contract until
+   the owner lands the flip. Do not read a green nightly as proof a leg is already green in the
+   registry, and do not pre-flip a row on a passing dry run.
+10. **U6's one-off paid posture is history, not standing authority.** `GD-UX-PAIDLEG.R7`
+    authorized exactly one manual paid `U6.chat` dispatch (< $10, Base tier, `--headroom` equal
+    to `capUsd`). That dispatch ran 2026-11-08 and FAILED HTTP 402 (unfunded journey identity,
+    metered $0.00) — the ruling's pause arm ended the paid work and the pre-authorization
+    expired at GATE-ACCEPT.R7. Any further paid demo/chat dispatch needs a fresh operator
+    ruling; the standing Monday `--paid --headroom 3` cron arm is a separate, already-authorized
+    carrier. Never cite the expired ruling as authority.
 
 ## Do / Don't
 

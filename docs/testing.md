@@ -51,8 +51,10 @@ handlers with `FakeEngine`, which replays recorded model events.
 Two environment-dependent cases matter when reading the result:
 
 - **Chromium:** the [occlusion test](../packages/journeys/src/occlusion.test.ts) warns and omits
-  its layout assertions locally if the browser is unavailable; in CI that is an error. Install
-  Chromium so this coverage is real.
+  its layout assertions locally if the browser is unavailable; in CI that is an error. The same
+  dev-skip/CI-fail contract applies to the round-7 `*.local.test.ts` browser legs in
+  `packages/journeys/src` (`noreload`, `u3-occlusion`, `u4-controls`, `r4-turn-pin`, the demo
+  legs), which additionally need the built web server. Install Chromium so this coverage is real.
 - **Docker:** if Docker is usable on a local non-CI host, the
   [privilege-separation test](../apps/run-task/src/privsep.docker.test.ts) builds a run-task
   image and performs privileged container/kernel checks. It can download build dependencies.

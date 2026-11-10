@@ -27,6 +27,7 @@
 | Provider access, metering, research limits          | `apps/egress-proxy/AGENTS.md`     |
 | Browser acceptance and any paid verification        | `packages/journeys/AGENTS.md`     |
 | Demo corpus export, sanitizer, denylist, fixture    | `packages/demo-corpus/AGENTS.md`  |
+| UI primitives and the generated stylesheets          | `packages/ui/AGENTS.md`           |
 | Infrastructure or any deploy/preview script         | `infra/AGENTS.md`                 |
 | Guides, specifications, tickets, build records      | `docs/AGENTS.md`                  |
 

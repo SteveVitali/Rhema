@@ -14,8 +14,13 @@ Start with the repository [development guide](../../docs/development.md) for ins
 | [`src/spa-shell.ts`](src/spa-shell.ts)       | SPA document and boot data                                               |
 | [`src/client/`](src/client/)                 | Browser code mounted on SSR documents                                    |
 | [`src/dom-contract.ts`](src/dom-contract.ts) | Selector vocabulary shared by component tests and browser journeys       |
+| [`src/demo.ts`](src/demo.ts)             | Demo guard: `/demo*` and `/p/demo~*`/`/bff/p/demo~*` claim order, shell and twin routing |
+| [`src/demo-data.ts`](src/demo-data.ts)   | `demoDataSource` — the snapshot-backed read seam over the committed corpus |
+| [`src/spa/app-shell.tsx`](src/spa/app-shell.tsx) | The one authenticated chrome: sidebar, right panel, in-shell states |
+| [`src/spa/read-only.tsx`](src/spa/read-only.tsx) | `ReadOnlyProject` derive/notice for `demo`, `showcase` and `run_lock` |
+| [`src/spa/palette.tsx`](src/spa/palette.tsx) | The lazy global ⌘K palette over the tenant-scoped `/bff/search` twin |
 
-The public funnel remains server-rendered. Authenticated SPA documents serve the SPA shell; the Page family also has server-owned phone and showcase conditions that force SSR. Client navigation uses one delegated link interceptor in [`nav-intercept.ts`](src/spa/nav-intercept.ts); leaf routes hand off to a document navigation when the server verdict requires SSR. Renderer query parameters, headers, and migration flags are retired.
+The public funnel and the `/demo` hub remain server-rendered. Authenticated SPA documents serve the SPA shell; the Page family's only forced-SSR condition is a phone request — showcase and demo projects render inside the SPA read-only through `ReadOnlyProject`. Demo document GETs serve the same shell with a demo boot under the reserved `demo~<essay>` slug namespace, and their JSON twins forward to a nested app backed by `demoDataSource` (no session, no tenant reads; the anonymous-metrics beacon is the one sanctioned write). Client navigation uses one delegated link interceptor in [`nav-intercept.ts`](src/spa/nav-intercept.ts); leaf routes hand off to a document navigation when the server verdict requires SSR, and every link into or out of the demo namespace is a document navigation. Renderer query parameters, headers, and migration flags are retired.
 
 See [architecture](../../docs/architecture.md) for the wider service boundary and [AGENTS.md](AGENTS.md) for implementation constraints.
 
