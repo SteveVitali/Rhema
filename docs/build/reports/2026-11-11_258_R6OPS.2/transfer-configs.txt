@@ -1,0 +1,41 @@
+# BigQuery DTS transfer configs — the billing exports as the API sees them (2026-11-11T23:41Z)
+
+## bq ls --transfer_config --transfer_location=US --project_id=rhema-507501
+                                           name                                                   displayName                      dataSourceId                 state    
+ ---------------------------------------------------------------------------------------- --------------------------- -------------------------------------- ----------- 
+  projects/25012989319/locations/us/transferConfigs/6afc6c4a-0000-2a5d-9780-582429b79280   Pricing BigQuery Transfer   5e7e25d3-0000-2a63-baa9-089e0825fcf8   SUCCEEDED  
+
+## bq ls --transfer_config --transfer_location=us-central1 --project_id=rhema-507501
+(empty = none)
+
+## transfer configs in the other 5 billing-linked projects (US location)
+--- hh-fp-a1b2c3 ---
+--- eleutheria-508121 ---
+--- episteme-483605 ---
+--- zeta-medley-508121-u7 ---
+(empty = none in all four; pr-23aed7d73660bf80 has BigQuery API disabled)
+
+## datasets outside rhema-507501 across the 6 linked projects
+--- hh-fp-a1b2c3 ---
+--- eleutheria-508121 ---
+--- episteme-483605 ---
+--- zeta-medley-508121-u7 ---
+ -------------------- 
+  sig_billing_export  
+
+## bq ls zeta-medley-508121-u7:sig_billing_export (the name D-OPS.2-1 cites — a different venture's dataset, SIG-OPS-009)
+(empty = zero tables)
+
+## gcloud billing command surface (GA) — no export group
+GROUPS
+    GROUP is one of the following:
+
+     accounts
+        Manage billing accounts.
+
+     budgets
+        Manage the budgets of your billing accounts.
+
+     projects
+        Manage the billing account configuration of your projects.
+

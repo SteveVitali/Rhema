@@ -1,0 +1,24 @@
+# 258_R6OPS.2 — live read-only diagnosis evidence (2026-11-11T23:41Z)
+
+## gcloud billing projects describe rhema-507501
+billingAccountName: billingAccounts/018CB8-639CF9-C243C7
+billingEnabled: true
+name: projects/rhema-507501/billingInfo
+projectId: rhema-507501
+
+## gcloud billing accounts describe 018CB8-639CF9-C243C7
+currencyCode: USD
+displayName: Rhema
+masterBillingAccount: ''
+name: billingAccounts/018CB8-639CF9-C243C7
+open: true
+parent: ''
+
+## gcloud billing projects list --billing-account=018CB8-639CF9-C243C7
+PROJECT_ID             BILLING_ACCOUNT_ID    BILLING_ENABLED
+rhema-507501           018CB8-639CF9-C243C7  True
+hh-fp-a1b2c3           018CB8-639CF9-C243C7  True
+pr-23aed7d73660bf80    018CB8-639CF9-C243C7  True
+eleutheria-508121      018CB8-639CF9-C243C7  True
+episteme-483605        018CB8-639CF9-C243C7  True
+zeta-medley-508121-u7  018CB8-639CF9-C243C7  True
