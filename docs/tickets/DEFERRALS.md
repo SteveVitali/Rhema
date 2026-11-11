@@ -1586,3 +1586,38 @@ named rows read `not-yet-elapsed` at this window-age — recorded, never faked g
 
 | id | obligation | why deferred | unblocks / owner | proof obligation | stage-a evidence | status |
 | D-R7DOC.1-1 | **The release-notes append once the on-time R6WATCH.1 read lands.** `docs/build/reports/RELEASE_NOTES_DRAFT.md` §"Addendum — round 7" describes the EARLY expedited read (launch +12.7 d, all 11 rows `not-yet-elapsed`, organic cohort empty) and says the contractual ≥14 d read is owed — when the on-time read lands, append its dated verdict lines (per-row dispositions + `GD-WATCH.R6`) under that section so the draft carries the real read, not only the interim one. | The window matures 2026-11-11T04:0xZ — this docs run lands before the clock does; writing the on-time outcome now would fabricate it. | The Nov-11 on-time read run (`200_R6WATCH.1`, owner of `D-R6WATCH-ON-TIME`) — a small append, not a re-audit. | The appended lines cite the on-time run's own evidence (run ledger + `GD-WATCH.R6` row) verbatim; the early-read paragraph stays as the dated interim record. | `docs/build/runs/r6watch-early.md` — the early read's committed queries + machinery corroboration; the signed-deviation readout for the lines already written. | **OPEN — 2026-11-09 (R7DOC.1).** Owed ≥2026-11-11T04:0xZ; owner: the Nov-11 read run. |
+
+## R6CAP.3 — round-6 closure dispositions (2026-11-11)
+
+The closure half of `REQ-TAIL-1` (`202_R6CAP.3`; records-only, $0 — the ticket's live
+re-verify stage is operator-gated, so nothing here claims a live read). Every
+R6CAP.1-routed gap and every OPEN/PARTIAL carrier named in
+`docs/build/reports/CAPSTONE_GAP_ANALYSIS_R6.md` §7 (PR #315) is homed below: a
+signed-deviation candidate (`docs/build/CAPSTONE_CLOSURE.md` §R6.3), a standing
+`GD-WATCH.R6` watch, a named in-chain ticket, or a dated obligation already on its row.
+**No row flips this run** — nothing in scope is closable offline, and the rows PRs
+#314/#315 touch are left to those merges.
+
+| carrier(s) | standing | home |
+|---|---|---|
+| REQ-TAIL-2 / -3 / -4 / -5 (the 4 MISSING routings) | routed per manifest | `204_R6REC.1` · `205_R6REC.2` · `206_R6REC.3` · `207_R6DOC.1`/`208_R6DOC.2` → §R6.3 row 11 |
+| REQ-GO-4 (flip 1 parked) | PARTIAL → deviation | §R6.3 row 5 (`GD-THRESH13.R6`; ≥2026-12-01 notice clock; `docs/ops/launch-flips.md` flip 1; BL-13 tail) |
+| REQ-CLK-1 | PARTIAL → carrier OPEN | `D-BL38.1-2` — armed `start_after=2026-10-30T21:41:10.952Z`; the post-fire SELECT is the ticket's operator-gated live leg → §R6.3 row 8 |
+| REQ-CLK-2 | PARTIAL → carrier OPEN | `D-FIX.1-4` — T16 substrate conditioned on the refused funded wave's paid arm → §R6.3 rows 4/8 |
+| REQ-CLK-4 | PARTIAL → carriers OPEN | `D-COST.1-1` + `D-OPS.1-3` — `billing_export_prod` zero tables; operator console re-check → §R6.3 rows 7/8 |
+| REQ-CLK-5 | PARTIAL → carriers OPEN | `D-ECON.1-1` + `D-PRB.08-1` — `usage.reconcile` 403s since 2026-11-05; operator re-seed → §R6.3 row 8 |
+| REQ-LCH-4 | PARTIAL → carrier OPEN | `D-P1.21-1` — 3 fetch-blocked venue rows (HUMAN browser re-fetch) → §R6.3 row 9 |
+| REQ-POST-9 | PARTIAL → carrier OPEN | `D-P1.17-2` — funnel arm is a `GD-WATCH.R6` watch; drop-zone residual owed → §R6.3 rows 9/10 |
+| The 11 `GD-WATCH.R6` watches | OPEN + standing watch | owner: operator · trigger: `slo.review.weekly` · re-read `2026-11-25T04:0xZ` (PR #314) → §R6.3 row 10 |
+| The 23 (b)-class funded carriers + `D-RES.3-1` / `D-STB.5b-1` / `D-OPS.1-1` residuals | OPEN un-waived | the refused wave (GATE-R6B STAYS-CLOSED + threshold-11) → §R6.3 row 4 |
+| MET-ENGINEERED carriers | OPEN | `D-RES.3-1` (ENG-3) · `D-OPS.1-1` (POST-2) · `D-SLO.1-6` (POST-8) → §R6.3 rows 4/10 |
+| Operator-leg residuals | OPEN | `D-EDIT.1-2`/`D-P1.19-2` (verbatim "skip safari and mobile") · `D-PRB.07-1` · `D-P1.08-1` · `D-P1.09-1` · `D-P1.20-1` · `D-P1.16-1` · `D-BILL.3-1/-2` · `D-P1.21-1` · `D-P1.22-2` (owed-by-nature) → §R6.3 row 9 |
+| BL-106 nine | OPEN | `D-R6CI.1-1` · `D-R6FOR.1-1` · `D-R6INF.1-1` · `D-R6CNT.2-1` · `D-R6SECR.1-1` · `D-R6FIX.4-1` · `D-R6FIX.5-1` · `D-R6PAIDARM-1` · `D-R6OSS.1-1` → `204`/`205` → §R6.3 row 11 |
+| REQ-TAIL-2 re-homes | OPEN | `D-P0.12-3` · the G2/H2 rows (`D-P0.13-1/-3/-4/-5`, `D-P0.14-1/-2/-3`, `D-P0.15c-4`, `D-PRB.02-2`) · `D-RES.2-3` → `204_R6REC.1` → §R6.3 row 1 |
+| Pen test | OPEN, dated | `D-P1.22-3` — launch+60 d ≈ 2026-12-28 (ADR-112) → §R6.3 row 3 |
+| `D-R6WATCH-ON-TIME` · `D-R7DOC.1-1` | DONE on `stevevitali/r6watch-ontime` (PR #314) | the flips land with that merge — not re-edited here |
+| REQ-TAIL-1 | the closure half lands this run | `CAPSTONE_CLOSURE.md` §R6 + `readouts/GATE-ACCEPT.R6.md` (DRAFT); the matrix verdict flip rides #315's row (noted §R6.4 for `204`) |
+
+Unhomed OPEN/PARTIAL ids after this pass: **0** — the §7 census rule re-checked by
+inspection: every carrier resolves to a §R6.3 row, a `GD-WATCH.R6` watch, a named ticket,
+or a dated obligation already on its row.
