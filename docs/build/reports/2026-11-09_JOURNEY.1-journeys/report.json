@@ -1,0 +1,1093 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "e146a27094df",
+  "startedAt": "2026-11-09T21:24:41.473Z",
+  "finishedAt": "2026-11-09T21:24:52.831Z",
+  "webBaseUrl": "http://localhost:3000",
+  "apiBaseUrl": "http://localhost:3000",
+  "provenance": {
+    "observed": {
+      "web": null,
+      "api": null
+    },
+    "match": false
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "N1",
+      "journey": "new-visitor",
+      "owner": "ONB.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/ net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 146,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/\nCall log:\n  - navigating to \"http://localhost:3000/\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "N1.png"
+    },
+    {
+      "id": "N2",
+      "journey": "new-visitor",
+      "owner": "JOURNEY.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 90,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "N2.png"
+    },
+    {
+      "id": "N2.invite",
+      "journey": "new-visitor",
+      "owner": "SEC.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 83,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "N2.invite.png"
+    },
+    {
+      "id": "N3",
+      "journey": "new-visitor",
+      "owner": "ONB.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/ net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 89,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/\nCall log:\n  - navigating to \"http://localhost:3000/\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "N3.png"
+    },
+    {
+      "id": "N4",
+      "journey": "new-visitor",
+      "owner": "EST.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 85,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "N4.png"
+    },
+    {
+      "id": "T9",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "N5",
+      "journey": "new-visitor",
+      "owner": "ACT.1",
+      "expected": "green",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "N6",
+      "journey": "new-visitor",
+      "owner": "RES.1",
+      "expected": "red",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "N7",
+      "journey": "both",
+      "owner": "HOT.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 86,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "N7.png"
+    },
+    {
+      "id": "N8",
+      "journey": "both",
+      "owner": "EDIT.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 88,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "N8.png"
+    },
+    {
+      "id": "N9",
+      "journey": "new-visitor",
+      "owner": "BILL.3",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 91,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "N9.png"
+    },
+    {
+      "id": "N10",
+      "journey": "new-visitor",
+      "owner": "UX.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/ net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 98,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/\nCall log:\n  - navigating to \"http://localhost:3000/\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "N10.png"
+    },
+    {
+      "id": "N11",
+      "journey": "new-visitor",
+      "owner": "CITE.1",
+      "expected": "green",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "R1",
+      "journey": "returning",
+      "owner": "HOT.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/app net::ERR_CONNECTION_REFUSED",
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 269,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "R1.png"
+    },
+    {
+      "id": "R4",
+      "journey": "returning",
+      "owner": "RUN.1",
+      "expected": "green",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "R5",
+      "journey": "returning",
+      "owner": "JOURNEY.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/app net::ERR_CONNECTION_REFUSED",
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 258,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "R5.png"
+    },
+    {
+      "id": "R6",
+      "journey": "returning",
+      "owner": "RPT.1",
+      "expected": "green",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "R6F",
+      "journey": "both",
+      "owner": "SPA.22",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 87,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "R6F.png"
+    },
+    {
+      "id": "R7",
+      "journey": "returning",
+      "owner": "RUN.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/app net::ERR_CONNECTION_REFUSED",
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 231,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "R7.png"
+    },
+    {
+      "id": "R8.showcase",
+      "journey": "returning",
+      "owner": "UX.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/app net::ERR_CONNECTION_REFUSED",
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 231,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "R8.showcase.png"
+    },
+    {
+      "id": "R8.prefs",
+      "journey": "returning",
+      "owner": "UX.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/app net::ERR_CONNECTION_REFUSED",
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 243,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "R8.prefs.png"
+    },
+    {
+      "id": "R8.inbox",
+      "journey": "returning",
+      "owner": "UX.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/app net::ERR_CONNECTION_REFUSED",
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 236,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "R8.inbox.png"
+    },
+    {
+      "id": "R9",
+      "journey": "returning",
+      "owner": "DEF.4",
+      "expected": "green",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "R10",
+      "journey": "returning",
+      "owner": "NAVC.4",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 77,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "R10.png"
+    },
+    {
+      "id": "R10.keepalive",
+      "journey": "returning",
+      "owner": "NAVC.4",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 75,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "R10.keepalive.png"
+    },
+    {
+      "id": "T10",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "T11",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "T12",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "T13",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "T12F",
+      "journey": "both",
+      "owner": "SPA.21",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 75,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "T12F.png"
+    },
+    {
+      "id": "T13F",
+      "journey": "both",
+      "owner": "SPA.21",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 83,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "T13F.png"
+    },
+    {
+      "id": "T14",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "T15",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "red",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "T16",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "red",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "T17",
+      "journey": "both",
+      "owner": "SPA.25",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 82,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "T17.png"
+    },
+    {
+      "id": "P1.public",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/ net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 79,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/\nCall log:\n  - navigating to \"http://localhost:3000/\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "P1.public.png"
+    },
+    {
+      "id": "P1.project",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/app net::ERR_CONNECTION_REFUSED",
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 230,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "P1.project.png"
+    },
+    {
+      "id": "P1.pill",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/app net::ERR_CONNECTION_REFUSED",
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 220,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "P1.pill.png"
+    },
+    {
+      "id": "P1.runsheet",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/app net::ERR_CONNECTION_REFUSED",
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 227,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "P1.runsheet.png"
+    },
+    {
+      "id": "P1.outline",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/app net::ERR_CONNECTION_REFUSED",
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 226,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "P1.outline.png"
+    },
+    {
+      "id": "P1.figures",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/app net::ERR_CONNECTION_REFUSED",
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 236,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "P1.figures.png"
+    },
+    {
+      "id": "P1.dossier",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/app net::ERR_CONNECTION_REFUSED",
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 234,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "P1.dossier.png"
+    },
+    {
+      "id": "P1.app-new",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/app net::ERR_CONNECTION_REFUSED",
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 281,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "P1.app-new.png"
+    },
+    {
+      "id": "C1",
+      "journey": "both",
+      "owner": "ACT.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/ net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 98,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/\nCall log:\n  - navigating to \"http://localhost:3000/\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "C1.png"
+    },
+    {
+      "id": "X1.voices",
+      "journey": "two-tenants",
+      "owner": "SEC.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/app net::ERR_CONNECTION_REFUSED",
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 287,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "X1.voices.png"
+    },
+    {
+      "id": "X1.usage",
+      "journey": "two-tenants",
+      "owner": "SEC.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n"
+    },
+    {
+      "id": "X1.home",
+      "journey": "two-tenants",
+      "owner": "SEC.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n"
+    },
+    {
+      "id": "X1.inbox",
+      "journey": "two-tenants",
+      "owner": "SEC.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n"
+    },
+    {
+      "id": "X1.detail",
+      "journey": "two-tenants",
+      "owner": "SEC.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 1,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n"
+    },
+    {
+      "id": "T1",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 80,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "T1.png"
+    },
+    {
+      "id": "T2.badge",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 81,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "T2.badge.png"
+    },
+    {
+      "id": "T2.matrix",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 97,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "T2.matrix.png"
+    },
+    {
+      "id": "T3",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 76,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "T3.png"
+    },
+    {
+      "id": "T4",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 72,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "T4.png"
+    },
+    {
+      "id": "T5",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 92,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "T5.png"
+    },
+    {
+      "id": "T6",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 80,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "T6.png"
+    },
+    {
+      "id": "T7",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 75,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "T7.png"
+    },
+    {
+      "id": "T8",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 79,
+      "error": "apiRequestContext.get: connect ECONNREFUSED ::1:3000\nconnect ECONNREFUSED 127.0.0.1:3000\nCall log:\n  - → GET http://localhost:3000/export/download?token=definitely-not-a-token\n    - user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36\n    - accept: */*\n    - accept-encoding: gzip,deflate,br\n",
+      "screenshot": "T8.png"
+    },
+    {
+      "id": "B16",
+      "journey": "both",
+      "owner": "STB.5b",
+      "expected": "green",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "B17",
+      "journey": "both",
+      "owner": "STB.5b",
+      "expected": "red",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "B18A",
+      "journey": "both",
+      "owner": "STB.5b",
+      "expected": "red",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "B18B",
+      "journey": "both",
+      "owner": "STB.5b",
+      "expected": "red",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "B19A",
+      "journey": "both",
+      "owner": "STB.5b",
+      "expected": "red",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "B19B",
+      "journey": "both",
+      "owner": "STB.5b",
+      "expected": "red",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "B19C",
+      "journey": "both",
+      "owner": "STB.5b",
+      "expected": "red",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "D1.hub",
+      "journey": "new-visitor",
+      "owner": "R7DEM.5b",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/demo?src=jrn net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 75,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/demo?src=jrn\nCall log:\n  - navigating to \"http://localhost:3000/demo?src=jrn\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "D1.hub.png"
+    },
+    {
+      "id": "D2.tour",
+      "journey": "new-visitor",
+      "owner": "R7DEM.6a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/ net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 77,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/\nCall log:\n  - navigating to \"http://localhost:3000/\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "D2.tour.png"
+    },
+    {
+      "id": "D3.readonly",
+      "journey": "both",
+      "owner": "R7DEM.5",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/app net::ERR_CONNECTION_REFUSED",
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 296,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "D3.readonly.png"
+    },
+    {
+      "id": "P1.demo",
+      "journey": "phone",
+      "owner": "R7DEM.4b",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 86,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/demo/structure-of-political-difference?src=jrn\nCall log:\n  - navigating to \"http://localhost:3000/demo/structure-of-political-difference?src=jrn\", waiting until \"domcontentloaded\"\n"
+    },
+    {
+      "id": "R11.demo",
+      "journey": "returning",
+      "owner": "R7DEM.4b",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/app net::ERR_CONNECTION_REFUSED",
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 250,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "R11.demo.png"
+    },
+    {
+      "id": "U1.shell",
+      "journey": "returning",
+      "owner": "R7SHELL.1a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/app net::ERR_CONNECTION_REFUSED",
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 243,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "U1.shell.png"
+    },
+    {
+      "id": "U2.noreload",
+      "journey": "returning",
+      "owner": "R7RELOAD.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/app net::ERR_CONNECTION_REFUSED",
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 221,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "U2.noreload.png"
+    },
+    {
+      "id": "U3.occlusion",
+      "journey": "returning",
+      "owner": "R7PANE.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/app net::ERR_CONNECTION_REFUSED",
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 233,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "U3.occlusion.png"
+    },
+    {
+      "id": "U4.controls",
+      "journey": "returning",
+      "owner": "R7KIT.3e",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/app net::ERR_CONNECTION_REFUSED",
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 226,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "U4.controls.png"
+    },
+    {
+      "id": "U5.write",
+      "journey": "returning",
+      "owner": "R7WRITE.1b",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET http://localhost:3000/app net::ERR_CONNECTION_REFUSED",
+        "GET http://localhost:3000/signup net::ERR_CONNECTION_REFUSED"
+      ],
+      "durationMs": 224,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/signup\nCall log:\n  - navigating to \"http://localhost:3000/signup\", waiting until \"domcontentloaded\"\n",
+      "screenshot": "U5.write.png"
+    }
+  ],
+  "passed": false,
+  "partial": true
+}

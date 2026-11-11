@@ -56,6 +56,12 @@ const R5_NON_IDS = new Set([
 // already authoritative through the design/SPA corpus, so adding the file only registers the
 // round-7 families.
 const R7_SPEC = readFileSync(`${ROOT}/docs/round-7-draft-spec.md`, "utf8");
+// R6CAP.1 — the round-6 corpus (`docs/round-6-draft-spec.md` v0.3, ratified GD-RATIFY.R6).
+// All round-6 families are uppercase with numeric suffixes (`REQ-[A-Z]+-[0-9]+`); ranges
+// are written `REQ-ENG-1..6` (`..` pairs) and sibling ids appear literally. The spec also
+// names the two retired v0.1 ids (REQ-DISC-2/-4) — they stay in the inventory and carry
+// N/A-RATIONALE rows rather than being excluded, so every spec-cited id has a verdict.
+const R6_SPEC = readFileSync(`${ROOT}/docs/round-6-draft-spec.md`, "utf8");
 const MATRIX_PATH = `${ROOT}/docs/build/COVERAGE_MATRIX.csv`;
 const MATRIX = readFileSync(MATRIX_PATH, "utf8");
 const DEFERRALS = readFileSync(`${ROOT}/docs/tickets/DEFERRALS.md`, "utf8");
@@ -162,6 +168,14 @@ for (const m of R7_SPEC.matchAll(/REQ-([A-Z]+)-(\d+)/g)) {
   specIds.add(`REQ-${m[1]}-${m[2]}`);
 }
 for (const m of R7_SPEC.matchAll(/REQ-([A-Z]+)-(\d+)…(\d+)/g)) {
+  for (let n = Number(m[2]); n <= Number(m[3]); n++)
+    specIds.add(`REQ-${m[1]}-${n}`);
+}
+// Round 6: bare ids plus `..` ranges (`REQ-ENG-1..6`, `REQ-CLK-1..6`).
+for (const m of R6_SPEC.matchAll(/REQ-([A-Z]+)-(\d+)/g)) {
+  specIds.add(`REQ-${m[1]}-${m[2]}`);
+}
+for (const m of R6_SPEC.matchAll(/REQ-([A-Z]+)-(\d+)\.\.(\d+)/g)) {
   for (let n = Number(m[2]); n <= Number(m[3]); n++)
     specIds.add(`REQ-${m[1]}-${n}`);
 }
