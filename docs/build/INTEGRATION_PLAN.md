@@ -8,6 +8,10 @@
   2026-10-10 (SPAREC.3): the round-4 section appended below (§R4.0 onward). The round-3
   body (§1–§11) stands untouched — its "Read at" values are 2026-10-04 facts; §R4.1
   re-reads every one of them against today's git/GitHub state.
+  2026-11-11 (R6REC.3): the round-6 section appended at the end (§R6.1 onward) — the
+  post-launch tail: the R6 launch is done, GATE-ACCEPT.R6 is signed, prod serves a
+  `main`-ancestor deploy; the open stack is four records-only tail PRs plus the
+  authored-but-unrun insert rows 255–258.
 -->
 # Integration plan — landing the stacked chain
 
@@ -895,3 +899,205 @@ driver (`scripts/live/nightly-golden-driver.mjs`) refuses `--execute` without
 - BL38.1's executed prod-data deletes are irreversible — recorded, not rollable.
 - A bad segment-2/3 deploy is reverted, never flag-flipped; the funded guard stays
   fail-closed the entire time (a rollback cannot open the window).
+
+---
+
+# Round 6 — the post-launch tail: merge + deferred-work plan (R6REC.3, 2026-11-11)
+
+**Read at:** 2026-11-11T22:2xZ (git + `gh` + CI reads) · **mergePolicy:** OPERATOR —
+this section, like the whole file, merges nothing; every command is for the operator.
+**Scope:** the open tail as it exists today — **4 open PRs, #316/#318/#319/#320** —
+plus **this ticket's own PR** (`stevevitali/r6rec-3-integration`) and, below it in the
+manifest, the authored-but-unrun rows **255–258** and the docs tail **207/208**. The
+round-5 body above describes a pre-launch world; that world is gone — R6 launched
+2026-10-28T04:0xZ (`b953c55e`, flips 2–4 live-verified), GATE-ACCEPT.R6 SIGNED
+2026-11-11, and prod now serves a `main`-ancestor deploy. §R6.1 is the honest re-read.
+
+## R6.1 · External state (re-read this run)
+
+| Fact | Value | How verified |
+|---|---|---|
+| `main` head | `6ee6dae9` — "orchestrator — insert rows 255-258 … (#317)" | `git log -1 origin/main` |
+| Merged through | **PR #317** — insert rows 255–258 (early watch re-read, flip-1, `usage.reconcile` 403, `billing_export_prod` empty) landed 2026-11-11 | `gh pr list --state merged`, `git log` |
+| Merge method | **merge commits** — unchanged; `Merge pull request #N` through #317 | `git log --merges origin/main` |
+| Open stack | **#316, #318, #319, #320 — 4 PRs, every one `base: main`, `MERGEABLE`** (gh `mergeStateStatus` BLOCKED×3 / BEHIND×1 are review/anchor states, not conflicts) | `gh pr list --state open`, `gh pr view <n>` |
+| Prod deployed provenance | **`ee40639d`** on web + api `/healthz` — the 2026-11-09 `r7deploy-composed` deploy (update 176, `deployments` row `prod:ee40639d`) — **a literal ancestor of `main`** via merge #312; `ee40639d..origin/main` = 158 commits | `git merge-base --is-ancestor`; deploy record `runs/r7deploy-composed.md` |
+| Deployed-vs-`main` product delta | **zero product-source change** — `git diff ee40639d..origin/main` over `apps/`, `packages/`, `infra/`, `tools/`, `scripts/` is 8 files: agent/readme docs, `Pulumi.prod.yaml`'s post-deploy re-pin block, `scripts/check-coverage-matrix.test.mjs`, `scripts/live/first-finding-latency.mjs` (#313's entrypoint fix — an ops script, not a deployed image input) | `git diff --stat` this run |
+| GATE-ACCEPT.R6 | **SIGNED 2026-11-11** — all 12 §R6.3 deviations accepted; verbatim: "sign it. And let's get these open PR's merged into main in order, and then I want you to sketch the remaining and deferred work" (readout on #316's branch; `GD-ACCEPT.R6` row) | `readouts/GATE-ACCEPT.R6.md`; LEDGER GATE DECISIONS |
+| Deploy authority | **none standing** — `GD-DEPLOY.R6` expired at the R6 signature, `GD-DEPLOY.R7` at the R7 signature (2026-11-08); a `main`-tip deploy is a **fresh operator-gated act**, not a chain entitlement | GATE DECISIONS expiry clauses |
+| Scheduled nightly | **red since ~2026-11-06** — but NOT on provenance: the workflow pins `JOURNEY_EXPECT_SHA` to the *deployed* SHA (`ee40639d`). The `journeys` job crashes `ENOENT …/packages/journeys/dist/u6-stub-turn.fixture.json` — `src/r7legs.ts` `U6_CHAT` reads the fixture via `import.meta.url` and `tsc -b` never emits the JSON into `dist/`. A committed harness defect on `main`, **not** a product leg failure; carrier = new BL-111 | `gh run view 43034547961 --log-failed`; `git log` on `r7legs.ts` |
+| Merge-sweep precedent | `GD-MERGE-SWEEP.R6` (2026-10-27): operator verbatim "you can just merge open PR's #219 through #224 into main for me now" — retarget each base to `main`, merge bottom-up, merge commits | LEDGER GATE DECISIONS |
+
+**Provenance consequence.** Every deployed SHA the R6/R7 deploys ever named
+(`b953c55e` launch, `4bc8cf4a`, `e578a767`, `b8307a40`, `ee40639d`) is an ancestor of
+`main` under merge-commit landings — §9's `merge-base --is-ancestor` reconciliation
+holds verbatim. Merging the tail changes nothing deployed; it only makes the *records*
+of those deploys canonical on `main`.
+
+## R6.2 · The open tail — PRs, classes, merge order
+
+| PR | branch | ticket | class |
+|---|---|---|---|
+| #316 | `stevevitali/r6cap-3-closure` | 202_R6CAP.3 + 203_GATE-ACCEPT.R6 (SIGNED) — and it carries the sibling's 204_R6OSS.1 records **byte-identical** to #318's | records-only |
+| #318 | `stevevitali/r6oss-1-readiness` | 204_R6OSS.1 — closeout re-verification + delta audit | records-only |
+| #319 | `stevevitali/r6rec-1-backlog` | 204_R6REC.1 — backlog + operational readiness (REQ-TAIL-2) | records-only |
+| #320 | `stevevitali/r6rec-2-specrecon` | 205_R6REC.2 — spec reconciliation (REQ-TAIL-3) | records-only |
+| this PR | `stevevitali/r6rec-3-integration` | 206_R6REC.3 — this plan (REQ-TAIL-4) | records-only |
+| (future) | — | 255_R6WATCH.2 → 256_R6FLIP.1 → 257_R6OPS.1 → 258_R6OPS.2 → 207/208 | see §R6.5 |
+
+**Merge order — bottom-up by PR number, strictly: #316 → #318 → #319 → #320 → this
+PR → (each insert/docs PR as it lands).** Rationale is §4 verbatim: each head contains
+its ancestors' history; out-of-order merges drag unreviewed content or produce
+misleading "merged" states. **Retarget notes:** none required — all four already
+declare `base: main`; the `BEHIND` state on #320 is benign (its base is one commit
+old — `ea8d9734` — but pairwise-merges clean). Merge commits only
+(`gh pr merge $PR --merge`): squash/rebase would break the deployed-SHA ancestry
+this file's §9 reconciliation and every `deployments` row depends on. After each
+merge, `gh pr checks` + a fresh `git merge-tree` sanity is the per-PR control;
+**stop on anything outside the §R6.3 union-collision class.**
+
+**The #316/#318 sibling overlap.** #316's diff strictly contains #318's dedicated
+files (verified byte-identical this run). After #316 lands, #318's PR diff shrinks to
+its shared-file deltas — merging it is still required (its PHASE LOG / BUILD_INDEX /
+boundary lines are the row-204 manifest record), and §R6.3 names its one collision.
+
+## R6.3 · Merge dry-run — committed evidence (`git merge-tree`, never a merge)
+
+Evidence: `docs/build/reports/206_R6REC.3/merge-dryrun-pairwise.txt` +
+`merge-dryrun-sequential.txt` (read this run; `merge-tree --write-tree` + `commit-tree`
+plumbing — no refs touched, nothing pushed, nothing merged for real).
+
+- **Pairwise onto `origin/main` @ `6ee6dae9`: all 4 PRs clean — 0 conflict hunks.**
+- **Sequential bottom-up simulation** (the operator's real path — each step's merge
+  becomes the next base): #316 clean; then the only conflicts are the **sibling-union
+  collisions on the three append-only record files** — the same class the sibling
+  workers unioned by hand:
+
+| step | result | conflicted files / hunks |
+|---|---|---|
+| #316 | clean | — |
+| #318 | 1 file / 3 hunks | `LEDGER.md` CURRENT-STATE tops (`nextTicket`/`lastCompleted`/`chainTip`/`updatedAt`); `BUILD_INDEX.md` + `DEFERRALS.md` auto-merge |
+| #319 | 3 files / 6 hunks | `BUILD_INDEX.md` 1 (312-row duplicate variant + 313 add); `LEDGER.md` 4 (tops + one PHASE-LOG append); `DEFERRALS.md` 1 (`D-R6OSS.1-1` row's two text variants — both DONE) |
+| #320 | 2 files / 5 hunks | `BUILD_INDEX.md` 1 (tail rows — adds `314 | 205_R6REC.2`); `LEDGER.md` 4 (tops); `DEFERRALS.md` + `00_MANIFEST.md` auto-merge |
+
+**Resolution rule for every hunk** — never pick a side wholesale: on CURRENT-STATE
+lines keep the newest top copy and demote priors verbatim (the ledger's own
+"previous top" convention); on `BUILD_INDEX` keep the PR-numbered row variant and the
+new row; on `DEFERRALS`/`D-R6OSS.1-1` keep the owning branch's write; every distinct
+append survives. A dry-run that shows conflicts **outside these three files, or inside
+them outside the union regions, means the drift model is wrong — stop.**
+
+## R6.4 · Deploy-neutrality of the tail + the prod posture
+
+- **Every tail PR is deploy-neutral:** #316/#318/#319/#320/this-PR diffs are
+  `docs/` + `docs/build/` + one docs-tool (`check-adr-banners.mjs`) + spec text —
+  zero product-source, zero IaC-productive change. A merge sweep ships nothing to prod.
+- **What a future `main`-tip deploy would carry** (the `ee40639d`-era vs `main` read):
+  the only non-doc delta is `Pulumi.prod.yaml`'s own post-deploy re-pin block and the
+  `first-finding-latency.mjs` ops-script fix — **no product behavior change**. Such a
+  deploy is a *provenance act* (a `main`-SHA `deployments` row; the scheduled nightly's
+  provenance read sees a `main` object), not a rollout — and it needs **fresh operator
+  authorization**: no `GD-DEPLOY.*` stands (§R6.1). Per `GD-DEPLOY.R6`'s own four
+  conditions if re-authorized: classified `pulumi preview` zero stateful
+  replace/delete, additive-only migrations, cost Δ ≤ $15,
+  `check-deploy-provenance` all-PASS after.
+- **Nightly-green is a fix, not a deploy.** The red nightly crashes on
+  `dist/u6-stub-turn.fixture.json` never being emitted (§R6.1) — merging the tail does
+  not fix it and deploying does not fix it; a small source fix (emit/copy the fixture
+  or resolve it from `src/`) landing on `main` does. Tracked on **BL-111**.
+- **Insert-row deploy classification (conditional, honest):**
+  - **255_R6WATCH.2 — records-only** (prod read-only + dispositions; DEFERRALS tails).
+  - **256_R6FLIP.1 — deploy-carry if it lands the flip** (a flag/threshold/arm change
+    rides the *next* deploy — the ticket itself forbids deploying); records-only if
+    evaluation re-parks or dispositions to an operator act.
+  - **257_R6OPS.1 — deploy-carry if the 403 fix is code/config**; records-only if the
+    fix is a provider-console act (key rotation/grant — the operator's).
+  - **258_R6OPS.2 — IaC-carry if the fix is a Pulumi binding** (`pulumi preview`
+    classified, `up` stays a separate authorized act); records-only if the diagnosis
+    is console-side or provider-lag.
+
+## R6.5 · The deferred carriers — ordered activation (the "sketch the remaining and deferred work" ask)
+
+Order is manifest order; every insert row's own contract gates on **`Prereqs: merged
+main`** — so the merge sweep above is step 0 for all of them:
+
+1. **255_R6WATCH.2 — early standing-watch re-read.** Re-runs the `GD-WATCH.R6`
+   committed query set (prod read-only, `BEGIN READ ONLY`, exact UTC timestamps) for
+   the 11 watch rows + the four unmet clock reads (CLK-1 `D-BL38.1-2`, CLK-2
+   `D-FIX.1-4`, CLK-4 `D-COST.1-1`/`D-OPS.1-3`, CLK-5 `D-ECON.1-1`/`D-PRB.08-1`) under
+   the 2026-11-11 "ignore dates" ruling; honest dispositions — matured evidence
+   discharges, still-empty cohorts stay OPEN with re-dated triggers. Also re-reads
+   the two ops datums (reconcile-403, export-empty) for freshness — their owners are
+   257/258.
+2. **256_R6FLIP.1 — flip 1 (metered debit) evaluated early.** `GD-THRESH13.R6`'s
+   ≥2026-12-01 park lifted by the same ruling: evaluate activation conditions on
+   current evidence; if met and the flip is a repo change, land it with its focused
+   test (dormant until the next deploy arm); if it's a live/operator act, disposition
+   owner+date and stop; if genuinely unmet, re-park with dated evidence — never flip
+   to make a check green.
+3. **257_R6OPS.1 — `usage.reconcile` daily-403** (failing since 2026-11-05; tails on
+   `D-ECON.1-1`/`D-PRB.08-1`): diagnose bound-but-denied vs placeholder-skip;
+   source fix + test, or an exact operator-console disposition; secrets never in
+   records.
+4. **258_R6OPS.2 — `billing_export_prod` zero tables** (CLK-4 blocker; tails on
+   `D-COST.1-1`/`D-OPS.1-3`): layer-honest diagnosis (export never bound vs pending
+   first-population); IaC-side fix via classified `pulumi preview` only, or an exact
+   disposition.
+5. **207_R6DOC.1 / 208_R6DOC.2 — REQ-TAIL-5** repo-docs + agent-docs refreshes, then
+   the closing `projectStatus`/`lastCompleted` write (`DONE` only with
+   GATE-ACCEPT.R6 signed — it is — and zero launch-blocking rows).
+6. **Then the standing set** (each already owner+trigger+date on its row — carried,
+   not scheduled by this plan): the 11 `GD-WATCH.R6` watches until 255 re-reads them;
+   the 23 (b)-class funded rows OPEN un-waived behind a fresh envelope ruling +
+   segment-3-class econ deploy (§R5.4 rule 2 verbatim); the ~$150–300/night golden
+   `GD-R5OPS.1-1` AWAITING; `D-P1.22-3` external pen test ≤2026-12-28 (stays deferred
+   per the 2026-11-11 ruling); `D-R7FIX.9-1`/`D-PAIDU6-1` paid-leg re-proof on the
+   standing Monday 04:35Z paid cron (BL-110 — stays deferred); BL-104/105 (R7
+   bespoke-capture + defect residue → a deployed walk/owner insert); the BL-106 eight
+   R6 carriers; `D-P0.12-3`/`D-RES.2-3`/levers (b)(d) owned obligations; the ADR-111
+   G2/H2 post-launch research program (owner: operator, trigger: program start); and
+   **BL-111** — the nightly fixture-path fix (§R6.4).
+
+## R6.6 · Post-merge verification — once the tail is on `main`
+
+```bash
+git checkout main && git pull --ff-only
+pnpm install --frozen-lockfile
+pnpm turbo build lint typecheck            # the green gate (138 projects at last read)
+pnpm test                                # full vitest
+pnpm check:licenses && pnpm check:protocol-markers
+bash ~/agent-skills/skills/reconcile-build/scripts/check-backlog.sh docs/build/BACKLOG.csv
+node docs/build/tools/check-append-only.mjs --base 6ee6dae9
+bash ~/agent-skills/skills/build-memory/scripts/check-build-memory.sh .
+# provenance reconciliation — every deployed SHA stays an ancestor:
+git merge-base --is-ancestor ee40639d origin/main && echo PROVENANCE-OK
+git log ee40639d..origin/main -- apps/ packages/ --oneline   # the undeployed product delta — expect only the re-pin/ops-script classes named in §R6.4
+```
+
+The live half needs no deploy for correctness — the tail is records-only
+(§R6.4). The scheduled nightly goes green when **BL-111's fix lands on `main`**;
+its provenance arm already reads the deployed SHA honestly. A `main`-tip deploy
+remains an optional provenance act under fresh authorization, never a precondition
+for the insert rows.
+
+## R6.7 · Standing rules — restated for this round
+
+- **Never merge** — `mergePolicy: OPERATOR`; bottom-up by PR number, merge commits,
+  retarget before merge when a base is stale. This plan merges nothing.
+- **Never deploy / never touch prod** — no `GD-DEPLOY.*` stands; a deploy is a fresh
+  operator-gated act behind its four conditions, never a chain entitlement, never
+  "cleanup". Insert tickets' read-only arms use the committed `BEGIN READ ONLY`
+  tunnel pattern only.
+- **Never spend** — $0 legs only; the standing authority that exists is exactly the
+  scheduled suite (free 06:05Z + the Monday 04:35Z paid cron ≤$5/ISO-week, BL-110's
+  carrier). No funded window, envelope re-epoch, or paid dispatch without a fresh
+  ruling (GD-FUNDED.1-1 CARRY stands; GD-UX-PAIDLEG.R7 expired).
+- **Records stay append-only** — merge conflicts on `LEDGER`/`BUILD_INDEX`/
+  `DEFERRALS` resolve by union/canonical-line, never by deleting the other side's
+  history; a red nightly/CI is recorded, never hidden or "fixed" by editing records.
+- **Secrets never** — in this file, ledgers, logs, or `pulumi config` values;
+  provider keys only in the egress proxy / Secret Manager acts that are the
+  operator's.
+- **Honest activation** — flips and watches change state only on evidence (255's
+  re-read, 256's evaluation); a stayed-empty cohort is a datum, and a re-park with
+  dated evidence is a valid outcome, not a failure.

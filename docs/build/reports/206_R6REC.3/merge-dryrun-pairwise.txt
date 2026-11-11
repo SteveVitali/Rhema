@@ -1,0 +1,7 @@
+# merge dry-run — R6REC.3 (git merge-tree, read-only; nothing merged)
+# base: origin/main 6ee6dae9  read: 2026-11-11T22:21Z
+
+PAIRWISE origin/main <- r6cap-3-closure : clean (tree cec859b30e8a0eb010a707bcd6bf2984aef2ca66)
+PAIRWISE origin/main <- r6oss-1-readiness : clean (tree 6a8a17fefca74634f30ca7cc2923c9815dc993c0)
+PAIRWISE origin/main <- r6rec-1-backlog : clean (tree d4c10376b67465a6d498db88245152425f71a3df)
+PAIRWISE origin/main <- r6rec-2-specrecon : clean (tree bc578ad0fdd17e35724d68d8015835affba25b75)
