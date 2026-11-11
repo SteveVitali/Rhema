@@ -5,9 +5,9 @@
   `docs/build/CAPSTONE_CLOSURE.md` §R6. This skeleton is the handoff — the gate worker
   fills the Signature block with the operator's verbatim words at the session.
 -->
-# GATE-ACCEPT.R6 — round-6 accepted-deviations sign-off — DRAFT (unsigned)
+# GATE-ACCEPT.R6 — round-6 accepted-deviations sign-off — SIGNED
 
-Status: AWAITING-OPERATOR <!-- the ONLY line that may change: → SIGNED | PASSED | SKIPPED-BY-OPERATOR | NOT-PASSABLE -->
+Status: SIGNED
 
 > An operator or authorized human record supplies the decision; an agent must not sign or
 > assume silence is approval. `202_R6CAP.3` drafted this skeleton — nothing below is a
@@ -40,11 +40,10 @@ Status: AWAITING-OPERATOR <!-- the ONLY line that may change: → SIGNED | PASSE
 
 ## Signature (the gate worker fills this block at the session)
 
-- **Operator verbatim:** _<record the operator's words verbatim here>_
-- **Per-row ruling:** _<accept / rule / send back — per §R6.3 row #>_
-- **GATE DECISIONS row:** _<the `GD-*` id + disposition recorded in `docs/build/LEDGER.md`
-  at signature>_
-- **Date / session:** _<`date -u` at signature>_
+- **Operator verbatim:** "sign it. And let's get these open PR's merged into main in order, and then I want you to sketch the remaining and deferred work"
+- **Per-row ruling:** all 12 §R6.3 rows **accepted as drafted** (the verbatim instruction signs the list whole; no row ruled otherwise, none sent back)
+- **GATE DECISIONS row:** `GD-ACCEPT.R6` — signed 2026-11-11; recorded in `docs/build/LEDGER.md` GATE DECISIONS
+- **Date / session:** 2026-11-11 ~18:5xZ, this session
 
 ## Effect of the signature (drafted — confirmed at the session)
 
