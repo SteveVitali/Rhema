@@ -82,12 +82,20 @@ forbids deploying here). **Four preconditions, all must hold:**
 
 ## Checks
 
-- `node docs/build/tools/check-append-only.mjs --base origin/main` — recorded at close
-- `bash ~/agent-skills/skills/build-memory/scripts/check-build-memory.sh .` — recorded
-  at close (pre-existing classes on `main` are inherited, not new)
-- `ci-boundary --pr` — recorded in `pr/256_R6FLIP.1.md` at the PR head
+- `node docs/build/tools/check-append-only.mjs --base origin/main` — **OK** (appends
+  only; the D-ECON.1-3 tail + CURRENT-STATE/PHASE-LOG/BUILD_INDEX appends)
+- `bash ~/agent-skills/skills/build-memory/scripts/check-build-memory.sh .` — **10
+  violations, 40 warnings, all inherited classes:** baseline `main` (`da10ab5f`)
+  measures the identical **10 violations / 37 warnings** — this diff adds no new
+  violation or warning class (the +3 are instances of pre-existing classes: the
+  over-256 B CURRENT-STATE lines every prepended row creates, the index
+  column-count class every recent row shares, the masked-`x` timestamp convention).
+  The one genuinely new warning (`ledger-stale` `ops/…` path refs) was fixed before
+  close by writing `docs/ops/…` paths.
+- `ci-boundary --pr` — **pass #325@d6dd3b8** (run 43120274677 — all seven legs +
+  `ci-pass` anchor; record `logs/ci-256_R6FLIP.1.json`)
 - No `turbo`/`vitest` legs run — docs/records-only diff, zero code touched (honest
-  skip, reported as unrun)
+  skip, reported as unrun; the PR's `typecheck / lint / unit` leg is the CI truth)
 
 ## Spend
 

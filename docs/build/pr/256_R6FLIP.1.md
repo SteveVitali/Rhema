@@ -41,9 +41,14 @@ prevent.
 
 ## Verification
 
-- `node docs/build/tools/check-append-only.mjs --base origin/main` — appends only
-- `bash ~/agent-skills/skills/build-memory/scripts/check-build-memory.sh .` — recorded
-- `ci-boundary --pr` — recorded at head (CI boundary result below)
+- `node docs/build/tools/check-append-only.mjs --base origin/main` — **OK**
+- `bash ~/agent-skills/skills/build-memory/scripts/check-build-memory.sh .` — 10
+  violations / 40 warnings, all classes identical to the `main` baseline (10 / 37) —
+  nothing new introduced (inherited: missing `logs/.gitignore`, insert-ticket filename
+  grammar, duplicate D-ids, stacked CURRENT-STATE keys, budget classes)
+- `ci-boundary --pr` — **`ci: pass #325@d6dd3b8`** (run 43120274677 — fast-path +
+  `typecheck / lint / unit` + `contracts` + `public-safe` + `integration` + `images` +
+  `ci-pass` anchor; record `logs/ci-256_R6FLIP.1.json`)
 - No turbo/vitest legs — docs/records-only diff, zero code touched (unrun, reported)
 
 ## Re-evaluation triggers (recorded for the operator)
