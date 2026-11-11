@@ -13,6 +13,24 @@ guidance](https://docs.github.com/en/repositories/managing-your-repositorys-sett
 Nothing in this document rewrites history — scrubbing is a destructive act requiring per-item
 operator authorization.
 
+## Status — 2026-11-11 (204_R6OSS.1 closeout): the flip is DONE; this doc is now the post-flip record
+
+- **2026-11-03 (operator + orchestrator boundary `90bba399`):** every `needs-ruling` row below
+  was ruled **STAYS en masse** (nothing scrubs; no history rewrite); `cbc6ac3` accepted
+  as-valueless; the repo went **PUBLIC**; `codex/open-source-docs` deleted; 237 merged
+  build-chain branches pruned; `main` branch protection applied (`ci-pass anchor`, enforce
+  admins, no force-push/delete); homepage → `rhema.tools`; issues/wiki/discussions confirmed
+  empty/disabled; `CODE_OF_CONDUCT.md` not adopted (operator choice).
+- **2026-11-11 (this run):** the post-flip verification clause executed in full — anonymous
+  clone → `pnpm install --frozen-lockfile` (`@rhema/evals` resolves to `evals-stub`) →
+  `pnpm turbo build lint typecheck` **138/138 green**; gitleaks committed-config **0 leaks**
+  over HEAD history; Actions secrets names-only; workflows unchanged. The delta audit over the
+  **481 commits added since 2026-11-03** found **zero real secrets and no new PII class** —
+  `docs/build/reports/2026-11-11_r6oss-1-verify/`. **D-R6OSS.1-1 → DONE** (DEFERRALS).
+- **Standing rules now in force:** the § Standing rule after flip below. New stale
+  `stevevitali/*` chain branches re-accumulate on origin (all public, all merged or open-PR
+  chain content) — periodic prune is hygiene, not a finding.
+
 ## Audit evidence (committed)
 
 - `docs/build/reports/2026-11-03_r6oss-1/findings-disposition.md` — the per-finding disposition
@@ -149,3 +167,11 @@ cd /tmp/rhema-public && pnpm install --frozen-lockfile && pnpm turbo build lint 
 - Whether `docs/build/` ships as-is — the candid build record — or gets a curated export
   (a different shape than the visibility flip; out of this runbook's scope).
 - GitHub-side (non-git) content review: issues/PRs/logs/wiki (step 4).
+
+**Dispositioned — 2026-11-03/11:** all four items are closed on the record. The operator ruled
+**STAYS** on every `needs-ruling` row (nothing scrubs — 2026-11-03 en-masse ruling, recorded in
+D-R6OSS.1-1); `CODE_OF_CONDUCT.md` was declined by operator choice at flip; `docs/build/` ships
+as-is (covered by the same en-masse ruling); the GitHub-side review ran at flip (zero issues,
+wiki/discussions disabled, PR bodies carry only the ruled identifier classes). The section is
+retained verbatim as the record of what was owed; the standing post-flip rules above are what
+remains in force.
