@@ -46,7 +46,7 @@ prevent.
   violations / 40 warnings, all classes identical to the `main` baseline (10 / 37) —
   nothing new introduced (inherited: missing `logs/.gitignore`, insert-ticket filename
   grammar, duplicate D-ids, stacked CURRENT-STATE keys, budget classes)
-- `ci-boundary --pr` — **`ci: pass #325@d6dd3b8`** (run 43120274677 — fast-path +
+- `ci-boundary --pr` — **`ci: pass #325@164112f`** (run 43120748235 — fast-path +
   `typecheck / lint / unit` + `contracts` + `public-safe` + `integration` + `images` +
   `ci-pass` anchor; record `logs/ci-256_R6FLIP.1.json`)
 - No turbo/vitest legs — docs/records-only diff, zero code touched (unrun, reported)

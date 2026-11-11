@@ -92,7 +92,7 @@ forbids deploying here). **Four preconditions, all must hold:**
   column-count class every recent row shares, the masked-`x` timestamp convention).
   The one genuinely new warning (`ledger-stale` `ops/…` path refs) was fixed before
   close by writing `docs/ops/…` paths.
-- `ci-boundary --pr` — **pass #325@d6dd3b8** (run 43120274677 — all seven legs +
+- `ci-boundary --pr` — **pass #325@164112f** (run 43120748235 — all seven legs +
   `ci-pass` anchor; record `logs/ci-256_R6FLIP.1.json`)
 - No `turbo`/`vitest` legs run — docs/records-only diff, zero code touched (honest
   skip, reported as unrun; the PR's `typecheck / lint / unit` leg is the CI truth)
