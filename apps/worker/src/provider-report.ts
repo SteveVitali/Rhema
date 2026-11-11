@@ -32,6 +32,20 @@ interface JsonObject {
   [k: string]: unknown;
 }
 
+/**
+ * A report fetch that reached the provider and was refused. `status` carries the HTTP class so the
+ * caller can distinguish a persistent credential denial (401/403 — the bound key is authenticated
+ * but forbidden, or unrecognized) from a transient fault (5xx/network, which keeps pg-boss's retry
+ * semantics). R6OPS.1 — the nightly job degrades on a denial instead of crashing the balances
+ * assertion (the same class the placeholder guard handles at boot).
+ */
+export class ProviderReportFetchError extends Error {
+  constructor(readonly status: number) {
+    super(`provider report fetch failed: ${status}`);
+    this.name = "ProviderReportFetchError";
+  }
+}
+
 /** Fetch the provider Usage & Cost report over HTTPS. `adminKey` is the Secret-Manager-loaded admin key. */
 export class AnthropicAdminReportSource implements ProviderReportSource {
   constructor(
@@ -89,7 +103,7 @@ export class AnthropicAdminReportSource implements ProviderReportSource {
     let url: string | null = firstUrl;
     for (let page = 0; page < 10 && url; page++) {
       const res = await fetchImpl(url, { headers });
-      if (!res.ok) throw new Error(`provider report fetch failed: ${res.status}`);
+      if (!res.ok) throw new ProviderReportFetchError(res.status);
       const body = (await res.json()) as JsonObject;
       bodies.push(body);
       const next = body["next_page"];
