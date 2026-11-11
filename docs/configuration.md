@@ -111,5 +111,5 @@ and preview lifecycle. All `pr-<n>` stack operations use
 A clean checkout does not contain the SDK trees needed by a working run-task image. CI explicitly
 opts into a placeholder SDK image for image-shape checks; that artifact cannot perform a live
 model run. Follow the [vendor instructions](../apps/run-task/vendor/README.md) for the separate
-runtime prerequisite. [Release preparation](./open-source-readiness.md) covers the remaining
-public-release boundary.
+runtime prerequisite. The [release record](./open-source-readiness.md) covers the public-release
+boundary and its post-flip follow-ups.

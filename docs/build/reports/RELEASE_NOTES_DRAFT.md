@@ -214,3 +214,103 @@ describes the source tree plus that recorded deployment evidence, not a later st
   convert path. Honest carries: `usage.reconcile` now fails daily on a provider-report
   **403** (admin key bound but denied — operator key act still owed); the BigQuery billing
   export still holds zero tables (billed-actuals blocker unchanged).
+
+---
+
+## Addendum — rounds 5 and 6 (draft section, dated 2026-11-11)
+
+*Covers the round-5 stabilization chain (PRs #175–#194) and the round-6 launch chain
+(PRs #195–#236 plus the post-launch tail on #310–#321+, several still open at this writing —
+`mergePolicy: OPERATOR`). The round-4 SPA conversion (PRs #113–#174) sits between this
+addendum and the sections above; its signed record is `readouts/GATE-ACCEPT.SPA.md`.*
+
+### Highlights
+
+- **Public launch, 2026-10-28T04:0xZ.** GATE-LAUNCH signed 2026-10-27 (11/13 thresholds MET,
+  two ruled); R6LCH.1 then executed the ruled flips — `purchaseMode → open`,
+  `refundWindowMode → open`, trial `audience → everyone` — each live-verified on prod
+  `b953c55e` (a real Stripe Checkout minted, a real-workspace refund admitted under
+  `auto_allowance`, an unflagged trial claim behind the $50/day kill switch and the
+  1-concurrent cap; `GD-R6LCH.1-1`).
+- **Metered debit stays parked — disclosed, not hidden.** Flip 1 (`committed → metered`)
+  waits on the paid-account notice's `EFFECTIVE_DATE=2026-12-01` (sent 2026-10-22, R6DEP.1)
+  and a ruled-accepted calibration gap (`GD-THRESH13.R6`); prod still runs
+  `debitMode: "committed"`. Debits therefore remain committed holds clamped at the cap and
+  settled against the proxy meter of record; the REQ-SPEC-32 metered-burn wording is not the
+  live mode, and the early-evaluation carrier (`256_R6FLIP.1`) owns the flip.
+- **The repository is public.** Under the 2026-11-02 operator ruling (ADR-002
+  amendment/ADR-125) the repo flipped public 2026-11-03 — `packages/protocols` ships with the
+  tree and its full history after a whole-history audit found zero real secrets and no new PII
+  class (`docs/ops/open-source-readiness.md`); `@rhema/evals` stays private through
+  `RHEMA_EVALS_PATH`/`evals-stub`. Anonymous-clone install + `turbo build lint typecheck`
+  verified 138/138 on 2026-11-11.
+- **Twelve signed deviations (GATE-ACCEPT.R6, 2026-11-11).** Launch without the G2 LIFT read
+  (ADR-111); the §17 amendments; the external pen test post-launch (ADR-112, ≈2026-12-28); the
+  refused ~$150 funded wave carried; flip 1 parked; the authored Showcase fixture (ADR-121);
+  the ~$210–257/mo floor vs the ~$50 target (`GD-HA.R6`); the four unmet clock reads;
+  operator-leg residuals; traffic-bound measurements → standing watches; engineering/spec
+  carries → the 204–208 tail; the whole honestly-owed tail OPEN as tracking.
+- **Post-launch watch — the organic cohort is still empty.** The contractual launch+14 d read
+  (R6WATCH.1, 2026-11-11) found zero organic signups, runs, and admissible observations, so all
+  eleven cohort-bound deferrals converted to standing alert-backed watches
+  (`owner: operator` · `trigger: slo.review.weekly` · `re-read: 2026-11-25T04:0xZ`, authorized
+  to run early → carrier `255_R6WATCH.2`). Two operational findings carry their own tickets:
+  `usage.reconcile`'s daily provider-report **403** since 2026-11-05 (`257_R6OPS.1`) and
+  `billing_export_prod`'s **zero tables** since launch (`258_R6OPS.2`).
+
+### Round 5 — stabilization and the spend-honesty regime (PRs #175–#194)
+
+- **Navigation acceptance (NAVC.1–5):** the settle contract became mechanism-pinned —
+  client navs must tick the live document's `data-nav-count` with zero document loads.
+- **Fail-closed spend guards (R5ECON.1–3):** the system-role-DSN metering convention (FORCE-RLS
+  makes an app pool read $0 — a blind pool refuses, never measures), per-leg `capUsd` on all
+  21 paid registry rows, `--headroom` on every paid dispatch, `cap_overrun` → the
+  `funded-pause.json` sentinel, the seeded-`req_jrn_` exclusion scope, and the nine-row
+  funded-window checklist with the T9→launchers→riders→B19C ordering.
+- **The funded window refused, honestly (FUNDED.1):** the ~$60 re-authorized envelope measured
+  $80.86 cumulative — zero legs ran, $0 spent; the wave stays carried under GATE-ACCEPT.R5/R6.
+- **Ops maturity (R5OPS.1, COST.1):** the `slo.review.weekly` Monday cron, honest SLO probes,
+  on-call + five incident playbooks, and the scale-to-zero cost posture (measured ~$198/mo
+  against the ~$50 target — ledgered, not claimed met).
+- **Closure:** R5CAP.1/3 + GATE-ACCEPT.R5 (14 deviations signed 2026-10-17), the REC/DOC tail.
+
+### Round 6 — the launch chain (PRs #195–#236, tail #310–#321+)
+
+- **Pre-launch engineering:** R6ENG.1–3/R6CI.1/R6UCD.1 reliability and CI work; R6WRT.1 write
+  path; R6SOAK.1 soak; R6POST.1–2 post-launch surfaces (Lighthouse 1.00 + axe clean on prod).
+- **Trust surface:** the five legal/trust pages approved verbatim (REQ-LCH-1,
+  `packages/contracts/src/legal.ts`), the security notice flow, and the R6SECR.1 adversarial
+  review.
+- **Money machinery:** the launch-flip order (`GD-LAUNCH-MONEY.R6`), the metered-debit notice
+  tooling + 2026-10-22 send (`EFFECTIVE_DATE=2026-12-01`), flip preconditions audited — and
+  flip 1 honestly parked when calibration read empty (`GD-THRESH13.R6`).
+- **Forensics:** R6FOR.1–2 — ledger/metering defect fixes and the REQ-FOR-4 RLS-exposure
+  verdict (YES; every identified party operator/staff-controlled) with the approved notice
+  sent to affected workspaces.
+- **Showcase content:** the Wells "The Extinction of Man" dossier seeded on every new signup
+  (authored fixture, ADR-121) after the contract-ineligible regeneration attempt was honestly
+  recorded and not swapped in.
+- **Production hardening:** PITR restore drill (RTO 579 s), N−1 rollback, the egress playbook,
+  all 14 AlertPolicies wired to the armed notification channel (R6OPS.2), Cloud SQL
+  `REGIONAL` HA (R6INF.1), and the proxy ×2 internal-LB cutover with a live failover drill
+  (R6INF.2, ADR-122).
+- **Validation:** the minimal golden cohort 4/4 PASS at `80db0d5` under the re-calibrated band
+  (`GD-GOLDEN-BAND.R6`); the golden rerun rule committed; the nightly journey sweep repaired
+  end-to-end (R6SWP.1) and a defect pack fixed (R6FIX.1–5, R6HRD.1).
+- **The launch:** `R6LCH.1` executed flips 2–4 live-verified (above); `R6CLK.1` started the
+  post-launch clocks; `R6PAIDARM` armed the Monday paid cron.
+- **The tail (records land on their PRs):** R6WATCH.1's launch+14 d read → `GD-WATCH.R6`;
+  R6CAP.1's 56/56 REQ verdicts; GATE-ACCEPT.R6 signed (12 deviations); R6REC.1's backlog
+  reconcile (0 unhomed); R6REC.2's spec fold-back (ADR-111/112/113 banners); R6REC.3's §R6
+  integration + merge-sweep plan; insert rows 255–258 on `main` (plus 259_R6FIX.10 on its open
+  PR) carry the early watch re-read, flip-1 evaluation, the two ops findings, and the nightly
+  `u6-stub-turn.fixture.json` dist-emit defect (BL-111).
+
+### Known gaps this addendum does not paper over
+
+- `debitMode` is `committed` on prod — the metered flip is parked, not live (see above).
+- The organic cohort is empty; every cohort-bound measurement is a standing watch, not a pass.
+- `usage.reconcile` 403s daily on the provider report; `billing_export_prod` holds zero
+  tables — billed-actuals reconciliation is blocked on carriers 257/258.
+- The funded paid wave remains refused/carried; the external pen test and the U6 paid-leg
+  re-proof stay deferred under the 2026-11-11 ruling (≈2026-12-28 and the Monday cron).
