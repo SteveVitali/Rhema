@@ -1611,3 +1611,21 @@ Unhomed OPEN/PARTIAL ids at census: **0** (130 unique ids scanned — each resol
 row, a BL row, a `GD-WATCH.R6` watch, a `GD-THRESH*.R6` disposition, BL-106, or the R7 sweep
 homes BL-104/105/100).
 | D-R7DOC.1-1 | **The release-notes append once the on-time R6WATCH.1 read lands.** `docs/build/reports/RELEASE_NOTES_DRAFT.md` §"Addendum — round 7" describes the EARLY expedited read (launch +12.7 d, all 11 rows `not-yet-elapsed`, organic cohort empty) and says the contractual ≥14 d read is owed — when the on-time read lands, append its dated verdict lines (per-row dispositions + `GD-WATCH.R6`) under that section so the draft carries the real read, not only the interim one. | The window matures 2026-11-11T04:0xZ — this docs run lands before the clock does; writing the on-time outcome now would fabricate it. | The Nov-11 on-time read run (`200_R6WATCH.1`, owner of `D-R6WATCH-ON-TIME`) — a small append, not a re-audit. | The appended lines cite the on-time run's own evidence (run ledger + `GD-WATCH.R6` row) verbatim; the early-read paragraph stays as the dated interim record. | `docs/build/runs/r6watch-early.md` — the early read's committed queries + machinery corroboration; the signed-deviation readout for the lines already written. | **DONE — 2026-11-11 (R6WATCH.1).** The dated append landed in `docs/build/reports/RELEASE_NOTES_DRAFT.md` §"Addendum — round 7" — the on-time read's verdict lines (empty organic cohort, all 11 rows → alert-backed watches, `GD-WATCH.R6`, funnel verdict below/below/unmeasurable) citing `docs/build/runs/R6WATCH.1.md` verbatim; the early-read paragraph stands as the dated interim record. Prior: **OPEN — 2026-11-09 (R7DOC.1).** Owed ≥2026-11-11T04:0xZ; owner: the Nov-11 read run. |
+
+## 205_R6REC.2 — round-6 spec fold-back dispositions (2026-11-11)
+
+`reconcile-build mode=spec` (REQ-TAIL-3; records-only, $0 — nothing live read or mutated). The
+signed §R6.3 deviation rows this ticket folds into the canonical spec are cited on the spec
+banners themselves; nothing below changes a carrier's standing.
+
+| carrier | standing | this run |
+|---|---|---|
+| `REQ-TAIL-3` | **MET** | the §13.3/ADR-113 as-built check + §17/ADR-111 launch-evidence fold + §12.8/§16.4 ADR-112 + A.13 addendum landed; COVERAGE_MATRIX row flipped |
+| `BL-05` (G2/G3/H3 + ADR lineage) | fold confirmed, row stays `open` | the §17 banner chain + Appendix A.13 notes now record the full override lineage (ADR-008 → ADR-104 → ADR-105 → ADR-111); BL-05's own status cell is the backlog checker's/operator's call — its acceptance reads "operator ratifies amendments" |
+| `D-P1.22-3` (external pen test) | OPEN, dated | spec now records the ADR-112 posture at §12.8 + §16.4 + §17 PM row; the obligation itself is unchanged (≤ launch+60 d ≈ 2026-12-28, owner: operator) |
+| `D-R6SECR.1-1` (§12.8 live-exercise legs) | OPEN | named inside the new §12.8 banner as the carried legs; execution legs unchanged |
+| `D-R5OPS.1-1` (first-finding watch) | OPEN + standing watch | named in the §17 fold-check as the organic-cohort first-finding carrier (re-read 2026-11-25) |
+| BL-40/43/44/45 (G2/H2 research program) | OPEN, re-homed by `204_R6REC.1` | named in the §17 fold-check + A.13 addendum as ADR-111's post-launch research program |
+
+**Opened this run:** none. **Flipped this run:** none (REQ-TAIL-3's matrix verdict is a coverage
+row, not a deferral carrier).
