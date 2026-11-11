@@ -7,7 +7,8 @@
 // screenshot). Flips happen only in the phase deploys — 224_R7DEP.1 (R7a) and 250_R7DEP.2 (R7b)
 // — plus 248_R7TOUR.2 as D2.tour's sanctioned re-flipper (P4-23, GD-PREVIEW.R7).
 
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { DEMO_ESSAYS, DEMO_DOCUMENT_ROUTE_IDS, DEMO_HUB_ESSAYS, isDemoNamespacePath } from "@rhema/contracts";
 import type { StepFn } from "./runner.js";
 import { attachDemoRecord, crawlDemo, routeIdMatches } from "./demo-side-effects.js";
@@ -29,6 +30,18 @@ import { assertActionable } from "./occlusion.js";
 
 /** The first non-fixture essay — the public corpus, never the synthetic mini-corpus. */
 const FIRST_ESSAY = DEMO_ESSAYS.find((e) => e.fixture !== true)!;
+
+/**
+ * 259_R6FIX.10 (BL-111) — the U6.chat stub-turn fixture. `tsc -b` emits only TypeScript outputs,
+ * so a `src/` sibling read via `import.meta.url` resolves to a path the build never writes —
+ * the nightly's ENOENT on `dist/u6-stub-turn.fixture.json` since ~2026-11-06. The fixture lives
+ * in the package-root `fixtures/` dir (steps.ts's pattern for the paid/planted/golden fixtures):
+ * `../fixtures` resolves to the same committed file from `src/` and from `dist/`.
+ */
+export const U6_STUB_TURN_FIXTURE = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "../fixtures/u6-stub-turn.fixture.json",
+);
 
 /** The served shell's boot JSON (the `<script data-spa-boot>` embed), decoded. */
 async function bootJson(page: import("playwright").Page): Promise<Record<string, unknown> | null> {
@@ -1334,7 +1347,7 @@ const U2_NORELOAD: StepFn = async (ctx) => {
  */
 const U6_CHAT: StepFn = async (ctx) => {
   const fixture = (await import("node:fs/promises")).readFile(
-    new URL("./u6-stub-turn.fixture.json", import.meta.url),
+    U6_STUB_TURN_FIXTURE,
     "utf8",
   ).then((raw) => JSON.parse(raw) as {
     created: { ok: true; data: { runId: string; state: string; deduped: boolean; planCard: unknown } };
