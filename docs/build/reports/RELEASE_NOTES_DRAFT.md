@@ -302,9 +302,9 @@ addendum and the sections above; its signed record is `readouts/GATE-ACCEPT.SPA.
 - **The tail (records land on their PRs):** R6WATCH.1's launch+14 d read → `GD-WATCH.R6`;
   R6CAP.1's 56/56 REQ verdicts; GATE-ACCEPT.R6 signed (12 deviations); R6REC.1's backlog
   reconcile (0 unhomed); R6REC.2's spec fold-back (ADR-111/112/113 banners); R6REC.3's §R6
-  integration + merge-sweep plan; insert rows 255–258 on `main` (plus 259_R6FIX.10 on its open
-  PR) carry the early watch re-read, flip-1 evaluation, the two ops findings, and the nightly
-  `u6-stub-turn.fixture.json` dist-emit defect (BL-111).
+  integration + merge-sweep plan; insert rows 255–259 carry the early watch re-read, flip-1
+  evaluation, the two ops findings, and the nightly `u6-stub-turn.fixture.json` dist-emit
+  defect (BL-111).
 
 ### Known gaps this addendum does not paper over
 
