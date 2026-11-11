@@ -75,18 +75,27 @@ export async function handleProjectPurge(
         [job.projectId, job.tenantId],
       )
     ).rows[0] as { deleted_at: string | Date | null } | undefined;
-    if (!row || row.deleted_at == null) return { projectId: job.projectId, purged: false, restored: true };
+    if (!row || row.deleted_at == null)
+      return { projectId: job.projectId, purged: false, restored: true };
     tombstonedAt = new Date(row.deleted_at);
     if (!shouldPurgeProject(tombstonedAt, now)) {
       // still inside grace — either the job fired early or the row was re-tombstoned after this
       // job was enqueued (delete → restore → delete); re-arm at the CURRENT grace end.
-      const remaining = tombstonedAt.getTime() + PROJECT_PURGE_AFTER_DAYS * 24 * 60 * 60 * 1000 - now.getTime();
+      const remaining =
+        tombstonedAt.getTime() + PROJECT_PURGE_AFTER_DAYS * 24 * 60 * 60 * 1000 - now.getTime();
       if (deps.queue) {
         await deps.queue
           .send(
             "project.purge",
-            { tenantId: job.tenantId, projectId: job.projectId, tombstonedAt: tombstonedAt.toISOString() },
-            { startAfterMs: Math.max(0, remaining), singletonKey: `project.purge:${job.projectId}` },
+            {
+              tenantId: job.tenantId,
+              projectId: job.projectId,
+              tombstonedAt: tombstonedAt.toISOString(),
+            },
+            {
+              startAfterMs: Math.max(0, remaining),
+              singletonKey: `project.purge:${job.projectId}`,
+            },
           )
           .catch(() => undefined);
       }
@@ -201,8 +210,11 @@ export async function handleAccountHardDelete(
 
   // Re-check the marker: a cancel inside the window cleared it — the delayed job no-ops.
   const user = (
-    await db.query(`select id, email, deletion_requested_at from "user" where id = $1`, [job.userId])
-  ).rows[0] as { id: string; email: string; deletion_requested_at: string | Date | null } | undefined;
+    await db.query(`select id, email, deletion_requested_at from "user" where id = $1`, [
+      job.userId,
+    ])
+  ).rows[0] as
+    { id: string; email: string; deletion_requested_at: string | Date | null } | undefined;
   if (!user || user.deletion_requested_at == null) {
     return { userId: job.userId, ...plan, cancelled: true, deleted: {} };
   }
@@ -226,8 +238,14 @@ export async function handleAccountHardDelete(
   // 2 — workspace strays the project cascade never reaches: the export rows reference "user"
   //     without cascade, and the leaf tables that reference the content tree without `on delete
   //     cascade` must die before their parents.
-  await del("account_exports", `delete from account_exports where workspace_id = $1 returning id`, [tenant]);
-  await del("analytics_events", `delete from analytics_events where workspace_id = $1 returning id`, [tenant]);
+  await del("account_exports", `delete from account_exports where workspace_id = $1 returning id`, [
+    tenant,
+  ]);
+  await del(
+    "analytics_events",
+    `delete from analytics_events where workspace_id = $1 returning id`,
+    [tenant],
+  );
   await del(
     "provenance_maps",
     `delete from provenance_maps where draft_version_id in
@@ -347,6 +365,83 @@ export async function handleAccountHardDelete(
   return { userId: job.userId, ...plan, deleted };
 }
 
+// ------------------------------------------------------------------ project.purge re-arm sweep (F-R6WATCH.2-1)
+
+/**
+ * `project.purge` tombstone watchdog (F-R6WATCH.2-1 / BL-112, live 2026-11-11): the armed purge job
+ * `57bbef6f` for tombstone `01M3SK380GQX41RKMD4KVFB34Q` vanished between its armed-state verification
+ * (2026-10-28, `state=created`) and its fire date without a worker-log execution — the tombstone
+ * survived 11.6 d past grace. Whatever dropped the job (a swallowed handler failure + 7-day
+ * terminal-row prune is the best-supported mechanism), the contract had no repair path: nothing
+ * noticed the orphaned tombstone. This sweep is that repair: every tombstoned project MUST have a
+ * live (created/retry/active) `project.purge` job; a tombstone without one is re-armed at its own
+ * grace end (already-past ⇒ fires on the next poll). Riding the hourly `test-tenant.purge` tick.
+ */
+export interface ProjectPurgeSweepDeps {
+  /** system-scoped client — reads `projects` + `pgboss.job` (both outside tenant scope by design). */
+  readonly systemExec?: SqlClient;
+  /** re-enqueue the missing arm; send failure never fails the sweep (next tick retries). */
+  readonly queue?: Queue;
+  readonly now?: Date;
+}
+
+export interface ProjectPurgeSweepResult {
+  /** tombstoned projects lacking a live purge job. */
+  scanned: number;
+  /** project ids the sweep re-armed this tick. */
+  rearmed: string[];
+}
+
+/**
+ * Scan tombstoned projects for a missing live `project.purge` arm and re-enqueue it. A tombstone
+ * younger than one hour is skipped — the api's own send may still be in flight (a duplicate arm is
+ * benign either way: the second job's handler finds the row already purged and reports `restored`).
+ */
+export async function handleProjectPurgeSweep(
+  deps: ProjectPurgeSweepDeps = {},
+): Promise<ProjectPurgeSweepResult> {
+  const now = deps.now ?? new Date();
+  if (!deps.systemExec || !deps.queue) return { scanned: 0, rearmed: [] };
+  const rows = (
+    await deps.systemExec.query(
+      `select p.id, p.workspace_id, p.deleted_at
+         from projects p
+        where p.deleted_at is not null
+          and p.deleted_at < now() - interval '1 hour'
+          and not exists (
+            select 1 from pgboss.job j
+             where j.name = 'project.purge'
+               and j.singleton_key = 'project.purge:' || p.id
+               and j.state in ('created', 'retry', 'active')
+          )
+        order by p.deleted_at
+        limit 200`,
+      [],
+    )
+  ).rows as { id: string; workspace_id: string; deleted_at: string | Date }[];
+  const rearmed: string[] = [];
+  for (const row of rows) {
+    const tombstonedAt = new Date(row.deleted_at);
+    const startAfterMs = Math.max(
+      0,
+      tombstonedAt.getTime() + PROJECT_PURGE_AFTER_DAYS * 24 * 60 * 60 * 1000 - now.getTime(),
+    );
+    await deps.queue
+      .send(
+        "project.purge",
+        {
+          tenantId: row.workspace_id,
+          projectId: row.id,
+          tombstonedAt: tombstonedAt.toISOString(),
+        },
+        { startAfterMs, singletonKey: `project.purge:${row.id}` },
+      )
+      .then(() => rearmed.push(row.id))
+      .catch(() => undefined); // a send failure never fails the sweep — the next tick re-arms
+  }
+  return { scanned: rows.length, rearmed };
+}
+
 // ------------------------------------------------------------------ test-tenant auto-purge (JOURNEY.1)
 
 /**
@@ -391,7 +486,8 @@ export async function handleTestTenantPurge(
   deps: TestTenantPurgeDeps = {},
 ): Promise<TestTenantPurgeResult> {
   const now = deps.now ?? new Date();
-  const hours = Number.isFinite(job.olderThanHours) && job.olderThanHours >= 0 ? job.olderThanHours : 24;
+  const hours =
+    Number.isFinite(job.olderThanHours) && job.olderThanHours >= 0 ? job.olderThanHours : 24;
   if (!deps.systemExec || !deps.queue) {
     return { scanned: 0, purgedWorkspaces: [], enqueuedDeletes: 0 };
   }

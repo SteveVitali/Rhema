@@ -115,6 +115,7 @@ import {
 import {
   handleAccountHardDelete,
   handleProjectPurge,
+  handleProjectPurgeSweep,
   handleTestTenantPurge,
   TEST_TENANT_PURGE_JOB,
   type AccountHardDeleteJob,
@@ -866,6 +867,18 @@ export async function startWorker(): Promise<void> {
       if (r.purgedWorkspaces.length > 0) {
         console.log(`[worker] test-tenant.purge → ${JSON.stringify(r)}`);
       }
+      // F-R6WATCH.2-1 — the tombstone watchdog: re-arm any `project.purge` job that vanished without
+      // firing (the armed job for 01M3SK38… disappeared before its 10-30 fire date and nothing noticed).
+      // Best-effort inside this hourly tick: a failure logs and retries next hour, never fails the
+      // tenant sweep itself.
+      try {
+        const s = await handleProjectPurgeSweep({ systemExec, queue: deps.queue });
+        if (s.scanned > 0) {
+          console.log(`[worker] project.purge.sweep → ${JSON.stringify(s)}`);
+        }
+      } catch (err) {
+        console.error("[worker] project.purge.sweep failed (will retry next tick):", err);
+      }
     }
   });
   await boss.send(
@@ -932,12 +945,24 @@ export async function startWorker(): Promise<void> {
   const purgeBlobs = await createGcsBlobStore(env.objectsBucket);
   await boss.work<ProjectPurgeJob>(PROJECT_PURGE_JOB, async (jobs) => {
     for (const job of jobs) {
-      const r = await handleProjectPurge(job.data, {
-        systemExec,
-        queue: deps.queue,
-        blobs: purgeBlobs,
-      });
-      console.log(`[worker] project.purge ${job.data.projectId} → ${JSON.stringify(r)}`);
+      // F-R6WATCH.2-1 — a handler throw must be LOUD, not invisible: pg-boss fails the job (retry →
+      // terminal) without emitting an `error` event for handler failures, and the success log below
+      // only prints after the handler returns — so a throwing purge vanished with no trace at all.
+      // Log the project id + error before rethrowing (the retry/failure semantics are pg-boss's).
+      try {
+        const r = await handleProjectPurge(job.data, {
+          systemExec,
+          queue: deps.queue,
+          blobs: purgeBlobs,
+        });
+        console.log(`[worker] project.purge ${job.data.projectId} → ${JSON.stringify(r)}`);
+      } catch (err) {
+        console.error(
+          `[worker] project.purge ${job.data.projectId} FAILED — pg-boss retries/fails per queue policy:`,
+          err,
+        );
+        throw err;
+      }
     }
   });
 

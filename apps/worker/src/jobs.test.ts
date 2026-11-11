@@ -1,6 +1,15 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { createOrchestratorTestDb, seedProject, type OrchestratorTestDb } from "@rhema/orchestrator/testing";
-import { handleProjectPurge, handleAccountHardDelete, handleTestTenantPurge } from "./jobs.js";
+import {
+  createOrchestratorTestDb,
+  seedProject,
+  type OrchestratorTestDb,
+} from "@rhema/orchestrator/testing";
+import {
+  handleProjectPurge,
+  handleProjectPurgeSweep,
+  handleAccountHardDelete,
+  handleTestTenantPurge,
+} from "./jobs.js";
 
 let db: OrchestratorTestDb | undefined;
 afterEach(async () => {
@@ -47,7 +56,11 @@ describe("handleProjectPurge (project.purge consumer)", () => {
     };
     const sent: { name: string; opts?: { startAfterMs?: number; singletonKey?: string } }[] = [];
     const queue = {
-      async send(name: string, _p: Record<string, unknown>, opts?: { startAfterMs?: number; singletonKey?: string }) {
+      async send(
+        name: string,
+        _p: Record<string, unknown>,
+        opts?: { startAfterMs?: number; singletonKey?: string },
+      ) {
         sent.push({ name, opts });
       },
     };
@@ -109,11 +122,12 @@ describe("handleProjectPurge (project.purge consumer)", () => {
     expect(
       (await db.pg.query(`select 1 from projects where id = $1`, [seed.projectId])).rows.length,
     ).toBe(0);
+    expect((await db.pg.query(`select 1 from projects where id = 'prj_sib'`, [])).rows.length).toBe(
+      1,
+    );
     expect(
-      (await db.pg.query(`select 1 from projects where id = 'prj_sib'`, [])).rows.length,
-    ).toBe(1);
-    expect(
-      (await db.pg.query(`select 1 from artifact_versions where artifact_id = 'art_1'`, [])).rows.length,
+      (await db.pg.query(`select 1 from artifact_versions where artifact_id = 'art_1'`, [])).rows
+        .length,
     ).toBe(0);
     // sha_a is still referenced by the sibling ⇒ kept; nothing else of the project's remains.
     expect(deletedKeys).toEqual([]);
@@ -146,6 +160,136 @@ describe("handleProjectPurge (project.purge consumer)", () => {
     expect(r.purged).toBe(true);
     expect(deletedKeys).toEqual([`tenants/${seed.workspaceId}/objects/sha_a`]);
     expect(r.objectsDeleted).toBe(1);
+  });
+});
+
+// F-R6WATCH.2-1 (BL-112) — the tombstone watchdog: an armed `project.purge` job vanished live
+// without firing and nothing noticed the orphaned past-grace tombstone. The sweep re-arms any
+// tombstone lacking a live (created/retry/active) job, at its own grace end.
+describe("handleProjectPurgeSweep (F-R6WATCH.2-1 re-arm watchdog)", () => {
+  const stubQueueTable = async (db2: NonNullable<typeof db>) => {
+    await db2.pg.query(`create schema if not exists pgboss`);
+    await db2.pg.query(
+      `create table if not exists pgboss.job(name text, singleton_key text, state text)`,
+    );
+  };
+  const fakeQueue = () => {
+    const sent: {
+      name: string;
+      payload: Record<string, unknown>;
+      opts?: { startAfterMs?: number; singletonKey?: string };
+    }[] = [];
+    return {
+      sent,
+      async send(
+        name: string,
+        payload: Record<string, unknown>,
+        opts?: { startAfterMs?: number; singletonKey?: string },
+      ) {
+        sent.push({ name, payload, opts });
+      },
+    };
+  };
+
+  it("re-arms a past-grace tombstone whose purge job vanished (fires on the next poll)", async () => {
+    db = await createOrchestratorTestDb();
+    await stubQueueTable(db);
+    const seed = await seedProject(db, { draftN: 1 });
+    await db.pg.query(`update projects set deleted_at = now() - interval '31 days' where id = $1`, [
+      seed.projectId,
+    ]);
+    const queue = fakeQueue();
+    const r = await handleProjectPurgeSweep({ systemExec: db.client, queue });
+    expect(r).toEqual({ scanned: 1, rearmed: [seed.projectId] });
+    expect(queue.sent).toHaveLength(1);
+    expect(queue.sent[0].name).toBe("project.purge");
+    expect(queue.sent[0].opts?.singletonKey).toBe(`project.purge:${seed.projectId}`);
+    expect(queue.sent[0].opts?.startAfterMs).toBe(0);
+    expect(queue.sent[0].payload.tenantId).toBe(seed.workspaceId);
+  });
+
+  it("re-arms an in-grace tombstone AT its grace end, not immediately", async () => {
+    db = await createOrchestratorTestDb();
+    await stubQueueTable(db);
+    const seed = await seedProject(db, { draftN: 1 });
+    await db.pg.query(`update projects set deleted_at = now() - interval '10 days' where id = $1`, [
+      seed.projectId,
+    ]);
+    const queue = fakeQueue();
+    const r = await handleProjectPurgeSweep({ systemExec: db.client, queue });
+    expect(r.rearmed).toEqual([seed.projectId]);
+    // ~20 days remain of the 30-day grace — the arm lands at the tombstone's own grace end.
+    const ms = queue.sent[0].opts?.startAfterMs ?? -1;
+    expect(ms).toBeGreaterThan(19 * 24 * 60 * 60 * 1000);
+    expect(ms).toBeLessThan(21 * 24 * 60 * 60 * 1000);
+  });
+
+  it("leaves a tombstone alone when a live job still holds its singleton key", async () => {
+    db = await createOrchestratorTestDb();
+    await stubQueueTable(db);
+    const seed = await seedProject(db, { draftN: 1 });
+    await db.pg.query(`update projects set deleted_at = now() - interval '31 days' where id = $1`, [
+      seed.projectId,
+    ]);
+    for (const state of ["created", "retry", "active"]) {
+      await db.pg.query(
+        `insert into pgboss.job(name, singleton_key, state) values ('project.purge', $1, $2)`,
+        [`project.purge:${seed.projectId}`, state],
+      );
+      const queue = fakeQueue();
+      const r = await handleProjectPurgeSweep({ systemExec: db.client, queue });
+      expect(r).toEqual({ scanned: 0, rearmed: [] });
+      expect(queue.sent).toEqual([]);
+      await db.pg.query(`delete from pgboss.job`);
+    }
+  });
+
+  it("re-arms again once the surviving job row is terminal (completed/failed)", async () => {
+    db = await createOrchestratorTestDb();
+    await stubQueueTable(db);
+    const seed = await seedProject(db, { draftN: 1 });
+    await db.pg.query(`update projects set deleted_at = now() - interval '31 days' where id = $1`, [
+      seed.projectId,
+    ]);
+    for (const state of ["completed", "failed", "cancelled"]) {
+      await db.pg.query(
+        `insert into pgboss.job(name, singleton_key, state) values ('project.purge', $1, $2)`,
+        [`project.purge:${seed.projectId}`, state],
+      );
+      const queue = fakeQueue();
+      const r = await handleProjectPurgeSweep({ systemExec: db.client, queue });
+      expect(r.rearmed).toEqual([seed.projectId]);
+      await db.pg.query(`delete from pgboss.job`);
+    }
+  });
+
+  it("skips a fresh tombstone (<1h) — the api's own arm may still be in flight", async () => {
+    db = await createOrchestratorTestDb();
+    await stubQueueTable(db);
+    const seed = await seedProject(db, { draftN: 1 });
+    await db.pg.query(
+      `update projects set deleted_at = now() - interval '30 minutes' where id = $1`,
+      [seed.projectId],
+    );
+    const queue = fakeQueue();
+    const r = await handleProjectPurgeSweep({ systemExec: db.client, queue });
+    expect(r).toEqual({ scanned: 0, rearmed: [] });
+    expect(queue.sent).toEqual([]);
+  });
+
+  it("never touches a live (non-tombstoned) project", async () => {
+    db = await createOrchestratorTestDb();
+    await stubQueueTable(db);
+    await seedProject(db, { draftN: 1 });
+    const queue = fakeQueue();
+    const r = await handleProjectPurgeSweep({ systemExec: db.client, queue });
+    expect(r).toEqual({ scanned: 0, rearmed: [] });
+    expect(queue.sent).toEqual([]);
+  });
+
+  it("without a system pool or queue the sweep is a no-op (test seam)", async () => {
+    const r = await handleProjectPurgeSweep({});
+    expect(r).toEqual({ scanned: 0, rearmed: [] });
   });
 });
 
@@ -182,11 +326,22 @@ describe("handleAccountHardDelete (account.hard-delete consumer)", () => {
       seed.userId,
     ]);
     const { seedRun, seedGate } = await import("@rhema/orchestrator/testing");
-    await seedRun(db, { runId: "run_hd", workspaceId: ws, projectId: seed.projectId, state: "finished" });
+    await seedRun(db, {
+      runId: "run_hd",
+      workspaceId: ws,
+      projectId: seed.projectId,
+      state: "finished",
+    });
     await db.client.query(
       `insert into steps(id, run_id, phase, ordinal, state) values ('stp_hd','run_hd','verify',1,'done')`,
     );
-    await seedGate(db, { gateId: "gt_hd", runId: "run_hd", stepId: "stp_hd", kind: "confirm", onExpiry: "proceed" });
+    await seedGate(db, {
+      gateId: "gt_hd",
+      runId: "run_hd",
+      stepId: "stp_hd",
+      kind: "confirm",
+      onExpiry: "proceed",
+    });
     await db.client.query(
       `insert into correspondence_items(id, project_id, kind, draft_id, run_id, delivered_at, artifact_ids)
        values ('ci_hd', $1, 'review', $2, 'run_hd', now(), '{}'::text[])`,
@@ -241,7 +396,10 @@ describe("handleAccountHardDelete (account.hard-delete consumer)", () => {
 // JOURNEY.1 — the test-tenant auto-purge sweep (REQ-SPEC-29; ADR-020): flagged workspaces past the
 // window route through the existing account.hard-delete pipeline with the grace bypassed.
 describe("handleTestTenantPurge (test-tenant.purge consumer)", () => {
-  async function seedFlaggedTenant(db2: NonNullable<typeof db>, args: { stale: boolean; flagged?: boolean }) {
+  async function seedFlaggedTenant(
+    db2: NonNullable<typeof db>,
+    args: { stale: boolean; flagged?: boolean },
+  ) {
     const seed = await seedProject(db2, {});
     await db2.pg.query(
       `insert into workspace_members (workspace_id, user_id, role) values ($1,$2,'admin') on conflict do nothing`,
@@ -251,9 +409,10 @@ describe("handleTestTenantPurge (test-tenant.purge consumer)", () => {
       await db2.pg.query(`update workspaces set is_test = true where id = $1`, [seed.workspaceId]);
     }
     if (args.stale) {
-      await db2.pg.query(`update workspaces set created_at = now() - interval '30 days' where id = $1`, [
-        seed.workspaceId,
-      ]);
+      await db2.pg.query(
+        `update workspaces set created_at = now() - interval '30 days' where id = $1`,
+        [seed.workspaceId],
+      );
     }
     return seed;
   }
@@ -277,14 +436,20 @@ describe("handleTestTenantPurge (test-tenant.purge consumer)", () => {
       await db.client.query(`select deletion_requested_at from "user" where id = $1`, [seed.userId])
     ).rows[0] as { deletion_requested_at: Date };
     expect(u.deletion_requested_at).toBeTruthy();
-    expect(Date.now() - u.deletion_requested_at.getTime()).toBeGreaterThan(14 * 24 * 60 * 60 * 1000);
+    expect(Date.now() - u.deletion_requested_at.getTime()).toBeGreaterThan(
+      14 * 24 * 60 * 60 * 1000,
+    );
   });
 
   it("never touches an unflagged workspace, however stale", async () => {
     db = await createOrchestratorTestDb();
     const seed = await seedFlaggedTenant(db, { stale: true, flagged: false });
     const sent: unknown[] = [];
-    const queue = { async send(_n: string, _p: Record<string, unknown>) { sent.push(1); } };
+    const queue = {
+      async send(_n: string, _p: Record<string, unknown>) {
+        sent.push(1);
+      },
+    };
     const r = await handleTestTenantPurge({ olderThanHours: 26 }, { systemExec: db.client, queue });
     expect(r.enqueuedDeletes).toBe(0);
     expect(sent).toEqual([]);
@@ -298,7 +463,11 @@ describe("handleTestTenantPurge (test-tenant.purge consumer)", () => {
     db = await createOrchestratorTestDb();
     await seedFlaggedTenant(db, { stale: false });
     const sent: unknown[] = [];
-    const queue = { async send(_n: string, _p: Record<string, unknown>) { sent.push(1); } };
+    const queue = {
+      async send(_n: string, _p: Record<string, unknown>) {
+        sent.push(1);
+      },
+    };
     const r = await handleTestTenantPurge({ olderThanHours: 26 }, { systemExec: db.client, queue });
     expect(r.enqueuedDeletes).toBe(0);
     expect(sent).toEqual([]);
