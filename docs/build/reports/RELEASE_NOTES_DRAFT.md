@@ -202,3 +202,15 @@ describes the source tree plus that recorded deployment evidence, not a later st
   committed queries at launch +12.7 d — all 11 named rows `not-yet-elapsed` (the organic cohort
   is still empty end-to-end; machinery corroborated: `slo.review.weekly` firing). The
   contractual launch +14 d read remains owed ≥ 2026-11-11T04:0xZ (`D-R6WATCH-ON-TIME`).
+- **Post-launch watch, the on-time read (dated append, 2026-11-11).** The contractual read ran
+  at launch +14.6 d (`docs/build/runs/R6WATCH.1.md`): **the organic cohort is still empty
+  end-to-end** — 0 organic signups, 0 organic runs, 0 organic admissible observations, 0 organic
+  funnel legs. Per `GD-WATCH.R6` all 11 cohort-bound deferrals converted to standing
+  alert-backed watches (`owner: operator` · `trigger: slo.review.weekly` ·
+  `re-read: 2026-11-25T04:0xZ`) — no row passed on zero rows. Funnel verdict: landing→signup
+  **below** (0 organic over 1,313 anonymous views), drop-zone→signup **below** (0/44),
+  anchor-≤60 s **unmeasurable**. Machinery green: `slo.review.weekly` firing (ok 6 /
+  breach 0), `billing.estimator-refit` weekly, `import_preview_p95_s` 0.717–0.841 s on the
+  convert path. Honest carries: `usage.reconcile` now fails daily on a provider-report
+  **403** (admin key bound but denied — operator key act still owed); the BigQuery billing
+  export still holds zero tables (billed-actuals blocker unchanged).
