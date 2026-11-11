@@ -34,6 +34,20 @@
   (REQ-DISC-1) is what supplies admissible rows. This stays a **finding for an operator
   ruling — never flipped past**; evidence in
   `docs/build/reports/2026-10-21_R6MNY.1/`.
+  **256_R6FLIP.1 evaluation (2026-11-11, under the operator's same-day "ignore dates"
+  ruling lifting the `GD-THRESH13.R6` ≥2026-12-01 park): evaluated early, NOT executed —
+  preconditions 1–2 still UNMET** on the freshest datum available (the same-day R6WATCH.1
+  on-time read, window-age ≈14.58 d): `cap_calibration_reports` = 4 rows, all
+  `adopted=false` "insufficient sample" (max n=2, cohort-excluded; organic admissible
+  `cost_observations` n=0; `estimator_cells` 0), so `cap_reach_pct` stays vacuous and
+  `capFor` null on the paid surfaces. Precondition 3 is also unarrived on its own terms:
+  the 2026-10-22 notice named `EFFECTIVE_DATE=2026-12-01` to the two paid accounts and
+  the runbook forbids flipping before the noticed date — the ruling lifted the *park's*
+  date, not the customers' notice. **Re-parked with evidence**; prod stays
+  `debitMode: "committed"`. Re-evaluate when a `cap_calibration_reports` row reaches
+  `adopted=true` (D-ECON.1-3's watch, `slo.review.weekly` trigger) or at the noticed
+  effective date, whichever the operator rules on. Run record:
+  `docs/build/runs/256_R6FLIP.1.md`.
 - **Verify:** inspect `rhema-prod-api` and `rhema-prod-worker` separately using the filtered
   `DEBIT_MODE` read in [debit-mode-flip.md](debit-mode-flip.md); each shows
   `DEBIT_MODE=metered`; a completed run's `credit_ledger` settles to the proxy meter
