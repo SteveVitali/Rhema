@@ -1226,3 +1226,7 @@ sequence (BM-COMPAT-05 — historical filenames are not renamed).
   spec `docs/round-7-draft-spec.md` v0.2, ratified `GD-RATIFY.R7`). Dispatched **out of order** (`GD-ORDER.R7`):
   `nextTicket` → `209_R7OPEN.1`; `200_R6WATCH.1` (clock ≥ 2026-11-11) and the R6 tail 201–208 resume on their own
   clock. Phase-4 splits (§ Decomposition decisions #11) applied before the first commit.
+| 255 | `255_R6WATCH.2__early-watch-reread.md` | R6 tail | **run-time insert** — early standing-watch re-read: the 11 `GD-WATCH.R6` rows + the four unmet clock reads, dispositioned honestly (2026-11-11 ruling: ignore dates) | pre-auth (operator ruling 2026-11-11) |
+| 256 | `256_R6FLIP.1__flip-one-early.md` | R6 tail | **run-time insert** — flip 1 evaluated/executed early (the `GD-THRESH13.R6` ≥Dec-1 park lifted per the same ruling) | pre-auth (operator ruling 2026-11-11) |
+| 257 | `257_R6OPS.1__usage-reconcile-403.md` | R6 tail | **run-time insert** — `usage.reconcile` daily-403 defect (provider report fetch denied since 2026-11-05) | — |
+| 258 | `258_R6OPS.2__billing-export-empty.md` | R6 tail | **run-time insert** — `billing_export_prod` zero tables since launch (the CLK-4 blocker) | — |
