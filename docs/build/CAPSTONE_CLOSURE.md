@@ -368,3 +368,141 @@ Deferral census: no round-7 OPEN row without owner+date.
 - HUMAN-H16 produced no F-R7UX-* rows — waived as skipped/undispositioned unless the operator rules otherwise.
 - Env-bound Stage-B legs recorded (`JOURNEY_DATABASE_URL`, unexpired token, pre-existing magic-link loop).
 - GD-DEPLOY.R7 + GD-UX-PAIDLEG.R7 expire at this signature.
+
+---
+
+# R6CAP.3 — Capstone closure, round 6 (post-launch disposition) — 2026-11-11
+
+> **R6CAP.3 deliverable** (`docs/tickets/202_R6CAP.3__capstone-closure.md`) — the closure
+> half of `REQ-TAIL-1`. Every gap R6CAP.1 routed
+> (`docs/build/reports/CAPSTONE_GAP_ANALYSIS_R6.md` — 8 PARTIAL + 4 MISSING + the
+> MET-ENGINEERED / operator-leg / cohort carriers) is dispositioned here — homed to a
+> signed-deviation candidate (§R6.3), a standing `GD-WATCH.R6` watch, a named in-chain
+> ticket, or an owner+trigger+date obligation already on its DEFERRALS row. Companion
+> records: `docs/build/runs/202_R6CAP.3.md`; the DEFERRALS `## R6CAP.3` census; the DRAFT
+> readout `docs/build/readouts/GATE-ACCEPT.R6.md`; `docs/build/BACKLOG.csv` (BL-106).
+>
+> **Run mode: records-only, $0.** No deploy, no prod contact, no prod mutations,
+> mergePolicy OPERATOR. The ticket's Live stage is **operator-gated** — a live re-verify a
+> routed gap needs is the operator's act, never self-authorized — so no gap below was
+> closed on live evidence this run; each is homed, not faked. The analysis inputs sit on
+> two open PRs at run time: `CAPSTONE_GAP_ANALYSIS_R6.md` on #315
+> (`stevevitali/r6cap-1-gap-analysis` @ `28f9488`) and the `GD-WATCH.R6` watches plus the
+> `D-R6WATCH-ON-TIME`/`D-R7DOC.1-1` flips on #314 (`stevevitali/r6watch-ontime`); both are
+> cited, never re-edited. The build is **NOT DONE** — the next chain row is the
+> operator-signed `203_GATE-ACCEPT.R6` (row 203).
+
+## R6.0 What landed this run — and the honest scope statement
+
+Like R5CAP.3, the routed set contains **no in-tree fixable item**. Every PARTIAL binds a
+live re-verify this ticket gates to the operator (CLK-1's one SELECT), a clock (CLK-2's
+T16 substrate precondition — dead with the refused wave; flip 1's ≥2026-12-01 notice
+clock; the pen test's launch+60 d date), an empty organic cohort (the 11 watches), an
+operator act (the venue re-fetch, the billing-console export flip, the admin-key
+re-seed), or the refused funded envelope; every MISSING row is routed by the manifest's
+own decomposition to a named tail ticket (204–208) — landing it here would be scope
+creep, not a fix.
+
+So this run is disposition-only by construction: **zero code changes, zero DEFERRALS
+flips, zero test relaxations, zero fabricated closes** — and a finalized, still-unsigned
+deviations register staged for the operator's signature at row 203.
+
+## R6.1 Routed-gap dispositions (every R6CAP.1 routing, 1:1)
+
+| routed verdict | REQ | disposition | home / carrier |
+|---|---|---|---|
+| PARTIAL | REQ-LCH-4 | **operator-leg residual → deviation row 9** | `D-P1.21-1` — 3 fetch-blocked venue rows (WaPo/WSJ/USA Today 401/402/403; a HUMAN browser re-fetch) + the NULL op-ed table |
+| PARTIAL | REQ-POST-9 | **watch + residual → deviation rows 9/10** | `D-P1.17-2` — funnel arm converted to a `GD-WATCH.R6` standing watch (organic legs all zero); the drop-zone residual stays owed |
+| PARTIAL | REQ-GO-4 | **accepted deviation → deviation row 5** | flips 2–4 live-verified at launch 2026-10-28; flip 1 (`debitMode→metered`) parked ≥2026-12-01 — `GD-THRESH13.R6`; `docs/ops/launch-flips.md` flip 1; BL-13 tail |
+| PARTIAL | REQ-CLK-1 | **clock carrier open → deviation row 8** | `D-BL38.1-2` — purge `57bbef6f` verified armed `start_after=2026-10-30T21:41:10.952Z`; the post-fire SELECT is an operator-gated live re-verify |
+| PARTIAL | REQ-CLK-2 | **conditioned carrier open → deviation rows 4/8** | `D-FIX.1-4` — sweeps fire + claim zero honestly; the T16 substrate needs the refused funded wave's paid arm |
+| PARTIAL | REQ-CLK-4 | **operator + clock carriers open → deviation rows 7/8** | `D-COST.1-1` + `D-OPS.1-3` — `billing_export_prod` zero tables at launch+14.6 d; the console-flip re-check is operator-owed; the `billing-read.mjs` proxy stands |
+| PARTIAL | REQ-CLK-5 | **operator carrier open → deviation row 8** | `D-ECON.1-1` + `D-PRB.08-1` — `usage.reconcile` daily-403 ×7 since 2026-11-05 (bound-but-denied key); the operator re-seed is owed |
+| PARTIAL | REQ-TAIL-1 | **closed by this run** | §R6 is the closure half: every routed gap dispositioned + the unsigned draft finalized; the readout skeleton is staged for 203 |
+| MISSING → 204 | REQ-TAIL-2 | **named in-chain ticket → deviation row 11** | `204_R6REC.1` — backlog reconcile, G2/H2 re-home, roadmap reclassify, `OPERATIONAL_READINESS.md` rewrite (BL-106 + §7 (h)) |
+| MISSING → 205 | REQ-TAIL-3 | **named in-chain ticket → deviation row 11** | `205_R6REC.2` — spec fold-back (§13.3/ADR-113, §17/ADR-111 check, BL-05) |
+| MISSING → 206 | REQ-TAIL-4 | **named in-chain ticket → deviation row 11** | `206_R6REC.3` — the integration plan + final merge-sweep runbook |
+| MISSING → 207/208 | REQ-TAIL-5 | **named in-chain ticket → deviation row 11** | `207_R6DOC.1` + `208_R6DOC.2` — repo-docs / agent-docs refreshes + the closing ledger write |
+
+**Result: zero R6CAP.1 routings left undecided** — every row reads closed-by-this-run
+(TAIL-1's closure half), a named deviation row, a standing watch, or a named ticket.
+
+## R6.2 The honestly-owed carrier census (owner + trigger + date, verbatim)
+
+Every OPEN/PARTIAL carrier the §7 census named was re-read this run. None is closeable
+offline; each stands with its owner + trigger + date — or its `GD-WATCH.R6` watch row —
+recorded. Rows the open PRs #314/#315 already touched are cited, never re-edited (their
+flips land with those merges).
+
+| carrier class | rows | owner + trigger + date (standing) |
+|---|---|---|
+| Standing watches (11) | `D-R5OPS.1-1` · `D-COST.1-2` · `D-SLO.1-5/-7/-8` · `D-ECON.1-3/-4` · `D-ECON.2-5/-6/-7` · `D-P1.17-2` funnel arm | owner: operator · trigger: `slo.review.weekly` (proven firing — ok6/breach0 on 2026-11-09) · re-read: `2026-11-25T04:0xZ` (`GD-WATCH.R6`, PR #314) |
+| Clock carriers | `D-BL38.1-2` (purge re-read — armed, the SELECT is owed) · `D-FIX.1-4` (T16 substrate — the next sweep is conditioned on a paid arm) · `D-COST.1-1` + `D-OPS.1-3` (export zero tables — operator console re-check) · `D-ECON.1-1` + `D-PRB.08-1` (admin key 403 — operator re-seed) · `D-P1.22-3` (launch+60 d ≈ 2026-12-28) · BL-13/flip 1 (≥2026-12-01 notice clock, `GD-THRESH13.R6`) | dated conditions on each row; the live re-verifies are this ticket's operator-gated stage |
+| Refused funded wave (23 (b)-class + residuals) | `D-CAP.2-1` · `D-FIX.1-2` · `D-P0.15-3` · `D-PRB.02-3` · `D-PRB.04-2` live half · `D-P1.10-1/-11-1/-12-1/-14-1/-19-1/-21-2` · `D-DEF.1-1` · `D-RES.1-1/-2/-3` · `D-CITE.1-2/-3/-5` · `D-ECON.2-2/-3/-4` · `D-STB.5b-3/-4/-5` · `D-RES.3-1` · `D-STB.5b-1` · `D-OPS.1-1` N9 arm | OPEN un-waived — GATE-R6B STAYS-CLOSED + the threshold-11 refusal; unblock = a fresh envelope ruling |
+| MET-ENGINEERED carriers | `D-RES.3-1` (ENG-3) · `D-OPS.1-1` (POST-2) · `D-SLO.1-6` (POST-8 — organic-traffic-bound) | named on the matrix rows; folded into the wave/watch dispositions above |
+| Operator-leg residuals | `D-EDIT.1-2` · `D-P1.19-2` (operator verbatim "skip safari and mobile for now") · `D-PRB.07-1` · `D-P1.08-1` · `D-P1.09-1` structured-edit arm · `D-P1.20-1` (e)/(f) · `D-P1.16-1` legs e–g/i · `D-BILL.3-1` · `D-BILL.3-2` leg-c · `D-P1.21-1` (3 venue rows) · `D-P1.22-2` (first incident, owed-by-nature) | owner: operator/HUMAN sessions; each row carries its verbatim recipe |
+| BL-106 engineering carries (9) | `D-R6CI.1-1` · `D-R6FOR.1-1` · `D-R6INF.1-1`* · `D-R6CNT.2-1` · `D-R6SECR.1-1` · `D-R6FIX.4-1` · `D-R6FIX.5-1` · `D-R6PAIDARM-1` (Monday paid cron) · `D-R6OSS.1-1` (operator flip residuals) | owner: `204_R6REC.1` / `205_R6REC.2` (*`D-R6INF.1-1` normalized to DONE on #315 — its discharge evidence landed at R6INF.2) |
+| REQ-TAIL-2 re-homes | `D-P0.12-3` · the G2/H2 rows (`D-P0.13-1/-3/-4/-5`, `D-P0.14-1/-2/-3`, `D-P0.15c-4`, `D-PRB.02-2`; BL-40/43/44/45) · `D-RES.2-3` | owner: `204_R6REC.1` — the ADR-111 post-launch research program |
+| Discharged on open PRs | `D-R6WATCH-ON-TIME` · `D-R7DOC.1-1` | DONE on `stevevitali/r6watch-ontime` (PR #314) — the flips land with that merge; not re-edited here |
+
+Unhomed after this pass: **0** — the R6CAP.1 census (§7; 130 unique OPEN/PARTIAL ids
+scanned) re-read: every carrier resolves to a §R6.3 deviation row, a `GD-WATCH.R6` watch,
+a named tail ticket, or a dated obligation already on its row.
+
+## R6.3 ACCEPTED-deviations list — proposed for operator signature at GATE-ACCEPT.R6
+
+> R6CAP.3 does not sign these. Each row is a deviation the closure **proposes** the
+> operator accept; signature happens at `203_GATE-ACCEPT.R6` (readout
+> `docs/build/readouts/GATE-ACCEPT.R6.md` + a GATE DECISIONS row — both operator-written).
+
+| # | Deviation | What deviates | Why it is sound | Evidence (one citation) | Covering row | Sign-off |
+|---|---|---|---|---|---|---|
+| 1 | Public launch proceeded **without the G2 LIFT read** | ADR-104 made G2 a hard pre-launch gate; round 6 launched 2026-10-28 with the §18 eval program still owed | The amendment is bounded: every §16.4 efficacy/superiority claim stays lint-blocked (REQ-EVAL-19) until LIFT; G2/H2 become a dated post-launch research program re-homed to `204_R6REC.1`, never silently dropped | `docs/adr/ADR-111-public-launch-without-g2-and-s17-exit-amendments.md` | ADR-111 + `GD-LAUNCH-G2.R6`; carriers `D-P0.12-3`, the G2/H2 rows, `D-RES.2-3` | ☐ operator |
+| 2 | §17 exit criteria **amended**: first-finding → post-launch target; golden = minimal cohort | The spec's original Phase-1 exit text (nightly goldens green + first-finding ≤4 min) was unmet at launch | Ruled, not drifted: `GD-S17.R6` "Amend both" + `GD-GOLDEN-CAP.R6` "$100 minimal cohort" — the minimal 4-protocol cohort executed **green at the launch SHA** ($33.89 list ≤ $100; `Promotion OK` after the `GD-GOLDEN-BAND.R6` re-calibration) and the standing re-run rule is committed | `docs/ops/golden-rerun-rule.md` | ADR-111 + `GD-S17.R6`/`GD-GOLDEN-CAP.R6`; `D-P0.15-4` (DONE); first-finding rides the `D-R5OPS.1-1` watch | ☐ operator |
+| 3 | The external pen test is a **post-launch** obligation | P1.22's original rule made the engagement launch-blocking on criticals | Substituted, not skipped: the in-round pre-launch adversarial review ran on the deployed tip (REQ-SEC-3 — 178 live tenancy/authz legs; the CRITICAL `F-R6SECR.1-1` found+fixed+deployed; 0 open criticals/highs at gate); the external engagement is dated ≤ launch+60 d | `docs/adr/ADR-112-external-pen-test-deferred-post-launch.md` | ADR-112 + `GD-PEN.R6b`; `D-P1.22-3` (≈2026-12-28) | ☐ operator |
+| 4 | The ~$150 funded wave **refused and stays carried** — 23 (b)-class rows OPEN, un-waived | REQ-DISC-1's re-attempt never executed: GATE-R6B was dispositioned STAYS-CLOSED; the wave's paid legs are un-run | The requirement's own arm executed — "a refusal at bind is the finding — reported, never spent past": the guard refused at the measured bound ($80.86 pinned-scope + declared caps vs the ~$150 envelope), $0 spent; the refusal was read MET-as-disposition at GATE-LAUNCH threshold 11; a fresh ruling can always re-open a narrower envelope | `docs/build/readouts/GATE-R6B.md` | `GD-ENV.R6` + threshold-11 (`readouts/GATE-LAUNCH.md`); the 23 (b)-class carriers + `D-RES.3-1`/`D-STB.5b-1`/`D-OPS.1-1` residuals | ☐ operator |
+| 5 | Flip 1 (`debitMode→metered`) **parked ≥2026-12-01** | `GD-LAUNCH-MONEY.R6` ordered the metered flip at launch; only flips 2–4 executed | The blockers are honest: `cap_calibration_reports`=0 (the calibration precondition is unmet) + `EFFECTIVE_DATE 2026-12-01` on the sent paid-account notice (the 30-day rule); `DEBIT_MODE=committed` meanwhile — REQ-SPEC-32's activation discrepancy stays disclosed, never weakened | `docs/ops/launch-flips.md` flip 1 | `GD-THRESH13.R6` (ruled "gap accepted"); BL-13 tail; the ≥2026-12-01 clock | ☐ operator |
+| 6 | The Showcase ships an **authored fixture**, not a run-produced one | REQ-LCH-3/194 prescribed exporting a live Full-board run's bundle as `SHOWCASE_FIXTURE` | The prescribed path failed honestly: paid run `01M5NGSTDRVN42JHTAA9C2SDDW` completed inside its ≤$40 ruling but produced a contract-ineligible bundle (0/14 claims checked → fails `assertShowcaseFixture`); the operator-approved authored Wells essay serves every REQ-POS-3 invariant the seed enforces — the gap is provenance only, never correctness | `docs/adr/ADR-121-showcase-fixture-authored-under-cap-pause.md` | ADR-121; `D-R6CNT.2-1` (regeneration carried — gated on a bounded spend authorization) | ☐ operator |
+| 7 | The ~$50/mo cost target stays **unmet** — ~$210–257/mo floor stands | The R5-era reduction target never landed: the HA levers were ruled (+$38/mo class) and the billed-actuals export never populated | Honestly reported, never smoothed: the floor is the *ruled* HA set (`GD-HA.R6`, projected ≈$210) under the measured list-price recomputation ($256.65/mo appended at R6WATCH.1); every paused lever class needs its own ruling; the `rhema-prod-budget-50` alert still fires on actuals | `scripts/live/billing-read.mjs` recomputation (recorded in `runs/R6WATCH.1.md`, PR #314) | `GD-HA.R6`; `D-COST.1-1/-3` + `D-OPS.1-3` (the export console flip — operator-owed) | ☐ operator |
+| 8 | Four clock reads **unmet at closure** (CLK-1/-2/-4/-5) | The post-launch dated reads did not all land green: the purge absence is unproven, the T16 sweep substrate is absent, the billing export is still empty, the admin reconcile is failing | Each is owed on a clock or an operator act, not on engineering — and each failure mode is the honest kind (claim-zero recorded, daily-403s recorded, zero tables recorded); the live re-verifies are this ticket's operator-gated stage, recorded as owed with verbatim recipes | `reports/CAPSTONE_GAP_ANALYSIS_R6.md` REQ-CLK rows (PR #315) | `D-BL38.1-2` · `D-FIX.1-4` · `D-COST.1-1`/`D-OPS.1-3` · `D-ECON.1-1`/`D-PRB.08-1` | ☐ operator |
+| 9 | Operator-leg residuals **carried** (Safari/mobile, HUMAN halves, Stripe arms, venue rows) | Interactive/browser legs the spec routed to humans are un-run: Safari/WebKit + real-phone, the HUMAN-runnable residual halves, the Stripe hosted-UX/Tax legs, the 3 fetch-blocked venue rows | The operator ruled the posture verbatim — "skip safari and mobile for now" (GATE-LAUNCH threshold 1) — and every remaining leg is named on a row with its verbatim recipe; none is hidden inside a MET claim | `readouts/GATE-LAUNCH.md` threshold-1 (`GD-THRESH1.R6`) | `D-EDIT.1-2` · `D-P1.19-2` · `D-PRB.07-1` · `D-P1.08-1` · `D-P1.09-1` · `D-P1.20-1` · `D-P1.16-1` · `D-BILL.3-1/-2` · `D-P1.21-1` | ☐ operator |
+| 10 | Traffic-bound measurements **converted to standing watches** | 11 named reads could not be measured: the organic cohort is empty end-to-end at launch+14.6 d (0 organic signups/runs/admissible observations/funnel legs) | The spec's own conversion executed (`GD-WATCH.R6` — the ruled 14-day read's close-or-watch contract): zero rows passed on zero rows; every measurement keeps a proven-firing trigger (`slo.review.weekly` ok6/breach0) + a dated re-read; POST-8's SSE-p95 stays physically organic-bound | `docs/build/runs/R6WATCH.1.md` (PR #314) + `GD-WATCH.R6` | the 11 watch rows (`D-R5OPS.1-1`, `D-COST.1-2`, `D-SLO.1-5/-7/-8`, `D-ECON.1-3/-4`, `D-ECON.2-5/-6/-7`, `D-P1.17-2`) + `D-SLO.1-6` | ☐ operator |
+| 11 | Engineering + spec carries **routed to the named tail tickets** | The round's remainder — BL-106's nine OPEN rows, the G2/H2 research program, the backlog/spec/integration/docs reconciles — is unfinished business, by design | The routing IS the spec's decomposition (manifest rows 204–208, REQ-TAIL-2…5): each carry names its owner ticket + its dated condition; nothing floats unowned; BL-106 exists precisely to keep the nine rows checker-visible | `docs/build/BACKLOG.csv` BL-106 | BL-106 (`D-R6CI.1-1`, `D-R6FOR.1-1`, `D-R6INF.1-1`, `D-R6CNT.2-1`, `D-R6SECR.1-1`, `D-R6FIX.4-1`, `D-R6FIX.5-1`, `D-R6PAIDARM-1`, `D-R6OSS.1-1`) + the REQ-TAIL-2 re-homes | ☐ operator |
+| 12 | The whole honestly-owed tail **stays OPEN as tracking** | Every carrier in §R6.2 remains an OPEN/PARTIAL row at signature time | Per the GATE-ACCEPT precedent (R5/SPA/R7): scoped OPEN rows are dispositioned *by* the signature — tracking items carrying unblock conditions, not gate-blocking; the 203 gate's own DEFERRALS rule encodes exactly this (no OPEN row blocks unless it lacks a signed deviation or an owned obligation) | `docs/tickets/203_GATE-ACCEPT.R6__accepted-deviations.md` §DEFERRALS rule | §R6.2 census; `docs/tickets/DEFERRALS.md` | ☐ operator |
+
+## R6.4 Note items for the signature (not deviations — open operator facts)
+
+- **REQ-DISC-1 reads MET-DIFFERENTLY only through its own refusal arm** — a signature on
+  row 4 accepts the carry; sending it back re-opens the wave question at the operator's
+  option. Recorded, never smoothed.
+- **REQ-POST-2/POST-8/ENG-3 read MET-ENGINEERED on named OPEN rows** — their live legs are
+  unpaid/bound and carried (rows 4/10), not waived.
+- **R6WATCH.1's evidence sits on open PR #314; the R6CAP.1 report, matrix rows and census
+  sit on open PR #315.** This closure cites both branches verbatim; merge ordering and the
+  DEFERRALS/LEDGER/BUILD_INDEX conflict resolution are the operator's
+  (`mergePolicy: OPERATOR`, bottom-up).
+- **The REQ-TAIL-1 matrix verdict** lives on #315's `COVERAGE_MATRIX.csv` (verdicted
+  PARTIAL pre-closure); its flip to MET + the §R6 evidence cite lands with that merge or
+  at `204_R6REC.1`'s reconcile — recorded, not silently claimed.
+- **`GD-DEPLOY.R6` expires at this gate** per its own terms — the readout's
+  effect-of-signature block names it.
+- **`projectStatus` stays IN_PROGRESS** — the tail rows 204–208 + the dated obligations of
+  §R6.2 stand after the signature; DONE is the operator's own closure pass.
+
+## R6.5 Verdict & verification record
+
+- Deterministic: `pnpm exec vitest run scripts/check-coverage-matrix.test.mjs
+  scripts/deferral-status-parity.test.mjs` green on this diff (records-only — the
+  deterministic artifact is the 1:1 dispositions table + the per-row citations);
+  `node docs/build/tools/check-append-only.mjs --base origin/main`,
+  `check-build-memory.sh .` (the 2 violations pre-existing on `main` are recorded in
+  `runs/202_R6CAP.3.md`), and `ci-boundary.sh --pr` recorded in `pr/202_R6CAP.3.md`.
+- Deferral ledger: **zero flips** — the §R6.2 carriers re-owed with owner+trigger+date or
+  a `GD-WATCH.R6` standing (census section `## R6CAP.3` appended);
+  `D-R6WATCH-ON-TIME` + `D-R7DOC.1-1` discharge on #314's branch, cited.
+- Coverage matrix: unchanged by construction — the R6 rows live on #315's branch; the
+  REQ-TAIL-1 flip is noted in §R6.4.
+- ADRs: none — no owned decision this run (the register drafts; the operator decides at
+  row 203).
+- **Build state: IN_PROGRESS.** `nextTicket` → `203_GATE-ACCEPT.R6` (row 203 — an operator
+  gate). Nothing is merged; nothing is claimed DONE.
