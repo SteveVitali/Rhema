@@ -1670,3 +1670,20 @@ evidence already on each row or its merged twin); `check-backlog` 37 → 0 issue
 
 Unhomed OPEN/PARTIAL ids at census: **0** (check-backlog: 425 expected sources, complete +
 non-duplicating + verdict-consistent — 37 issues → 0).
+
+## 205_R6REC.2 — round-6 spec fold-back dispositions (2026-11-11)
+
+`reconcile-build mode=spec` (REQ-TAIL-3; records-only, $0 — nothing live read or mutated). The
+signed §R6.3 deviation rows this ticket folds into the canonical spec are cited on the spec
+banners themselves; nothing below changes a carrier's standing.
+
+| carrier | standing | this run |
+| `REQ-TAIL-3` | **MET** | the §13.3/ADR-113 as-built check + §17/ADR-111 launch-evidence fold + §12.8/§16.4 ADR-112 + A.13 addendum landed; COVERAGE_MATRIX row flipped |
+| `BL-05` (G2/G3/H3 + ADR lineage) | fold confirmed, row stays `open` | the §17 banner chain + Appendix A.13 notes now record the full override lineage (ADR-008 → ADR-104 → ADR-105 → ADR-111); BL-05's own status cell is the backlog checker's/operator's call — its acceptance reads "operator ratifies amendments" |
+| `D-P1.22-3` (external pen test) | OPEN, dated | spec now records the ADR-112 posture at §12.8 + §16.4 + §17 PM row; the obligation itself is unchanged (≤ launch+60 d ≈ 2026-12-28, owner: operator) |
+| `D-R6SECR.1-1` (§12.8 live-exercise legs) | OPEN | named inside the new §12.8 banner as the carried legs; execution legs unchanged |
+| `D-R5OPS.1-1` (first-finding watch) | OPEN + standing watch | named in the §17 fold-check as the organic-cohort first-finding carrier (re-read 2026-11-25) |
+| BL-40/43/44/45 (G2/H2 research program) | OPEN, re-homed by `204_R6REC.1` | named in the §17 fold-check + A.13 addendum as ADR-111's post-launch research program |
+
+**Opened this run:** none. **Flipped this run:** none (REQ-TAIL-3's matrix verdict is a coverage
+row, not a deferral carrier).

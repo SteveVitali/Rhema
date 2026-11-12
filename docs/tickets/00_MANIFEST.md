@@ -849,6 +849,19 @@ has exactly one owner.
 
 ## Spec amendments applied
 
+- **2026-11-11 (205_R6REC.2 — round-6 spec fold-back, REQ-TAIL-3):** the signed round-6 launch
+  posture folded into `docs/rhema-design-spec.md` — status-line 2026-10-20 entry added (ADR-111:
+  launch decoupled from G2 + §17 Phase-1 exit amended; ADR-112: external pen test → post-launch
+  ≤ launch+60 d, in-round adversarial review gated the launch); §12.8 ADR-112 banner (pen test
+  dated ≤ 2026-12-28, honesty clause); §13.3 ADR-113 banner checked as built (mint code anchors
+  verified verbatim); §16.4 launch-posture row + claims-guard note (unchanged per ADR-111);
+  §17 launch-evidence fold-check appended to the 2026-10-20 banner (GATE-LAUNCH SIGNED
+  2026-10-27, golden cohort green at the launch SHA, first-finding → `GD-WATCH.R6` watch, wave 1
+  → BL-40/43/44/45) + the PM-table pen-test row annotated; Appendix A.13 addendum (REQ-BETA-19's
+  launch-moment clause + REQ-BETA-20's sequence under ADR-111). BL-05's G2/G3/H3 + ADR-lineage
+  fold confirmed (the §17 banner chain + A.13 notes now record ADR-008/104/105 → ADR-111). Gate:
+  `docs/build/tools/check-adr-banners.mjs` extended to 24 pairs.
+
 - **2026-11-08 (253_R7REC.1 — round-7 spec fold-back, REQ-CLOSE-3):** verified the ADR-126…130
   banner set spec §3.2 mandates and applied the missing dated banners — `docs/rhema-design-spec.md`
   §5.5 D20 + REQ-IDE-19/-41/-48 rows (ADR-130: walkthrough retired → REQ-COPY-4 composed card;
