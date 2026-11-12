@@ -276,3 +276,66 @@ definition.
   2026-11-08T19:4xZ — prod serves the R7b deployed tip; provenance all-PASS recorded at the
   deploy (`deployments` row `prod:e578a767`, `runs/R7DEP.2.md`).
 - Stack CI read: `ci-boundary.sh --stack --no-wait` recorded in `runs/R7REC.1.md` (BM-CI-01).
+
+## Round-6 launched state — 2026-11-11 (204_R6REC.1)
+
+> Dated addendum — the REQ-TAIL-2 rewrite to the launched truth. Supersedes the round-4/5/7 reads
+> where a row below names it. Evidence: `readouts/GATE-LAUNCH.md` (SIGNED 2026-10-27),
+> `readouts/GATE-ACCEPT.R6.md` (SIGNED 2026-11-11 — all 12 deviations, on PR #316's branch),
+> `reports/CAPSTONE_GAP_ANALYSIS_R6.md`, `runs/R6WATCH.1.md`, `runs/R6LCH.1.md`,
+> `BACKLOG.csv` (reconciled this pass — 425 expected sources, 37 issues → 0, verdict-consistent),
+> `DEFERRALS.md` (`## 204_R6REC.1` census), LEDGER `GD-ACCEPT.R6`/`GD-ROADMAP.R6`/`GD-WATCH.R6`.
+
+**Verdict: rhema.tools is a launched public product.** Launch executed 2026-10-28T04:0xZ —
+`PURCHASE_MODE=open` (real `cs_live_…` checkout), `REFUND_WINDOW_MODE=open` (real 1,797-cr
+refund), `trial.audience=everyone` (claimed by a fresh unflagged account) — each live-verified
+before the next flip. Prod serves the launched tree (`4938b8e`+ lineage, provenance all-PASS at
+every deploy). `projectStatus: IN_PROGRESS` — every owed thing is a tracking item with
+owner+trigger+date, never gate-blocking (GATE-ACCEPT precedent).
+
+### Capabilities (highest layer reached)
+
+- **Live:** signup/admission (Google + magic link, invite + open paths, shared Redis throttle —
+  `rl:testidentity` bounded bucket), tenant isolation (RLS role split; 178-leg adversarial review
+  on the deployed tip, zero open criticals/highs), import/ingestion, all workflows (review with
+  research floor + honest `unverified` label + auto-allowance refund), IDE + migrated surfaces
+  (SPA everywhere incl. collab wire + phone/showcase forced-SSR), payments + plans (Stripe live),
+  metering/ledger (`DEBIT_MODE=committed` — REQ-SPEC-32 activation discrepancy disclosed;
+  `assertBalances` clean), estimation (single-source `surfacePricer`), export + data rights,
+  notifications, demo surfaces (`/demo` + four essays + tour), observability (14 armed
+  AlertPolicies on `webhook_tokenauth`, sink-proven; weekly `slo.review.weekly` firing).
+- **Engineered-but-unexercised / watch-carried:** event-delivery tail p95 (organic-traffic-bound —
+  `D-SLO.1-6` watch); named SLO reds → standing watches; the 23 (b)-class funded legs (refused
+  wave — fresh envelope ruling unblocks).
+- **Not live:** `debitMode→metered` (flip 1 — signed park per `GD-THRESH13.R6`; carrier
+  256_R6FLIP.1 early evaluation); `usage.reconcile` provider arm (daily-403 — 257_R6OPS.1);
+  billed-actuals export (`billing_export_prod` zero tables — 258_R6OPS.2); the G2 LIFT program
+  (ADR-111 post-launch research program — BL-40/43/44/45, §16.4 claims lint-blocked).
+
+### Measured costs
+
+| What | Figure | Source |
+|---|---|---|
+| Prod infra (list-price recomputation) | **$256.65/mo** (2026-10-28) — ruled HA floor vs ~$50 target (signed deviation 7; `GD-HA.R6`) | `scripts/live/billing-read.mjs`, `runs/R6WATCH.1.md` |
+| Billed actuals | unmeasured — export zero tables (258_R6OPS.2) | `bq ls billing_export_prod` |
+| Launch + flips | ≈$0 (entitlement-billed smoke; golden cohort $36.95 ≤ $100) | `runs/R6LCH.1.md` |
+| Nightly journeys | $0 legs + paid arm guarded <$5/wk | `journeys.yml` |
+| External pen test | owed ≤ 2026-12-28 (launch+60 d) | `D-P1.22-3` |
+
+### SLO posture + on-call
+
+Weekly probes fire (`ok:6,breach:0,empty:7,unmeasured:2` on 2026-11-09). The 11 `GD-WATCH.R6`
+standing watches carry `owner: operator` · `trigger: slo.review.weekly` · `re-read:
+2026-11-25T04:0xZ` — early re-read carrier 255_R6WATCH.2. On-call: named responder + paging path
+(`docs/ops` runbooks); drills all PASS (PITR RTO 579 s, rollback N−1, egress failover on the
+ADR-122 ILB VIP `10.8.16.7`); first natural incident owed-by-nature (`D-P1.22-2`).
+
+### Owed obligations (census — every row carries owner+trigger+date)
+
+`DEFERRALS.md ## 204_R6REC.1` is the census of record: the 11 watches; the clock carriers
+(purge SELECT, T16 substrate, export, admin key — carriers 255–258); the refused funded wave
+(signed deviation 4); operator-leg residuals; the ADR-111 program (9 D-rows + BL-40/43/44/45);
+BL-106's eight open carriers; the paid-leg re-proof (BL-110, Monday cron); the tail routings
+(BL-109 → 205/206/207-208); roadmap BL-73 + watch rows BL-47/76/77/84 (`GD-ROADMAP.R6`).
+Insert tickets 255–258 exist on PR #317's branch (`stevevitali/r6tail-inserts`, unmerged) —
+early watch re-read, flip-1 evaluation, reconcile-403 diagnosis, export diagnosis.
