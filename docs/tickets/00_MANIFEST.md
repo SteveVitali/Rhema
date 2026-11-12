@@ -1230,3 +1230,5 @@ sequence (BM-COMPAT-05 — historical filenames are not renamed).
 | 256 | `256_R6FLIP.1__flip-one-early.md` | R6 tail | **run-time insert** — flip 1 evaluated/executed early (the `GD-THRESH13.R6` ≥Dec-1 park lifted per the same ruling) | pre-auth (operator ruling 2026-11-11) |
 | 257 | `257_R6OPS.1__usage-reconcile-403.md` | R6 tail | **run-time insert** — `usage.reconcile` daily-403 defect (provider report fetch denied since 2026-11-05) | — |
 | 258 | `258_R6OPS.2__billing-export-empty.md` | R6 tail | **run-time insert** — `billing_export_prod` zero tables since launch (the CLK-4 blocker) | — |
+| 259 | `259_R6FIX.10__u6-fixture-dist.md` | R6 tail | **run-time insert** — nightly journeys red root-caused by 206: `u6-stub-turn.fixture.json` never emitted to dist → ENOENT in the U6_CHAT leg (BL-111) | — |
+| 260 | `260_R6OPS.3__purge-job-loss.md` | R6 tail | **run-time insert** — `project.purge` job vanished without firing; tombstone 11.6d past grace (F-R6WATCH.2-1 / BL-112) | — |
