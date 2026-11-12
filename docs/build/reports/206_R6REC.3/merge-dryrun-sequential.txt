@@ -1,0 +1,47 @@
+# sequential merge dry-run — R6REC.3 (git merge-tree --write-tree + commit-tree;
+# plumbing only — no refs touched, nothing pushed, nothing merged for real).
+# Order = the operator's bottom-up by PR number.
+# base: origin/main 6ee6dae9  read: 2026-11-11T22:2xZ
+
+STEP #316  stevevitali/r6cap-3-closure  ->  CLEAN (tree cec859b30e8a0eb010a707bcd6bf2984aef2ca66)
+
+STEP #318  stevevitali/r6oss-1-readiness  ->  CONFLICTED — 1 file / 3 hunks:
+    docs/build/LEDGER.md
+      hunk 1 (CURRENT STATE): nextTicket/lastCompleted top copies — ours names
+        203_GATE-ACCEPT.R6 / 202_R6CAP.3, theirs 205_R6REC.2 / 204_R6REC.1.
+        Resolution class: keep the newest top, demote the rest ("previous top" convention).
+      hunk 2 (chainTip): r6cap-3-closure vs r6rec-1-backlog top lines — union keeps both
+        (newest first, priors retained verbatim).
+      hunk 3 (updatedAt): 18:49Z (202_R6CAP.3) vs 19:30Z (204_R6OSS.1) top lines — union.
+    BUILD_INDEX.md + DEFERRALS.md auto-merge (distinct regions).
+    Union resolution applied for the simulation; M2 tree 66285d38c0a6778beab0570558fff404ce65930f.
+
+STEP #319  stevevitali/r6rec-1-backlog  ->  CONFLICTED — 3 files / 6 hunks:
+    docs/build/BUILD_INDEX.md
+      hunk 1 (~line 388): the 312-row duplicate variant — ours `312 | 204_R6OSS.1 | #318`
+        vs theirs `312 | 204_R6OSS.1 | —` + added `313 | 204_R6REC.1 | TBD`.
+        Resolution: keep the PR-numbered 312 line + the 313 row.
+    docs/build/LEDGER.md
+      hunks 1-3 (CURRENT STATE nextTicket/lastCompleted/chainTip/updatedAt tops) — union,
+        newest top first.
+      hunk 4 (~line 1525, PHASE LOG): ours carries the sibling-union pair
+        (`204_R6OSS.1 done` + `ci boundary — 204_R6OSS.1`), theirs the single `done` line —
+        union keeps all lines.
+    docs/tickets/DEFERRALS.md
+      hunk 1 (~line 1262): two text variants of the same `D-R6OSS.1-1` table row
+        (owning-branch write vs the sibling-unioned copy — both DONE).
+        Resolution: keep the owning branch's (r6oss-1-readiness) row verbatim.
+    Union resolution applied; M3 commit 42760ff1b1eb883bd3474a1958c7514c7affc261.
+
+STEP #320  stevevitali/r6rec-2-specrecon  ->  CONFLICTED — 2 files / 5 hunks:
+    docs/build/BUILD_INDEX.md
+      hunk 1 (~line 388): tail rows — union adds `314 | 205_R6REC.2`.
+    docs/build/LEDGER.md
+      hunks 1-4 (CURRENT STATE nextTicket/lastCompleted/chainTip/updatedAt tops) — union,
+        newest top first. (DEFERRALS.md + 00_MANIFEST.md auto-merge.)
+
+VERDICT: every pairwise merge onto origin/main is CLEAN; the sequential sweep's only
+conflicts are the sibling-union collisions in the three append-only record files
+(LEDGER.md / BUILD_INDEX.md / DEFERRALS.md). Zero product-code conflicts; every hunk
+resolves by the documented union/canonical-line rule — the same class the sibling
+workers already unioned by hand.
