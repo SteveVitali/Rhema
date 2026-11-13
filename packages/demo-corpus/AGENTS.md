@@ -10,11 +10,11 @@
 
 ## Layout (decided 2026-11-03, R7DEM.1)
 
-- `corpus/` — real export output. `corpus/<slug>/` mirrors the source artifact layout;
-  `corpus/PROVENANCE.md`, `corpus/export-manifest.json`, `corpus/_rules/` (file-targeted
-  rewrites, denylist line-allowlist, per-slug facts). **All withheld** until HUMAN-H14;
-  219_R7DATA.1 removes the `.gitignore` entries and commits the real export.
-- `snapshots/`, `goldens/` — real derived data, withheld the same way.
+- `corpus/` — real export output, committed. `corpus/<slug>/` mirrors the source artifact
+  layout; `corpus/PROVENANCE.md`, `corpus/export-manifest.json`, `corpus/_rules/`
+  (file-targeted rewrites, denylist line-allowlist, per-slug facts). The one real-data
+  commit (`d52c8229`, 219_R7DATA.1) landed after HUMAN-H14 sign-off.
+- `snapshots/`, `goldens/` — real derived data, committed in the same commit.
 - `fixtures/synthetic/` — committed. `source/<slug>/` is the invented source tree (with
   excluded-file decoys); `corpus/` is the exporter's own committed golden (its `_rules/` exercises
   the real reader); `goldens/` is the converter's committed output goldens (215+);
@@ -31,10 +31,11 @@
 
 ## Critical rules
 
-1. **No real corpus byte in this repo before HUMAN-H14** (REQ-CORPUS-14, D-R6OSS.1-1 — public
-   history is permanent). The exporter's real run is a LOCAL act by 214b; tests prove the gates on
-   the synthetic fixture only. Denylist negative controls are synthesized in-test, never committed
-   as literal identity tokens.
+1. **Real corpus bytes enter this repo only through the sanitized export** (REQ-CORPUS-14 —
+   public history is permanent). The one real-data commit (`d52c8229`, 219_R7DATA.1) landed
+   after HUMAN-H14 sign-off; never hand-author or commit an un-sanitized corpus byte. Tests
+   prove the gates on the synthetic fixture only. Denylist negative controls are synthesized
+   in-test, never committed as literal identity tokens.
 2. **Fail closed.** An un-ruled source file fails the export; an unlisted denylist hit fails the
    gate; a stale rewrite or allowlist row fails. Never widen the allowlist to keep a run green.
 3. **`_rules/` are data, not code.** Rewrites and line-allowlist entries name file:line and carry

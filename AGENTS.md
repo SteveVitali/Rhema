@@ -12,8 +12,8 @@
 ## Architecture
 
 - TypeScript end-to-end; no Python. pnpm workspaces + Turborepo + composite TypeScript projects.
-- GCP-first deployment through TypeScript Pulumi; model inference is designed to use the direct
-  Anthropic API through the egress proxy.
+- GCP-first deployment through TypeScript Pulumi; model inference uses the direct Anthropic API
+  through the egress proxy.
 - Browser → Hono web host / same-origin BFF → API → orchestration / worker → isolated run-task.
   PostgreSQL stores tenant data and job state; Redis coordinates live events; GCS stores artifacts.
 
@@ -27,7 +27,7 @@
 | Provider access, metering, research limits          | `apps/egress-proxy/AGENTS.md`     |
 | Browser acceptance and any paid verification        | `packages/journeys/AGENTS.md`     |
 | Demo corpus export, sanitizer, denylist, fixture    | `packages/demo-corpus/AGENTS.md`  |
-| UI primitives and the generated stylesheets          | `packages/ui/AGENTS.md`           |
+| UI primitives and the generated stylesheets         | `packages/ui/AGENTS.md`           |
 | Infrastructure or any deploy/preview script         | `infra/AGENTS.md`                 |
 | Guides, specifications, tickets, build records      | `docs/AGENTS.md`                  |
 
@@ -36,14 +36,40 @@
 - Shared DTOs and vocabulary live in `packages/contracts`; UI primitives in `packages/ui`; editor
   logic in `packages/editor`; production service adapters in `packages/live-clients`.
 
+## Launched posture
+
+- The repository has been public (MIT) since 2026-11-03 and the service launched 2026-10-28
+  (`docs/ops/launch-flips.md`, `GD-R6LCH.1-1`): flips 2–4 executed — purchase open, the refund
+  window open, trial audience → everyone. The paid-account notice went out 2026-10-22
+  (`EFFECTIVE_DATE=2026-12-01`). Artifact delivery uses GCS v4 signed URLs. Never describe
+  launch work as upcoming.
+- Flip 1 stays parked: every stage fact runs `debitMode: "committed"` (`infra/config/stages.ts`)
+  and its early evaluation/execution is carrier `256_R6FLIP.1` under the 2026-11-11 ruling.
+  The REQ-SPEC-32 committed-versus-metered disclosure stands until it lands.
+- Standing ops rules: the golden re-run (`docs/ops/golden-rerun-rule.md`) fires after every
+  protocol-affecting deploy — the four-fixture cohort, $100 measured hard cap, never trimmed
+  silently. The deploy-neutral provenance allowlist is `scripts/deploy-neutral-paths.txt`
+  (`docs/` + `.gitleaks.toml` only): a trailing deployed SHA passes only as a git ancestor with
+  an all-neutral diff. Preview hygiene stays the owned `pr-<n>` lifecycle
+  (destroy → orphan check → rm). Cohort reads stay organic-only — `is_test` workspaces and
+  `req_jrn_` fixture rows never count as real spend or cohort evidence.
+- Post-launch obligations have named owners: the eleven `GD-WATCH.R6` standing watches
+  (`docs/ops/slo-review.md`; `slo.review.weekly` trigger, re-read 2026-11-25, early re-read
+  `255_R6WATCH.2`); the `usage.reconcile` daily 403 (`257_R6OPS.1`); the empty
+  `billing_export_prod` (`258_R6OPS.2`); the nightly fixture ENOENT (`259_R6FIX.10`, BL-111);
+  the R4 paid-leg verdict riding the Monday `journeys.yml` cron (`D-R7FIX.9-1`/`D-PAIDU6-1`);
+  the external pen test (`D-P1.22-3`, launch +60 d ≈ 2026-12-28); the capture bundles
+  (BL-104/105); the release-notes tail append (`D-R6DOC.1-1`). Unmerged tail PRs merge
+  bottom-up by the operator — never by the run that authored them.
+
 ## Key Files
 
 | File                 | Lines (approx) | Purpose                                                          |
 | -------------------- | -------------- | ---------------------------------------------------------------- |
 | `package.json`       | ~50            | Node/pnpm requirements and root commands.                        |
-| `tsconfig.base.json` | ~50            | Strict NodeNext compiler and composite-project defaults.         |
-| `eslint.config.js`   | ~200           | Package, tenant-pool, vocabulary, and browser-import boundaries. |
-| `vitest.config.ts`   | ~50            | Repository test discovery and web DOM-test environment.          |
+| `tsconfig.base.json` | ~25            | Strict NodeNext compiler and composite-project defaults.         |
+| `eslint.config.js`   | ~380           | Package, tenant-pool, vocabulary, and browser-import boundaries. |
+| `vitest.config.ts`   | ~30            | Repository test discovery and web DOM-test environment.          |
 
 ## Build & Test
 
@@ -69,6 +95,8 @@ pnpm exec vitest run packages/db/src/rls.test.ts
 | Private material in public bundles            | `pnpm check:protocol-markers`                  |
 | Never-cookies ingestion contract              | `pnpm check:no-cookies`                        |
 | SPA gzip ceilings / environment leaks         | `pnpm check:spa-budget` / `pnpm check:spa-env` |
+| SPA entry-graph primitive-chunk boundary      | `pnpm check:spa-entry-graph`                   |
+| Demo-corpus denylist gate                     | `pnpm check:demo-corpus`                       |
 | Declared, emitted, and asserted DOM selectors | `pnpm check:dom-contract`                      |
 | Protocol port against vendored upstream pin   | `node scripts/check-upstream-diff.mjs`         |
 | Formatting check                              | `pnpm format`                                  |
@@ -136,8 +164,9 @@ pnpm exec vitest run packages/db/src/rls.test.ts
    not "the intended replacement"). `@rhema/evals` stays private, resolved by `RHEMA_EVALS_PATH`
    through `.pnpmfile.cjs`, otherwise `evals-stub` — never commit eval text or private protocol
    derivatives into public-facing artifacts, and never use git submodules for either package.
-   The visibility flip is the operator's act; its exposure surface is **all of git history** —
-   the audit and flip steps live in `docs/ops/open-source-readiness.md`.
+   The visibility flip was the operator's act (executed 2026-11-03); its exposure surface is
+   **all of git history** — the audit record and the post-flip closeout live in
+   `docs/ops/open-source-readiness.md`.
 
 ## Build memory
 

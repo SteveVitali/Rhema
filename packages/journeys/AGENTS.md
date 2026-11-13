@@ -9,14 +9,17 @@
 
 ## Key Files
 
-| File                                   | Lines (approx) | Purpose                                                       |
-| -------------------------------------- | -------------- | ------------------------------------------------------------- |
-| `packages/journeys/src/registry.ts`    | ~750           | Step ownership, expected status, caps, and model-policy pins. |
-| `packages/journeys/src/runner.ts`      | ~450           | Execution, evidence, outcomes, and document-load counting.    |
-| `packages/journeys/src/cli.ts`         | ~300           | Target selection, provenance, and paid-dispatch preflight.    |
-| `packages/journeys/src/settle.ts`      | ~350           | Renderer and navigation-mechanism assertions.                 |
-| `packages/journeys/src/spend-guard.ts` | ~100           | Trusted weekly spend measurement and cap errors.              |
-| `packages/journeys/src/window-plan.ts` | ~300           | Funded-window ordering and nine-row opening checklist.        |
+| File                                         | Lines (approx) | Purpose                                                       |
+| -------------------------------------------- | -------------- | ------------------------------------------------------------- |
+| `packages/journeys/src/registry.ts`          | ~890           | Step ownership, expected status, caps, and model-policy pins. |
+| `packages/journeys/src/steps.ts`             | ~3.2k          | Core leg implementations and shared step helpers.             |
+| `packages/journeys/src/r7legs.ts`            | ~1.7k          | The round-7 `D*`/`R*.demo`/`U*` leg families.                 |
+| `packages/journeys/src/runner.ts`            | ~450           | Execution, evidence, outcomes, and document-load counting.    |
+| `packages/journeys/src/cli.ts`               | ~300           | Target selection, provenance, and paid-dispatch preflight.    |
+| `packages/journeys/src/settle.ts`            | ~350           | Renderer and navigation-mechanism assertions.                 |
+| `packages/journeys/src/spend-guard.ts`       | ~120           | Trusted weekly spend measurement and cap errors.              |
+| `packages/journeys/src/window-plan.ts`       | ~300           | Funded-window ordering and nine-row opening checklist.        |
+| `packages/journeys/src/fixture-substrate.ts` | ~150           | Self-healing flagged-tenant fixture re-seating (R6DEP.4).     |
 
 ## Build & Test
 
@@ -118,6 +121,13 @@ node packages/journeys/dist/cli.js \
     expired at GATE-ACCEPT.R7. Any further paid demo/chat dispatch needs a fresh operator
     ruling; the standing Monday `--paid --headroom 3` cron arm is a separate, already-authorized
     carrier. Never cite the expired ruling as authority.
+11. **A non-TS asset read via `import.meta.url` never reaches `dist`.** `tsc -b` emits only
+    TypeScript outputs, so `new URL("./x.json", import.meta.url)` resolves to a file the build
+    does not create — the standing offender is `u6-stub-turn.fixture.json`, ENOENT in the
+    nightly `U6.chat` leg since ~2026-11-06 (BL-111, carrier `259_R6FIX.10`; the defect is the
+    committed harness code, not provenance). A leg fixture must be compiled in
+    (`resolveJsonModule` import) or emitted by a build step; never assume a `src/` neighbor
+    survives the compile.
 
 ## Do / Don't
 
