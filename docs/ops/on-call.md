@@ -10,7 +10,7 @@ proves receipt by that service; it does not by itself prove a human was paged.
 ## Who responds
 
 **The operator** (the repo owner) is the responder for every page. There is no rotation —
-pre-launch prod is single-responder. Pages arrive at the operator's alert sink; the runbook
+prod remains single-responder post-launch. Pages arrive at the operator's alert sink; the runbook
 for the firing signal is the first read, never an improvised fix.
 
 ## The paging path (as wired — see the armed-state note)
@@ -25,6 +25,13 @@ signal breach
   └── GCP Monitoring AlertPolicy (14 policies, infra/pulumi/monitoring.ts)
         records an incident on the same breach line   → NotificationChannel (when armed)
 ```
+
+**Known datums (2026-11-11, standing):** `usage.reconcile` fails daily on
+`provider report fetch failed: 403` since 2026-11-05 (the bound admin key is denied — carrier
+ticket `docs/tickets/257_R6OPS.1__usage-reconcile-403.md`), so cost-drift reads run on the
+proxy meter alone; `billing_export_prod` still holds zero tables (carrier
+`docs/tickets/258_R6OPS.2__billing-export-empty.md`). Neither pages a user-facing surface;
+both are diagnosed/dispositioned by their carriers, not improvised here.
 
 The following observations are the **2026-10-22** R6OPS.1 receipt:
 

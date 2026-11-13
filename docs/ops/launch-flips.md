@@ -1,13 +1,30 @@
 # Launch flips — the `GD-LAUNCH-MONEY.R6` order (R6MNY.1)
 
-> **Owned shared decision; consumed by R6LCH.1.** This file *prepares* the four ruled launch
-> flips — nothing here has been executed. Every flip is an auditable one-line stage-fact diff
-> + redeploy, in this exact order, gated on GATE-LAUNCH and the operator's go. `mergePolicy:
-> OPERATOR`; the operator merges and deploys each step.
+> **Owned shared decision; consumed by R6LCH.1 — flips 2–4 executed at the 2026-10-28 public
+> launch** (run ledger `docs/build/runs/R6LCH.1.md`; `GD-R6LCH.1-1`: LAUNCH LIVE
+> 2026-10-28T04:0xZ, prod `b953c55e`). Flip 1 (`debitMode → metered`) is **parked** under
+> `GD-THRESH13.R6`: the paid-account notice shipped 2026-10-22 with `EFFECTIVE_DATE=2026-12-01`
+> (R6DEP.1; the ≥30-day REQ-BILL-2/ADR-014 rule), and the `cap_calibration_reports` gap was
+> ruled accepted. The operator's 2026-11-11 ruling lifted the date-park for early evaluation —
+> carrier ticket `docs/tickets/256_R6FLIP.1__flip-one-early.md`; prod still runs
+> `debitMode: "committed"`. `mergePolicy: OPERATOR`; the operator merges and deploys each step.
 >
 > Ruling (`LEDGER` GATE DECISIONS): metered debit + the paid-account notice first;
 > `purchaseMode → open`; `REFUND_WINDOW_MODE → open`; trial `audience → everyone` behind the
 > $50/day kill switch and the 1-concurrent cap (`GD-TRIAL-CEIL.R6`).
+
+## State at launch (live-verified 2026-10-28, R6LCH.1)
+
+| Step | State |
+| ---- | ----- |
+| Step 0 — paid-account notice | **Sent 2026-10-22** (R6DEP.1 — 2 emails + 2 inbox rows, dedup `metered-debit-notice:v1`, `EFFECTIVE_DATE=2026-12-01`) |
+| Flip 1 — `debitMode → metered` | **Parked** (`GD-THRESH13.R6`); early evaluation authorized → `256_R6FLIP.1` |
+| Flip 2 — `purchaseMode → open` | **Executed** — real Stripe Checkout minted on non-test accounts |
+| Flip 3 — `refundWindowMode → open` | **Executed** — real-workspace refund admitted (`auto_allowance`); `D-DEF.4-3` closed |
+| Flip 4 — trial `audience → everyone` | **Executed** — unflagged claim verified; kill switch + concurrency cap armed |
+
+The per-flip procedures below are the audit record of the ruled order and remain the reference
+for flip 1 and for any rollback.
 
 ## Step 0 — the paid-account notice (precondition to flip 1, not a flip)
 

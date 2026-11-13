@@ -4,7 +4,7 @@ Contributions can improve the writing experience, the reliability of agent runs,
 the project itself. A useful contribution explains the problem, makes a focused change, and gives
 reviewers a way to verify the result.
 
-The repository is preparing for public release. Read the
+The repository is public under the MIT license (the 2026-11-03 visibility flip). Read the
 [release boundary](docs/open-source-readiness.md) for what publishes (the tree, including
 `packages/protocols`) and what stays outside it (private evaluations, resolved through
 `RHEMA_EVALS_PATH` with a committed stub fallback). Local development on this source tree does
