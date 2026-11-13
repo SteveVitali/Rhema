@@ -22,12 +22,12 @@
 
 | File                                | Lines (approx) | Purpose                                                |
 | ----------------------------------- | -------------- | ------------------------------------------------------ |
-| `apps/web/src/server.ts`            | ~6.9k          | Document routes, JSON twins, and dual-mode actions.    |
-| `apps/web/src/spa-shell.ts`         | ~250           | Shell document and server-authored boot metadata.      |
-| `apps/web/src/spa/main.tsx`         | ~100           | Router construction, session seed, and SPA mount.      |
-| `apps/web/src/spa/nav-intercept.ts` | ~150           | Ordered delegated-link guard pipeline.                 |
-| `apps/web/src/spa/queries.ts`       | ~1.3k          | Endpoint-shaped query keys and shared data operations. |
-| `apps/web/src/dom-contract.ts`      | ~1.6k          | Declared selector vocabulary for tests and journeys.   |
+| `apps/web/src/server.ts`            | ~8.3k          | Document routes, JSON twins, and dual-mode actions.    |
+| `apps/web/src/spa-shell.ts`         | ~360           | Shell document and server-authored boot metadata.      |
+| `apps/web/src/spa/main.tsx`         | ~130           | Router construction, session seed, and SPA mount.      |
+| `apps/web/src/spa/nav-intercept.ts` | ~160           | Ordered delegated-link guard pipeline.                 |
+| `apps/web/src/spa/queries.ts`       | ~1.6k          | Endpoint-shaped query keys and shared data operations. |
+| `apps/web/src/dom-contract.ts`      | ~1.9k          | Declared selector vocabulary for tests and journeys.   |
 
 ## Build & Test
 
@@ -40,6 +40,7 @@ pnpm --filter @rhema/web lint
 pnpm exec vitest run apps/web/src
 pnpm check:dom-contract
 pnpm check:spa-budget
+pnpm check:spa-entry-graph
 pnpm check:spa-env
 pnpm check:protocol-markers
 ```
@@ -145,7 +146,7 @@ pnpm check:protocol-markers
 - Caching (S-13): twins stamp `public, max-age=300, s-maxage=86400` + ETag and the boot carries
   `?b=<sha>` so cross-deploy staleness is impossible; the shell is `no-cache`. Deploys end with
   the recorded CDN invalidation of `/bff/p/demo~*` (`scripts/live/cdn-invalidate-demo.mjs`).
-- Entry/exit (S-14): every link *into* `/demo*` is `data-spa-native` — a document navigation —
+- Entry/exit (S-14): every link _into_ `/demo*` is `data-spa-native` — a document navigation —
   so the demo boot always carries `demo` and the workspace QueryClient is never shared. The
   SPA's TanStack `rewrite` maps `/demo/<essay>/…` ↔ `/p/demo~<essay>/…` (`demoInternalPath`).
 - The recording proxy (`demoDataSourceTrace` via `RHEMA_DEMO_DS_TRACE`) logs the DataSource

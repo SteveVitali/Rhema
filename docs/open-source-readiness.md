@@ -1,7 +1,8 @@
 # Public-release readiness
 
-This page records the boundary between the current source repository and its intended public
-release. It is a maintained release reference, not a declaration that publication is complete.
+This page records the boundary between the source repository and its public release. The
+repository **went public 2026-11-03** (the operator's visibility flip); this page is now the
+maintained record of the boundary plus the follow-ups that survive the flip.
 
 Amended 2026-11-03 (operator ruling 2026-11-02, R6OSS.1): the publication shape changed from
 "export a sanitized tree" to **"flip this repository's visibility"** — `packages/protocols`
@@ -49,30 +50,31 @@ and checks public-facing outputs built from the current source tree. Since the 2
 stub build is a kept-warm fallback check, not an export model; with protocols public there is no
 export gap to close for that package.
 
-## Work required before publication
+## Pre-publication checklist — post-flip state (2026-11-11)
 
 1. **Choose and verify the public package boundary.** _Resolved for protocols 2026-11-03
    (operator ruling 2026-11-02):_ `packages/protocols` publishes with the repository — no export,
    no swap. The boundary that remains is `RHEMA_EVALS_PATH` (private evals stay out); a fresh
    public clone builds against `evals-stub`, which is the same shape CI already exercises.
-2. **Choose the release contents and history.** Review protocol material, historical security
-   findings, operational records, screenshots, fixtures, and personal data. The private source
-   repository's append-only rules remain in force; an approved export can select different contents
-   without rewriting its historical evidence. Deleting a file at the tip does not remove it from
-   earlier commits. The full-history audit ran under R6OSS.1 — findings and per-class dispositions
-   are in [`docs/ops/open-source-readiness.md`](ops/open-source-readiness.md).
-3. **Verify distributed dependencies and notices.** Follow [LICENSES.md](../LICENSES.md) for runtime
-   SDK terms, container binaries, font notices, and the limits of the npm license gate. Review the
-   actual artifacts intended for distribution. Code comments or an allowlist entry are not a
-   substitute for that review.
-4. **Prove the advertised contributor experience on the public export.** The current guides
-   distinguish local build/tests and web-shell inspection from a full configured service. Update
-   them only when the public artifact supports the documented workflow. Full self-hosting currently
-   requires substantial GCP and service configuration.
-5. **Confirm the community's operating policies.** The repository includes contribution, support, security,
-   and issue/PR guidance. Before launch, choose a code of conduct and its responsible reporting and
-   enforcement contact, and state any supported-release policy. These policies are not adopted by
-   implication from a documentation refresh.
+2. **Choose the release contents and history.** _Resolved 2026-11-03:_ the full-history audit ran
+   under R6OSS.1 — findings and per-class dispositions are in
+   [`docs/ops/open-source-readiness.md`](ops/open-source-readiness.md). Every `needs-ruling` class
+   was ruled STAYS en masse, nothing was scrubbed, and the repository's visibility was flipped
+   with its history intact. The append-only rules remain in force on the now-public record.
+3. **Verify distributed dependencies and notices.** _Verified:_ [LICENSES.md](../LICENSES.md)
+   carries the dependency policy, the checked-in exceptions, and the font/SDK terms; its
+   public-export boundary was amended 2026-11-03. Code comments or an allowlist entry are not a
+   substitute for reviewing new distributed artifacts as they change.
+4. **Prove the advertised contributor experience on the public export.** _Verified 2026-11-11:_
+   an anonymous clone → `pnpm install --frozen-lockfile` (`@rhema/evals` → `evals-stub`) →
+   `pnpm turbo build lint typecheck` passed 138/138 (204_R6OSS.1 closeout,
+   `docs/build/reports/2026-11-11_r6oss-1-verify/`). Full self-hosting still requires substantial
+   GCP and service configuration; the guides distinguish local build/tests from a full configured
+   service.
+5. **Confirm the community's operating policies.** _Dispositioned:_ contribution, support,
+   security, and issue/PR guidance ship with the repository; `CODE_OF_CONDUCT.md` was deliberately
+   not adopted (operator choice, recorded 2026-11-03 in
+   [`docs/ops/open-source-readiness.md`](ops/open-source-readiness.md)).
 
 If publishing by changing the existing repository's visibility, review GitHub-hosted history and
 artifacts as well: GitHub makes Actions history and logs public with that change.

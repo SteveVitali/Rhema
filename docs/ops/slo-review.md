@@ -52,3 +52,20 @@ or a fix ticket — never a silently-raised threshold.
 Keep exploit payloads, credentials, and customer content in a private incident record. Public build
 records identify the signal, owner, disposition, and sanitized evidence. The provider-outage and
 orphan playbooks name current implementation gaps; a green or empty metric does not discharge them.
+
+## Standing post-launch watches (GD-WATCH.R6, 2026-11-11)
+
+The contractual REQ-WATCH-1 launch+14 d read ran 2026-11-11 (`docs/build/runs/R6WATCH.1.md`): the
+organic cohort was empty end-to-end (0 organic signups / runs / admissible observations), so the
+eleven cohort-bound deferrals converted to **standing alert-backed watches** — `owner: operator`,
+`trigger: slo.review.weekly` (this file's weekly review), `re-read: 2026-11-25T04:0xZ`. They are:
+`D-R5OPS.1-1` (first-finding ≤4 min), `D-COST.1-2` (`import_preview_p95_s` + the convert-svc
+floor), `D-SLO.1-5` (run success rate), `D-SLO.1-7` (proxy-vs-SDK divergence), `D-SLO.1-8`
+(egress-denied canary semantics), `D-ECON.1-3`/`D-ECON.1-4`, `D-ECON.2-5`/`D-ECON.2-6`/
+`D-ECON.2-7` (calibration/refit chain), and `D-P1.17-2`'s funnel arm. An empty cohort is a datum,
+never a zero-row pass — a watch closes on matured evidence only. The 2026-11-11 operator ruling
+("ignore dates if it makes sense") authorizes the re-read early; its carrier is
+`docs/tickets/255_R6WATCH.2__early-watch-reread.md`. The same read surfaced two ops datums —
+the `usage.reconcile` daily **403** (carrier `257_R6OPS.1`) and `billing_export_prod` **zero
+tables** (carrier `258_R6OPS.2`) — plus the parked flip-1 clock (`GD-THRESH13.R6`, early
+evaluation → `256_R6FLIP.1`).

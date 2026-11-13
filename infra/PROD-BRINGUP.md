@@ -474,10 +474,23 @@ fix/rollback that preserves the non-bypass user boundary. Revision enumeration u
 
 ### 12a. Reading the bill
 
-No public API returns billed actuals and there is no populated BigQuery export yet (the
-`billing_export_prod` dataset is provisioned; the console-only export flip is D-OPS.2-1). Until
-then, `scripts/live/billing-read.mjs` recomputes the monthly bill bottom-up — live `gcloud`
-inventory × Cloud Billing Catalog API list prices, every matched SKU printed:
+No public API returns billed actuals and there is no populated BigQuery usage-cost export yet
+(the `billing_export_prod` dataset is provisioned; the console-only export flip is D-OPS.2-1).
+**2026-11-11 diagnosis (258_R6OPS.2, `docs/build/runs/258_R6OPS.2.md`):** a billing→BigQuery
+export IS bound — but it is the **Pricing export** (`rhema-507501:billing_export` →
+`cloud_pricing_export`, catalog list prices, actively writing since 2026-10-31). The
+**usage-cost export was never enabled**: `billing_export_prod` holds zero tables with no
+billing writer in its ACL, and the only DTS transfer config in the project is "Pricing
+BigQuery Transfer". The remaining operator act — console → Billing (account
+`018CB8-639CF9-C243C7`) → **Billing export → BigQuery export** → **Standard usage cost**
+(and/or **Detailed usage cost**, a superset) → **Edit settings** → project `rhema-507501` →
+dataset **`billing_export_prod`** (us-central1; regional is valid for usage-cost exports —
+the pricing export's `US` multi-region dataset requirement does not apply). First
+`gcp_billing_export_v1_*` partitions within a few hours, bound ≤48 h; **not retroactive** —
+billed actuals accrue from enablement forward, so pre-flip months permanently rely on the
+`billing-read.mjs` recomputations. Until then, `scripts/live/billing-read.mjs` recomputes the
+monthly bill bottom-up — live `gcloud` inventory × Cloud Billing Catalog API list prices,
+every matched SKU printed:
 
 ```bash
 node scripts/live/billing-read.mjs          # markdown table + sources

@@ -115,6 +115,7 @@ import {
 import {
   handleAccountHardDelete,
   handleProjectPurge,
+  handleProjectPurgeSweep,
   handleTestTenantPurge,
   TEST_TENANT_PURGE_JOB,
   type AccountHardDeleteJob,
@@ -750,7 +751,9 @@ export async function startWorker(): Promise<void> {
   await boss.work(USAGE_RECONCILE_JOB, async () => {
     const r = await handleUsageReconcile(deps);
     console.log(
-      `[worker] usage.reconcile: report=${r.report ? `${r.report.matched} matched, drift ${(r.report.driftPct * 100).toFixed(2)}%` : "skipped"}, window=${r.window ? `report $${r.window.reportUsd.toFixed(4)} vs proxy $${r.window.proxyUsd.toFixed(4)} drift ${(r.window.driftPct * 100).toFixed(2)}%` : "skipped"}, balances ${r.balances.ok ? "ok" : `${r.balances.divergences} divergences`}`,
+      // R6OPS.1 — `reportError` distinguishes a bound-but-denied key (recorded + paged) from the
+      // unconfigured skip; the balances verdict still prints either way.
+      `[worker] usage.reconcile: report=${r.report ? `${r.report.matched} matched, drift ${(r.report.driftPct * 100).toFixed(2)}%` : (r.reportError ?? "skipped")}, window=${r.window ? `report $${r.window.reportUsd.toFixed(4)} vs proxy $${r.window.proxyUsd.toFixed(4)} drift ${(r.window.driftPct * 100).toFixed(2)}%` : (r.reportError ?? "skipped")}, balances ${r.balances.ok ? "ok" : `${r.balances.divergences} divergences`}`,
     );
   });
   await boss.schedule(USAGE_RECONCILE_JOB, "15 3 * * *");
@@ -866,6 +869,18 @@ export async function startWorker(): Promise<void> {
       if (r.purgedWorkspaces.length > 0) {
         console.log(`[worker] test-tenant.purge → ${JSON.stringify(r)}`);
       }
+      // F-R6WATCH.2-1 — the tombstone watchdog: re-arm any `project.purge` job that vanished without
+      // firing (the armed job for 01M3SK38… disappeared before its 10-30 fire date and nothing noticed).
+      // Best-effort inside this hourly tick: a failure logs and retries next hour, never fails the
+      // tenant sweep itself.
+      try {
+        const s = await handleProjectPurgeSweep({ systemExec, queue: deps.queue });
+        if (s.scanned > 0) {
+          console.log(`[worker] project.purge.sweep → ${JSON.stringify(s)}`);
+        }
+      } catch (err) {
+        console.error("[worker] project.purge.sweep failed (will retry next tick):", err);
+      }
     }
   });
   await boss.send(
@@ -932,12 +947,24 @@ export async function startWorker(): Promise<void> {
   const purgeBlobs = await createGcsBlobStore(env.objectsBucket);
   await boss.work<ProjectPurgeJob>(PROJECT_PURGE_JOB, async (jobs) => {
     for (const job of jobs) {
-      const r = await handleProjectPurge(job.data, {
-        systemExec,
-        queue: deps.queue,
-        blobs: purgeBlobs,
-      });
-      console.log(`[worker] project.purge ${job.data.projectId} → ${JSON.stringify(r)}`);
+      // F-R6WATCH.2-1 — a handler throw must be LOUD, not invisible: pg-boss fails the job (retry →
+      // terminal) without emitting an `error` event for handler failures, and the success log below
+      // only prints after the handler returns — so a throwing purge vanished with no trace at all.
+      // Log the project id + error before rethrowing (the retry/failure semantics are pg-boss's).
+      try {
+        const r = await handleProjectPurge(job.data, {
+          systemExec,
+          queue: deps.queue,
+          blobs: purgeBlobs,
+        });
+        console.log(`[worker] project.purge ${job.data.projectId} → ${JSON.stringify(r)}`);
+      } catch (err) {
+        console.error(
+          `[worker] project.purge ${job.data.projectId} FAILED — pg-boss retries/fails per queue policy:`,
+          err,
+        );
+        throw err;
+      }
     }
   });
 

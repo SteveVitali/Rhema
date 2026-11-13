@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-// check-adr-banners.mjs — REQ-CLOSE-3 banner-presence gate (253_R7REC.1).
-// Enumerates every (ADR, file, anchor) pair the round-7 spec §3.2 says must carry a dated
-// fold-back banner, and fails when any banner is absent from its owning section.
+// check-adr-banners.mjs — banner-presence gate (253_R7REC.1, REQ-CLOSE-3; extended 205_R6REC.2,
+// REQ-TAIL-3). Enumerates every (ADR, file, anchor) pair the spec fold-backs say must carry a
+// dated banner — round-7's ADR-126…130 set plus round-6's ADR-111/112/113 launch-posture set —
+// and fails when any banner is absent from its owning section.
 // Exit 0 = every banner present; exit 1 = missing banners listed. Read-only.
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -30,6 +31,19 @@ const PAIRS = [
   // ADR-127 — corpus carve-out + hero-recording asset entry (LICENSES.md)
   { adr: 'ADR-127', file: 'LICENSES.md', anchor: /CC BY-NC-ND 4\.0.*ADR-127/s, name: 'corpus licence carve-out' },
   { adr: 'ADR-127', file: 'LICENSES.md', anchor: /hero-tour\.mp4.*780,708 bytes.*sha256|hero recording landed at the declared paths/s, name: 'hero-recording bytes+sha256' },
+  // ADR-111 — launch decoupled from G2 + §17 Phase-1 exit amended (round-6 fold, 205_R6REC.2)
+  { adr: 'ADR-111', file: 'docs/rhema-design-spec.md', anchor: /Amendment — 2026-10-20: the public launch is decoupled from G2.*recorded in \*\*ADR-111\*\*/s, name: '§17 2026-10-20 amendment banner' },
+  { adr: 'ADR-111', file: 'docs/rhema-design-spec.md', anchor: /Fold-check — 2026-11-11 \(205_R6REC\.2 \/ REQ-TAIL-3\).*GATE-LAUNCH.*[Gg]olden.*[Ff]irst finding.*GD-WATCH\.R6/s, name: '§17 launch-evidence fold-check' },
+  { adr: 'ADR-111', file: 'docs/rhema-design-spec.md', anchor: /Addendum 2026-10-20 — REQ-BETA-19.*ADR-111/s, name: 'A.13 REQ-BETA-19/-20 addendum' },
+  { adr: 'ADR-111', file: 'docs/rhema-design-spec.md', anchor: /2026-10-20 \(round-6 launch posture — \*\*ADR-111\*\*/s, name: 'status-line 2026-10-20 entry' },
+  // ADR-112 — external pen test → post-launch obligation; in-round adversarial review gated launch
+  { adr: 'ADR-112', file: 'docs/rhema-design-spec.md', anchor: /Amendment — 2026-10-20 \(ADR-112; operator ruling `GD-PEN\.R6b`/s, name: '§12.8 pen-test banner' },
+  { adr: 'ADR-112', file: 'docs/rhema-design-spec.md', anchor: /Public product running without independent security testing.*ADR-112|external pen-test \*\*\(ADR-112, 2026-10-20/s, name: '§16.4/§17 security rows' },
+  // ADR-113 — API-minted v4 usercontent URLs (§13.3 banner + as-built check)
+  { adr: 'ADR-113', file: 'docs/rhema-design-spec.md', anchor: /Amendment — 2026-10-21 \(R6UCD\.1 \/ ADR-113\): user-content delivery is API-minted GCS V4/s, name: '§13.3 ADR-113 banner' },
+  { adr: 'ADR-113', file: 'docs/rhema-design-spec.md', anchor: /Checked as built — 2026-11-11 \(205_R6REC\.2 \/ REQ-TAIL-3\).*mintUserContentUrl/s, name: '§13.3 as-built check' },
+  // REQ-TAIL-3 fold note in the round-6 spec's own §4.10
+  { adr: 'ADR-111', file: 'docs/round-6-draft-spec.md', anchor: /Post-ratification note, 2026-11-11 — folded at `205_R6REC\.2`/s, name: '§4.10 REQ-TAIL-3 fold note' },
 ];
 
 const missing = [];
@@ -45,4 +59,4 @@ if (missing.length) {
   for (const m of missing) console.log(`  ✗ ${m}`);
   process.exit(1);
 }
-console.log('  ✓ every ADR-126…130 banner present, dated, in its owning section');
+console.log('  ✓ every enumerated ADR banner present, dated, in its owning section');
