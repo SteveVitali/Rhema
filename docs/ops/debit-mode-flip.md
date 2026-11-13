@@ -23,6 +23,14 @@ them into a committed command or print a service's complete environment while ch
 4. `DEBIT_MODE=committed` is the live env on `rhema-prod-api` and `rhema-prod-worker`.
    Read only that field using the filtered command in step 2, once per service.
 
+**Evaluation log.** **2026-11-11 (256_R6FLIP.1 — early evaluation under the operator's
+same-day "ignore dates" ruling):** preconditions read **1–2 UNMET, 3 unarrived, 4 met** —
+`cap_calibration_reports` holds 4 rows, all `adopted=false` "insufficient sample" (organic
+admissible observations n=0 on the same-day R6WATCH.1 on-time read); the notice sent
+2026-10-22 named `EFFECTIVE_DATE=2026-12-01`, which is not yet reached. **Still parked** —
+no stage-fact change; prod stays `committed`. Run record:
+`docs/build/runs/256_R6FLIP.1.md`.
+
 ## Step 0 — the paid-account notice (before anything flips)
 
 ```bash
