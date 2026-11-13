@@ -1,8 +1,11 @@
 # Debit-mode flip runbook — `committed` → `metered` (ECON.1; ADR-014 sequencing guard; ADR-031)
 
-> **Status: operator-paused.** This procedure is never run unattended. The flag ships dark
-> (`debitMode: "committed"` on every stage); the flip is a config change + deploy, preceded by the
-> paid-account notice (step 0) whose timing is the operator's call (LEDGER GATE DECISIONS).
+> **Status: parked, not executed (as of 2026-11-11).** This procedure is never run unattended.
+> The flag ships dark (`debitMode: "committed"` on every stage, including prod post-launch); the
+> flip is a config change + deploy. **Step 0 already ran** — the notice sent 2026-10-22
+> (R6DEP.1, `EFFECTIVE_DATE=2026-12-01`). `GD-THRESH13.R6` parked the flip on the calibration
+> gap (ruled accepted) and the 30-day rule; the 2026-11-11 operator ruling lifted the date-park
+> for early evaluation — carrier `docs/tickets/256_R6FLIP.1__flip-one-early.md`.
 
 Run repository scripts from the repository root and Pulumi commands in `infra/pulumi`.
 Bind the system DSN and mail credentials through the approved operator environment; never paste

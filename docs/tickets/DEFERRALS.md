@@ -1687,3 +1687,9 @@ banners themselves; nothing below changes a carrier's standing.
 
 **Opened this run:** none. **Flipped this run:** none (REQ-TAIL-3's matrix verdict is a coverage
 row, not a deferral carrier).
+
+## R6DOC.1 — the round-6 repo-docs refresh (2026-11-11)
+
+| id | obligation | why deferred | unblocks / owner | proof obligation | stage-a evidence | status |
+|---|---|---|---|---|---|---|
+| D-R6DOC.1-1 | **The release-notes tail append once the R6 tail lands.** `docs/build/reports/RELEASE_NOTES_DRAFT.md` §"Addendum — rounds 5 and 6" describes the tail (GATE-ACCEPT.R6 readout, R6REC.1–3, insert rows 255–259) as recorded on their open PRs at this writing — when the #316–#322 stack merges and rows 255–259 + 208_R6DOC.2 execute, append a dated line updating the merge state and the carriers' dispositions (not a re-audit). | The tail PRs are unmerged (`mergePolicy: OPERATOR`) and the insert rows are unrun; writing their outcomes now would fabricate them. | The operator's bottom-up merges + the 255–259/208 runs — a small dated append. | The appended line cites the landed merge state and each carrier's run-ledger disposition verbatim; the "still open at this writing" clause stays as the dated interim record. | `docs/build/LEDGER.md` GATE DECISIONS `GD-ACCEPT.R6` (signed 2026-11-11) + `docs/build/runs/207_R6DOC.1.md`. | **OPEN — 2026-11-11 (R6DOC.1).** Owner: the run that observes the tail merged (208_R6DOC.2 or a carrier). |
