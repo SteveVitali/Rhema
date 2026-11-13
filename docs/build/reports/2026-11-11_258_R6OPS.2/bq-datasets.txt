@@ -1,0 +1,80 @@
+# BigQuery dataset/table reads (2026-11-11T23:41Z)
+
+## bq ls -d --project_id=rhema-507501
++---------------------+
+|      datasetId      |
++---------------------+
+| billing_export      |
+| billing_export_prod |
++---------------------+
+
+## bq ls rhema-507501:billing_export_prod  (EMPTY output below = zero tables)
+(end)
+
+## bq ls rhema-507501:billing_export
+        tableId          Type    Labels   Time Partitioning   Clustered Fields  
+ ---------------------- ------- -------- ------------------- ------------------ 
+  cloud_pricing_export   TABLE            DAY                                   
+
+## bq show rhema-507501:billing_export_prod (access + times)
+{
+ "location": "us-central1",
+ "creationTime": "2026-10-03T22:58:15.430000+00:00",
+ "lastModifiedTime": "2026-10-03T22:58:15.430000+00:00",
+ "access": [
+  {
+   "role": "WRITER",
+   "specialGroup": "projectWriters"
+  },
+  {
+   "role": "OWNER",
+   "specialGroup": "projectOwners"
+  },
+  {
+   "role": "OWNER",
+   "userByEmail": "14SteveVitali@gmail.com"
+  },
+  {
+   "role": "READER",
+   "specialGroup": "projectReaders"
+  }
+ ]
+}
+
+## bq show rhema-507501:billing_export
+{
+ "location": "US",
+ "creationTime": "2026-10-29T17:24:00.349000+00:00",
+ "lastModifiedTime": "2026-10-29T17:31:38.525000+00:00",
+ "access": [
+  {
+   "role": "WRITER",
+   "specialGroup": "projectWriters"
+  },
+  {
+   "role": "WRITER",
+   "userByEmail": "service-25012989319@gcp-sa-bigquerydatatransfer.iam.gserviceaccount.com"
+  },
+  {
+   "role": "OWNER",
+   "specialGroup": "projectOwners"
+  },
+  {
+   "role": "OWNER",
+   "userByEmail": "14SteveVitali@gmail.com"
+  },
+  {
+   "role": "READER",
+   "specialGroup": "projectReaders"
+  }
+ ]
+}
+
+## bq show rhema-507501:billing_export.cloud_pricing_export
+{
+ "type": "TABLE",
+ "numRows": "1263711",
+ "numBytes": "902318533",
+ "creationTime": "2026-10-31T13:45:56.354000+00:00",
+ "lastModifiedTime": "2026-11-11T16:31:11.965000+00:00"
+}

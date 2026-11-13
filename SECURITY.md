@@ -23,7 +23,7 @@ The repository's required controls include:
 - **Tenant isolation:** user-serving database access uses a role without `BYPASSRLS`. Directly tenant-scoped tables use RLS; child tables also depend on authorized parent access and explicit predicates. Elevated system connections are restricted to reviewed call sites. See the [tenancy audit](docs/security/tenancy-audit.md), table census, and [two-tenant probe](integration/src/two-tenant-probe.ts).
 - **Untrusted content:** fetching and parsing are separated; conversion is isolated from network access. User-content delivery applies a closed inline-image allowlist and download disposition for other types. See the [content/CSP audit](docs/security/usercontent-csp-audit.md).
 
-These are requirements and source-level controls, not a claim that every deployment or integration has been independently certified. In particular, the worker has optional model-key integrations that need review against the proxy-only policy before release; the [release-readiness review](docs/open-source-readiness.md) records that discrepancy. Dated security audits describe their recorded scope and date, not a fresh assessment of the current deployment.
+These are requirements and source-level controls, not a claim that every deployment or integration has been independently certified. In particular, the worker has optional model-key integrations that remain under review against the proxy-only policy; the [release-readiness review](docs/open-source-readiness.md) records that discrepancy. Dated security audits describe their recorded scope and date, not a fresh assessment of the current deployment.
 
 ## Retention and deletion
 
