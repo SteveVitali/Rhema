@@ -74,7 +74,10 @@ export interface ReconcileMeasurement {
 export interface ReconcileAlert {
   // ACT.1 — `trial_daily_ceiling`: the $50/day trial-COGS kill switch tripped (the period-tick
   // sweep's `sweepTrialSpend` — pauses new trial unlocks until UTC rollover).
-  readonly kind: "usage_drift" | "balance_divergence" | "trial_daily_ceiling";
+  // R6OPS.1 — `report_fetch_denied`: the bound provider admin key was refused (401/403) — the
+  // report/window arms skipped for the night; the balances assertion still ran.
+  readonly kind:
+    "usage_drift" | "balance_divergence" | "trial_daily_ceiling" | "report_fetch_denied";
   readonly reportKey: string;
   readonly driftPct?: number;
   readonly proxyUsd?: number;
@@ -271,7 +274,12 @@ export async function reconcileProviderReport(
           [runId],
         )
       ).rows[0] as
-        | { workflow: string; rigor: string; model_tier: string; input_snapshot: Record<string, unknown> | string | null }
+        | {
+            workflow: string;
+            rigor: string;
+            model_tier: string;
+            input_snapshot: Record<string, unknown> | string | null;
+          }
         | undefined;
       if (runRow) {
         const snap =
@@ -284,8 +292,12 @@ export async function reconcileProviderReport(
           tier: runRow.model_tier,
           rigor: runRow.rigor,
           inputs: {
-            ...(typeof snap["wordCount"] === "number" ? { words: snap["wordCount"] as number } : {}),
-            ...(typeof snap["claimCount"] === "number" ? { claims: snap["claimCount"] as number } : {}),
+            ...(typeof snap["wordCount"] === "number"
+              ? { words: snap["wordCount"] as number }
+              : {}),
+            ...(typeof snap["claimCount"] === "number"
+              ? { claims: snap["claimCount"] as number }
+              : {}),
           },
           measuredCredits: Math.round(b.reportUsd * CREDITS_PER_USD),
           measuredAt: asOf,
@@ -301,7 +313,13 @@ export async function reconcileProviderReport(
   const driftPct = proxyUsd > 0 ? (reportUsd - proxyUsd) / proxyUsd : 0;
   let alerted = false;
   if (Math.abs(driftPct) > 0.02) {
-    await deps.alert({ kind: "usage_drift", reportKey: report.reportKey, driftPct, proxyUsd, reportUsd });
+    await deps.alert({
+      kind: "usage_drift",
+      reportKey: report.reportKey,
+      driftPct,
+      proxyUsd,
+      reportUsd,
+    });
     alerted = true;
   }
 
@@ -315,7 +333,17 @@ export async function reconcileProviderReport(
     ).n,
   );
 
-  return { matched, unmatchedReportRows, pendingProxyRows, proxyUsd, reportUsd, driftPct, refunds, alerted, recalibrated };
+  return {
+    matched,
+    unmatchedReportRows,
+    pendingProxyRows,
+    proxyUsd,
+    reportUsd,
+    driftPct,
+    refunds,
+    alerted,
+    recalibrated,
+  };
 }
 
 // ---- window-scoped reconcile (the Anthropic Usage & Cost contract; STB.4 / D-PRB.08-1b) ------------------
@@ -430,9 +458,14 @@ export async function reconcileProviderWindow(
           searches: r.webSearchRequests,
         }
       : null;
-    const proxyTotal = proxy ? proxy.inputTokens + proxy.cacheWriteTokens + proxy.cacheReadTokens + proxy.outputTokens : 0;
+    const proxyTotal = proxy
+      ? proxy.inputTokens + proxy.cacheWriteTokens + proxy.cacheReadTokens + proxy.outputTokens
+      : 0;
     const reportTotal = reportSums
-      ? reportSums.inputTokens + reportSums.cacheWriteTokens + reportSums.cacheReadTokens + reportSums.outputTokens
+      ? reportSums.inputTokens +
+        reportSums.cacheWriteTokens +
+        reportSums.cacheReadTokens +
+        reportSums.outputTokens
       : 0;
     const tokenDriftPct =
       proxyTotal > 0 && reportTotal > 0 ? (reportTotal - proxyTotal) / proxyTotal : null;
