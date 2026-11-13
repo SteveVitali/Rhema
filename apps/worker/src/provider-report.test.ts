@@ -3,6 +3,7 @@ import {
   AnthropicAdminReportSource,
   normalizeCostReport,
   normalizeUsageBuckets,
+  ProviderReportFetchError,
 } from "./provider-report.js";
 
 // STB.4 — the REAL Anthropic Usage & Cost contract. Fixtures mirror the published response shapes:
@@ -95,15 +96,13 @@ describe("normalizeCostReport (cents → USD)", () => {
   });
   it("accepts flat envelopes and skips non-numeric amounts", () => {
     expect(
-      normalizeCostReport([
-        { data: [{ amount: "100.00", currency: "USD" }, { amount: "x" }] },
-      ]),
+      normalizeCostReport([{ data: [{ amount: "100.00", currency: "USD" }, { amount: "x" }] }]),
     ).toBeCloseTo(1.0, 6);
   });
   it("throws on non-USD rows — never silently mis-sums a currency", () => {
-    expect(() =>
-      normalizeCostReport([{ data: [{ amount: "1.00", currency: "EUR" }] }]),
-    ).toThrow(/non-USD/);
+    expect(() => normalizeCostReport([{ data: [{ amount: "1.00", currency: "EUR" }] }])).toThrow(
+      /non-USD/,
+    );
   });
 });
 
@@ -147,7 +146,9 @@ describe("AnthropicAdminReportSource.fetch (the live endpoints)", () => {
     expect(report.window?.usd).toBeCloseTo(24.228135 + 0.311479 + 0.9, 6);
     expect(report.window?.start.toISOString()).toBe("2026-09-26T00:00:00.000Z");
     expect(report.window?.end.toISOString()).toBe("2026-09-27T00:00:00.000Z");
-    expect(report.window?.tokensByModel.find((m) => m.model === "claude-sonnet-5")?.outputTokens).toBe(1082803);
+    expect(
+      report.window?.tokensByModel.find((m) => m.model === "claude-sonnet-5")?.outputTokens,
+    ).toBe(1082803);
 
     // both endpoints hit with the day's [start, next-day) bounds; ending_at is exclusive
     const cost = urls.find((u) => u.includes("cost_report"))!;
@@ -198,5 +199,22 @@ describe("AnthropicAdminReportSource.fetch (the live endpoints)", () => {
       fetchImpl: (async () => new Response("{}", { status: 401 })) as typeof fetch,
     });
     await expect(src.fetch()).rejects.toThrow(/provider report fetch failed: 401/);
+  });
+
+  // R6OPS.1 — the refusal carries its HTTP status so the job can classify a bound-but-denied key
+  // (401/403 → honest degrade) vs a transient fault (5xx → pg-boss retry).
+  it("the refusal is a ProviderReportFetchError carrying the HTTP status", async () => {
+    const src = new AnthropicAdminReportSource({
+      adminKey: "k",
+      day: new Date("2026-09-26T12:00:00Z"),
+      fetchImpl: (async () => new Response("{}", { status: 403 })) as typeof fetch,
+    });
+    const err = await src.fetch().then(
+      () => undefined,
+      (e: unknown) => e,
+    );
+    expect(err).toBeInstanceOf(ProviderReportFetchError);
+    expect((err as ProviderReportFetchError).status).toBe(403);
+    expect((err as Error).message).toBe("provider report fetch failed: 403");
   });
 });

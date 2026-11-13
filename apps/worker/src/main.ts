@@ -751,7 +751,9 @@ export async function startWorker(): Promise<void> {
   await boss.work(USAGE_RECONCILE_JOB, async () => {
     const r = await handleUsageReconcile(deps);
     console.log(
-      `[worker] usage.reconcile: report=${r.report ? `${r.report.matched} matched, drift ${(r.report.driftPct * 100).toFixed(2)}%` : "skipped"}, window=${r.window ? `report $${r.window.reportUsd.toFixed(4)} vs proxy $${r.window.proxyUsd.toFixed(4)} drift ${(r.window.driftPct * 100).toFixed(2)}%` : "skipped"}, balances ${r.balances.ok ? "ok" : `${r.balances.divergences} divergences`}`,
+      // R6OPS.1 — `reportError` distinguishes a bound-but-denied key (recorded + paged) from the
+      // unconfigured skip; the balances verdict still prints either way.
+      `[worker] usage.reconcile: report=${r.report ? `${r.report.matched} matched, drift ${(r.report.driftPct * 100).toFixed(2)}%` : (r.reportError ?? "skipped")}, window=${r.window ? `report $${r.window.reportUsd.toFixed(4)} vs proxy $${r.window.proxyUsd.toFixed(4)} drift ${(r.window.driftPct * 100).toFixed(2)}%` : (r.reportError ?? "skipped")}, balances ${r.balances.ok ? "ok" : `${r.balances.divergences} divergences`}`,
     );
   });
   await boss.schedule(USAGE_RECONCILE_JOB, "15 3 * * *");

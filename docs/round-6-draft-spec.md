@@ -441,7 +441,12 @@ executes and REQ-DEP-3; their ids are retired, not reused.)
     (fact_check class) and the parked cost levers (b)/(d).
   - `OPERATIONAL_READINESS.md` rewritten to the launched truth.
 - `REQ-TAIL-3` Spec reconcile: the §13.3 usercontent amendment (ADR-113), the §17/ADR-111 fold
-  check, and BL-05 fold-backs.
+  check, and BL-05 fold-backs. *(Post-ratification note, 2026-11-11 — folded at `205_R6REC.2`:
+  the §13.3 ADR-113 banner verified against the shipped mint code; the §17 amended exit row
+  checked against the launch evidence (GATE-LAUNCH signed, golden green at the launch SHA,
+  first-finding → `GD-WATCH.R6` watch); the ADR-112 pen-test posture recorded at §12.8 + §16.4;
+  the REQ-BETA-19/-20 launch clauses folded in Appendix A.13; banner gate
+  `docs/build/tools/check-adr-banners.mjs`.)*
 - `REQ-TAIL-4` Integration plan for the round-6 stack and the final merge sweep runbook.
 - `REQ-TAIL-5` The repo-docs and agent-docs refreshes. Then the closing run updates
   `projectStatus`/`lastCompleted`. **`DONE` only if GATE-ACCEPT.R6 is signed and zero
