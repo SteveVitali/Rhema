@@ -40,7 +40,8 @@ protocols in `packages/protocols` — after a full-history secrets and personal-
 Private evaluation content stays outside the repository (`RHEMA_EVALS_PATH`; `evals-stub` supplies
 the fallback), and is not required for the checkout below.
 
-The hosted service runs at [rhema.tools](https://rhema.tools), and its public demo at
+The hosted service publicly launched 2026-10-28 and runs at
+[rhema.tools](https://rhema.tools), with its public demo at
 [rhema.tools/demo](https://rhema.tools/demo). Deployed provenance, launch state,
 and the live verification record live in [docs/build](docs/build/README.md); GitHub Actions runs
 CI and the scheduled browser-journey suite against production.

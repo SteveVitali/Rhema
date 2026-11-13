@@ -1,8 +1,11 @@
 # Debit-mode flip runbook — `committed` → `metered` (ECON.1; ADR-014 sequencing guard; ADR-031)
 
-> **Status: operator-paused.** This procedure is never run unattended. The flag ships dark
-> (`debitMode: "committed"` on every stage); the flip is a config change + deploy, preceded by the
-> paid-account notice (step 0) whose timing is the operator's call (LEDGER GATE DECISIONS).
+> **Status: parked, not executed (as of 2026-11-11).** This procedure is never run unattended.
+> The flag ships dark (`debitMode: "committed"` on every stage, including prod post-launch); the
+> flip is a config change + deploy. **Step 0 already ran** — the notice sent 2026-10-22
+> (R6DEP.1, `EFFECTIVE_DATE=2026-12-01`). `GD-THRESH13.R6` parked the flip on the calibration
+> gap (ruled accepted) and the 30-day rule; the 2026-11-11 operator ruling lifted the date-park
+> for early evaluation — carrier `docs/tickets/256_R6FLIP.1__flip-one-early.md`.
 
 Run repository scripts from the repository root and Pulumi commands in `infra/pulumi`.
 Bind the system DSN and mail credentials through the approved operator environment; never paste
@@ -19,6 +22,14 @@ them into a committed command or print a service's complete environment while ch
 3. The notice (step 0) has been sent and the chosen effective date reached.
 4. `DEBIT_MODE=committed` is the live env on `rhema-prod-api` and `rhema-prod-worker`.
    Read only that field using the filtered command in step 2, once per service.
+
+**Evaluation log.** **2026-11-11 (256_R6FLIP.1 — early evaluation under the operator's
+same-day "ignore dates" ruling):** preconditions read **1–2 UNMET, 3 unarrived, 4 met** —
+`cap_calibration_reports` holds 4 rows, all `adopted=false` "insufficient sample" (organic
+admissible observations n=0 on the same-day R6WATCH.1 on-time read); the notice sent
+2026-10-22 named `EFFECTIVE_DATE=2026-12-01`, which is not yet reached. **Still parked** —
+no stage-fact change; prod stays `committed`. Run record:
+`docs/build/runs/256_R6FLIP.1.md`.
 
 ## Step 0 — the paid-account notice (before anything flips)
 

@@ -88,6 +88,14 @@ pnpm exec vitest run infra scripts/live/preview-stack.test.mjs
    `?b=<sha>` key, so skipping the invalidation leaves stale twin bodies on already-cached
    query-less URLs. Both acts were exercised at the 224/250/R7DEP.3 deploys; they are standing
    steps, not one-offs.
+9. **Entrypoint guards compare like-for-like.** The checkout path contains `ē`, which
+   `import.meta.url` percent-encodes (`Rhēma` → `Rh%C4%93ma`) — a mixed compare such as
+   ``import.meta.url === `file://${process.argv[1]}` `` never matches and the script
+   silently no-ops as a direct entry (fixed in `scripts/live/first-finding-latency.mjs`,
+   2026-11-09). Use URL↔URL
+   (``import.meta.url === new URL(`file://${argv[1]}`).href``) or the path↔path form
+   `fileURLToPath(import.meta.url) === resolve(argv[1])`, and verify a new `scripts/live`
+   entrypoint by invoking it directly, not only through a wrapper.
 
 ## Do / Don't
 
