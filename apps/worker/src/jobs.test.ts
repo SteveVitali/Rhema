@@ -2,6 +2,8 @@ import { describe, it, expect, afterEach } from "vitest";
 import {
   createOrchestratorTestDb,
   seedProject,
+  seedRun,
+  seedGate,
   type OrchestratorTestDb,
 } from "@rhema/orchestrator/testing";
 import {
@@ -9,6 +11,7 @@ import {
   handleProjectPurgeSweep,
   handleAccountHardDelete,
   handleTestTenantPurge,
+  type ProjectPurgeJob,
 } from "./jobs.js";
 
 let db: OrchestratorTestDb | undefined;
@@ -18,6 +21,31 @@ afterEach(async () => {
 });
 
 const day = (n: number) => new Date(Date.UTC(2026, 0, 1 + n));
+
+/** a `pgboss.job` stub for the sweep's live-arm check (PGlite carries no pg-boss schema). */
+const stubQueueTable = async (db2: NonNullable<typeof db>) => {
+  await db2.pg.query(`create schema if not exists pgboss`);
+  await db2.pg.query(
+    `create table if not exists pgboss.job(name text, singleton_key text, state text)`,
+  );
+};
+const fakeQueue = () => {
+  const sent: {
+    name: string;
+    payload: Record<string, unknown>;
+    opts?: { startAfterMs?: number; singletonKey?: string };
+  }[] = [];
+  return {
+    sent,
+    async send(
+      name: string,
+      payload: Record<string, unknown>,
+      opts?: { startAfterMs?: number; singletonKey?: string },
+    ) {
+      sent.push({ name, payload, opts });
+    },
+  };
+};
 
 describe("handleProjectPurge (project.purge consumer)", () => {
   it("does not purge before 30 days", async () => {
@@ -161,36 +189,233 @@ describe("handleProjectPurge (project.purge consumer)", () => {
     expect(deletedKeys).toEqual([`tenants/${seed.workspaceId}/objects/sha_a`]);
     expect(r.objectsDeleted).toBe(1);
   });
+
+  // F-R7DEPMAIN-1 / BL-113 (live-proven 2026-11-15): the re-armed `project.purge:01M3SK38…`
+  // failed ×3 on `claims_draft_id_fkey` — `delete from projects` only reaches CASCADE edges while
+  // prod `pg_constraint` marks the review-output leaves NO ACTION. Seed EVERY leaf class (the
+  // verbatim prod set + self-FKs + cross-project survivors) and prove the purge completes
+  // leaf-first like `handleAccountHardDelete`.
+  it("purges a tombstoned project carrying the full NO-ACTION leaf set (F-R7DEPMAIN-1)", async () => {
+    db = await createOrchestratorTestDb();
+    const seed = await seedProject(db, { draftN: 1 });
+    const ws = seed.workspaceId;
+    const d1 = seed.draftId as string;
+    // a second, frozen draft chained on the first — drafts.base_draft_id + promoted_version_id.
+    await db.pg.query(
+      `insert into artifacts(id, workspace_id, project_id, kind, namespace, mirror_path)
+       values ('art_p',$1,$2,'draft','project','drafts/v2.md')`,
+      [ws, seed.projectId],
+    );
+    await db.pg.query(
+      `insert into artifact_versions(id, artifact_id, ordinal, content_sha256, s3_key, bytes, media_type, created_by)
+       values ('av_p','art_p',1,'sha_p','tenants/${ws}/objects/sha_p',100,'text/markdown','{"kind":"system"}'::jsonb)`,
+      [],
+    );
+    await db.pg.query(
+      `insert into provenance_maps(draft_version_id, granularity, spans) values ('av_p','block','[]'::jsonb)`,
+    );
+    await db.pg.query(
+      `insert into drafts(id, project_id, n, origin, state, promoted_version_id, base_draft_id)
+       values ('dft_p2',$1,2,'agent','frozen','av_p',$2)`,
+      [seed.projectId, d1],
+    );
+    // live_doc + restore_point + a working copy referencing all three drafts/live_docs edges.
+    await db.pg.query(
+      `insert into live_docs(id, draft_id, y_state, state_vector) values ('ld_p',$1,'\\x00'::bytea,'\\x00'::bytea)`,
+      [d1],
+    );
+    await db.pg.query(
+      `insert into restore_points(id, live_doc_id, s3_key, kind, cause) values ('rp_p','ld_p','restores/rp_p','snapshot','auto')`,
+    );
+    await db.pg.query(
+      `insert into working_copies(id, base_draft_id, live_doc_id, reconciled_into)
+       values ('wc_p',$1,'ld_p','dft_p2')`,
+      [d1],
+    );
+    // a run tree: parent + in-project child (self-FK) + step + gated step + decision.
+    await seedRun(db, {
+      runId: "run_p",
+      workspaceId: ws,
+      projectId: seed.projectId,
+      state: "finished",
+    });
+    await seedRun(db, {
+      runId: "run_c",
+      workspaceId: ws,
+      projectId: seed.projectId,
+      state: "finished",
+    });
+    await db.pg.query(`update runs set parent_run_id = 'run_p' where id = 'run_c'`);
+    await db.client.query(
+      `insert into steps(id, run_id, phase, ordinal, state) values ('stp_p','run_p','verify',1,'done')`,
+    );
+    await seedGate(db, {
+      gateId: "gt_p",
+      runId: "run_p",
+      stepId: "stp_p",
+      kind: "confirm",
+      onExpiry: "proceed",
+    });
+    await db.client.query(
+      `insert into decisions(gate_id, by_actor, action) values ('gt_p','usr','proceed')`,
+    );
+    // the review-output leaves on draft 1: correspondence → claims (+sources) → findings →
+    // dispositions → obligations/links/transitions → decision_requests.
+    await db.client.query(
+      `insert into correspondence_items(id, project_id, kind, draft_id, run_id, delivered_at, artifact_ids)
+       values ('ci_p',$1,'review',$2,'run_p',now(),'{}'::text[])`,
+      [seed.projectId, d1],
+    );
+    await db.client.query(
+      `insert into claims(id, correspondence_id, draft_id, ordinal, text, verdict)
+       values ('cl_p','ci_p',$1,1,'the claim','supported')`,
+      [d1],
+    );
+    await db.client.query(
+      `insert into claim_sources(claim_id, ordinal, url, normalized_url, accessed_at, stance)
+       values ('cl_p',1,'https://example.test/a','example.test/a',now(),'supports')`,
+    );
+    await db.client.query(
+      `insert into findings(id, correspondence_id, draft_id, ordinal, kind, severity, origin, title, body)
+       values ('fnd_p','ci_p',$1,1,'contradiction','major','agent','T','B')`,
+      [d1],
+    );
+    await db.client.query(
+      `insert into dispositions(id, finding_id, response_id, kind, by_actor)
+       values ('dp_p','fnd_p','ci_p','accept','{"kind":"user"}'::jsonb)`,
+    );
+    await db.client.query(
+      `insert into revision_obligations(id, project_id, source, severity, kind, title, state, opened_on_draft_id, finding_id, created_by)
+       values ('ro_p',$1,'finding','major','fix','O','open',$2,'fnd_p','{"kind":"user"}'::jsonb)`,
+      [seed.projectId, d1],
+    );
+    await db.client.query(
+      `insert into obligation_findings(obligation_id, finding_id, correspondence_id, relation)
+       values ('ro_p','fnd_p','ci_p','root')`,
+    );
+    await db.client.query(
+      `insert into obligation_transitions(id, obligation_id, to_state, cause, by_actor)
+       values ('ot_p','ro_p','open','opened','{"kind":"user"}'::jsonb)`,
+    );
+    await db.client.query(
+      `insert into decision_requests(id, project_id, text, options, state, obligation_id)
+       values ('dr_p',$1,'q','{}'::text[],'open','ro_p')`,
+      [seed.projectId],
+    );
+    // hygiene rows the FK graph does not reach.
+    await db.client.query(
+      `insert into analytics_events(id, user_id, workspace_id, project_id, event) values ('ae_p',$1,$2,$3,'landing.viewed')`,
+      [seed.userId, ws, seed.projectId],
+    );
+    await db.client.query(
+      `insert into inbox_items(id, user_id, project_id, kind, payload) values ('ib_p',$1,$2,'review_delivered','{}'::jsonb)`,
+      [seed.userId, seed.projectId],
+    );
+    // CROSS-PROJECT survivors: a sibling draft chained onto the dying draft and a sibling run
+    // parented on the dying run — the sever pass must null these, not fail the purge.
+    const sib = await seedProject(db, {
+      userId: "usr_sib",
+      billingAccountId: "ba_sib",
+      workspaceId: ws,
+      projectId: "prj_sib",
+      draftN: 1,
+    });
+    await db.pg.query(`update drafts set base_draft_id = $1 where id = $2`, [d1, sib.draftId]);
+    await seedRun(db, {
+      runId: "run_sib",
+      workspaceId: ws,
+      projectId: "prj_sib",
+      state: "finished",
+    });
+    await db.pg.query(`update runs set parent_run_id = 'run_p' where id = 'run_sib'`);
+
+    await db.pg.query(`update projects set deleted_at = now() - interval '31 days' where id = $1`, [
+      seed.projectId,
+    ]);
+    const r = await handleProjectPurge(
+      { tenantId: ws, projectId: seed.projectId, tombstonedAt: day(0).toISOString() },
+      { systemExec: db.client },
+    );
+    expect(r.purged).toBe(true);
+    expect(r.deleted?.projects).toBe(1);
+    for (const t of [
+      "working_copies",
+      "provenance_maps",
+      "analytics_events",
+      "inbox_items",
+      "gates",
+      "decision_requests",
+      "obligation_findings",
+      "revision_obligations",
+      "dispositions",
+      "findings",
+      "claims",
+      "correspondence_items",
+    ]) {
+      expect(r.deleted?.[t], `${t} count`).toBe(1);
+    }
+    expect(r.severed).toEqual({ "drafts.base_draft_id": 1, "runs.parent_run_id": 1 });
+    // nothing of the project tree remains; the sibling tree survives with its refs severed.
+    const left = await db.pg.query(
+      `select (select count(*)::int from projects where id=$1) p,
+              (select count(*)::int from drafts where project_id=$1) d,
+              (select count(*)::int from claims where draft_id=$2) c,
+              (select count(*)::int from findings where draft_id=$2) f,
+              (select count(*)::int from correspondence_items where project_id=$1) ci,
+              (select count(*)::int from runs where project_id=$1) r,
+              (select count(*)::int from artifact_versions where artifact_id='art_p') av,
+              (select count(*)::int from inbox_items where project_id=$1) ib`,
+      [seed.projectId, d1],
+    );
+    expect(left.rows[0]).toEqual({ p: 0, d: 0, c: 0, f: 0, ci: 0, r: 0, av: 0, ib: 0 });
+    const sibRefs = await db.pg.query(
+      `select (select base_draft_id from drafts where id=$1) bd,
+              (select parent_run_id from runs where id='run_sib') pr`,
+      [sib.draftId],
+    );
+    expect(sibRefs.rows[0]).toEqual({ bd: null, pr: null });
+    expect((await db.pg.query(`select 1 from projects where id = 'prj_sib'`, [])).rows.length).toBe(
+      1,
+    );
+  });
+
+  // The deployed repair loop, end to end: the sweep detects the orphaned tombstone, re-arms the
+  // job, and the fired handler now purges the project that prod failed on ×3 (BL-113).
+  it("sweep re-arm → purge completes on the prod failure shape (BL-113)", async () => {
+    db = await createOrchestratorTestDb();
+    await stubQueueTable(db);
+    const seed = await seedProject(db, { draftN: 1 });
+    await db.client.query(
+      `insert into correspondence_items(id, project_id, kind, draft_id, run_id, delivered_at, artifact_ids)
+       values ('ci_p',$1,'review',$2,'run_x',now(),'{}'::text[])`,
+      [seed.projectId, seed.draftId],
+    );
+    await db.client.query(
+      `insert into claims(id, correspondence_id, draft_id, ordinal, text, verdict)
+       values ('cl_p','ci_p',$1,1,'the claim','supported')`,
+      [seed.draftId],
+    );
+    await db.pg.query(`update projects set deleted_at = now() - interval '31 days' where id = $1`, [
+      seed.projectId,
+    ]);
+    const queue = fakeQueue();
+    const s = await handleProjectPurgeSweep({ systemExec: db.client, queue });
+    expect(s).toEqual({ scanned: 1, rearmed: [seed.projectId] });
+    const r = await handleProjectPurge(queue.sent[0].payload as ProjectPurgeJob, {
+      systemExec: db.client,
+    });
+    expect(r.purged).toBe(true);
+    expect(r.deleted?.claims).toBe(1);
+    expect(
+      (await db.pg.query(`select 1 from projects where id = $1`, [seed.projectId])).rows.length,
+    ).toBe(0);
+  });
 });
 
 // F-R6WATCH.2-1 (BL-112) — the tombstone watchdog: an armed `project.purge` job vanished live
 // without firing and nothing noticed the orphaned past-grace tombstone. The sweep re-arms any
 // tombstone lacking a live (created/retry/active) job, at its own grace end.
 describe("handleProjectPurgeSweep (F-R6WATCH.2-1 re-arm watchdog)", () => {
-  const stubQueueTable = async (db2: NonNullable<typeof db>) => {
-    await db2.pg.query(`create schema if not exists pgboss`);
-    await db2.pg.query(
-      `create table if not exists pgboss.job(name text, singleton_key text, state text)`,
-    );
-  };
-  const fakeQueue = () => {
-    const sent: {
-      name: string;
-      payload: Record<string, unknown>;
-      opts?: { startAfterMs?: number; singletonKey?: string };
-    }[] = [];
-    return {
-      sent,
-      async send(
-        name: string,
-        payload: Record<string, unknown>,
-        opts?: { startAfterMs?: number; singletonKey?: string },
-      ) {
-        sent.push({ name, payload, opts });
-      },
-    };
-  };
-
   it("re-arms a past-grace tombstone whose purge job vanished (fires on the next poll)", async () => {
     db = await createOrchestratorTestDb();
     await stubQueueTable(db);

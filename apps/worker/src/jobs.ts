@@ -54,6 +54,9 @@ export interface ProjectPurgeResult {
   rescheduled?: boolean;
   /** table → deleted-row counts when destruction ran. */
   deleted?: Readonly<Record<string, number>>;
+  /** `column` → rows whose surviving (out-of-project) reference into the dying tree was nulled —
+   *  the self-FK sever pass (`drafts.base_draft_id`, `runs.parent_run_id`). */
+  severed?: Readonly<Record<string, number>>;
   /** object keys removed from the workspace's object store. */
   objectsDeleted?: number;
 }
@@ -105,17 +108,39 @@ export async function handleProjectPurge(
   const purged = shouldPurgeProject(tombstonedAt, now);
   if (!purged || !deps.systemExec) return { projectId: job.projectId, purged };
 
-  // Past grace — destroy. `delete from projects` cascades the whole project tree (drafts →
-  // artifacts/versions, runs → steps/gates/events/findings/claims/obligations …) EXCEPT the
-  // NO-ACTION leaves that must die first: working_copies (drafts/live_docs), provenance_maps
-  // (artifact_versions), analytics_events (no project FK — hygiene).
+  // Past grace — destroy. `delete from projects` reaches the project tree only along
+  // CASCADE-marked edges; prod `pg_constraint` (read verbatim 2026-11-15 over the read-only IAP
+  // tunnel, F-R7DEPMAIN-1/BL-113) marks a dozen review-output leaves NO ACTION (`confdeltype='a'`),
+  // so `delete from projects` alone throws 23503 on the first one — the re-armed
+  // `project.purge:01M3SK38…` failed ×3 loudly on `claims_draft_id_fkey` (the same throw the
+  // original 10-30 armed job swallowed). Every NO-ACTION leaf dies explicitly leaf-first — the
+  // `handleAccountHardDelete` ordering below (proven live — 239 completions — since the account
+  // pipeline tripped this exact constraint on 2026-10-01):
+  //   working_copies (→drafts/live_docs), provenance_maps (→artifact_versions), analytics_events +
+  //   inbox_items (no project FK — hygiene), gates (→steps NO ACTION), decision_requests,
+  //   obligation_findings (→findings NO ACTION), revision_obligations (→findings/drafts NO ACTION),
+  //   dispositions (→correspondence_items NO ACTION), findings + claims (→drafts NO ACTION),
+  //   correspondence_items (→drafts NO ACTION); THEN the self-FK sever pass, THEN the keyed
+  //   `delete from projects` cascades drafts/live_docs/restore_points, runs/steps/decisions/
+  //   events, artifacts/versions (drafts.promoted_version_id + runs.agent_instance_id are
+  //   same-statement NO ACTION siblings — both endpoints die inside the one cascade, which the
+  //   sibling ordering proves green).
   const db = deps.systemExec;
   const deleted: Record<string, number> = {};
   const del = async (table: string, sql: string, params: unknown[]): Promise<void> => {
     const res = await db.query(sql, params);
     deleted[table] = (deleted[table] ?? 0) + res.rows.length;
   };
+  const severed: Record<string, number> = {};
+  const sev = async (column: string, sql: string, params: unknown[]): Promise<void> => {
+    const res = await db.query(sql, params);
+    severed[column] = (severed[column] ?? 0) + res.rows.length;
+  };
   const draftIds = `(select id from drafts where project_id = $1)`;
+  const runIds = `(select id from runs where project_id = $1)`;
+  const ciIds = `(select id from correspondence_items where project_id = $1)`;
+  const findingIds = `(select f.id from findings f
+      where f.correspondence_id in ${ciIds} or f.draft_id in ${draftIds})`;
   // The object keys BEFORE the cascade — after the row delete the refs are gone.
   const keys = (
     await db.query(
@@ -124,9 +149,12 @@ export async function handleProjectPurge(
       [job.projectId],
     )
   ).rows as { s3_key: string | null }[];
+  // 1 — leaf-first: every NO ACTION child of the content tree dies before its parent.
   await del(
     "working_copies",
-    `delete from working_copies where base_draft_id in ${draftIds} or reconciled_into in ${draftIds} returning id`,
+    `delete from working_copies where base_draft_id in ${draftIds}
+        or reconciled_into in ${draftIds}
+        or live_doc_id in (select id from live_docs where draft_id in ${draftIds}) returning id`,
     [job.projectId],
   );
   await del(
@@ -139,7 +167,75 @@ export async function handleProjectPurge(
   await del("analytics_events", `delete from analytics_events where project_id = $1 returning id`, [
     job.projectId,
   ]);
-  // The keyed delete on BOTH columns — a hijacked/renamed id can never purge another tenant's row.
+  await del("inbox_items", `delete from inbox_items where project_id = $1 returning id`, [
+    job.projectId,
+  ]);
+  await del(
+    "gates",
+    `delete from gates where step_id in
+       (select s.id from steps s join runs r on r.id = s.run_id where r.project_id = $1)
+       or run_id in ${runIds} returning id`,
+    [job.projectId],
+  );
+  await del(
+    "decision_requests",
+    `delete from decision_requests where project_id = $1 returning id`,
+    [job.projectId],
+  );
+  await del(
+    "obligation_findings",
+    `delete from obligation_findings where obligation_id in
+       (select id from revision_obligations where project_id = $1)
+       or finding_id in ${findingIds} returning obligation_id`,
+    [job.projectId],
+  );
+  await del(
+    "revision_obligations",
+    `delete from revision_obligations where project_id = $1 returning id`,
+    [job.projectId],
+  );
+  await del(
+    "dispositions",
+    `delete from dispositions where response_id in ${ciIds}
+       or finding_id in ${findingIds} returning id`,
+    [job.projectId],
+  );
+  await del(
+    "findings",
+    `delete from findings where draft_id in ${draftIds}
+       or correspondence_id in ${ciIds} returning id`,
+    [job.projectId],
+  );
+  await del(
+    "claims",
+    `delete from claims where draft_id in ${draftIds}
+       or correspondence_id in ${ciIds} returning id`,
+    [job.projectId],
+  );
+  await del(
+    "correspondence_items",
+    `delete from correspondence_items where project_id = $1 returning id`,
+    [job.projectId],
+  );
+  // 2 — self-FK sever: within-project refs die with their rows in the one cascade statement, but
+  //     a SURVIVING row (another project's draft; a persona/sibling run) may still point INTO the
+  //     tree — drafts.base_draft_id + runs.parent_run_id are nullable, so the schema-intended
+  //     resolution is severing the surviving reference, not keeping the parent (or failing).
+  await sev(
+    "drafts.base_draft_id",
+    `update drafts set base_draft_id = null where base_draft_id in ${draftIds}
+       and project_id is distinct from $1 returning id`,
+    [job.projectId],
+  );
+  await sev(
+    "runs.parent_run_id",
+    `update runs set parent_run_id = null where parent_run_id in ${runIds}
+       and project_id is distinct from $1 returning id`,
+    [job.projectId],
+  );
+  // 3 — the content root: the keyed delete on BOTH columns — a hijacked/renamed id can never
+  //     purge another tenant's row; the cascade now reaches drafts/artifacts/versions/runs/steps/
+  //     live_docs/guidance/threads/figures/decisions/events cleanly.
   await del("projects", `delete from projects where id = $1 and workspace_id = $2 returning id`, [
     job.projectId,
     job.tenantId,
@@ -167,6 +263,7 @@ export async function handleProjectPurge(
     projectId: job.projectId,
     purged: true,
     deleted,
+    ...(Object.keys(severed).length ? { severed } : {}),
     ...(deps.blobs ? { objectsDeleted } : {}),
   };
 }
