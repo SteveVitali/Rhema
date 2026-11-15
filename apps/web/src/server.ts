@@ -4240,7 +4240,11 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!target) return mutationOutcome(c, { redirect: `${base}?notice=checkout` });
     return mutationOutcome(c, { url: target });
   });
-  // Plan change — an upgrade applies now, a downgrade schedules to period end (§14.2/14.6).
+  // Plan change — FENCED OFF at the api (263_R6FIX.13): `POST /billing/subscription/change-plan`
+  // answers `change_plan_unavailable` (D-R6FIX.5-1 — local/Stripe divergence until the price_
+  // registry lands). The handler stays wired so the refusal's stable code reaches the ?notice
+  // flash verbatim — the feature-off class answers like `purchase_closed`, classified, never a
+  // silent save. The `?saved=1` arm is retained plumbing for the re-enable ticket.
   billingPost("change-plan", async (c, base) => {
     const session = deps.session(c);
     if (!session)
@@ -4248,10 +4252,18 @@ export function createWebApp(deps: WebDeps): Hono {
     const form = await bodyFields(c);
     const tier = typeof form.tier === "string" ? form.tier : "";
     const cycle = form.cycle === "annual" ? ("annual" as const) : ("monthly" as const);
+    let failure: string | null = null;
     const out = await Promise.resolve()
       .then(() => deps.dataSource.changePlan?.(session, tier, cycle))
-      .catch(() => undefined);
-    if (!out || "error" in out) return mutationOutcome(c, { redirect: `${base}?notice=change` });
+      .catch((e) => {
+        failure = billingFailureCode(e, "change");
+        console.error(
+          `[web] billing change-plan failed: ${failure} (${e instanceof ApiError ? `api ${e.status}` : "no response"})`,
+        );
+        return undefined;
+      });
+    if (!out || "error" in out)
+      return mutationOutcome(c, { redirect: `${base}?notice=${failure ?? "change"}` });
     return mutationOutcome(c, { redirect: `${base}?saved=1` });
   });
   // Cancel = cancel_at_period_end — access runs to the paid-through date (§14.6).

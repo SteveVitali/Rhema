@@ -527,25 +527,55 @@ describe("POST /billing/subscription/cancel + change-plan (§14.6)", () => {
     ).toMatchObject({ cancel_at_period_end: false });
   });
 
-  it("change-plan downgrades schedule to period end; no subscription is 404; Team is 422", async () => {
-    const post = (body: unknown) =>
-      app().request("/billing/subscription/change-plan", {
-        method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
+  // 263_R6FIX.13 — plan switching is OFF (D-R6FIX.5-1: an in-app change writes divergent local
+  // records while Stripe keeps billing the old price until the plan×cycle → price_ registry lands).
+  // The route answers the typed feature-off refusal for every arm — a downgrade, an upgrade, a
+  // waitlisted or invalid tier, an absent subscription, even a malformed body — with zero record
+  // writes and zero Stripe calls (non-mutating by construction: it refuses before the tx opens).
+  it("change-plan refuses typed + non-mutating: 403 change_plan_unavailable on every arm, zero writes, zero Stripe calls", async () => {
+    const stripe = new StubStripePort();
+    const post = (body: unknown, raw?: string) =>
+      app({ stripe }).request("/billing/subscription/change-plan", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: raw ?? JSON.stringify(body),
       });
-    const res = await post({ tier: "writer" }); // studio_max → writer is a downgrade
-    expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ applied: "scheduled" });
+    const ledgerRows = () =>
+      db.client.query("select count(*)::int n from credit_ledger where billing_account_id = $1", [BA]);
+    const before = ((await ledgerRows()).rows[0] as { n: number }).n;
+
+    for (const body of [
+      { tier: "writer" },                          // a downgrade from the seeded studio_max
+      { tier: "studio_max", cycle: "annual" },     // a lateral/upgrade arm
+      { tier: "team" },                            // a waitlisted tier
+      { tier: "free" },                            // a refused tier
+      { tier: "not-a-plan" },                      // an invalid tier
+      {},                                          // no tier at all
+    ]) {
+      const res = await post(body);
+      expect(res.status, JSON.stringify(body)).toBe(403);
+      expect(await res.json(), JSON.stringify(body)).toEqual({ error: "change_plan_unavailable" });
+    }
+    const malformed = await post(null, "not-json{");
+    expect(malformed.status).toBe(403);
+    expect(await malformed.json()).toEqual({ error: "change_plan_unavailable" });
+
+    // zero mutation — the subscription row is byte-for-byte untouched and no ledger rows appeared.
     const sub = (
       await db.client.query(
-        "select tier, scheduled_tier from subscriptions where billing_account_id = $1",
+        "select tier, scheduled_tier, billing_cycle, included_credits, cancel_at_period_end from subscriptions where billing_account_id = $1",
         [BA],
       )
-    ).rows[0] as { tier: string; scheduled_tier: string };
-    expect(sub).toEqual({ tier: "studio_max", scheduled_tier: "writer" });
-    expect((await post({ tier: "team" })).status).toBe(422);
-
-    await db.pg.query("delete from subscriptions where billing_account_id = $1", [BA]);
-    expect((await post({ tier: "writer" })).status).toBe(404);
+    ).rows[0] as {
+      tier: string; scheduled_tier: string | null; billing_cycle: string | null;
+      included_credits: number | null; cancel_at_period_end: boolean;
+    };
+    expect(sub).toEqual({
+      tier: "studio_max", scheduled_tier: null, billing_cycle: null,
+      included_credits: null, cancel_at_period_end: false,
+    });
+    expect(((await ledgerRows()).rows[0] as { n: number }).n).toBe(before);
+    expect(stripe.calls).toHaveLength(0);
   });
 });
 

@@ -2104,6 +2104,8 @@ describe("POST /app/settings/billing/* + /settings/billing/* — the JSON mutati
 
   it("change-plan / cancel / auto-reload / waitlist — the {ok,redirect} saved/notice arms", async () => {
     const app = createWebApp(mutDeps({
+      // 263_R6FIX.13 — `{applied}` is unreachable while the api fence stands; the saved arm stays
+      // as the retained re-enable plumbing the D-R6FIX.5-1 ticket reactivates.
       changePlan: async () => ({ applied: "scheduled" }),
       cancelSubscription: async () => ({ applied: true }),
       setAutoReload: async () => ({ ok: true }),
@@ -2125,13 +2127,15 @@ describe("POST /app/settings/billing/* + /settings/billing/* — the JSON mutati
 
   it("the failure arms map to the notice redirects — never an error status", async () => {
     const app = createWebApp(mutDeps({
-      changePlan: async () => ({ error: "no" }),
+      // 263_R6FIX.13 — the api's 403 {error:"change_plan_unavailable"} rides the ApiError through
+      // to its own notice code (the typed feature-off refusal, never the generic `change`).
+      changePlan: async () => { throw new ApiError(403, "x", undefined, "change_plan_unavailable"); },
       cancelSubscription: async () => ({ applied: false }),
       setAutoReload: async () => { throw new ApiError(403, "x", undefined, "purchase_closed"); },
       joinTeamWaitlist: async () => ({ ok: false }),
     }));
     const cases: readonly { path: string; want: string }[] = [
-      { path: "/app/settings/billing/change-plan", want: "/app/settings/billing?notice=change" },
+      { path: "/app/settings/billing/change-plan", want: "/app/settings/billing?notice=change_plan_unavailable" },
       { path: "/app/settings/billing/cancel", want: "/app/settings/billing?notice=cancel" },
       { path: "/app/settings/billing/auto-reload", want: "/app/settings/billing?notice=purchase_closed" },
       { path: "/app/settings/billing/waitlist", want: "/app/settings/billing?notice=waitlist" },
