@@ -1245,3 +1245,6 @@ sequence (BM-COMPAT-05 — historical filenames are not renamed).
 | 258 | `258_R6OPS.2__billing-export-empty.md` | R6 tail | **run-time insert** — `billing_export_prod` zero tables since launch (the CLK-4 blocker) | — |
 | 259 | `259_R6FIX.10__u6-fixture-dist.md` | R6 tail | **run-time insert** — nightly journeys red root-caused by 206: `u6-stub-turn.fixture.json` never emitted to dist → ENOENT in the U6_CHAT leg (BL-111) | — |
 | 260 | `260_R6OPS.3__purge-job-loss.md` | R6 tail | **run-time insert** — `project.purge` job vanished without firing; tombstone 11.6d past grace (F-R6WATCH.2-1 / BL-112) | — |
+| 262 | `262_R6FIX.12__signup-redirect-loop.md` | hotfix | **intervention insert R-1** — sign-up redirect loop (F-15/BL-105, `6b008f67` regression): N1/N3 ERR_TOO_MANY_REDIRECTS; deploy arm pre-authorized (conditional on operator merge + green CI) | pre-auth (operator ruling 2026-11-15) |
+| 263 | `263_R6FIX.13__billing-change-plan-fence.md` | post-intervention | **intervention insert R-3** — `POST /app/settings/billing/change-plan` typed non-mutating refusal (D-R6FIX.5-1) until a Price registry exists | — |
+| 264 | `264_R6FIX.14__analytics-self-traffic.md` | post-intervention | **intervention insert R-4** — tag automated traffic, exclude from acquisition/funnel, re-baseline (read-only prod) | — |
