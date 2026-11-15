@@ -27,6 +27,7 @@ import {
 import { freshIdentity, assertTestIdentity } from "./session.js";
 import { ensureJrnaPaidFixture } from "./fixture-substrate.js";
 import { cogsLeversFor } from "./registry.js";
+import { newMarkedContext } from "./marked-context.js";
 // ACT.1 — the journey asserts against the SHIPPED config (the same typed pricing.json the
 // surfaces render from), never a second literal copy of the trial's figures.
 import {
@@ -1372,7 +1373,7 @@ const R4: StepFn = async (ctx) => {
   }
   // the phone half — a real MOBILE context (the compact mount is UA-driven — `isPhoneRequest` —
   // a bare viewport resize keeps the desktop mount, whose hidden desk composer then fails the probe).
-  const phone = await ctx.browser.newContext({
+  const phone = await newMarkedContext(ctx.browser, {
     baseURL: ctx.webBaseUrl,
     storageState: await context.storageState(),
     userAgent: IPHONE_USER_AGENT,
@@ -1788,7 +1789,7 @@ const assertTargetSize = async (page: Page, sel: string, minPx: number, label: s
  *  the phone context closes with the step's browser teardown. */
 async function p1PhoneProject(ctx: StepCtx): Promise<{ page: Page; slug: string }> {
   const { context } = await ctx.returningUser("a");
-  const phone = await ctx.browser.newContext({
+  const phone = await newMarkedContext(ctx.browser, {
     baseURL: ctx.webBaseUrl,
     storageState: await context.storageState(),
     userAgent: IPHONE_USER_AGENT,
@@ -2149,7 +2150,7 @@ const P1_DOSSIER: StepFn = async (ctx) => {
     // the hint natively (the 2026-10-15 control arm: Android UA + hint → `data-device="phone"`,
     // zero bulk controls); `isPhoneRequest`'s UA fallback classifies it identically.
     const { context } = await ctx.returningUser("a");
-    const phone = await ctx.browser.newContext({
+    const phone = await newMarkedContext(ctx.browser, {
       baseURL: ctx.webBaseUrl,
       storageState: await context.storageState(),
       userAgent: IPHONE_USER_AGENT,

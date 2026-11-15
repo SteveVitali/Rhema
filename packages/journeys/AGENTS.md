@@ -56,6 +56,10 @@ node packages/journeys/dist/cli.js \
   reports `owed`, failing green fails the run. Change the registry only with the corresponding proof.
 - Correct ✓: assert committed visible text, actionable controls, and declared DOM selectors.
   Wrong ✗: pass because a bundle exists, a selector count is nonzero, or a run produced no error.
+- Browser contexts come from `newMarkedContext` (`src/marked-context.ts`, 264_R6FIX.14): every
+  harness context carries the shared `+RhemaJourney` UA token so the funnel ingest writes
+  `acquisition_events.surface='web:auto'`. A leg needing a custom `userAgent` passes it through
+  the same helper — the marker composes, never replaces. Never call `browser.newContext` directly.
 - Use `apps/web/src/dom-contract.ts` vocabulary. IDs retain their family prefixes:
   `N*`, `R*`, `T*`, `B*`, `P1.*`, `X1.*`, `C1`; sub-assertions use suffixes such as `N2.invite`.
   The round-7 families live in `src/r7legs.ts` beside `src/registry.ts`: `D*` demo legs

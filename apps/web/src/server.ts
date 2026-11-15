@@ -128,6 +128,7 @@ import {
   stackForLog,
   REQUEST_ID_HEADER,
   LEGAL_PAGES,
+  acquisitionSurfaceForUserAgent,
   type GateKind,
   type PublicClaimsConfig,
   type FindingView,
@@ -2737,6 +2738,10 @@ export function createWebApp(deps: WebDeps): Hono {
           ...(props ? { props } : {}),
           ...(token ? { token } : {}),
           ip: clientIp(c),
+          // 264_R6FIX.14 — the relay's inbound-UA classification rides the beacon into
+          // `acquisition_events.surface` (`web:auto` = marked self-traffic). The api re-validates;
+          // an unmarked UA stays `web` (the marker is appended by the harness context seam).
+          surface: acquisitionSurfaceForUserAgent(c.req.header("user-agent")),
         })
         .catch(() => undefined);
     } catch {
