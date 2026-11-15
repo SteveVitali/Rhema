@@ -21,9 +21,11 @@
 - **R-5 maintenance mode (operator 2026-11-15):** after rows 262–264 land, no new round, no scheduled standing-watch re-reads, no records-only ceremony beyond the skills' minimum; work is inserted only for defects or operator-asked items; CI-boundary + BUILD_INDEX bookkeeping folds into each ticket's own close commit where the skills allow; never commit raw prod artifacts that may contain user data or tokens (signed-in screenshots, report JSON with magic-link/session tokens).
 
 ## CURRENT STATE
+
+```
 projectStatus:   IN_PROGRESS
-nextTicket:        262_R6FIX.12   # R-1 signup redirect-loop hotfix (N1/N3 ERR_TOO_MANY_REDIRECTS, F-15 regression)
-lastCompleted:   261_R6FIX.11      # purge FK-cascade fix; PRs #334/#335 OPEN unmerged (mergePolicy OPERATOR)
+nextTicket:        262_R6FIX.12   # R-1 signup redirect-loop hotfix (PR #337 — merge first with #334/#335)
+lastCompleted:   261_R6FIX.11      # purge FK-cascade fix; PRs #334/#335 OPEN unmerged
 blockedOn:       (none)
 pauseRequested:  false
 returnPass:      (none)
@@ -32,14 +34,15 @@ canonicalSpec:   docs/rhema-design-spec.md + docs/frontend-spa-spec.md + docs/ro
 memoryRoot:      docs/build
 dispatchTarget:  subagent
 buildWorktree:   /Users/stevenvitali/Rhēma
-buildBranchBase: main              # flat mode — chain merged; inserts branch off origin/main
+buildBranchBase: main              # flat mode — inserts branch off origin/main
 pinnedBaseSha:   a34eb51           # round-7 fork point (unchanged)
-chainTip:        origin/main          # prod deploys from merged `main` lineage
+chainTip:        origin/main
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
-autonomy:        checkpoint         # pause at gates, real blocks, operator pauses
+autonomy:        checkpoint
 mergePolicy:     OPERATOR
-round:           7                  # public demo + UX overhaul — post-round maintenance per GD-MAINT.R6
-updatedAt:       2026-11-15T00:00Z  # R-0 collapse: 15 stacked blocks archived byte-for-byte to docs/build/reports/2026-11-15_state-collapse/CURRENT-STATE-unioned-blocks.txt; standing rule — stacked CURRENT STATE = conflict never union
+round:           7                  # post-round maintenance per GD-MAINT.R6
+updatedAt:       2026-11-15T23:0xZ  # R-0 repair — stacked blocks archived to reports/2026-11-15_state-collapse/; union-merging CURRENT STATE is FORBIDDEN (GD-OPS-RULES.R6)
+```
 
 ## OPEN FINDINGS
 
