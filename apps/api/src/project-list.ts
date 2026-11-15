@@ -761,6 +761,21 @@ export function createShellRoutes(deps: ShellApiDeps): Hono {
       intent,
     });
   });
+  // R6FIX.12 (F-15/BL-105) — consume the recorded signup intent ONCE: the web's `GET /app`
+  // calls this as it honors the §15.3 carried-file precedence (the redirect onto
+  // `/app/new?entry=…`), so a later `/app` never force-redirects again — and a persistently
+  // refused create cannot re-loop the two server redirects. The `?entry=` fallback path has
+  // nothing stored; the clear is then a no-op. Idempotent, scoped to the caller's own
+  // account row (`"user"` is an account table, never tenant-keyed) — the same `deps.db`
+  // seam the intent read above already uses.
+  app.post("/showcase/intent/consume", async (c) => {
+    const principal = deps.principal(c);
+    if (!principal) return c.json({ error: "unauthenticated" }, 401);
+    await deps.db
+      .query(`update "user" set signup_intent = null where id = $1`, [principal.userId])
+      .catch(() => undefined); // a missing column on an unmigrated dev DB never fails the consume
+    return c.json({ ok: true });
+  });
   // Public: the web /login gate validates an invite BEFORE any auth request is made (no valid code ⇒ no
   // signup). This only reports validity for a code the caller supplies; it consumes nothing. NOTE: it is an
   // unauthenticated validity oracle — for the private, operator-issued, revocable beta codes that is an
