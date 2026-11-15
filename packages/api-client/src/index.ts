@@ -3364,6 +3364,13 @@ export interface ApiClient {
    * + the recorded signup intent — the `GET /app` precedence redirect's read.
    */
   getShowcase(init?: RequestInitLite): Promise<ShowcaseEntryDto>;
+  /**
+   * R6FIX.12 — POST /showcase/intent/consume: clears `user.signup_intent` for the caller's own
+   * account. The web's `GET /app` calls it as it honors the §15.3 carried-file redirect so the
+   * intent is consumed exactly once (a later `/app` never force-redirects; a refused create
+   * cannot re-loop). Idempotent.
+   */
+  consumeSignupIntent(init?: RequestInitLite): Promise<{ ok: boolean }>;
   /** The account's analytics opt-out flag (the Settings toggle's read). */
   getPrivacySettings(init?: RequestInitLite): Promise<PrivacySettingsDto>;
   /** Flip `analytics_opt_out` (REQ-PROD-15 — stops future writes AND hides existing rows from reads). */
@@ -4593,6 +4600,12 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async getShowcase(init): Promise<ShowcaseEntryDto> {
       return json<ShowcaseEntryDto>("/showcase", {
         method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async consumeSignupIntent(init): Promise<{ ok: boolean }> {
+      return json<{ ok: boolean }>("/showcase/intent/consume", {
+        method: "POST",
         headers: init?.headers as Record<string, string> | undefined,
       });
     },

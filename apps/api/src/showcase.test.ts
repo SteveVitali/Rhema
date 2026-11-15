@@ -90,6 +90,38 @@ describe("GET /showcase — the precedence read (§15.3/§15.4)", () => {
   });
 });
 
+describe("R6FIX.12 — POST /showcase/intent/consume (the §15.3 consume-once arm)", () => {
+  it("clears user.signup_intent for the caller's own account; idempotent; 401 unauthenticated", async () => {
+    const { app } = await provisioned();
+    // the funnel recorded a carried-file intent at creation
+    await db.pg.query(`update "user" set signup_intent = $2 where id = $1`, [
+      UL,
+      JSON.stringify({ entry: "draft", held: true }),
+    ]);
+    const before = (await (await app.request("/showcase")).json()) as { intent: unknown };
+    expect(before.intent).toMatchObject({ entry: "draft", held: true });
+
+    const res = await app.request("/showcase/intent/consume", { method: "POST" });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+
+    const row = (
+      await db.client.query(`select signup_intent from "user" where id = $1`, [UL])
+    ).rows[0] as { signup_intent: unknown };
+    expect(row.signup_intent).toBeNull();
+    const after = (await (await app.request("/showcase")).json()) as { intent: unknown };
+    expect(after.intent).toBeNull();
+
+    // idempotent — a second consume answers the same envelope (a replayed handoff is safe)
+    const again = await app.request("/showcase/intent/consume", { method: "POST" });
+    expect(again.status).toBe(200);
+
+    // unauthenticated ⇒ 401 (the BFF's JSON arm — never a redirect)
+    const unauth = createApp({ ...deps, principal: () => null, db: db.client, systemExec: db.client });
+    expect((await unauth.request("/showcase/intent/consume", { method: "POST" })).status).toBe(401);
+  });
+});
+
 describe("the read-only contract (§15.4; REQ-GROWTH-2)", () => {
   it("POST /projects/:id/runs on the showcase is 409 showcase_read_only — never a silent run", async () => {
     const { app, result } = await provisioned();
