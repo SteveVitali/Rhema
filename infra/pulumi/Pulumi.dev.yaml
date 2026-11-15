@@ -31,6 +31,7 @@ config:
   gcp:region: us-central1
   rhema:placeholderImage: us-docker.pkg.dev/cloudrun/container/hello
   rhema:deployProxyMig: "true"
+<<<<<<< Updated upstream
   # SEC.3 — run-task pods run under the Localhost `rhema-run-task` AppArmor profile (the loader
   # DaemonSet lands it via infra/k8s/apply.sh — run after `pulumi up`, same as prod).
   rhema:runTaskAppArmorType: Localhost
@@ -49,3 +50,15 @@ config:
   # commit the images carry + `node scripts/compute-protocols-version.mjs` at the same commit.
   rhema:gitSha: 14d75ebffd520f86f58546bf99e0910736e84112
   rhema:protocolsVersion: 0.4.0+ec61156725a895ab
+=======
+  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-dev/egress-proxy@sha256:60d0aae5dea2fbcbf43f628f98a72a17ff978771abb3ba4d3e8450235ad2a085
+  rhema:proxyDatabaseUrl:
+    secure: AAABAMM/AdzmjzaA4rCK7cSWfcWsrRgoXNa4e9s52S4o21LjOuCrMF/i4Iys77VSkhDS2MN+qbSZnpnkg9qDiqweBbhZ0VMabeElOy5un0KFXkvC2nn3H1UJjSDvrBbeA3QYStTq8RZJOkQKsV2onHhuE012ywt6zhgNPy8irw==
+  rhema:workerDatabaseUrl:
+    secure: AAABAGoWTp0brekwScb5WgTohYzGzBARo4twAc8bEkcnbhF98WBY6ZG1KblB/JEWHHUGRr+MixLTu1tblGgugzKQBG+zvPzFZQ7loOd+oZNGG3WANW2SNjE/sXSzREQ+NXrIp8qdQ0O1nsWp1+nOUH07s+5W4/BbpVbE
+  rhema:workerSystemDatabaseUrl:
+    secure: AAABANinhgLxDZ+Ri4AKTbBErot//U7NycMnSpGYdiferYHKgX0SfoLxuTx7cxr3gWrsj3A3+RW39Ui/MDut9isgAj/0xqdgvjvyeDo8IdkdOp/VGMq5dFu3fH8v+en7T5bP7kJr9qv9QlRU//uozn6Gls9hdzlM5jwi
+  rhema:workerRedisUrl:
+    secure: AAABAIgPCveM8nsUckmJxlXwIjwNFECc60tlYtbQFume7kA0lJw2rEoRpxlhdXcdGQaqW57K+Y1e
+  rhema:runTaskImageDigest: sha256:7635d9e041242024b77a6d4c54d3e334c96e88600d9b67bc3ecb5bfc0fa3c63f
+>>>>>>> Stashed changes
