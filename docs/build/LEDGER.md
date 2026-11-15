@@ -21,11 +21,25 @@
 - **R-5 maintenance mode (operator 2026-11-15):** after rows 262–264 land, no new round, no scheduled standing-watch re-reads, no records-only ceremony beyond the skills' minimum; work is inserted only for defects or operator-asked items; CI-boundary + BUILD_INDEX bookkeeping folds into each ticket's own close commit where the skills allow; never commit raw prod artifacts that may contain user data or tokens (signed-in screenshots, report JSON with magic-link/session tokens).
 
 ## CURRENT STATE
-projectStatus:   IN_PROGRESS        # 2026-11-15 — R-0 collapse: 15 stacked CURRENT STATE blocks unioned in by parallel records merges were archived byte-for-byte to `docs/build/archive/2026-11-15_CURRENT-STATE-union-collapse.txt`; this is the single authoritative block. Standing rule (R-0): a merge that would stack a second CURRENT STATE value is a CONFLICT to resolve, never a union.
-nextTicket:        262_R6FIX.12   # operator intervention 2026-11-15 — R-1 sign-up redirect-loop hotfix inserts ahead of everything else (N1/N3 ERR_TOO_MANY_REDIRECTS, F-15 regression)
+projectStatus:   IN_PROGRESS
+nextTicket:        262_R6FIX.12   # R-1 signup redirect-loop hotfix (N1/N3 ERR_TOO_MANY_REDIRECTS, F-15 regression)
 lastCompleted:   261_R6FIX.11      # purge FK-cascade fix; PRs #334/#335 OPEN unmerged (mergePolicy OPERATOR)
-chainTip:        origin/main          # merged `main` — prod deploys from this lineage
-updatedAt:       2026-11-15T00:00Z  # R-0 collapse
+blockedOn:       (none)
+pauseRequested:  false
+returnPass:      (none)
+manifest:        docs/tickets/00_MANIFEST.md
+canonicalSpec:   docs/rhema-design-spec.md + docs/frontend-spa-spec.md + docs/round-6-draft-spec.md
+memoryRoot:      docs/build
+dispatchTarget:  subagent
+buildWorktree:   /Users/stevenvitali/Rhēma
+buildBranchBase: main              # flat mode — chain merged; inserts branch off origin/main
+pinnedBaseSha:   a34eb51           # round-7 fork point (unchanged)
+chainTip:        origin/main          # prod deploys from merged `main` lineage
+benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
+autonomy:        checkpoint         # pause at gates, real blocks, operator pauses
+mergePolicy:     OPERATOR
+round:           7                  # public demo + UX overhaul — post-round maintenance per GD-MAINT.R6
+updatedAt:       2026-11-15T00:00Z  # R-0 collapse: 15 stacked blocks archived byte-for-byte to docs/build/reports/2026-11-15_state-collapse/CURRENT-STATE-unioned-blocks.txt; standing rule — stacked CURRENT STATE = conflict never union
 
 ## OPEN FINDINGS
 
