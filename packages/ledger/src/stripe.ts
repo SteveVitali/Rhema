@@ -795,7 +795,7 @@ async function processInvoicePaid(
     const stored = (
       await exec.query(
         "select period_end, billing_cycle from subscriptions where stripe_subscription_id = $1",
-        [invoice.subscription],
+        [subscriptionId],
       )
     ).rows[0] as { period_end: string; billing_cycle: string | null } | undefined;
     if (!stored) return { kind: "ignored" };
