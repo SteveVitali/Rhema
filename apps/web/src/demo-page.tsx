@@ -11,6 +11,7 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import { DEMO_HUB_ESSAYS, DEMO_TOUR_ENTRY_HREF, demoDeepLink } from "@rhema/contracts";
+import { NonceScript } from "@rhema/ui";
 import type { DemoCardFactsDto } from "@rhema/api-client";
 import { COPY } from "./copy.js";
 
@@ -221,9 +222,10 @@ export function demoHubDocument(cards: readonly DemoCardFactsDto[]): ReactNode {
   return (
     <>
       <DemoHubPage cards={cards} />
-      {/* 223 R7DEM.6b (REQ-TOUR-9) — the anonymous `demo.hub_viewed` beacon. Inline script is
-       *  CSP-nonced by the middleware; sendBeacon only, ≤ 256 B, `src` from the URL. */}
-      <script
+      {/* 223 R7DEM.6b (REQ-TOUR-9) — the anonymous `demo.hub_viewed` beacon. The inline script
+       *  carries the request's CSP nonce (author-side, RH-30); sendBeacon only, ≤ 256 B,
+       *  `src` from the URL. */}
+      <NonceScript
         dangerouslySetInnerHTML={{
           __html:
             `(function(){try{var s=new URLSearchParams(location.search).get("src");` +

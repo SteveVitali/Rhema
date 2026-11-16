@@ -97,6 +97,7 @@ export * from "./signup.js";
 export * from "./spa.js";
 export * from "./rate-limit.js";
 export * from "./client-ip.js";
+export * from "./same-origin-path.js";
 
 // purchase admission mode + the Stripe-hosted redirect surface (BILL.3; REQ-BILL-16; §14.6)
 export * from "./purchase.js";

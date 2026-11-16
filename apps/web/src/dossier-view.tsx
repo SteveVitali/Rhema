@@ -21,6 +21,7 @@ import {
   RubricView,
   SecondReadView,
   Select,
+  NonceScript,
   VersionObligationChip,
   type ClaimTableRow,
   type FindingsDeskLabels,
@@ -807,7 +808,7 @@ export function DossierArticle({
       {beacon === "script" && dossier.showcase && dossier.firstFindingId ? (
         // 243a — the finding anchor moved off the findings rail: the beacon resolves the
         // letter's passage link first, then the panel's desk row, then any data-finding card.
-        <script
+        <NonceScript
           dangerouslySetInnerHTML={{
             __html: `(function(){var el=document.querySelector('[data-passage-link="${dossier.firstFindingId}"]')||document.querySelector('[data-desk-row="${dossier.firstFindingId}"]')||document.querySelector('[data-finding="${dossier.firstFindingId}"]');if(!el)return;var sent=false;function fire(){if(sent)return;sent=true;var b=JSON.stringify({event:"showcase.finding_anchor_viewed",props:{}});try{if(navigator.sendBeacon){navigator.sendBeacon("/a/acq",new Blob([b],{type:"application/json"}));return;}}catch(e){}fetch("/a/acq",{method:"POST",headers:{"content-type":"application/json"},body:b,keepalive:true}).catch(function(){});}var io=new IntersectionObserver(function(es){for(var i=0;i<es.length;i++){if(es[i].isIntersecting){fire();io.disconnect();}}},{threshold:0.4});io.observe(el);setTimeout(function(){var r=el.getBoundingClientRect();if(r.top<window.innerHeight&&r.bottom>0)fire();},1200);})();`,
           }}
