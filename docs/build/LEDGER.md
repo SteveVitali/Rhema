@@ -25,8 +25,8 @@
 
 ```
 projectStatus:   IN_PROGRESS
-nextTicket:        274_HUMAN        # 273_R6OPS.5 done — handoff order (274 is the HUMAN row: the operator channel acts + test page the 273 deferral names)
-lastCompleted:   273_R6OPS.5      # alerting/paging cluster (RH-27 code half + RH-20/21-residual/22) — PR this run, unmerged
+nextTicket:        (maintenance mode)  # 277_R6LOW.1 done — per GD-MAINT.R6 work is inserted only for defects or operator-asked items; the handoff-insert stack (#344 + 266–277 PRs) awaits the operator's bottom-up merges; no new round
+lastCompleted:   277_R6LOW.1      # LOW/info catch-all sweep — 9 fixes landed, BL-115…124 opened, 1 refuted, 1 covered; PR this run, unmerged
 blockedOn:       (none)
 pauseRequested:  false
 returnPass:      (none)
@@ -37,12 +37,12 @@ dispatchTarget:  subagent
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main              # flat mode — inserts branch off origin/main
 pinnedBaseSha:   a34eb51           # round-7 fork point (unchanged)
-chainTip:        stevevitali/r6ops-5-alerting
+chainTip:        stevevitali/r6low-1-sweep
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
 round:           7                  # post-round maintenance per GD-MAINT.R6
-updatedAt:       2026-11-16T12:5xZ  # merge main @3cd9f1bc — CURRENT STATE collapsed to this PR's own 273_R6OPS.5 transition per GD-OPS-RULES.R6 (union on CURRENT STATE forbidden); inherited copies dropped
+updatedAt:       2026-11-16T12:5xZ  # merge main @228021e1 — CURRENT STATE collapsed to this PR's own 277_R6LOW.1 transition per GD-OPS-RULES.R6 (union on CURRENT STATE forbidden); inherited copies dropped
 ```
 
 ## OPEN FINDINGS

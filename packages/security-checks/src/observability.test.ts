@@ -27,8 +27,15 @@ describe("the §13.5 SLO wiring — registry → sweep → metric → policies �
 
   it("the worker registers the 5-minute slo.probe sweep and logs [slo] violation lines", () => {
     expect(worker).toContain("probeSlos(systemExec)");
-    expect(worker).toContain("SLO_SWEEP_INTERVAL_MS = 5 * 60_000");
+    // R6LOW.1 (N-A6 #4) — the 5-minute sweep rides a pg-boss `slo.probe` cron (queue created, consumer
+    // bound, `*/5` schedule) so each tick is a visible job row — never an in-process setInterval.
+    expect(worker).toContain('"slo.probe", // P1.22');
+    expect(worker).toContain('boss.work("slo.probe"');
+    expect(worker).toContain('boss.schedule("slo.probe", "*/5 * * * *")');
+    expect(worker).not.toContain("setInterval(probeTick");
     expect(worker).toContain("[slo] violation");
+    // R6LOW.1 (N-A6 #9) — an `error` reading is logged every tick, not left invisible until the review.
+    expect(worker).toContain("[slo] probe-error");
     expect(worker).toContain('kind: "slo_violation"');
   });
 

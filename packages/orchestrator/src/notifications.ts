@@ -73,6 +73,12 @@ export interface MailSender {
     text: string;
     html: string;
     from?: string;
+    /**
+     * Provider idempotency key (Resend `Idempotency-Key`). Callers pass a deterministic key derived
+     * from the durable job/delivery identity, so a retry after an ambiguous transport result never
+     * double-sends (R6LOW.1 / RH-A1-7). Adapters without provider support may ignore it.
+     */
+    idempotencyKey?: string;
   }): Promise<{ id: string }>;
 }
 
@@ -1636,6 +1642,9 @@ export async function handleMailSendJob(
     text: payload.text,
     html: payload.html,
     ...(deps.emailFrom ? { from: deps.emailFrom } : {}),
+    // The delivery row id is the durable dedupe identity — a re-drive reuses it, so the provider's
+    // idempotent replay returns the original send instead of mailing twice (R6LOW.1 / RH-A1-7).
+    idempotencyKey: `mail.send:${payload.deliveryId}`,
   });
   await deps.txRunner.run(payload.workspaceId, (tx) =>
     tx.query("update notification_deliveries set status = 'sent', sent_at = $2 where id = $1", [
