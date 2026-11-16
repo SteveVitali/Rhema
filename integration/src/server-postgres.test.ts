@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, it } from "vitest";
 import pg from "pg";
-import { applyMigrations, seedRealProjects, type MigrationDb } from "@rhema/db";
+import { applyMigrations, seedRealProjects, USER_SERVING_ROLE, withTenant, type MigrationDb } from "@rhema/db";
 
 // Closes D-P0.02-1: run the forward-only migrations + the real-project seed against a SERVER Postgres (the CI
 // `postgres:16` service via DATABASE_URL), not only in-process PGlite. Proves the authoritative SQL DDL applies on a
@@ -67,17 +67,16 @@ describe.skipIf(!DATABASE_URL)("migrations + real-project seed against a server 
       `);
       const client = await user.connect();
       try {
-        await client.query("begin");
-        await client.query("select set_config('role','rhema_app_login',true)");
-        await client.query("select set_config('app.tenant_id','ws_cia',true)");
-        const rows = (await client.query("select id from projects order by id")).rows as { id: string }[];
-        expect(rows.map((r) => r.id)).toEqual(["prj_cia"]);
+        // withTenant owns the role + GUC + tx edges (BL-118) — the same seam this probe pins.
+        await withTenant(client, "ws_cia", async () => {
+          const rows = (await client.query("select id from projects order by id")).rows as { id: string }[];
+          expect(rows.map((r) => r.id)).toEqual(["prj_cia"]);
 
-        // (c) the system-table boundary: proxy_credentials is denied to the user role
-        await expect(client.query("select id from proxy_credentials")).rejects.toThrow(
-          /permission denied/i,
-        );
-        await client.query("rollback");
+          // (c) the system-table boundary: proxy_credentials is denied to the user role
+          await expect(client.query("select id from proxy_credentials")).rejects.toThrow(
+            /permission denied/i,
+          );
+        }, { role: USER_SERVING_ROLE });
       } finally {
         client.release();
       }
