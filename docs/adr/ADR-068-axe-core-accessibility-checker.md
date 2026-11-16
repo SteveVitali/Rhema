@@ -37,3 +37,11 @@ order, meaning of names) are recorded in the run ledger per the ticket.
 ## Revisit trigger
 Axe's licence changes, a violation class it cannot express becomes required (then a second tool or
 targeted assertions join it), or the harness needs results in CI without a browser context.
+
+## Amendment — 2026-11-16 (277_R6LOW.1, docs-drift RH-A4-3)
+The Decision text says the UMD source is injected "via `page.addScriptTag`". As implemented
+(`packages/journeys/src/steps.ts` `assertAxeClean`), the check attaches through `page.evaluate`:
+the page CSP (`script-src 'self' 'nonce-…'`) correctly refuses `addScriptTag({content})`, so CDP
+evaluation is the injection mechanism that ships. The decision itself (axe-core, tag set, fail-on-
+violation, MPL-2.0 exception) stands unchanged; only the injection mechanism described above was
+superseded at implementation time.

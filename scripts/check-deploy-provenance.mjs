@@ -56,16 +56,29 @@ deployedShas.forEach((sha, i) => {
   observed[`--deployed#${i}`] = sha.trim().toLowerCase() || null;
 });
 
+// Both sides must carry at least git's default abbreviation length — a bidirectional prefix match on
+// a 1–6 char SHA (a truncated /healthz build.gitSha, or an absurdly short --expect) is not a
+// provenance proof (R6LOW.1 / RH-A4-5).
+const MIN_SHA_PREFIX = 7;
+
 const match = (sha) => {
   const s = sha?.trim().toLowerCase();
-  return !!s && s !== "unknown" && (s.startsWith(expectSha) || expectSha.startsWith(s));
+  return (
+    !!s &&
+    s !== "unknown" &&
+    s.length >= MIN_SHA_PREFIX &&
+    expectSha.length >= MIN_SHA_PREFIX &&
+    (s.startsWith(expectSha) || expectSha.startsWith(s))
+  );
 };
 
 let ok = true;
 for (const [label, sha] of Object.entries(observed)) {
   let good = match(sha);
   let drift = false;
-  if (!good && sha != null) {
+  // The same floor gates the drift arm: a reported SHA shorter than 7 chars is malformed input
+  // (a real build.gitSha is 40 chars), not an abbreviation to re-verify — fail closed.
+  if (!good && sha != null && sha.trim().length >= MIN_SHA_PREFIX) {
     // REQ-ENG-8 second opinion — ancestor + deploy-neutral-diff-only. `deployNeutralDrift` is
     // fail-closed: absent/unknown/unresolvable SHAs and non-repo cwds all return ok:false.
     const verdict = deployNeutralDrift(expectSha, sha);

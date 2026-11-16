@@ -159,9 +159,15 @@ lines.push({ service: `Cloud NAT ×${nats} (gateway + ~5GB/mo)`, usdMonth: (natU
   src: [natUp.sku, `${natData.sku} (est. 5GB — proxy/provider egress)`] });
 
 const lbRule = priceOf(netSkus, { label: "LB rule", needles: ["cloud load balancer forwarding rule minimum global"] });
-const lbData = priceOf(netSkus, { label: "LB inbound", needles: ["global external application load balancer inbound data processing"] });
-lines.push({ service: `HTTPS LB (${fwdRules - intFwdRules} rules + ~20GB)`, usdMonth: (lbRule.usd ?? 0) * HOURS + (lbData.usd ?? 0) * 20,
-  src: [lbRule.sku, `${lbData.sku} (est. 20GB — web/api traffic)`] });
+// R6LOW.1 (N-C2) — the LB bills data processing BOTH directions at the same $/GiBy rate; the
+// estimate was inbound-only. Logging/Monitoring stay an explicit unpriced line below rather than
+// silently absent (this script is the only cost evidence until the billing export lands).
+const lbDataIn = priceOf(netSkus, { label: "LB inbound", needles: ["global external application load balancer inbound data processing"] });
+const lbDataOut = priceOf(netSkus, { label: "LB outbound", needles: ["global external application load balancer outbound data processing"] });
+lines.push({ service: `HTTPS LB (${fwdRules - intFwdRules} rules + ~20GB in + ~20GB out)`, usdMonth: (lbRule.usd ?? 0) * HOURS + ((lbDataIn.usd ?? 0) + (lbDataOut.usd ?? 0)) * 20,
+  src: [lbRule.sku, `${lbDataIn.sku} (est. 20GB in)`, `${lbDataOut.sku} (est. 20GB out)`] });
+lines.push({ service: "Cloud Logging + Monitoring", usdMonth: 0,
+  src: ["NOT PRICED — log ingestion + metric volume unpriced (R6LOW.1): the recomputation understates by that amount"] });
 
 // R6INF.2 (ADR-122) — the egress-proxy ILB: generic LB forwarding-rule minimum is charged
 // per LB family (external rules already bill under `lbRule` above — the minimum covers

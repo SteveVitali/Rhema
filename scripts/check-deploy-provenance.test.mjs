@@ -99,6 +99,20 @@ test("--deployed mode compares a pre-resolved sha (the deployments row)", async 
   assert.notEqual((await run(["--expect", SHA, "--deployed", "f".repeat(40)])).status, 0);
 });
 
+test("R6LOW.1 — a prefix shorter than 7 chars is not provenance (truncated deployed sha / short --expect)", async () => {
+  // a truncated build.gitSha that happens to be a prefix of the expected sha must FAIL, not pass.
+  for (const n of [1, 4, 6]) {
+    assert.notEqual(
+      (await run(["--expect", SHA, "--deployed", SHA.slice(0, n)])).status,
+      0,
+      `deployed ${n}-char prefix should fail closed`,
+    );
+  }
+  // a too-short --expect also fails closed: below git's abbreviation floor it is not even a
+  // resolvable commit for the drift arm to re-verify.
+  assert.notEqual((await run(["--expect", SHA.slice(0, 3), "--deployed", SHA])).status, 0);
+});
+
 test("usage error without --expect", async () => {
   assert.equal((await run(["--healthz", "http://x"])).status, 2);
 });
