@@ -3388,7 +3388,8 @@ export interface ApiClient {
   getSubscription(init?: RequestInitLite): Promise<BillingSubscriptionDto>;
   /** Cancel = cancel_at_period_end — the plan runs to the paid-through date (§14.6). */
   cancelSubscription(init?: RequestInitLite): Promise<{ applied: boolean }>;
-  /** Change plan: an upgrade applies now; a downgrade schedules to period end. */
+  /** Change plan — FENCED OFF (263_R6FIX.13, D-R6FIX.5-1): the api answers 403
+   *  `change_plan_unavailable` for every call; the applied-shape return is the re-enable path. */
   changePlan(
     tier: string,
     cycle?: "monthly" | "annual",
