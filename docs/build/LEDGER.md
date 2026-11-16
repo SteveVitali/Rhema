@@ -22,9 +22,9 @@
 - **P-1 prod-artifact hygiene (operator ruling 2026-11-15, GD-PRIVACY.R6):** never commit Pulumi stack exports, unredacted scanner output, session/magic-link tokens, or signed-in screenshots of real (non-test) accounts; redact before committing any prod artifact; gitleaks on the staged diff before every records commit. Enacted by 265_R6PRIV.1 (the four named stack exports removed to private retention with sha256 pointer notes; the three unredacted gitleaks reports redacted in place; two magic-link tokens masked; the blanket `docs/` gitleaks skip narrowed to targeted allowlist entries).
 
 ## CURRENT STATE
-
 ```
 projectStatus:   IN_PROGRESS
+HEAD
 nextTicket:        (maintenance mode)  # 289_R6FIX.25 done — rh-low cluster cleared except BL-128 (docs-drift systematic sweep, process item)
 lastCompleted:   289_R6FIX.25     # BL-123 — retention enforcer binding: dead GCS prefix rules dropped + admin_actions.retention 90d prune job + honest binding/docs (operator ruling) — PR this run, unmerged
 blockedOn:       (none)
@@ -37,12 +37,16 @@ dispatchTarget:  subagent
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main              # flat mode — inserts branch off origin/main
 pinnedBaseSha:   a34eb51           # round-7 fork point (unchanged)
+HEAD
 chainTip:        stevevitali/r6fix-25-retention-enforcer
+chainTip:        stevevitali/r6fix-18-set-tenant-lint
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
 round:           7                  # post-round maintenance per GD-MAINT.R6
+HEAD
 updatedAt:       2026-11-16T17:6xZ  # 289_R6FIX.25 run-time insert (BL-123) on main @50a4f9d3 — #364-#372 still open; this PR's own transition per GD-OPS-RULES.R6
+updatedAt:       2026-11-16T17:2xZ  # merge main @50a4f9d3 (#363 landed) — CURRENT STATE collapsed to this PR's own 281_R6FIX.18 transition per GD-OPS-RULES.R6
 ```
 
 ## OPEN FINDINGS

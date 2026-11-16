@@ -259,6 +259,8 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
               }),
               // JOURNEY.1 — test-mailbox flagging on the self-serve paths (OAuth/magic-link) too.
               ...(env.testMailbox ? { testMailbox: env.testMailbox } : {}),
+              // BL-115 — the provision's lock + re-check + writes ride one tenant tx.
+              txRunner,
             });
           },
         },

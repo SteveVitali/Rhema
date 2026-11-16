@@ -13,6 +13,7 @@
 import { createHash } from "node:crypto";
 import pg from "pg";
 import { sha256Hex } from "@rhema/contracts";
+import { withTenant } from "@rhema/db";
 import { stableIdentity } from "./session.js";
 
 let pool: pg.Pool | null = null;
@@ -83,7 +84,7 @@ export async function ensureJrnaPaidFixture(email: string = JRNA): Promise<void>
  *  after minting and takes the row with it; the bound token stays valid because the leg re-mints
  *  the SAME hash onto the CURRENT workspace each run (the mint script's rotating-token recipe is
  *  what made a static secret impossible — a leg-held token never rotates). `account_exports` is
- *  FORCE-RLS tenant-keyed, so the insert rides `set_config('app.tenant_id')` like the dossier
+ *  FORCE-RLS tenant-keyed, so the insert rides `withTenant` like the dossier
  *  seeds — a no-op under a BYPASSRLS system DSN, load-bearing under `rhema_app_login`. The `s3_key`
  *  stub is never dereferenced: the route 410s before presigning (mint-t8-export.mjs's own note).
  *  No-op when JOURNEY_DATABASE_URL is unbound. */
@@ -105,8 +106,8 @@ export async function ensureT8ExpiredExport(email: string, token: string): Promi
   if (!row) throw new Error(`fixture substrate: ${email} has no workspace (sign-in should have provisioned one)`);
   const client = await fixtureDb().connect();
   try {
-    await client.query("begin");
-    await client.query("select set_config('app.tenant_id', $1, true)", [row.workspace_id]);
+    // withTenant owns begin → set_config('app.tenant_id', local) → commit/rollback (BL-118).
+    await withTenant(client, row.workspace_id, async () => {
     const existing = (
       await client.query(
         `select id from account_exports
@@ -134,10 +135,7 @@ export async function ensureT8ExpiredExport(email: string, token: string): Promi
         ],
       );
     }
-    await client.query("commit");
-  } catch (e) {
-    await client.query("rollback").catch(() => undefined);
-    throw e;
+    });
   } finally {
     client.release();
   }
