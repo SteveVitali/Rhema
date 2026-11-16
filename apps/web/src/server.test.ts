@@ -415,7 +415,7 @@ describe("AC1 — invite gating", () => {
     const app = createWebApp(makeDeps());
     const res = await app.request("/app");
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("/login");
+    expect(res.headers.get("location")).toBe("/login?next=%2Fapp");
   });
 });
 
@@ -845,7 +845,7 @@ describe("§5.3 import flow (deliverable 4)", () => {
   it("import is auth-gated (unauthenticated → /login)", async () => {
     const res = await createWebApp(makeDeps()).request("/p/x/import");
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("/login");
+    expect(res.headers.get("location")).toBe("/login?next=%2Fp%2Fx%2Fimport");
   });
 
   it("PRB.21 — a pending preview follows the SAME server-owned poll URL the JSON envelope carries", async () => {
@@ -966,7 +966,7 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
     const app = createWebApp(makeDeps());
     const res = await app.request("/p/the-politics-of-visibility/run");
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("/login");
+    expect(res.headers.get("location")).toBe("/login?next=%2Fp%2Fthe-politics-of-visibility%2Frun");
   });
 
   // SPA.27 (REQ-TST-1) — the SSR sheet render asserts (the launcher, the Fact-check verb + consent
@@ -1320,7 +1320,7 @@ describe("PRB.04 — the delivered-review dossier reading surface (§5.5/§5.7/�
     const app = createWebApp(makeDeps());
     const res = await app.request("/p/the-politics-of-visibility/review/run_1");
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("/login");
+    expect(res.headers.get("location")).toBe("/login?next=%2Fp%2Fthe-politics-of-visibility%2Freview%2Frun_1");
   });
 
   it("the document GET serves the shell; the twin answers the dossier the leaf paints", async () => {

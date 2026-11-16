@@ -41,6 +41,7 @@ import {
   Select,
   TextArea,
   TextField,
+  NonceScript,
 } from "@rhema/ui";
 import {
   CONSENT_ABSOLUTE_CREDITS,
@@ -971,7 +972,7 @@ function SpaRunSheetForm({
       {/* REQ-VFY-4 — the typed lever matrix embed (the journey probes + the repaint share it). The
           SSR `var R=` island is NOT emitted here — the React state above is its replacement; the
           embed stays the renderer-agnostic read. Numbers/keys only (JSON.stringify output). */}
-      <script
+      <NonceScript
         type="application/json"
         data-estimate-matrix="true"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(view.recompute) }}
