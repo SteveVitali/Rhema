@@ -25,8 +25,8 @@
 
 ```
 projectStatus:   IN_PROGRESS
-nextTicket:        268_R6BILL.1  # 267_R6SEC.2 done — RH-8 + RH-10 + RH-39 landed; handoff order continues: RH-9 (Stripe basil pin) is time-critical — first real renewals ~2026-11-28 (266 dispatched on #345; 263/264/265 + handoff inserts await the operator’s bottom-up merges)
-lastCompleted:   267_R6SEC.2      # 2026-11-16 — CI anchor honesty + keyed non-prod identity shim (handoff RH-8/RH-10/RH-39): ci-anchor `if: always()` + needs-result gate (a skipped required check no longer counts as passed on a red run); x-rhema-* header shim keyed by per-stage Secret-Manager `x-rhema-identity-key` (non-prod only; unkeyed fails closed; prod untouched) — PR #347, unmerged; $0
+nextTicket:        (maintenance mode)  # 278_R6FIX.15 done — the handoff chain 266–277 + this insert await the operator's bottom-up merges; per GD-MAINT.R6 work is inserted only for defects or operator-asked items
+lastCompleted:   278_R6FIX.15     # main-red repair — REQ-COPY-2 inventory +3 (`email_taken`/`enqueue_failed` from #351, `magic_link_incomplete` from #356) + additive-migrations pin +1 (`0063`) + #356 test-surface fallout (RH-34 `?next=` expectations + census exemption + journey mock) — PR this run, unmerged
 blockedOn:       (none)
 pauseRequested:  false
 returnPass:      (none)
@@ -37,12 +37,12 @@ dispatchTarget:  subagent
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main              # flat mode — inserts branch off origin/main
 pinnedBaseSha:   a34eb51           # round-7 fork point (unchanged)
-chainTip:        stevevitali/r6sec-2-ci-auth
+chainTip:        stevevitali/r6fix-15-main-red
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
 round:           7                  # post-round maintenance per GD-MAINT.R6
-updatedAt:       2026-11-16T12:5xZ  # merge main @889edb66 — CURRENT STATE collapsed to this PR’s own 267_R6SEC.2 transition per GD-OPS-RULES.R6 (union on CURRENT STATE forbidden); the sibling block (272 pair + r6bill-3 chainTip) that a bulk resolution stamped here dropped
+updatedAt:       2026-11-16T14:2xZ  # merge main @0ddc00e3 — CURRENT STATE collapsed to this PR's own 278_R6FIX.15 transition per GD-OPS-RULES.R6 (union on CURRENT STATE forbidden); the 267 pair main carried in from #347's landing dropped
 ```
 
 ## OPEN FINDINGS

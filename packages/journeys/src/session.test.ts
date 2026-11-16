@@ -142,6 +142,9 @@ describe("JourneySessions — the --invite-code mint channel", () => {
         click: async () => {
           clicks.push(sel);
         },
+        // 278_R6FIX.15 — the mock lands the old-format verify URL directly, so the
+        // RH-31 interstitial confirm is absent and its click arm skips (count 0).
+        count: async () => 0,
         first: () => ({
           isVisible: async () => sel.includes("status"), // the "link sent" status appears
           textContent: async () => null,
