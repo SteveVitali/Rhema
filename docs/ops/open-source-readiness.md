@@ -31,6 +31,15 @@ operator authorization.
   `stevevitali/*` chain branches re-accumulate on origin (all public, all merged or open-PR
   chain content) — periodic prune is hygiene, not a finding.
 
+> **2026-11-15 (265_R6PRIV.1, operator ruling P-1 — public-repo artifact cleanup):**
+> the three unredacted scanner reports referenced below are now committed in
+> **redacted** form — identical finding sets (counts/files/commits/fingerprints),
+> `Secret`/`Match` literals and `Email` masked. The four Pulumi `stack-export-pre.json.gz`
+> prod snapshots and two magic-link `token=` literals (R7DEP.2 stage-B report) were
+> removed under the same ruling; pointer notes record each artifact's sha256 and its
+> private retention path. The blanket `docs/` gitleaks skip was replaced by targeted
+> allowlist entries (`.gitleaks.toml` — `gitleaks git` stays green over full history).
+
 ## Audit evidence (committed)
 
 - `docs/build/reports/2026-11-03_r6oss-1/findings-disposition.md` — the per-finding disposition

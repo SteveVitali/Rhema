@@ -7,6 +7,12 @@ by SHA after a force-push). **Tool:** gitleaks 8.30.1 + `git log --all -G`/`git 
 **Rule for artifacts:** findings cite prefix/shape, never secret values (manifest § Operating
 rules 6).
 
+> **2026-11-15 (265_R6PRIV.1, operator ruling P-1):** `gitleaks-unfiltered-all-refs.json`
+> is now the **redacted** form of the same scan — identical 91 findings (files, commits,
+> fingerprints, classes), with `Secret`/`Match` secret literals and `Email` masked. A
+> literal rescan was not reproducible (the 2026-11-03 ref set was pruned post-flip), so
+> the committed JSON was redacted in place — same evidence, no unredacted values.
+
 ## Scans executed
 
 | Scan | Coverage | Result |

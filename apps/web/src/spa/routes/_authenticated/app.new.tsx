@@ -37,7 +37,11 @@ export const Route = createFileRoute("/_authenticated/app/new")({
     } catch (e) {
       // A refused create (401's session-clear + /login handoff rides BffError's own arm) lands
       // the writer back on the list — never a half-created project.
-      if (e instanceof BffError) throw redirect({ href: "/app" });
+      // R6FIX.12 (F-15/BL-105) — in-router (`to:`), never a document hop: a document GET of
+      // /app would re-run the server precedence redirect and, while a stored intent still
+      // lingers (a consume that raced or a deploy that skipped it), bounce straight back
+      // here — the loop this hotfix kills. The in-router leaf renders the list directly.
+      if (e instanceof BffError) throw redirect({ to: "/app" });
       throw e;
     }
     // The envelope's `?created=scratch` ride stays a typed in-router nav — never a document hop.

@@ -811,6 +811,13 @@ export interface DataSource {
    * redirect's read; absent ⇒ no redirect, the list renders).
    */
   getShowcaseEntry?(session: SessionHeaders): Promise<ShowcaseEntryDto>;
+  /**
+   * R6FIX.12 — consume the recorded signup intent ONCE: `GET /app` calls this as it honors the
+   * §15.3 carried-file redirect (`/app/new?entry=…`), so a later `/app` never force-redirects
+   * again and a refused create cannot re-loop. Optional like the read — a stub/binding miss
+   * degrades to "intent not cleared", never a failed landing.
+   */
+  consumeSignupIntent?(session: SessionHeaders): Promise<{ ok: boolean }>;
   /** the account's analytics opt-out flag (the Settings toggle). */
   getPrivacySettings(session: SessionHeaders): Promise<PrivacySettingsDto>;
   /** flip `analytics_opt_out` — stops future writes AND hides existing rows from reads (REQ-PROD-15). */
@@ -1685,6 +1692,8 @@ export function apiDataSource(
       createApiClient({ baseUrl, fetch: f }).recordDemoEvent(req),
     getShowcaseEntry: (session) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).getShowcase(),
+    consumeSignupIntent: (session) =>
+      createApiClient({ baseUrl, fetch: f, headers: session }).consumeSignupIntent(),
     getPrivacySettings: (session) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).getPrivacySettings(),
     setAnalyticsOptOut: (session, analyticsOptOut) =>

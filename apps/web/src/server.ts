@@ -3195,6 +3195,14 @@ export function createWebApp(deps: WebDeps): Hono {
         entry?.intent?.held === true || c.req.query("held") === "1" ? "&held=1" : "";
       if (intentEntry === "draft" || intentEntry === "outline") {
         // the carried-file precedence (§15.3 rule: the dropped file wins).
+        // R6FIX.12 (F-15/BL-105) — the intent is consumed ONCE, cleared as it is honored: a
+        // later `/app` never force-redirects again, and a persistently refused create cannot
+        // re-loop the two server redirects. The `?entry=` fallback has nothing stored — the
+        // clear is then a no-op — and a failed consume never blocks the handoff (the query
+        // params still carry the intent verbatim).
+        await Promise.resolve()
+          .then(() => deps.dataSource.consumeSignupIntent?.(session))
+          .catch(() => undefined);
         return c.redirect(`/app/new?entry=${intentEntry}${heldQuery}`);
       }
       if (showcase && !showcase.opened && !showcase.archived) {
@@ -3267,6 +3275,16 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/app/new", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    // R6FIX.12 (F-15/BL-105) — `?entry=draft|outline` (+`held`) is the §15.3 handoff URL the
+    // `/app` precedence redirect emits (and the journeys' create seam): serving the shell here
+    // mounts the in-router leaf, which issues the ONE create POST and hands the intent to the
+    // new project's import surface (`?held=1`) or Page. A GET still never creates — the leaf's
+    // POST does. Bare/other-entry document GETs keep the R7HOME.2b server-owned redirect: a
+    // bookmark or a preview-refusal sheet bounce still lands on the list, never mints.
+    const entry = c.req.query("entry");
+    if (entry === "draft" || entry === "outline") {
+      return spaShellDocument(c, deps, session);
+    }
     // R7HOME.2b (REQ-HOME-3, ADR-128's REQ-IDE-5 item) — the sheet's fate is a REDIRECT: a direct
     // document GET lands on the projects list (a GET never creates), while an in-app "New project"
     // navigates to `/app/new` in-router, where the leaf issues the ONE create POST and redirects
