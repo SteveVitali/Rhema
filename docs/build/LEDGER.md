@@ -42,7 +42,7 @@ benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
 round:           7                  # post-round maintenance per GD-MAINT.R6
-updatedAt:       2026-11-16T12:5xZ  # merge main @cd9ba7ff — CURRENT STATE collapsed to this PR's own 268 transition per GD-OPS-RULES.R6 (union on CURRENT STATE forbidden); inherited copies dropped
+updatedAt:       2026-11-16T12:5xZ  # merge main @f593d2ae — CURRENT STATE collapsed to this PR's own 268_R6BILL.1 transition per GD-OPS-RULES.R6 (union on CURRENT STATE forbidden); inherited copies dropped
 ```
 
 ## OPEN FINDINGS
