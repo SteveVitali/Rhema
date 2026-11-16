@@ -14,6 +14,7 @@ import {
   pricingElement,
   signupElement,
   loginElement,
+  magicLinkElement,
   projectElement,
   revisionElement,
   pageElement,
@@ -73,6 +74,7 @@ import {
   wantsJson,
 } from "./bff.js";
 import { DEFAULT_SPA_ASSET_ROOT, spaShellDocument } from "./spa-shell.js";
+import { cspHtmlMiddleware } from "./csp.js";
 import { mountDemo } from "./demo.js";
 import { isPhoneRequest } from "./device.js";
 import { loadEditorPage, docJsonFor } from "./page-data.js";
@@ -83,6 +85,7 @@ import {
   MODEL_TIERS,
   HERO_RECORDING,
   forwardedClientIp,
+  sameOriginPath,
   spaRouteFor,
   type ModelTier,
   type Rigor,
@@ -181,6 +184,14 @@ export interface WebDeps {
    * state cookie all round-trip through it. Unset ⇒ `/api/auth/*` 404s (pre-PRB.16 posture).
    */
   authProxy?(req: Request): Promise<Response>;
+  /**
+   * 275_R6WEB.1 (RH-31) — the magic-link interstitial's consuming half: POST /auth/magic-link
+   * relays the request's query (token + callback URLs) to the api's GET `/api/auth/magic-link/verify`
+   * SERVER-SIDE and returns the upstream response verbatim (the session Set-Cookie + the 302 to
+   * callbackURL). The browser's own GET of the emailed link only ever renders the confirm page —
+   * a mail scanner prefetch can no longer burn the one-shot token. Unset ⇒ `/auth/magic-link` 404s.
+   */
+  verifyMagicLink?(query: string, c: Context): Promise<Response>;
   /** PRB.08 — the final-month beta-plan offer's link (copy + link only; unset ⇒ no offer line renders). */
   readonly betaPlanOfferUrl?: string;
   /**
@@ -250,6 +261,20 @@ export interface WebDeps {
  */
 function clientIp(c: Context): string {
   return forwardedClientIp(c.req.header("x-forwarded-for"));
+}
+
+/**
+ * 275_R6WEB.1 (RH-34) — the login gate's deep-link carry: a refused GET/HEAD lands on
+ * `/login?next=<path+query>` so sign-in returns the reader to the target. `next` is validated
+ * against the request origin at consume time (`sameOriginPath`) — never trusted from the redirect
+ * itself. A refused mutation isn't replayable post-login (a GET of its path is meaningless), so
+ * non-GET arms keep the bare `/login`.
+ */
+function loginHref(c: Context): string {
+  if (c.req.method !== "GET" && c.req.method !== "HEAD") return "/login";
+  const u = new URL(c.req.url);
+  if (u.pathname === "/login") return "/login";
+  return `/login?next=${encodeURIComponent(`${u.pathname}${u.search}`)}`;
 }
 
 function loginErrorFor(reason: string | undefined): string {
@@ -352,7 +377,15 @@ export function createWebApp(deps: WebDeps): Hono {
   // the hop carried one, else minted), stash the Cloud Logging trace field, and normalize non-Error
   // throws so EVERY failure reaches `onError` (a non-Error throw otherwise escapes `app.fetch` to a
   // silent bare 500 — the "5xx with no app log line" defect).
-  app.use("*", obsRequestContext(deps.gcpProject ?? process.env.GOOGLE_CLOUD_PROJECT));
+  // RH-21 residual — the second arg stamps `serviceContext.version` (the image-baked deploy SHA)
+  // on every structured error line so Error Reporting groups attribute to a release.
+  app.use(
+    "*",
+    obsRequestContext(
+      deps.gcpProject ?? process.env.GOOGLE_CLOUD_PROJECT,
+      deps.buildGitSha ?? process.env.RHEMA_BUILD_GIT_SHA,
+    ),
+  );
   // OBS.1 — stamp the resolved request id on the forwarded session headers once: every api-client
   // call (chat, SSE proxy, dossier, …) then carries `x-rhema-request-id` to the api unchanged.
   const innerSession = deps.session;
@@ -362,10 +395,46 @@ export function createWebApp(deps: WebDeps): Hono {
   };
   const beginAuth = deps.beginAuth ?? defaultBeginAuth;
 
+  // 275_R6WEB.1 (RH-23) — the host's own mutation guard. Browsers POST to this host same-origin; a
+  // cross-site form/fetch submission arrives with a foreign `Origin` (always sent on POST, and
+  // unforgeable by page script) or, headerless, `Sec-Fetch-Site: cross-site`. Either is refused with
+  // the api guard's stable `forbidden_origin` (apps/api auth-context.ts) — the session cookie is
+  // SameSite=Lax + host-only, but a fetch-metadata refusal is defense-in-depth, not a cookie bet.
+  // A request with NEITHER header is a non-browser client (curl, server-side) — CSRF needs a
+  // browser, so it is unaffected, mirroring the api's posture. Server-side `apiFetch` calls go
+  // straight to the api and never pass through here; their trusted `origin: appBaseUrl` stamp is
+  // preserved verbatim.
+  const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+  app.use("*", async (c, next) => {
+    if (SAFE_METHODS.has(c.req.method)) {
+      await next();
+      return;
+    }
+    const origin = c.req.header("origin");
+    if (origin != null) {
+      let requestOrigin = "";
+      try {
+        requestOrigin = new URL(c.req.url).origin;
+      } catch {
+        requestOrigin = "";
+      }
+      if (origin !== requestOrigin) return c.json({ error: "forbidden_origin" }, 403);
+    } else if ((c.req.header("sec-fetch-site") ?? "").toLowerCase() === "cross-site") {
+      return c.json({ error: "forbidden_origin" }, 403);
+    }
+    await next();
+  });
+
   // P1.22 (§13.3 audit; REQ-ARCH-24) — the web shell's Content-Security-Policy, stamped per response.
-  // SSR-only app: a per-request nonce is injected into every `<script>` tag of HTML responses and the
-  // policy runs scripts only with that nonce or from 'self' — an injected `<script>` in any rendered
-  // surface (user titles, draft text shown on cards) cannot execute. `style-src 'unsafe-inline'` stays
+  // SSR-only app: a per-request nonce is minted BEFORE the handler runs and rides the request's
+  // AsyncLocalStorage scope (`csp.ts`); the document builders attach it only to the `<script>` tags
+  // THEY author (`renderDocument`/`renderSpaShell` + `NonceScript`) and the policy runs scripts only
+  // with that nonce or from 'self' — an injected `<script>` in any rendered surface (user titles,
+  // draft text shown on cards) cannot execute.
+  // 275_R6WEB.1 (RH-30) — the response body is NEVER rewritten: the retired regex pass nonced every
+  // `<script>` in the whole body, so markup the server did not author (a missed escape, an injected
+  // tag) silently inherited a working nonce. Author-side stamping is the honest shape — a tag the
+  // builders didn't emit stays un-nonced and fails closed. `style-src 'unsafe-inline'` stays
   // because hand-authored `style=` attributes are pervasive (scoped to styles, which cannot exfiltrate);
   // images may come from the cookieless usercontent origin (the only non-self source). Non-HTML
   // responses (SSE, downloads, JSON) pass through untouched.
@@ -406,25 +475,7 @@ export function createWebApp(deps: WebDeps): Hono {
     // applies `form-action` to that redirect target; GOOGLE_OAUTH_ORIGINS is likewise shared with the
     // redirect-target validator below.
     `form-action 'self' ${STRIPE_HOSTED_ORIGINS.join(" ")} ${GOOGLE_OAUTH_ORIGINS.join(" ")}`;
-  app.use("*", async (c, next) => {
-    await next();
-    const res = c.res;
-    if (!(res.headers.get("content-type") ?? "").includes("text/html")) return;
-    const nonce = randomBytes(16).toString("base64");
-    const stamped = (await res.text()).replace(/<script(?=[\s>])/gi, `<script nonce="${nonce}"`);
-    const headers = new Headers(res.headers);
-    // `new Headers(h)` can collapse multi-valued Set-Cookie in some runtimes — re-append them verbatim.
-    // (never-cookies exempt: this preserves the viewer's own platform session cookie on the SSR
-    //  response — it is not an ingestion-connector credential; the AC-I-B gate scans this file for
-    //  connector surfaces only.)
-    const setCookies = res.headers.getSetCookie?.() ?? [];
-    headers.delete("set-cookie"); // never-cookies exempt — viewer session passthrough
-    for (const v of setCookies) headers.append("set-cookie", v); // never-cookies exempt — viewer session passthrough
-    headers.set("Content-Security-Policy", cspFor(nonce));
-    headers.set("X-Content-Type-Options", "nosniff");
-    headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-    c.res = new Response(stamped, { status: res.status, statusText: res.statusText, headers });
-  });
+  app.use("*", cspHtmlMiddleware(cspFor));
 
   // D-R6SECR.1-2 (F-R6SECR.1-2, LOW) — HSTS on every response so any HTTPS fetch arms the policy:
   // a one-year `max-age` + `includeSubDomains`, NO `preload` (the browser-list submission is an
@@ -516,7 +567,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // is exactly ONE structured error line (allowlisted fields, route TEMPLATE, message-stripped stack)
   // and a bare 500 whose only reference is the request id.
   app.onError((err, c) => {
-    if (err instanceof ApiError && err.status === 401) return c.redirect("/login");
+    if (err instanceof ApiError && err.status === 401) return c.redirect(loginHref(c));
     return webOnError(err, c);
   });
 
@@ -2251,7 +2302,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // run re-fetches, the estimate + cap). The Promote click is the consent — it creates the run.
   app.get("/p/:project/outline/promote", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     // SPA.27 — sole renderer: the shell (the SSR sheet + its api reads are deleted; the leaf
     // composes the same facts off the /bff twin). A `?ssr=1` request converges here too — this
     // surface has no SSR document left to serve (and SPA.28 reads no override params at all).
@@ -2266,7 +2317,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/outline/promote", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row)
@@ -2326,7 +2377,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // estimator over the outline's own words — recomputed on every render/save (the "live" estimate).
   app.get("/p/:project/outline", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     // SPA.27 — sole renderer: the shell (SSR editor + its api reads deleted; the leaf composes
     // the same DTO off the /bff twin, `?saved`/`?notice` stay URL flash state).
     return spaShellDocument(c, deps, session);
@@ -2372,7 +2423,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/outline/delete", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row)
@@ -2399,7 +2450,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/outline/gaps/:gapId/answer", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row)
@@ -2427,7 +2478,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // honesty note, and the estimate. Iterate mode (`?figure=` + `?prior=`) replays the figure id.
   app.get("/p/:project/visualize", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     // SPA.27 — sole renderer: the shell (the SSR sheet is deleted; the leaf recomposes the
     // request/spec/estimate params off the /bff twin).
     return spaShellDocument(c, deps, session);
@@ -2442,7 +2493,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/visualize", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row)
@@ -2516,7 +2567,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // The Figures pane (GET): every figure card with its badge + version + insert/render state.
   app.get("/p/:project/figures", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     // SPA.27 — sole renderer: the shell (the SSR pane + listFigures read are deleted; the leaf
     // composes the same roster off the /bff twin).
     return spaShellDocument(c, deps, session);
@@ -2525,7 +2576,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // The figure card (GET): preview + type chips + fields + disclosures + the insert surface.
   app.get("/p/:project/figures/:figureId", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     // SPA.27 — sole renderer: the shell (the SSR card is deleted; `?saved`/`?notice` stay URL
     // flash state the leaf renders).
     return spaShellDocument(c, deps, session);
@@ -2537,7 +2588,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/figures/:figureId", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const figureId = c.req.param("figureId");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
@@ -2569,7 +2620,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/figures/:figureId/spec-edit", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const figureId = c.req.param("figureId");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
@@ -2595,7 +2646,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/figures/:figureId/versions/:n/restore", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const figureId = c.req.param("figureId");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
@@ -2612,7 +2663,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/figures/:figureId/propose", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const figureId = c.req.param("figureId");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
@@ -2649,7 +2700,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/figures/:figureId/proposals/accept", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const figureId = c.req.param("figureId");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
@@ -2674,7 +2725,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/figures/:figureId/proposals/reject", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const figureId = c.req.param("figureId");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
@@ -3026,7 +3077,11 @@ export function createWebApp(deps: WebDeps): Hono {
   // Public: sign in — invitation required in `invite` mode, optional in `open`. GET renders the form;
   // POST enforces the mode gate (REQ-BETA-19 amended).
   app.get("/login", async (c) => {
-    if (await signedIn(c)) return c.redirect("/app");
+    // RH-34 — the gate's deep link arrives as `?next=`; validated same-origin (RH-33) so a
+    // `/\evil`/`//host` candidate falls back to `/app`, never redirects away.
+    const origin = new URL(c.req.url).origin;
+    const next = sameOriginPath(c.req.query("next"), origin);
+    if (await signedIn(c)) return c.redirect(next ?? "/app");
     // SEC.2 — a magic-link verify / OAuth-callback refusal lands here as `?error=` (the api's
     // `errorCallbackURL` channel); surface the mapped copy instead of a bare form. 400 keeps the
     // refusal out of any cache-key equivalence with the clean form.
@@ -3035,18 +3090,52 @@ export function createWebApp(deps: WebDeps): Hono {
       renderDocument(
         c.req.path,
         loginElement,
-        { login: { signupOpen, ...(err ? { error: err } : {}) } },
-        { origin: new URL(c.req.url).origin },
+        { login: { signupOpen, ...(err ? { error: err } : {}), ...(next ? { next } : {}) } },
+        { origin },
       ),
       err ? 400 : 200,
     );
   });
+
+  // 275_R6WEB.1 (RH-31) — the magic-link interstitial: the emailed link lands a GET here that
+  // renders a confirm page and consumes NOTHING (a mail scanner prefetch now renders a page
+  // instead of burning the one-shot token). The confirm click POSTs the same URL; the server
+  // relays the query to the api's GET /api/auth/magic-link/verify and answers with the upstream
+  // response verbatim (the session Set-Cookie + the callbackURL 302).
+  if (deps.verifyMagicLink) {
+    const verify = deps.verifyMagicLink;
+    app.get("/auth/magic-link", (c) => {
+      const hasToken = new URL(c.req.url).searchParams.has("token");
+      return c.html(
+        renderDocument(
+          c.req.path,
+          magicLinkElement,
+          { magicLink: { invalid: !hasToken } },
+          { origin: new URL(c.req.url).origin },
+        ),
+      );
+    });
+    app.post("/auth/magic-link", async (c) => {
+      const query = new URL(c.req.url).search.slice(1);
+      if (!query || !new URLSearchParams(query).has("token")) {
+        return c.json({ error: "magic_link_incomplete" }, 400);
+      }
+      return verify(query, c);
+    });
+  }
 
   app.post("/login", async (c) => {
     const form = await c.req.parseBody();
     const code = typeof form.code === "string" ? form.code : "";
     const email = typeof form.email === "string" ? form.email : "";
     const method = typeof form.method === "string" ? form.method : "magic_link";
+    // RH-34/RH-33 — the carried deep link: validated against the request origin here AND
+    // re-validated in `beginAuth` (the callbackURL's resolved origin must equal the app origin).
+    // A refused candidate is dropped, so re-renders keep only a checked target.
+    const next = sameOriginPath(
+      typeof form.next === "string" ? form.next : undefined,
+      new URL(c.req.url).origin,
+    );
 
     const renderLogin = (
       login: {
@@ -3054,15 +3143,17 @@ export function createWebApp(deps: WebDeps): Hono {
         sent?: boolean;
         code?: string;
         email?: string;
+        next?: string;
       },
       status: 200 | 400 | 429,
     ) =>
-      // every re-render carries the mode flag — an error page must keep the open-mode copy.
+      // every re-render carries the mode flag — an error page must keep the open-mode copy —
+      // and the validated `next` so the deep link survives a retry (RH-34).
       c.html(
         renderDocument(
           c.req.path,
           loginElement,
-          { login: { ...login, signupOpen } },
+          { login: { ...login, signupOpen, ...(next ? { next } : {}) } },
           { origin: new URL(c.req.url).origin },
         ),
         status,
@@ -3120,12 +3211,16 @@ export function createWebApp(deps: WebDeps): Hono {
       }
     }
 
-    const outcome = await beginAuth(method, { code, email: email || undefined }, c);
+    const outcome = await beginAuth(
+      method,
+      { code, email: email || undefined, ...(next ? { next } : {}) },
+      c,
+    );
     if (outcome.error) {
       // SEC.2 — the api's send-throttle refusal (or a transient auth failure) renders the same copy the
       // retired web-side limiter did; a false "sent" page must never appear.
       return renderLogin(
-        { error: signupErrorFor(outcome.error, signupOpen), code, email },
+        { error: signupErrorFor(outcome.error, signupOpen), code, email, ...(next ? { next } : {}) },
         outcome.error === "rate_limited" ? 429 : 400,
       );
     }
@@ -3153,7 +3248,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // the api assembles it from the row sets through `projectState`; this route only maps → groups.
   app.get("/app", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     // P1.17 (§3.5) — the verification return: a `?verified=1` landing emits `email.verified` once
     // (the acquisition mint binds the identity; the api dedupes the same user re-arriving).
     if (c.req.query("verified") === "1") {
@@ -3225,7 +3320,7 @@ export function createWebApp(deps: WebDeps): Hono {
     // `{ok:true, redirect:"/app"}` envelope (the 302's target verbatim — grouping drops the live
     // filters, same as the form post); the form post's 302 is unchanged.
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const form = await bodyFields(c);
     const groupBy = form.groupBy === "voice" ? "voice" : "attention";
     await Promise.resolve()
@@ -3274,7 +3369,7 @@ export function createWebApp(deps: WebDeps): Hono {
 
   app.get("/app/new", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     // R6FIX.12 (F-15/BL-105) — `?entry=draft|outline` (+`held`) is the §15.3 handoff URL the
     // `/app` precedence redirect emits (and the journeys' create seam): serving the shell here
     // mounts the in-router leaf, which issues the ONE create POST and hands the intent to the
@@ -3305,7 +3400,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/app/new", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const json = wantsJson(c);
     const form = await bodyFields(c);
     const entryQ = typeof form.entry === "string" ? form.entry : "";
@@ -3438,7 +3533,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // quarantine key — a warm read-back answers in ~190 ms; cold re-answers pending inside the bound.
   app.get("/app/new/preview", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     const entryQ = c.req.query("entry") ?? "draft";
     const entry: NewProjectEntry = NEW_PROJECT_ENTRIES.has(entryQ as NewProjectEntry)
       ? (entryQ as NewProjectEntry)
@@ -3457,7 +3552,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/app/new/create", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const json = wantsJson(c);
     const form = await bodyFields(c);
     const entryQ = typeof form.entry === "string" ? form.entry : "";
@@ -3528,7 +3623,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/rename", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const row = await projectRowFor(session, slug);
     if (!row) {
@@ -3551,7 +3646,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/duplicate", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const row = await projectRowFor(session, slug);
     if (!row)
@@ -3576,7 +3671,7 @@ export function createWebApp(deps: WebDeps): Hono {
       // SPA.15 — the row actions' JSON branch (REQ-BFF-1/2/3): `{ok:true, redirect:"/app"}`; the
       // swallowed write stays swallowed (a refused action repaints truth on the list refetch).
       if (!session)
-        return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+        return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
       const slug = c.req.param("project");
       const row = await projectRowFor(session, slug);
       if (!row)
@@ -3594,7 +3689,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/restore", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const deleted = await Promise.resolve()
       .then(() => deps.dataSource.listDeletedProjects?.(session) ?? [])
@@ -3615,7 +3710,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // verbatim. The read POSTs collapse to the api's marks; deep links land on the focused surface. ----
   app.get("/app/inbox", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     // SPA.27 — sole renderer: the shell (the SSR inbox + its items/badge/gate-card reads are
     // deleted; the leaf composes the same feed off the /bff twins).
     return spaShellDocument(c, deps, session);
@@ -3627,7 +3722,7 @@ export function createWebApp(deps: WebDeps): Hono {
     const session = deps.session(c);
     // A JSON caller never rides the /login document redirect — the BFF convention answers 401.
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const raw = wantsJson(c)
       ? ((await c.req.json().catch(() => null)) as { item?: unknown } | null)?.item
       : (await c.req.parseBody()).item;
@@ -3642,7 +3737,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/app/inbox/read-all", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     await Promise.resolve()
       .then(() => deps.dataSource.markInboxAllRead?.(session))
       .catch(() => undefined);
@@ -3655,24 +3750,24 @@ export function createWebApp(deps: WebDeps): Hono {
   // Legacy path migrations — session first (an anonymous hit still bounces to /login), then the
   // canonical section keeps the flash params.
   app.get("/settings", async (c) => {
-    if (!deps.session(c)) return c.redirect("/login");
+    if (!deps.session(c)) return c.redirect(loginHref(c));
     return c.redirect("/app/settings/account", 302);
   });
   app.get("/app/settings", async (c) => {
-    if (!deps.session(c)) return c.redirect("/login");
+    if (!deps.session(c)) return c.redirect(loginHref(c));
     return c.redirect("/app/settings/account", 302);
   });
   // R7SHELL.1a (REQ-SHELL-1; R5 D6) — `/billing` resolves to the billing section on a document
   // load too (the SPA's `billing.index` route owns the in-router leg).
   app.get("/billing", async (c) => {
-    if (!deps.session(c)) return c.redirect("/login");
+    if (!deps.session(c)) return c.redirect(loginHref(c));
     return c.redirect("/app/settings/billing", 302);
   });
 
   // ---- Account ----
   app.get("/app/settings/account", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     // A magic-link email-change lands here (?confirmEmail=<token>) — consume it server-side, then
     // bounce to the section with the outcome flash.
     const confirmToken = c.req.query("confirmEmail");
@@ -3696,7 +3791,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/app/settings/account", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const form = await bodyFields(c);
     const req: { name?: string; byline?: string | null; image?: string | null } = {};
     if (typeof form.name === "string" && form.name.trim() !== "") req.name = form.name.trim();
@@ -3712,7 +3807,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/app/settings/account/email", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const form = await bodyFields(c);
     const email = typeof form.email === "string" ? form.email : "";
     const out = await Promise.resolve()
@@ -3726,7 +3821,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/app/settings/sessions/revoke", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const form = await bodyFields(c);
     const sessionId = typeof form.sessionId === "string" ? form.sessionId : "";
     if (sessionId) {
@@ -3741,7 +3836,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/app/settings/account/delete", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const form = await bodyFields(c);
     const confirmation = typeof form.confirmation === "string" ? form.confirmation : "";
     const out = await Promise.resolve()
@@ -3755,7 +3850,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/app/settings/account/delete/cancel", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const out = await Promise.resolve()
       .then(() => deps.dataSource.cancelAccountDeletion?.(session))
       .catch(() => undefined);
@@ -3768,7 +3863,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // ---- Preferences ----
   app.get("/app/settings/preferences", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     // SPA.27 — sole renderer: the shell.
     return spaShellDocument(c, deps, session);
   });
@@ -3777,7 +3872,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/app/settings/preferences", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const form = await bodyFields(c);
     const prefs: Record<string, unknown> = {};
     const tier = form.defaultModelTier;
@@ -3830,14 +3925,14 @@ export function createWebApp(deps: WebDeps): Hono {
   // ---- Notifications (P1.19's server-side store; the api rejects the non-configurable rows) ----
   app.get("/app/settings/notifications", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     // SPA.27 — sole renderer: the shell.
     return spaShellDocument(c, deps, session);
   });
   app.post("/app/settings/notifications", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const form = await bodyFields(c);
     const email: Record<string, boolean> = {};
     const inApp: Record<string, boolean> = {};
@@ -3902,14 +3997,14 @@ export function createWebApp(deps: WebDeps): Hono {
   // ---- Integrations (REQ-ACCT-2's uniform cards; disconnect drops the credential now) ----
   app.get("/app/settings/integrations", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     // SPA.27 — sole renderer: the shell.
     return spaShellDocument(c, deps, session);
   });
   app.post("/app/settings/integrations/:id/disconnect", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     await Promise.resolve()
       .then(() => deps.dataSource.disconnectIntegration?.(session, c.req.param("id")))
       .catch(() => undefined);
@@ -3919,7 +4014,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // ---- Data (Q-12 minimal): privacy toggles + support access + posture copy + export + delete ----
   app.get("/app/settings/data", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     // SPA.27 — sole renderer: the shell (`?notice`/`?p`/`?v`/`?f`/`?saved` stay URL flash state
     // the leaf maps).
     return spaShellDocument(c, deps, session);
@@ -3928,7 +4023,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/app/settings/data/privacy", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const form = await bodyFields(c);
     try {
       // Unswallowed verbatim (the document path 500s on a failed write) — but a JSON caller
@@ -3944,7 +4039,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/app/settings/data/support-access", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const form = await bodyFields(c);
     await Promise.resolve()
       .then(() => deps.dataSource.setSupportAccess?.(session, form.enabled === "on"))
@@ -3955,7 +4050,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/app/settings/data/preference-learning", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const form = await bodyFields(c);
     await Promise.resolve()
       .then(() => deps.dataSource.setPreferenceOptOut?.(session, form.learning !== "on"))
@@ -3967,14 +4062,14 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/app/settings/data/export", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     await deps.dataSource.requestAccountExport?.(session).catch(() => undefined);
     return mutationOutcome(c, { redirect: "/app/settings/data?notice=requested" });
   });
   // The in-app download of the ready zip — presigned through the api.
   app.get("/app/settings/data/export/download", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     const id = c.req.query("id");
     const dl = await Promise.resolve()
       .then(() => deps.dataSource.getAccountExportDownloadUrl?.(session, id))
@@ -3989,7 +4084,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/app/settings/data/import", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const form = await c.req.parseBody();
     const file = form.archive;
     const bytes =
@@ -4015,7 +4110,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // "user".app_theme through the api). Now redirects to the Preferences section the control moved to.
   app.post("/settings/theme", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     const form = await c.req.parseBody();
     const appTheme = form.appTheme;
     if (appTheme === "dark" || appTheme === "light" || appTheme === "auto") {
@@ -4025,7 +4120,7 @@ export function createWebApp(deps: WebDeps): Hono {
   });
   app.post("/settings/privacy", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     const form = await c.req.parseBody();
     // The old checkbox posted "on" when sharing was ON — the flag it binds is the inverse (opt-OUT).
     // The canonical endpoint is /app/settings/data/privacy now; this legacy post keeps working.
@@ -4037,7 +4132,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // ---- P1.20 — `/p/:project/settings` (§4.2): the REQ-GENRE-2 safe fields + P1.09's approvals ----
   app.get("/p/:project/settings", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     // SPA.27 — sole renderer: the shell (the leaf composes the settings + approvals read off the
     // /bff twin; `?saved`/`?notice` stay URL flash state).
     return spaShellDocument(c, deps, session);
@@ -4047,7 +4142,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/settings", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const row = (await projectRows(c, deps.dataSource, session).catch(() => [])).find(
       (r) => r.slug === slug,
@@ -4115,7 +4210,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/settings/guidance/:gid", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const row = (await projectRows(c, deps.dataSource, session).catch(() => [])).find(
       (r) => r.slug === slug,
@@ -4147,7 +4242,7 @@ export function createWebApp(deps: WebDeps): Hono {
   });
   app.get("/usage", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     // SPA.27 — sole renderer: the shell (the SSR page + its usage/account reads are deleted; the
     // leaf composes the same level-0/1 facts off the /bff twins).
     return spaShellDocument(c, deps, session);
@@ -4155,7 +4250,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // REQ-BILL-11 — the level-1 CSV export, proxied with the viewer's session (the api is internal).
   app.get("/usage.csv", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     const dl = await Promise.resolve()
       .then(() => deps.dataSource.downloadUsageCsv?.(session))
       .catch(() => undefined);
@@ -4171,7 +4266,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // §14.5 level 2 — the per-project usage rollup (/p/:project/usage).
   app.get("/p/:project/usage", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     // SPA.27 — sole renderer: the shell (the leaf composes the level-2 rollup off the /bff twin;
     // a missing project is the client router's not-found).
     return spaShellDocument(c, deps, session);
@@ -4183,7 +4278,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // stays mounted as the legacy alias (existing form posts + deep links keep working). ----
   const billingPageHandler = async (c: Context) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     // SPA.27 — sole renderer: the shell — the shared handler covers BOTH mounts
     // (/app/settings/billing + the /settings/billing alias); `?saved`/`?notice` stay URL flash
     // state the leaf maps through `billingNoticeFor` verbatim.
@@ -4206,7 +4301,7 @@ export function createWebApp(deps: WebDeps): Hono {
   billingPost("subscribe", async (c, base) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const form = await bodyFields(c);
     const tier = typeof form.tier === "string" ? form.tier : "";
     const cycle = form.cycle === "annual" ? "annual" : "monthly";
@@ -4238,7 +4333,7 @@ export function createWebApp(deps: WebDeps): Hono {
   billingPost("topup", async (c, base) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const form = await bodyFields(c);
     const packId = typeof form.packId === "string" ? form.packId : "";
     let failure: string | null = null;
@@ -4271,7 +4366,7 @@ export function createWebApp(deps: WebDeps): Hono {
   billingPost("change-plan", async (c, base) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const form = await bodyFields(c);
     const tier = typeof form.tier === "string" ? form.tier : "";
     const cycle = form.cycle === "annual" ? ("annual" as const) : ("monthly" as const);
@@ -4293,7 +4388,7 @@ export function createWebApp(deps: WebDeps): Hono {
   billingPost("cancel", async (c, base) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const out = await Promise.resolve()
       .then(() => deps.dataSource.cancelSubscription?.(session))
       .catch(() => undefined);
@@ -4304,7 +4399,7 @@ export function createWebApp(deps: WebDeps): Hono {
   billingPost("auto-reload", async (c, base) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const form = await bodyFields(c);
     // BILL.3 — opt-IN is a purchase-path write (it schedules an unattended charge): keep the api's
     // `purchase_closed` class so the notice is the paused copy, not a generic "didn't save".
@@ -4337,7 +4432,7 @@ export function createWebApp(deps: WebDeps): Hono {
   billingPost("portal", async (c, base) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     let failure: string | null = null;
     const out = await Promise.resolve()
       .then(() => deps.dataSource.createBillingPortalSession?.(session, base))
@@ -4357,7 +4452,7 @@ export function createWebApp(deps: WebDeps): Hono {
   billingPost("waitlist", async (c, base) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const form = await bodyFields(c);
     const out = await Promise.resolve()
       .then(() =>
@@ -4387,7 +4482,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // `open` forever, so auto-refresh would poll a state that can never change (STB.4 live finding).
   app.get("/billing/return", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     // SPA.27 — sole renderer: the shell (the meta-refresh document is deleted; the leaf polls the
     // /bff twin's server-owned `pollAfterSeconds` through the same ≤30 s window).
     return spaShellDocument(c, deps, session);
@@ -4742,7 +4837,7 @@ export function createWebApp(deps: WebDeps): Hono {
 
   app.get("/p/:project", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const rows = await deps.dataSource.listProjects(session);
     const row = rows.find((r) => r.slug === slug);
@@ -4874,7 +4969,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/voice", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const row = (await projectRows(c, deps.dataSource, session)).find((r) => r.slug === slug);
     if (!row)
@@ -4904,7 +4999,7 @@ export function createWebApp(deps: WebDeps): Hono {
   //  the project under a different voice. The reseed preview is a GET page (the diff before commit). ----
   app.get("/p/:project/voice/reseed", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     // SPA.27 — sole renderer: the shell (the SSR diff sheet is deleted; the leaf composes the
     // reseed preview off the /bff twin).
     return spaShellDocument(c, deps, session);
@@ -4913,7 +5008,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/voice/adopt", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const row = (await projectRows(c, deps.dataSource, session)).find((r) => r.slug === slug);
     if (!row)
@@ -4929,7 +5024,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/voice/fork", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const row = (await projectRows(c, deps.dataSource, session)).find((r) => r.slug === slug);
     if (!row)
@@ -4952,7 +5047,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/approval-overrides", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) {
@@ -4977,7 +5072,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/settings/approvals", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const row = (await projectRows(c, deps.dataSource, session)).find((r) => r.slug === slug);
     if (!row)
@@ -5024,7 +5119,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/guidance", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const row = (await projectRows(c, deps.dataSource, session)).find((r) => r.slug === slug);
     if (!row)
@@ -5058,7 +5153,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/guidance/:gid/retire", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const row = (await projectRows(c, deps.dataSource, session)).find((r) => r.slug === slug);
     if (!row)
@@ -5078,7 +5173,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // the one-time inline explainer's dismiss (§5.11/§6.4 — once per user, never a modal).
   app.post("/p/:project/explainers/:name/dismiss", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
@@ -5097,7 +5192,7 @@ export function createWebApp(deps: WebDeps): Hono {
     // SPA.21 — `wantsJson` dual-mode: the dossier's focused-gate card + the Inbox row post through
     // the envelope (`{error}` at the preserved status; `{ok,redirect}` on success).
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row)
@@ -5168,7 +5263,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/decisions/:dcr", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) {
@@ -5187,7 +5282,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // Auth-gated: the §5.3 import flow (upload/paste → conversion preview → create).
   app.get("/p/:project/import", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     // SPA.27 — sole renderer: the shell (the SSR sheet is deleted; the leaf mounts inside the IDE
     // chrome and composes the flow off the /bff twins).
     return spaShellDocument(c, deps, session);
@@ -5196,7 +5291,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/import/preview", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const json = wantsJson(c);
     const slug = c.req.param("project");
     const input = await importInputFromFields(await bodyFields(c), slug);
@@ -5237,7 +5332,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // execution and answers `pending` again inside the bounded wait — the page refreshes itself until ready.
   app.get("/p/:project/import/preview", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const qk = c.req.query("qk");
     if (!qk) return c.redirect(`/p/${slug}/import`);
@@ -5249,7 +5344,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/import/create", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const input = await importInputFromFields(await bodyFields(c), slug);
     let created;
@@ -5291,7 +5386,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // computed via the shared @rhema/run-sheet estimator (the same one the stateless /estimates endpoint uses).
   app.get("/p/:project/run", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     // SPA.27 — sole renderer: the shell (the SSR sheet is deleted; the leaf composes the ONE
     // `runSheetComposition` off the `/bff/p/:slug/run` twin — side effects included — and
     // `?notice=purchase_paused` stays URL flash state).
@@ -5303,7 +5398,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/run", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row)
@@ -5486,7 +5581,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/exhausted", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row)
@@ -5673,7 +5768,7 @@ export function createWebApp(deps: WebDeps): Hono {
 
   app.get("/p/:project/review/:runId", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     // SPA.27 — sole renderer: the shell (the SSR dossier is deleted; the leaf composes the shared
     // `dossierComposition` — view emissions, filters, bulk/gate/deep-link view state — off the
     // /bff twin, and the client router owns the not-found).
@@ -5776,7 +5871,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // plain page never carries token-level rows (tokens appear ONLY inside the disclosure's copy).
   app.get("/p/:project/r/:runId", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     // SPA.27 — sole renderer: the shell (the SSR report is deleted; the leaf composes the shared
     // `runReportComposition` + live-feed slice off the /bff twin — the inbox read-receipt rides
     // the twin verbatim).
@@ -5836,7 +5931,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // §4.2 — the usage deep-link's canonical redirect: /app/usage/r/:run → /p/<slug>/r/<run>#report.
   app.get("/app/usage/r/:runId", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     const runId = c.req.param("runId");
     const report = await deps.dataSource.getRunReport(session, runId).catch(() => null);
     if (!report?.projectSlug) return c.html(renderDocument(c.req.path, notFoundElement), 404);
@@ -5912,7 +6007,7 @@ export function createWebApp(deps: WebDeps): Hono {
       // the document's 302/404 HTML arms — `{error}` at the preserved status on refusal,
       // `{ok,redirect}` on success (the leaf navigates the redirect + invalidates).
       if (!session)
-        return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+        return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
       const slug = c.req.param("project");
       const runId = c.req.param("runId");
       const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
@@ -5974,7 +6069,7 @@ export function createWebApp(deps: WebDeps): Hono {
     // target) — an expected refusal's preserved status maps to invalidate-and-re-read, which is
     // the SSR stale→re-render arm verbatim (design/22 §3's stale-state note).
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const runId = c.req.param("runId");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
@@ -6001,7 +6096,7 @@ export function createWebApp(deps: WebDeps): Hono {
     // SPA.21 — the `wantsJson` dual-mode branch (REQ-BFF-1/3/4): a JSON caller is never handed the
     // document's 302/404 HTML arms — `{error}` at the preserved status, `{ok,redirect}` on success.
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project") ?? "";
     const runId = c.req.param("runId") ?? "";
     const findingId = c.req.param("fid") ?? "";
@@ -6065,7 +6160,7 @@ export function createWebApp(deps: WebDeps): Hono {
       // SPA.21 — `wantsJson` dual-mode (REQ-BFF-1/3/4): JSON callers get `{error}`/`{ok,redirect}`,
       // never the document's 302/HTML arms.
       if (!session)
-        return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+        return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
       const slug = c.req.param("project") ?? "";
       const runId = c.req.param("runId") ?? "";
       const findingId = c.req.param("fid") ?? "";
@@ -6139,7 +6234,7 @@ export function createWebApp(deps: WebDeps): Hono {
   //      and returns to `next` with the `obligation` notice. ----
   app.get("/p/:project/obligations/new", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     // SPA.27 — sole renderer: the shell (the SSR form is deleted; `?next`/`?back` stay the
     // safeBack-confined URL state the leaf resolves).
     return spaShellDocument(c, deps, session);
@@ -6176,7 +6271,7 @@ export function createWebApp(deps: WebDeps): Hono {
     const session = deps.session(c);
     // SPA.21 — `wantsJson` dual-mode: JSON callers get `{error}`/`{ok,redirect}`, never HTML/302.
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) {
@@ -6227,7 +6322,7 @@ export function createWebApp(deps: WebDeps): Hono {
     // SPA.21 — `wantsJson` dual-mode: the preview bounce is a navigation request — a JSON caller
     // gets `{ok,redirect}` carrying the IDENTICAL `?bulk=&bsec=#findings` URL.
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project") ?? "";
     const runId = c.req.param("runId") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
@@ -6248,7 +6343,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/review/:runId/findings/bulk", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project") ?? "";
     const runId = c.req.param("runId") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
@@ -6298,7 +6393,7 @@ export function createWebApp(deps: WebDeps): Hono {
   //      anchor — the same href the Margin card, Desk row, and palette row land on. ----
   app.get("/p/:project/f/:fid", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     const slug = c.req.param("project") ?? "";
     const findingId = c.req.param("fid") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
@@ -6645,7 +6740,7 @@ export function createWebApp(deps: WebDeps): Hono {
 
   app.get("/p/:project/revisions/:cid", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const cid = c.req.param("cid");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
@@ -6680,7 +6775,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/revisions/:cid/hunks/:hunkId/comments", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const cid = c.req.param("cid");
     const hunkId = c.req.param("hunkId");
@@ -6732,7 +6827,7 @@ export function createWebApp(deps: WebDeps): Hono {
 
   app.get("/p/:project/v/:v", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     const slug = c.req.param("project") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
@@ -6819,7 +6914,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/v/:v/restore/:rp", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) {
@@ -6861,7 +6956,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // What-changed assembly the response page renders (unledgered pairs land every hunk Unlinked).
   app.get("/p/:project/v/:n/diff/:m", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     const slug = c.req.param("project") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
@@ -6909,7 +7004,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/v/:n/diff/:m/hunks/:hunkId/comments", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) {
@@ -6938,7 +7033,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // mounts read-only anyway).
   app.get("/p/:project/a/:artifactId", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     const slug = c.req.param("project") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
@@ -6987,7 +7082,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // the Page's transport uses them; `?noted=1` survives the hop).
   app.get("/p/:project/edit/:draftId", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     const t = await editorTarget(c, session);
     if (!t) return c.html(renderDocument(c.req.path, notFoundElement), 404);
     // EDIT.1 — a non-exact read: a stale base id lands on its working child (`/v/<childN>`, the live
@@ -7065,7 +7160,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/edit/:draftId/note", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const t = await editorTarget(c, session);
     if (!t) {
       return wantsJson(c)
@@ -7100,7 +7195,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/edit/:draftId/cancel-run", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const t = await editorTarget(c, session);
     if (!t) {
       return wantsJson(c)
@@ -7122,7 +7217,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/drafts/:n/discard-fork", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) {
@@ -7148,7 +7243,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/edit/:draftId/revise", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const t = await editorTarget(c, session);
     if (!t) {
       return wantsJson(c)
@@ -7178,7 +7273,7 @@ export function createWebApp(deps: WebDeps): Hono {
 
   app.get("/p/:project/export", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     // SPA.27 — sole renderer: the shell (the SSR dialog is deleted; `?error`/`?added` stay
     // leaf-owned URL echoes).
     return spaShellDocument(c, deps, session);
@@ -7188,7 +7283,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/export", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const t = await projectRow(c, session);
     if (!t)
       return wantsJson(c)
@@ -7237,7 +7332,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/export/addition", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const t = await projectRow(c, session);
     if (!t)
       return wantsJson(c)
@@ -7257,7 +7352,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // The standalone statement download (any registered format — the §8.4 REQ-VIS-10 artifact).
   app.get("/p/:project/export/ai-use/:fmt", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     const t = await projectRow(c, session);
     if (!t) return c.html(renderDocument(c.req.path, notFoundElement), 404);
     const fmt = c.req.param("fmt");
@@ -7289,7 +7384,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/p/:project/update-voice", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const slug = c.req.param("project");
     const row = (await projectRows(c, deps.dataSource, session)).find((r) => r.slug === slug);
     if (!row)
@@ -7316,7 +7411,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // The voice library — the §9.1 three-group destination (your voices / house styles / shared).
   app.get("/voices", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     // SPA.27 — sole renderer: the shell (the SSR library is deleted).
     return spaShellDocument(c, deps, session);
   });
@@ -7324,7 +7419,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // The §9.2 creation sheet (GET) — name required; description/byline/sample/mode/tier optional.
   app.get("/voices/new", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     // SPA.27 — sole renderer: the shell (the SSR sheet is deleted).
     return spaShellDocument(c, deps, session);
   });
@@ -7334,7 +7429,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/voices/new", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const form = await bodyFields(c);
     const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
     const name = str("name").trim();
@@ -7430,7 +7525,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // unknown/absent ⇒ overview.
   app.get("/v/:persona", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return c.redirect(loginHref(c));
     // SPA.27 — sole renderer: the shell (the SSR detail page is deleted; `?tab`/`?sample` +
     // the notice params stay leaf-owned URL state).
     return spaShellDocument(c, deps, session);
@@ -7440,7 +7535,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/v/:persona/seed", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const personaId = c.req.param("persona");
     const form = await bodyFields(c);
     const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
@@ -7463,7 +7558,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/v/:persona/samples", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const personaId = c.req.param("persona");
     const form = await bodyFields(c);
     const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
@@ -7501,7 +7596,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/v/:persona/samples/url", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const personaId = c.req.param("persona");
     const form = await bodyFields(c);
     const url = typeof form.url === "string" ? form.url.trim() : "";
@@ -7519,7 +7614,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/v/:persona/samples/:itemId", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const personaId = c.req.param("persona");
     const form = await bodyFields(c);
     const included = form.included === true || form.included === "true" || form.included === "on";
@@ -7537,7 +7632,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/v/:persona/connections", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const personaId = c.req.param("persona");
     const form = await bodyFields(c);
     const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string).trim() : "");
@@ -7582,7 +7677,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/v/:persona/connections/:cid/discover", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const personaId = c.req.param("persona");
     await deps.dataSource
       .discoverVoiceConnection(session, personaId, c.req.param("cid"))
@@ -7595,7 +7690,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/v/:persona/connections/:cid/confirm", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const personaId = c.req.param("persona");
     const cid = c.req.param("cid");
     // Multi-value grammar: a form post repeats `include`/`known` (parseBody all:true); a JSON caller
@@ -7617,7 +7712,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/v/:persona/connections/:cid/sync", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const personaId = c.req.param("persona");
     await deps.dataSource
       .syncVoiceConnection(session, personaId, c.req.param("cid"))
@@ -7627,7 +7722,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/v/:persona/sync", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const personaId = c.req.param("persona");
     await deps.dataSource.syncAllVoiceConnections(session, personaId).catch(() => undefined);
     return mutationOutcome(c, { redirect: `/v/${personaId}?tab=samples` });
@@ -7637,7 +7732,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/v/:persona/connections/:cid/settings", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const personaId = c.req.param("persona");
     const form = await bodyFields(c);
     await deps.dataSource
@@ -7656,7 +7751,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/v/:persona/connections/:cid/remove", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const personaId = c.req.param("persona");
     await deps.dataSource
       .removeVoiceConnection(session, personaId, c.req.param("cid"))
@@ -7670,7 +7765,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/v/:persona/samples/:itemId/reconstruct", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const personaId = c.req.param("persona");
     const itemId = c.req.param("itemId");
     const form = await bodyFields(c);
@@ -7687,7 +7782,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/v/:persona/delete", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const personaId = c.req.param("persona");
     const form = await bodyFields(c);
     // The typed-name confirm (the form requires it) — belt, since the api cascade is destructive.
@@ -7702,7 +7797,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/v/:persona/build", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const personaId = c.req.param("persona");
     const form = await bodyFields(c);
     const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
@@ -7725,7 +7820,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/v/:persona/update", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const personaId = c.req.param("persona");
     const form = await bodyFields(c);
     const scope = typeof form.scope === "string" && form.scope !== "" ? form.scope : undefined;
@@ -7744,7 +7839,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/v/:persona/gates/:gid", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const personaId = c.req.param("persona");
     const form = await bodyFields(c);
     const action = typeof form.action === "string" ? form.action : "";
@@ -7764,7 +7859,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/v/:persona/corrections", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const personaId = c.req.param("persona");
     const form = await bodyFields(c);
     const text = typeof form.text === "string" ? form.text.trim() : "";
@@ -7792,7 +7887,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/v/:persona/fork", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const personaId = c.req.param("persona");
     const forked = await deps.dataSource.forkVoice(session, personaId).catch(() => null);
     if (!forked) return mutationOutcome(c, { redirect: `/v/${personaId}` });
@@ -7803,7 +7898,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.post("/v/:persona/cancel", async (c) => {
     const session = deps.session(c);
     if (!session)
-      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+      return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect(loginHref(c));
     const personaId = c.req.param("persona");
     const form = await bodyFields(c);
     const runId = typeof form.runId === "string" ? form.runId : "";
@@ -7914,7 +8009,7 @@ export function createWebApp(deps: WebDeps): Hono {
       const { surfaces } = spaRouteFor(c.req.path);
       if (surfaces != null) {
         const session = deps.session(c);
-        if (!session) return c.redirect("/login");
+        if (!session) return c.redirect(loginHref(c));
         return spaShellDocument(c, deps, session);
       }
     }

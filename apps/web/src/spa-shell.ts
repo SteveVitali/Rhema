@@ -11,8 +11,9 @@
 // is visually identical at first byte. Differences: `data-renderer="spa"` (never `data-mounted` —
 // the client flips it after first data paint; `data-route` is the client router's to stamp),
 // `data-device`, the `#spa-root` mount node, the honest noscript floor, the `data-spa-boot`
-// embed, and the Vite manifest entry tags. Every `<script>` flows through the CSP middleware's
-// nonce stamp — the shell never emits an inline Vite modulepreload polyfill (`modulePreload:
+// embed, and the Vite manifest entry tags. 275_R6WEB.1 (RH-30) — every `<script>` carries the
+// request's CSP nonce attached at author time (`currentCspNonce`); the shell never emits an
+// inline Vite modulepreload polyfill (`modulePreload:
 // { polyfill: false }` in vite.config.ts is the CSP-by-construction posture).
 //
 // The boot object is a runtime seed, not an authorization grant: the session principal's public
@@ -34,6 +35,7 @@ import {
 import { themeCss, ideCss, FONT_FACES } from "@rhema/tokens";
 import { uiCss, uiTailCss } from "@rhema/ui";
 import { docMetaFor, escapeHtml } from "./render.js";
+import { currentCspNonce } from "./csp.js";
 import { deviceClassFor } from "./device.js";
 import type { SpaBoot } from "./spa-boot.js";
 import { COPY } from "./copy.js";
@@ -269,6 +271,9 @@ export function renderSpaShell(
   opts: { path: string; boot: SpaBootPayload; entry: SpaManifestEntry },
 ): string {
   const { path, boot, entry } = opts;
+  // RH-30 — the request's CSP nonce, attached here to the script tags this template authors.
+  const nonce = currentCspNonce();
+  const nonceAttr = nonce ? ` nonce="${nonce}"` : "";
   const doc = docMetaFor(path, {});
   const pref = boot.theme.appTheme;
   const resolved = pref ? resolveAppTheme(pref, false) : "dark";
@@ -288,7 +293,7 @@ export function renderSpaShell(
     `<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">` +
     `<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon.ico" sizes="any">` +
     `<title>${escapeHtml(doc.title)}</title>${FONT_PRELOADS}` +
-    `<script>${BOOT}</script>` +
+    `<script${nonceAttr}>${BOOT}</script>` +
     `<style>${THEME_CSS}</style><style>${IDE_CSS}</style><style>${UI_CSS}</style><style>${UI_TAIL_CSS}</style>` +
     entry.preloads.map((f) => `<link rel="modulepreload" href="${assetHref(f)}">`).join("") +
     entry.stylesheets.map((f) => `<link rel="stylesheet" href="${assetHref(f)}">`).join("") +
@@ -321,9 +326,9 @@ export function renderSpaShell(
   return (
     `<!doctype html><html ${htmlAttrs}>${head}` +
     `<body><div id="spa-root" data-spa-root>${staticFrame}</div>${noscript}` +
-    `<script type="application/json" data-spa-boot>${bootJson}</script>` +
+    `<script${nonceAttr} type="application/json" data-spa-boot>${bootJson}</script>` +
     entry.moduleScripts
-      .map((f) => `<script type="module" src="${assetHref(f)}"></script>`)
+      .map((f) => `<script${nonceAttr} type="module" src="${assetHref(f)}"></script>`)
       .join("") +
     `</body></html>`
   );

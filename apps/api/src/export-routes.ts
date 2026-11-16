@@ -24,6 +24,7 @@ import {
   type MdExportProfile,
   type ProvenanceSpan,
   SPEC_FILENAME,
+  errorSummary,
 } from "@rhema/contracts";
 import {
   freezeDraft,
@@ -614,7 +615,7 @@ export function createExportRoutes(deps: ExportApiDeps): Hono {
         });
       })
       .catch((err: unknown) =>
-        console.error("[api] project.exported analytics failed:", err instanceof Error ? err.message : err),
+        console.error("[api] project.exported analytics failed:", errorSummary(err)),
       );
     return new Response(Buffer.from(result.bytes), {
       status: 200,

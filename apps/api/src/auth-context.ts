@@ -21,6 +21,7 @@
 //    under which FORCE-RLS tables answer empty (deny by default).
 
 import { AsyncLocalStorage } from "node:async_hooks";
+import { timingSafeEqual } from "node:crypto";
 import type { Context, MiddlewareHandler, Next } from "hono";
 import { withTenant } from "@rhema/db";
 import {
@@ -76,14 +77,35 @@ export interface SessionMiddlewareOptions {
   /** resolve the session cookie on the request to a principal (live: DB lookup). */
   readonly resolve: (req: Request) => Promise<Principal | null>;
   /**
-   * Dev/preview fallback: trust the gateway-injected `x-rhema-*` identity headers when no session
-   * resolves. NEVER enabled on prod (a client could forge identity); the deploy sets it per-stage.
+   * Non-prod-only fallback (RH-10): trust the `x-rhema-*` identity headers when no session
+   * resolves — but ONLY behind the per-stage shared key the caller must present on
+   * `x-rhema-identity-key`. Non-prod api services are publicly reachable (allUsers invoker +
+   * non-LB ingress), so the three identity headers alone are client-forgeable; the key is minted
+   * per-stage into Secret Manager by the Pulumi program and is unguessable to a public caller.
+   * NEVER enabled on prod — no env carries it there. Absent/empty ⇒ the shim is off.
    */
-  readonly identityHeaders?: boolean;
+  readonly identityHeadersKey?: string;
 }
 
-/** The header-identity fallback (dev/preview stages only — see `identityHeaders`). */
-export function headerIdentityPrincipal(c: Context): Principal | null {
+/** The shared-secret header the identity fallback requires alongside the three identity headers. */
+export const IDENTITY_KEY_HEADER = "x-rhema-identity-key";
+
+/** Constant-time equality for the shared key (both sides UTF-8; a length miss is a fast false). */
+function keyMatches(presented: string, expected: string): boolean {
+  const a = Buffer.from(presented, "utf8");
+  const b = Buffer.from(expected, "utf8");
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+/**
+ * The header-identity fallback (non-prod stages only — see `identityHeadersKey`). The three
+ * `x-rhema-*` identity headers resolve ONLY when the request also presents the stage's shared
+ * key on `x-rhema-identity-key`; a wrong or missing key yields null exactly like a missing
+ * identity header — no oracle (RH-10).
+ */
+export function headerIdentityPrincipal(c: Context, key: string): Principal | null {
+  const presented = c.req.header(IDENTITY_KEY_HEADER);
+  if (!key || !presented || !keyMatches(presented, key)) return null;
   const userId = c.req.header("x-rhema-user-id");
   const workspaceId = c.req.header("x-rhema-workspace-id");
   const billingAccountId = c.req.header("x-rhema-billing-account-id");
@@ -105,7 +127,9 @@ export function createSessionMiddleware(opts: SessionMiddlewareOptions): Middlew
       return;
     }
     let principal = await opts.resolve(c.req.raw);
-    if (!principal && opts.identityHeaders) principal = headerIdentityPrincipal(c);
+    if (!principal && opts.identityHeadersKey) {
+      principal = headerIdentityPrincipal(c, opts.identityHeadersKey);
+    }
     await runWithPrincipal(principal, next);
   };
 }

@@ -5,8 +5,9 @@
  * scripts/lib/license-policy.mjs. Exits non-zero on any violation (e.g. an SSPL/BSL/AGPL dependency
  * that is not in the checked-in exception list).
  *
- * Enumeration uses `pnpm licenses list --json`, falling back to walking node_modules package.json
- * `license` fields so the script also works before pnpm's licence index is warm.
+ * Enumeration uses `pnpm licenses list --json` only — a failed enumeration exits 2 rather than
+ * passing on a partial walk (R6LOW.1: the earlier docstring promised a node_modules fallback that
+ * was never implemented).
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";

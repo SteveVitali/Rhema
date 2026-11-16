@@ -96,13 +96,13 @@ describe("resolveSessionPrincipal", () => {
 
 // ---- session middleware + principal seam --------------------------------------------------------------------
 
-function appWith(opts: { resolve?: (req: Request) => Promise<{ userId: string; workspaceId: string; billingAccountId: string } | null>; identityHeaders?: boolean }) {
+function appWith(opts: { resolve?: (req: Request) => Promise<{ userId: string; workspaceId: string; billingAccountId: string } | null>; identityHeadersKey?: string }) {
   const app = new Hono();
   app.use(
     "*",
     createSessionMiddleware({
       resolve: opts.resolve ?? (async () => null),
-      ...(opts.identityHeaders ? { identityHeaders: true } : {}),
+      ...(opts.identityHeadersKey ? { identityHeadersKey: opts.identityHeadersKey } : {}),
     }),
   );
   app.get("/whoami", (c) => c.json(currentPrincipal()));
@@ -133,23 +133,43 @@ describe("createSessionMiddleware", () => {
     expect(seen).toHaveLength(0); // the resolver never ran for either skipped path
   });
 
-  it("identityHeaders fallback only applies when opted in (dev/preview) and no session resolved", async () => {
+  it("the keyed identity-header shim resolves only the stage key-holder (RH-10)", async () => {
     const headers = {
       "x-rhema-user-id": "uh",
       "x-rhema-workspace-id": "wh",
       "x-rhema-billing-account-id": "bh",
     };
+    const KEY = "shim-fixture-key-value";
     const off = appWith({});
     expect(await (await off.request("/whoami", { headers })).json()).toBeNull();
-    const on = appWith({ identityHeaders: true });
-    expect(await (await on.request("/whoami", { headers })).json()).toEqual({
-      userId: "uh",
-      workspaceId: "wh",
-      billingAccountId: "bh",
-    });
+    const on = appWith({ identityHeadersKey: KEY });
+    // the three forgeable headers ALONE resolve nothing — the RH-10 hole stays closed.
+    expect(await (await on.request("/whoami", { headers })).json()).toBeNull();
+    // a wrong or missing key answers null exactly like an absent shim — no oracle.
+    expect(
+      await (
+        await on.request("/whoami", {
+          headers: { ...headers, "x-rhema-identity-key": "wrong-key" },
+        })
+      ).json(),
+    ).toBeNull();
+    // the key-holder gets the principal.
+    expect(
+      await (
+        await on.request("/whoami", {
+          headers: { ...headers, "x-rhema-identity-key": KEY },
+        })
+      ).json(),
+    ).toEqual({ userId: "uh", workspaceId: "wh", billingAccountId: "bh" });
     // a resolved session always wins over the shim
-    const both = appWith({ resolve: async () => PRINCIPAL, identityHeaders: true });
-    expect(await (await both.request("/whoami", { headers })).json()).toEqual(PRINCIPAL);
+    const both = appWith({ resolve: async () => PRINCIPAL, identityHeadersKey: KEY });
+    expect(
+      await (
+        await both.request("/whoami", {
+          headers: { ...headers, "x-rhema-identity-key": KEY },
+        })
+      ).json(),
+    ).toEqual(PRINCIPAL);
   });
 
   it("sessionScopedPrincipal reads the ALS (and never the headers)", async () => {
@@ -238,16 +258,33 @@ describe("createScopedDb", () => {
 // ---- headerIdentityPrincipal ----------------------------------------------------------------------------------
 
 describe("headerIdentityPrincipal", () => {
-  it("requires all three x-rhema-* headers (any missing ⇒ null)", () => {
-    const c = (h: Record<string, string>) => ({ req: { header: (n: string) => h[n] } });
+  const c = (h: Record<string, string>) => ({ req: { header: (n: string) => h[n] } });
+  const ALL = {
+    "x-rhema-user-id": "u",
+    "x-rhema-workspace-id": "w",
+    "x-rhema-billing-account-id": "b",
+  };
+  const KEY = "shim-fixture-key-value";
+
+  it("requires the shared key AND all three identity headers (any missing ⇒ null)", () => {
+    expect(headerIdentityPrincipal(c({ ...ALL, "x-rhema-identity-key": KEY }) as never, KEY)).toEqual({
+      userId: "u",
+      workspaceId: "w",
+      billingAccountId: "b",
+    });
+    // every missing/mismatching piece fails closed to null (RH-10):
+    expect(headerIdentityPrincipal(c(ALL) as never, KEY)).toBeNull(); // no key header
+    expect(headerIdentityPrincipal(c({ ...ALL, "x-rhema-identity-key": "nope" }) as never, KEY)).toBeNull();
     expect(
-      headerIdentityPrincipal(c({
-        "x-rhema-user-id": "u",
-        "x-rhema-workspace-id": "w",
-        "x-rhema-billing-account-id": "b",
-      }) as never),
-    ).toEqual({ userId: "u", workspaceId: "w", billingAccountId: "b" });
-    expect(headerIdentityPrincipal(c({ "x-rhema-user-id": "u" }) as never)).toBeNull();
+      headerIdentityPrincipal(
+        c({ ...ALL, "x-rhema-identity-key": `${KEY}x` }) as never,
+        KEY,
+      ),
+    ).toBeNull(); // near-miss key (length differs — constant-time compare's fast false)
+    expect(
+      headerIdentityPrincipal(c({ "x-rhema-user-id": "u", "x-rhema-identity-key": KEY }) as never, KEY),
+    ).toBeNull(); // key present, identity headers incomplete
+    expect(headerIdentityPrincipal(c({ ...ALL, "x-rhema-identity-key": KEY }) as never, "")).toBeNull(); // shim unkeyed
   });
 });
 

@@ -6,13 +6,20 @@
 //   DATABASE_URL                a pg connection string with read access to runs/usage_records/
 //                               fetch_log/claims/claim_sources
 //   PROBE_USER_ID / PROBE_WORKSPACE_ID / PROBE_BILLING_ACCOUNT_ID
-//                               the principal headers the gateway injects (a provisioned account)
+//                               the principal headers the identity shim consumes (a provisioned
+//                               account) — honored ONLY alongside PROBE_IDENTITY_KEY post-RH-10
+//   PROBE_IDENTITY_KEY          (non-prod shim stages) the stage's shared key, sent as
+//                               `x-rhema-identity-key`. Post-267_R6SEC.2 the api ignores the
+//                               identity headers without it — fetch it from Secret Manager:
+//                               `gcloud secrets versions access latest \
+//                                 --secret=rhema-<stage>-identity-headers-key`
 //   PROBE_PROJECT_ID            the project holding the planted-error excerpt draft
 //   PROBE_SESSION_COOKIE        (optional) "<name>=<token>" session cookie — REQUIRED on prod, where
-//                               the IDENTITY_HEADERS forgeable-header shim is never enabled
+//                               the IDENTITY_HEADERS shim is never armed
 //                               (apps/api/src/auth-context.ts: x-rhema-* headers only resolve on
-//                               stages that opt in). The cookie is the test tenant's own, minted
-//                               through the real magic-link funnel — never a lifted session.
+//                               stages that opt in, and only behind the shared key). The cookie is
+//                               the test tenant's own, minted through the real magic-link funnel —
+//                               never a lifted session.
 //   PROBE_EXPECT_MODELS         (optional csv) model ids that must each show ≥1 metered search
 //                               (substring-matched — the provider resolves dated aliases, e.g.
 //                               "claude-haiku" matches "claude-haiku-4-5-20251001"). The D-RES.1-1
@@ -57,6 +64,8 @@ async function main(): Promise<number> {
         workspaceId: need("PROBE_WORKSPACE_ID"),
         billingAccountId: need("PROBE_BILLING_ACCOUNT_ID"),
       },
+      // RH-10 — non-prod shim stages need the stage's shared key; unset on cookie-authed (prod) runs.
+      ...(process.env.PROBE_IDENTITY_KEY ? { identityKey: process.env.PROBE_IDENTITY_KEY } : {}),
       projectId: need("PROBE_PROJECT_ID"),
       sql,
       // PROBE_ATTEMPT (or a process-unique fallback) keeps a retried probe from replaying the

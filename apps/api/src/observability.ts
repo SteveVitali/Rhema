@@ -119,14 +119,20 @@ class NonErrorThrowError extends Error {
 /**
  * Resolve + echo the request identity on every request. `gcpProject` builds the
  * `logging.googleapis.com/trace` join field (env `GOOGLE_CLOUD_PROJECT`); absent it, requestId
- * still propagates — the trace field is simply omitted.
+ * still propagates — the trace field is simply omitted. `serviceVersion` (the image-baked
+ * `RHEMA_BUILD_GIT_SHA`) stamps `serviceContext.version` on every emitted line so Error
+ * Reporting attributes the group to a release (RH-21 residual).
  */
-export function requestContext(gcpProject: string | undefined): MiddlewareHandler {
+export function requestContext(
+  gcpProject: string | undefined,
+  serviceVersion?: string | null,
+): MiddlewareHandler {
   return async (c, next) => {
     const { requestId, traceId } = resolveRequestId((n) => c.req.header(n), () => randomUUID());
     const ctx: RequestLogContext = {
       requestId,
       trace: cloudLoggingTraceField(gcpProject, traceId),
+      ...(serviceVersion ? { serviceVersion } : {}),
     };
     c.set(REQUEST_LOG_KEY, ctx);
     c.header(REQUEST_ID_RESPONSE_HEADER, requestId);

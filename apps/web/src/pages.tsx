@@ -15,6 +15,7 @@ import {
   IdeShell,
   CompareView,
   TimelinePane,
+  NonceScript,
   type DossierLabels,
 } from "@rhema/ui";
 import {
@@ -204,7 +205,7 @@ export function IdeFrame({ children }: { children: ReactNode }): ReactNode {
       {data.project?.heldConsumed ? (
         <>
           <span data-held-consumed={data.project.heldConsumed} hidden />
-          <script src="/assets/landing.js" defer />
+          <NonceScript src="/assets/landing.js" defer />
         </>
       ) : null}
       {/* R7RO.2 (REQ-MOBILE-3 amended; F4) — the §10.1 entry points, inside the Page as
@@ -407,6 +408,9 @@ export function LoginPage(): ReactNode {
         ) : null}
 
         <form method="post" action="/login">
+          {/* RH-34 — the gate's deep link round-trips as a hidden field (already same-origin
+              validated server-side; React escapes the attribute on re-render). */}
+          {login?.next ? <input type="hidden" name="next" value={login.next} /> : null}
           {open ? (
             <>
               <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>
@@ -451,6 +455,36 @@ export function LoginPage(): ReactNode {
             </button>
           </div>
         </form>
+      </div>
+    </Shell>
+  );
+}
+
+/**
+ * 275_R6WEB.1 (RH-31) — the magic-link interstitial: the emailed href lands a GET that renders this
+ * page and NOTHING ELSE (the one-shot token is not consumed). The confirm click POSTs the same URL;
+ * the server relays the verify upstream and returns its session-cookie + redirect answer.
+ */
+export function MagicLinkPage(): ReactNode {
+  const { magicLink } = usePageData();
+  return (
+    <Shell brand={COPY.brand} footer={footer()}>
+      <div style={{ maxWidth: "380px", margin: "0 auto" }}>
+        <PageTitle>{COPY.magicLink.heading}</PageTitle>
+        {magicLink?.invalid ? (
+          <p role="alert" style={{ color: "var(--sev-blocking)", fontSize: "13px" }}>
+            {COPY.magicLink.invalid}
+          </p>
+        ) : (
+          <>
+            <p style={{ color: "var(--shell-fg-muted)", fontSize: "13px" }}>{COPY.magicLink.body}</p>
+            <form method="post">
+              <button type="submit" data-magic-link-confirm style={submitStyle}>
+                {COPY.magicLink.confirm}
+              </button>
+            </form>
+          </>
+        )}
       </div>
     </Shell>
   );

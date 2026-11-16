@@ -29,6 +29,17 @@ describe("evaluateLicense", () => {
     expect(v.reason).toMatch(/exception/);
   });
 
+  it("R6LOW.1 — an exception covers its recorded licence only; a relicense fails closed", () => {
+    const relicensed = evaluateLicense("@anthropic-ai/claude-agent-sdk", "BUSL-1.1", policy);
+    expect(relicensed.ok).toBe(false);
+    expect(relicensed.reason).toMatch(/relicensed/);
+    const missing = evaluateLicense("pandoc", undefined, policy);
+    expect(missing.ok).toBe(false);
+    expect(missing.reason).toMatch(/relicensed/);
+    // same licence, different expression text — still the recorded licence
+    expect(evaluateLicense("pandoc", "GPL-2.0-or-later", policy).ok).toBe(true);
+  });
+
   it("accepts an SPDX OR-expression if any branch is allowlisted", () => {
     expect(evaluateLicense("x", "(MIT OR SSPL-1.0)", policy).ok).toBe(true);
   });

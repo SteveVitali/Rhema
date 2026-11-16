@@ -174,7 +174,12 @@ export function createGmailClient(userId: string, deps: MailboxDeps = {}): Mailb
         timeoutMs,
       );
       const urls = msg.body.match(/https?:\/\/[^\s"'<>()]+/g) ?? [];
-      const link = urls.find((u) => /\/api\/auth\/magic-link\/verify/.test(u)) ?? urls.find((u) => /token=/.test(u));
+      // 275_R6WEB.1 (RH-31) — the emailed href is the web host's interstitial (`/auth/magic-link`),
+      // not the consuming verify GET; the confirm click does the consumption in the browser.
+      const link =
+        urls.find((u) => /\/auth\/magic-link/.test(u)) ??
+        urls.find((u) => /\/api\/auth\/magic-link\/verify/.test(u)) ??
+        urls.find((u) => /token=/.test(u));
       if (!link) throw new Error(`magic-link email for ${email} has no verify link (subject: ${msg.subject})`);
       return link.replace(/[.,;]+$/, "");
     },

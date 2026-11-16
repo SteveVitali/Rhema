@@ -111,7 +111,7 @@ describe("the Page — /p/:project/v/:v SSR (P1.02; the forced-SSR phone arm —
     const app = createWebApp({ ...makeDeps(), session: () => null });
     const res = await app.request("/p/the-piece/v/working");
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("/login");
+    expect(res.headers.get("location")).toBe("/login?next=%2Fp%2Fthe-piece%2Fv%2Fworking");
   });
 
   it("renders /v/working: the page root, embedded doc JSON, static preview, island script", async () => {
