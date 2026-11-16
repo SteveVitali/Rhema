@@ -4,7 +4,12 @@
 
 ## Scope (verified findings — the note's "agent-reported" items are re-confirmed in the verify run)
 
-RH-9 + RH-7: pin `Stripe-Version` + read post-basil field paths (`invoice.subscription`, `current_period_*`, `items[].plan.interval`); webhook `created` ordering guard + `livemode` check; FIRST do the read-only endpoint `api_version` + account-default check and report — renewals ~2026-11-28
+RH-9 + RH-7: pin `Stripe-Version` + read post-basil field paths (`invoice.subscription`, `current_period_*`, `items[].plan.interval`); webhook `created` ordering guard + `livemode` check; FIRST do the read-only check and report BEFORE any code change (the handoff's RH-9 addendum, verbatim evidence):
+- `stripe webhook_endpoints retrieve we_1UH99C2MLe3ETP9Sk4UQBKXs --live` (command already in `docs/ops/stripe-webhook-endpoint.md:65`) — read `api_version`; fallback: Dashboard → Developers → Webhooks → endpoint → "API version" (operator act if CLI creds unavailable).
+- The endpoint + every API call uses the ACCOUNT DEFAULT version (no `api_version` recorded at creation, no `Stripe-Version` header sent).
+- **First exposure = first live renewal of the 2026-10-27 Writer subscription, ~2026-11-27** (endpoint gained `invoice.*` events only 2026-10-28, so no `invoice.paid` has ever been delivered).
+- If `basil` or later → fix + expedited operator-gated deploy BEFORE ~2026-11-27: read `invoice.parent.subscription_details.subscription` + `subscription.items.data[].current_period_*` with old-path fallback, pin `Stripe-Version` on every request, one fixture per payload shape.
+- If older → nothing breaks today but still pin `Stripe-Version` (an account upgrade can't silently switch shape).
 
 Every fix carries its own regression that fails pre-fix where a code test applies. Read the findings note's cited lines; treat each as a hypothesis — if code disagrees, STOP and report, don't deviate silently.
 
