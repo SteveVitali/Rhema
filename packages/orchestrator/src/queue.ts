@@ -80,7 +80,16 @@ export interface SentJob {
   readonly startAfterMs?: number;
 }
 
-/** An in-memory queue that records sends and enforces singleton-key dedup, for deterministic tests. */
+/**
+ * An in-memory queue that records sends and enforces singleton-key dedup, for deterministic tests.
+ * RH-18 caveat — a SELF-CONFIRMING TEST TRAP: this double dedupes a keyed send against EVERY prior
+ * send (jobs never leave `sent`), which is strictly stronger than any pg-boss policy. Tests that
+ * asserted "the second keyed send is a no-op" passed while prod ran `standard` policy, where
+ * `singletonKey` was inert entirely — the double proved an intent, never the deployed behavior.
+ * The deployed dedupe now lives in pg-boss `exclusive` policy (migration 0063 + the createQueue
+ * declarations in apps/api/server.ts and apps/worker/main.ts); this double remains a model of the
+ * INTENT, not of pg-boss's state machine.
+ */
 export class InMemoryQueue implements Queue {
   readonly sent: SentJob[] = [];
 

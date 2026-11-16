@@ -7,6 +7,7 @@ import {
   type OrchestratorTestDb,
 } from "@rhema/orchestrator/testing";
 import {
+  handleAccountDeleteSweep,
   handleProjectPurge,
   handleProjectPurgeSweep,
   handleAccountHardDelete,
@@ -514,6 +515,124 @@ describe("handleProjectPurgeSweep (F-R6WATCH.2-1 re-arm watchdog)", () => {
 
   it("without a system pool or queue the sweep is a no-op (test seam)", async () => {
     const r = await handleProjectPurgeSweep({});
+    expect(r).toEqual({ scanned: 0, rearmed: [] });
+  });
+});
+
+// RH-4 (270_R6OPS.4) — the deletion-request watchdog: `user.deletion_requested_at` is the state,
+// the delayed `account.hard-delete` job is the timer; the same silent-loss class as F-R6WATCH.2-1
+// leaves the promised destruction undone forever. The sweep re-arms any marker lacking a live job.
+describe("handleAccountDeleteSweep (RH-4 re-arm watchdog)", () => {
+  const markDeletion = (userId: string, ago: string) =>
+    db!.pg.query(`update "user" set deletion_requested_at = now() - interval '${ago}' where id = $1`, [
+      userId,
+    ]);
+
+  it("re-arms a past-grace marker whose hard-delete job vanished (fires on the next poll)", async () => {
+    db = await createOrchestratorTestDb();
+    await stubQueueTable(db);
+    const seed = await seedProject(db, { draftN: 1 });
+    await db.pg.query(
+      `insert into workspace_members (workspace_id, user_id, role) values ($1,$2,'admin') on conflict do nothing`,
+      [seed.workspaceId, seed.userId],
+    );
+    await markDeletion(seed.userId, "20 days");
+    const queue = fakeQueue();
+    const r = await handleAccountDeleteSweep({ systemExec: db.client, queue });
+    expect(r).toEqual({ scanned: 1, rearmed: [seed.userId] });
+    expect(queue.sent).toHaveLength(1);
+    expect(queue.sent[0].name).toBe("account.hard-delete");
+    expect(queue.sent[0].opts?.singletonKey).toBe(`account.hard-delete:${seed.userId}`);
+    expect(queue.sent[0].opts?.startAfterMs).toBe(0);
+    expect(queue.sent[0].payload.tenantId).toBe(seed.workspaceId);
+    expect(queue.sent[0].payload.userId).toBe(seed.userId);
+    expect(queue.sent[0].payload.deletionRequestedAt).toBeTruthy();
+  });
+
+  it("re-arms an in-grace marker AT its grace end, not immediately", async () => {
+    db = await createOrchestratorTestDb();
+    await stubQueueTable(db);
+    const seed = await seedProject(db, { draftN: 1 });
+    await markDeletion(seed.userId, "2 days");
+    const queue = fakeQueue();
+    const r = await handleAccountDeleteSweep({ systemExec: db.client, queue });
+    expect(r.rearmed).toEqual([seed.userId]);
+    const ms = queue.sent[0].opts?.startAfterMs ?? -1;
+    expect(ms).toBeGreaterThan(11 * 24 * 60 * 60 * 1000);
+    expect(ms).toBeLessThan(13 * 24 * 60 * 60 * 1000);
+  });
+
+  it("leaves a pending request alone when a live job still holds its singleton key", async () => {
+    db = await createOrchestratorTestDb();
+    await stubQueueTable(db);
+    const seed = await seedProject(db, { draftN: 1 });
+    await markDeletion(seed.userId, "20 days");
+    for (const state of ["created", "retry", "active"]) {
+      await db.pg.query(
+        `insert into pgboss.job(name, singleton_key, state) values ('account.hard-delete', $1, $2)`,
+        [`account.hard-delete:${seed.userId}`, state],
+      );
+      const queue = fakeQueue();
+      const r = await handleAccountDeleteSweep({ systemExec: db.client, queue });
+      expect(r).toEqual({ scanned: 0, rearmed: [] });
+      expect(queue.sent).toEqual([]);
+      await db.pg.query(`delete from pgboss.job`);
+    }
+  });
+
+  it("re-arms again once the surviving job row is terminal (completed/failed)", async () => {
+    db = await createOrchestratorTestDb();
+    await stubQueueTable(db);
+    const seed = await seedProject(db, { draftN: 1 });
+    await markDeletion(seed.userId, "20 days");
+    for (const state of ["completed", "failed", "cancelled"]) {
+      await db.pg.query(
+        `insert into pgboss.job(name, singleton_key, state) values ('account.hard-delete', $1, $2)`,
+        [`account.hard-delete:${seed.userId}`, state],
+      );
+      const queue = fakeQueue();
+      const r = await handleAccountDeleteSweep({ systemExec: db.client, queue });
+      expect(r.rearmed).toEqual([seed.userId]);
+      await db.pg.query(`delete from pgboss.job`);
+    }
+  });
+
+  it("skips a fresh marker (<1h) — the api's own arm may still be in flight", async () => {
+    db = await createOrchestratorTestDb();
+    await stubQueueTable(db);
+    const seed = await seedProject(db, { draftN: 1 });
+    await markDeletion(seed.userId, "30 minutes");
+    const queue = fakeQueue();
+    const r = await handleAccountDeleteSweep({ systemExec: db.client, queue });
+    expect(r).toEqual({ scanned: 0, rearmed: [] });
+    expect(queue.sent).toEqual([]);
+  });
+
+  it("never touches a live (non-deleting) user", async () => {
+    db = await createOrchestratorTestDb();
+    await stubQueueTable(db);
+    await seedProject(db, { draftN: 1 });
+    const queue = fakeQueue();
+    const r = await handleAccountDeleteSweep({ systemExec: db.client, queue });
+    expect(r).toEqual({ scanned: 0, rearmed: [] });
+    expect(queue.sent).toEqual([]);
+  });
+
+  it("still arms a memberless account — the user row is owed deletion regardless", async () => {
+    db = await createOrchestratorTestDb();
+    await stubQueueTable(db);
+    const seed = await seedProject(db, { draftN: 1 });
+    await db.pg.query(`delete from workspace_members where user_id = $1`, [seed.userId]);
+    await markDeletion(seed.userId, "20 days");
+    const queue = fakeQueue();
+    const r = await handleAccountDeleteSweep({ systemExec: db.client, queue });
+    expect(r.rearmed).toEqual([seed.userId]);
+    expect(queue.sent[0].payload.userId).toBe(seed.userId);
+    expect(queue.sent[0].payload.tenantId).toBe(seed.userId); // no membership → self id
+  });
+
+  it("without a system pool or queue the sweep is a no-op (test seam)", async () => {
+    const r = await handleAccountDeleteSweep({});
     expect(r).toEqual({ scanned: 0, rearmed: [] });
   });
 });

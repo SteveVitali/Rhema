@@ -694,10 +694,16 @@ export function createIngestRoutes(deps: IngestApiDeps): Hono {
     });
     if (!res) return c.json({ error: "not_found" }, 404);
     if (deps.queue) {
-      await deps.queue.send(INGEST_JOBS.voicePurge, {
-        personaId,
-        workspaceId: principal.workspaceId,
-      });
+      // RH-18 — `voice.purge` runs the `exclusive` policy; a keyless send would share the '' slot
+      // with every other keyless job (and lose the dedupe intent). Key it on the persona.
+      await deps.queue.send(
+        INGEST_JOBS.voicePurge,
+        {
+          personaId,
+          workspaceId: principal.workspaceId,
+        },
+        { singletonKey: `voice.purge:${personaId}` },
+      );
     }
     return c.json({ deleted: true, personaId });
   });
