@@ -216,6 +216,12 @@ function fakeCtxPage(opts: {
     async goto() {
       return { status: () => opts.status ?? 200 };
     },
+    // 264_R6FIX.14 — the marker seam probes the browser's default UA once per Browser
+    // (`page.evaluate(navigator.userAgent)` on an about:blank page — no navigation, no wire
+    // requests); the real contexts then carry `<this> +RhemaJourney`.
+    async evaluate() {
+      return "FakeHeadlessUA/1.0";
+    },
   };
   return page;
 }
@@ -333,6 +339,8 @@ describe("runJourneys — the renderer leg contract (SPA.6; REQ-VFY-7, REQ-SEQ-4
   it("no context carries extraHTTPHeaders — the renderer pin is retired (SPA.28 removal-detecting)", async () => {
     // Every leg runs un-pinned now: a resurrected pinRenderer seam would stamp
     // `x-rhema-renderer` onto every context — the assert refuses that shape outright.
+    // Calls are scanned wholesale (the 264_R6FIX.14 UA probe is also a newContext call —
+    // the pin holds on every one, probe and real alike).
     const { browser, newContextCalls } = browserWithPages([
       fakeCtxPage({ docUrl: "https://app.test/app", docHtml: SSR }),
     ]);
@@ -346,8 +354,33 @@ describe("runJourneys — the renderer leg contract (SPA.6; REQ-VFY-7, REQ-SEQ-4
       false,
       { browser },
     );
-    expect(newContextCalls[0]).not.toHaveProperty("extraHTTPHeaders");
-    expect(JSON.stringify(newContextCalls[0])).not.toContain("x-rhema-renderer");
+    for (const call of newContextCalls) {
+      expect(call).not.toHaveProperty("extraHTTPHeaders");
+      expect(JSON.stringify(call)).not.toContain("x-rhema-renderer");
+    }
+  });
+
+  it("every runner context carries the +RhemaJourney UA marker (264_R6FIX.14 self-traffic tag)", async () => {
+    // The funnel ingest splits `acquisition_events.surface` on this token — a real context
+    // missing it would re-pollute the organic legs. The UA PROBE call itself (the leading
+    // options-free context the seam opens to read the browser's default UA) is marker-free
+    // by construction: it never navigates, so it emits no traffic to mark.
+    const { browser, newContextCalls } = browserWithPages([
+      fakeCtxPage({ docUrl: "https://app.test/app", docHtml: SSR }),
+    ]);
+    await run(
+      [step("G14", "green")],
+      {
+        G14: async (ctx) => {
+          await ctx.anon();
+        },
+      },
+      false,
+      { browser },
+    );
+    const real = newContextCalls.at(-1)!;
+    expect(real.userAgent).toBe("FakeHeadlessUA/1.0 +RhemaJourney");
+    expect(newContextCalls[0]).toEqual({}); // the one-shot unmarked probe
   });
 });
 

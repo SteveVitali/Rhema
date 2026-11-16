@@ -1250,6 +1250,7 @@ sequence (BM-COMPAT-05 — historical filenames are not renamed).
 | 264 | `264_R6FIX.14__analytics-self-traffic.md` | post-intervention | **intervention insert R-4** — tag automated traffic, exclude from acquisition/funnel, re-baseline (read-only prod) | — |
 | 265 | `265_R6PRIV.1__public-repo-artifact-cleanup.md` | post-intervention | **intervention insert P-1** — public-repo artifact cleanup (Pulumi stack exports, unredacted gitleaks reports, magic-link tokens, `.gitleaks.toml` narrowing, privacy standing rule); normal commits at HEAD, no history rewrite | after 262's deploy |
 | 261 | `261_R6FIX.11__purge-fk-leaves.md` | R6 tail | **run-time insert** — `handleProjectPurge` fails on `claims_draft_id_fkey`; ~12 NO-ACTION FK leaves missing from the delete order (F-R7DEPMAIN-1 / BL-113; deploy-proven 2026-11-12) | — |
+| 266 | `266_R6SEC.1__better-auth-ghsa.md` | security hotfix | **handoff insert RH-0 — CRITICAL, goes first:** better-auth GHSA-965c-763c-88jm (unauth sign-in as known email); bump all better-auth pkgs together to current stable + auth suite + expedited-deploy PREPARED only | pre-auth prep (operator ruling 2026-11-15) |
 
 ### Plan extensions — handoff 2026-11-15
 
