@@ -10,6 +10,9 @@
 //   DATABASE_URL                   the dev Postgres (an elevated/BYPASSRLS role — the assessors read RLS tables)
 //   PROJECT_IDS                    comma-separated, exactly 3 project ids
 //   RHEMA_USER_ID / RHEMA_WORKSPACE_ID / RHEMA_BILLING_ACCOUNT_ID   identity (default the seed ids)
+//   RHEMA_IDENTITY_KEY             the stage's shared `x-rhema-identity-key` — REQUIRED on non-prod
+//                                  shim stages post-267_R6SEC.2 (RH-10); fetch from Secret Manager
+//                                  (`rhema-<stage>-identity-headers-key`).
 //
 // The pilot six-arm wave is NOT wired here (that is the separate benchmark-runner driver), so `ready` reflects the
 // reviews + start-latency + estimator legs only; the readout's pilot line reads "not run".
@@ -25,6 +28,8 @@ export interface RunLiveExitConfig {
   readonly databaseUrl: string;
   readonly projectIds: readonly string[];
   readonly principal: LivePrincipal;
+  /** RH-10 — the stage's shared identity key (`x-rhema-identity-key`); required on shim stages. */
+  readonly identityKey?: string;
 }
 
 /** Construct the live deps, drive the exit, and log the readout. Closes the pool on the way out. */
@@ -38,6 +43,7 @@ export async function runLiveExit(config: RunLiveExitConfig, log: (msg: string) 
     const launcher = new LiveWorkflowLauncher({
       apiBaseUrl: config.apiBaseUrl,
       principal: config.principal,
+      ...(config.identityKey ? { identityKey: config.identityKey } : {}),
       sql,
       // Each real project reviews its seeded frozen draft `<proj>_d1` (whose `<proj>_av1` head the fixture
       // repoints to real bytes — live-prepare-fixture.ts); without this the run has no draft to materialize.
@@ -94,7 +100,13 @@ export async function main(): Promise<void> {
     billingAccountId: process.env.RHEMA_BILLING_ACCOUNT_ID ?? "bill_seed",
   };
   try {
-    await runLiveExit({ apiBaseUrl, databaseUrl, projectIds, principal });
+    await runLiveExit({
+      apiBaseUrl,
+      databaseUrl,
+      projectIds,
+      principal,
+      ...(process.env.RHEMA_IDENTITY_KEY ? { identityKey: process.env.RHEMA_IDENTITY_KEY } : {}),
+    });
   } catch (err) {
     console.error("run-live-exit: failed:", err);
     process.exitCode = 1;

@@ -280,10 +280,13 @@ export interface BetaApiDeps {
    */
   sessionResolver?: (req: Request) => Promise<Principal | null>;
   /**
-   * PRB.16 — dev/preview ONLY: trust `x-rhema-*` identity headers when no session resolves. Never set
-   * on prod (client-forgeable); the stage wiring sets it for non-prod.
+   * Non-prod ONLY (267_R6SEC.2 / RH-10): trust `x-rhema-*` identity headers when no session
+   * resolves — gated on the request presenting this per-stage shared key on
+   * `x-rhema-identity-key`. Non-prod api services are publicly reachable (allUsers invoker), so
+   * unkeyed header identity is client-forgeable; the key lives in Secret Manager and is never
+   * set on prod. Unset ⇒ the shim is off entirely.
    */
-  identityHeaders?: boolean;
+  identityHeadersKey?: string;
   /**
    * PRB.16 — the CSRF origin allowlist for state-changing requests (single-zone amendment means the
    * user-content host is same-site, so SameSite=Lax alone is insufficient). Unset ⇒ no guard.
@@ -393,12 +396,12 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
   }
   // PRB.16 — request middleware FIRST (before every route): resolve the session principal into the ALS
   // context the `principal` seams + scoped `db` read, then apply the mutation Origin allowlist.
-  if (deps?.sessionResolver || deps?.identityHeaders) {
+  if (deps?.sessionResolver || deps?.identityHeadersKey) {
     app.use(
       "*",
       createSessionMiddleware({
         resolve: deps.sessionResolver ?? (async () => null),
-        ...(deps.identityHeaders ? { identityHeaders: true } : {}),
+        ...(deps.identityHeadersKey ? { identityHeadersKey: deps.identityHeadersKey } : {}),
       }),
     );
   }

@@ -21,7 +21,15 @@ import {
 // when a gateway injects it — the API only honors those headers on non-prod stages. Runs only when
 // invoked directly, so importing this module in tests never starts a listener.
 
-const IDENTITY_HEADERS = ["x-rhema-user-id", "x-rhema-workspace-id", "x-rhema-billing-account-id"] as const;
+// RH-10 — `x-rhema-identity-key` relays like the rest of the shim family: the api honors the
+// identity headers only when a caller also presents the stage's shared key, so forwarding it
+// changes nothing a direct api call can't do — a caller without the key gets no principal.
+const IDENTITY_HEADERS = [
+  "x-rhema-user-id",
+  "x-rhema-workspace-id",
+  "x-rhema-billing-account-id",
+  "x-rhema-identity-key",
+] as const;
 const SESSION_COOKIE_NAME = "__Host-rhema.session_token";
 const DEV_SESSION_COOKIE_NAME = "rhema-dev.session_token";
 
