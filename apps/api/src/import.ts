@@ -3,6 +3,7 @@ import { freezeDraft, sha256Hex, type ContentStore } from "@rhema/mirror";
 import {
   presignQuarantinePut,
   parseQuarantineKey,
+  errorSummary,
   type ConversionResult,
   type SignedUrlProvider,
 } from "@rhema/contracts";
@@ -524,7 +525,7 @@ export function createImportRoutes(deps: ImportApiDeps): Hono {
         venue_set: venue?.venue != null,
       },
     }).catch((err: unknown) =>
-      console.error("[api] draft.imported analytics failed:", err instanceof Error ? err.message : err),
+      console.error("[api] draft.imported analytics failed:", errorSummary(err)),
     );
     // P1.04 — index the draft body for the §5.2 search (materialized markdown). Non-fatal by contract.
     await upsertProjectSearchDoc(deps.db, {

@@ -40,7 +40,7 @@ permissions:
   actions: read
 
 env:
-  # Turborepo remote cache is self-hosted on S3 (never Vercel-hosted). CI supplies these from
+  # Turborepo remote cache is self-hosted on GCS (never Vercel-hosted; ADR-081). CI supplies these from
   # Secrets/OIDC; absent locally the build simply runs without remote cache.
   TURBO_API: ${{ vars.TURBO_API }}
   TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}

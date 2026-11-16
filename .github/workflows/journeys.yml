@@ -21,8 +21,9 @@ name: journeys
 
 on:
   # R6SWP.1 (2026-10-27) — scheduled sweeps restored at the post-merge-nightly ticket, exactly
-  # as the R6CI.1 pause marker directed. Nightly $0 legs run at 06:05Z against `main` HEAD
-  # (github.sha on schedule events); the weekly paid leg stays bound to the $5 ISO-week
+  # as the R6CI.1 pause marker directed. Nightly $0 legs run at 06:05Z and pin the DEPLOYED SHA
+  # read from /healthz (see the schedule arm below — records/deploy commits move `main` ahead of
+  # prod between deploys); the weekly paid leg stays bound to the $5 ISO-week
   # guard + the standing --headroom 3 below. Until the launch deploy (R6LCH.1) carries `main`
   # HEAD to prod, each nightly reads provenance NO-MATCH on the deployed `dc3a8f6` — honest
   # red, closing itself the first nightly after that deploy (GD-THRESH6.R6's literal arm).
@@ -135,7 +136,8 @@ jobs:
           # GOOGLE_APPLICATION_CREDENTIALS is exported by the auth step above (the federated
           # WIF identity's external_account file — ADC can mint its access token).
           # A dispatch may pin the expected SHA explicitly (e.g. the deployed SHA for an
-          # on-deployed green run); the schedule always pins github.sha.
+          # on-deployed green run); a dispatch without one keeps github.sha, and the schedule
+          # arm below re-pins to the DEPLOYED SHA read from /healthz.
           JOURNEY_EXPECT_SHA: ${{ inputs['expect-sha'] || github.sha }}
           JOURNEY_PAID: ${{ (github.event_name == 'schedule' && github.event.schedule == '35 4 * * 1') || inputs.paid }}
           # R6DEP.4 — the operator-bound env-gap secrets (2026-10-30, GD-THRESH1.R6-style ruling).

@@ -114,9 +114,11 @@ schedules were restored by R6SWP.1; the earlier pause described in the original 
 longer matches the workflow.
 
 Journey runs authenticate to GCP through Workload Identity Federation, use the designated test
-mailbox, and compare the deployment with an expected revision. The schedule pins `github.sha`;
-a manual dispatch can supply `expect-sha`. An enabled schedule or green source build does not
-prove that the expected revision is deployed or that the browser journey passes.
+mailbox, and compare the deployment with an expected revision. Scheduled runs pin the **deployed**
+SHA read from `/healthz` (records/deploy commits move `main` ahead of prod between deploys); a
+manual dispatch can supply `expect-sha`, and a dispatch without one keeps `github.sha`. An
+enabled schedule or green source build does not prove that the expected revision is deployed or
+that the browser journey passes.
 
 The weekly paid dispatch retains the enforced spend guard and declared headroom. See
 [Testing](./testing.md#deployed-browser-journeys) and the

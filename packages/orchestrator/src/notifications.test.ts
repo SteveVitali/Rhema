@@ -39,7 +39,7 @@ const CONFIG: EmailActionConfig = {
 let db: OrchestratorTestDb;
 let deps: TestDeps;
 let seed: SeededProject;
-const sent: { to: string; subject: string; text: string; html: string }[] = [];
+const sent: { to: string; subject: string; text: string; html: string; idempotencyKey?: string }[] = [];
 const mailer: MailSender = {
   send: (m) => {
     sent.push(m);
@@ -623,5 +623,25 @@ describe("UX.1 — honest terminal Inbox rows (partial + recovered)", () => {
     expect(row.read_at).not.toBeNull(); // still read — one unread, ever, per run
     await deliverAll();
     expect(sent).toHaveLength(0); // cancelled/recovered never mails
+  });
+});
+
+describe("R6LOW.1 — the mail.send transport dedupes at the provider (RH-A1-7)", () => {
+  it("handleMailSendJob passes the delivery-row id as the Idempotency-Key", async () => {
+    sent.length = 0;
+    await handleMailSendJob(
+      { txRunner: db.txRunner, mailer, clock: deps.clock },
+      {
+        deliveryId: "ndl_idem_1",
+        workspaceId: seed.workspaceId,
+        to: "u@example.test",
+        subject: "s",
+        text: "t",
+        html: "<p>h</p>",
+      },
+    );
+    expect(sent).toHaveLength(1);
+    // a retry after an ambiguous send replays the SAME key — the provider never double-mails.
+    expect(sent[0]?.idempotencyKey).toBe("mail.send:ndl_idem_1");
   });
 });

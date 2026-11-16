@@ -25,8 +25,8 @@
 
 ```
 projectStatus:   IN_PROGRESS
-nextTicket:        (maintenance mode)  # 265_R6PRIV.1 done — board empty; per GD-MAINT.R6 work is inserted only for defects or operator-asked items; 263/264/265 await the operator's bottom-up merges
-lastCompleted:   265_R6PRIV.1      # public-repo artifact cleanup (P-1) — PR this run, unmerged
+nextTicket:        (maintenance mode)  # 277_R6LOW.1 done — per GD-MAINT.R6 work is inserted only for defects or operator-asked items; the handoff-insert stack (#344 + 266–277 PRs) awaits the operator's bottom-up merges; no new round
+lastCompleted:   277_R6LOW.1      # LOW/info catch-all sweep — 9 fixes landed, BL-115…124 opened, 1 refuted, 1 covered; PR this run, unmerged
 blockedOn:       (none)
 pauseRequested:  false
 returnPass:      (none)
@@ -42,7 +42,7 @@ benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
 round:           7                  # post-round maintenance per GD-MAINT.R6
-updatedAt:       2026-11-16T07:0xZ  # R-0 repair ×3 — the #339 squash + #338 merge re-stacked CURRENT STATE (13→26 copies) and duplicated 2 rows; block restored to the single block of 89a458cc (#342), stacked copy archived to reports/2026-11-15_state-collapse/CURRENT-STATE-main-784a2e54-stacked.txt; union-merging CURRENT STATE is FORBIDDEN (GD-OPS-RULES.R6)
+updatedAt:       2026-11-16T08:1xZ  # 277_R6LOW.1 — LOW/info sweep close (fixes + BL-115…124; union-merging CURRENT STATE stays FORBIDDEN per GD-OPS-RULES.R6)
 harness:         devin-desktop/swe-2-high/subagent   # BM-HARNESS-01 — round-7 planning/decomposition ran in claude-code/claude-opus-5.5; the drive resumes on devin-desktop/swe-2-high at the pre-209 boundary (the legal switch point)
 ```
 
