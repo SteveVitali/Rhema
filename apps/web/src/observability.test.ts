@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import { Hono } from "hono";
 import { noteDegradedUpstream, requestContext, webOnError } from "./observability.js";
 
-function makeApp(gcpProject?: string) {
+function makeApp(gcpProject?: string, serviceVersion?: string) {
   const app = new Hono();
-  app.use("*", requestContext(gcpProject));
+  app.use("*", requestContext(gcpProject, serviceVersion));
   app.onError(webOnError);
   app.get("/ok", (c) => c.json({ ok: true }));
   app.get("/degraded", async (c) => {
@@ -63,6 +63,17 @@ describe("web request-context middleware + onError (OBS.1)", () => {
       expect(line.route).toBe("/throw");
       expect(line.status).toBe(500);
       expect(JSON.stringify(line)).not.toContain("hunter2-secret");
+    } finally {
+      spy.mockRestore();
+    }
+  });
+  it("stamps serviceContext.version on the error line when a release is threaded (RH-21 residual)", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const res = await makeApp(undefined, "d24dbed8").request("/throw");
+      expect(res.status).toBe(500);
+      const line = JSON.parse(String(spy.mock.calls[0]![0])) as Record<string, unknown>;
+      expect(line.serviceContext).toEqual({ service: "web", version: "d24dbed8" });
     } finally {
       spy.mockRestore();
     }

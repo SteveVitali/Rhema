@@ -82,7 +82,10 @@ describe("OBS.1 route-5xx alert policy", () => {
   });
 
   it("is returned alongside the SLO alert policies", () => {
-    expect(SRC).toContain("alertPolicies: [...alertPolicies, route5xxPolicy]");
+    const ret = SRC.slice(SRC.indexOf("alertPolicies: ["), SRC.indexOf("apiAvailabilitySlo,"));
+    for (const name of ["alertPolicies,", "route5xxPolicy", "apiBurnRatePolicy", "uptimeFailPolicy", "uptimeAbsentPolicy"]) {
+      expect(ret).toContain(name);
+    }
   });
 });
 
@@ -107,7 +110,9 @@ describe("R6OPS.2 ops-alert NotificationChannel (F-R6OPS.1-1)", () => {
   // `rhema:opsAlertWebhookUrl` was never bound on the prod stack — the channel resource only
   // materializes when that Pulumi SECRET config is set. These pins assert the contract the
   // prod bind relies on: ONE webhook_tokenauth channel to the configured sink URL, referenced
-  // by EVERY AlertPolicy construction site.
+  // by EVERY AlertPolicy construction site. 273_R6OPS.5 (RH-27) added a second channel
+  // resource (the email leg) plus the config-bound mobile leg — the count pins below name the
+  // new totals honestly.
   const channelBlock = SRC.slice(
     SRC.indexOf("let notificationChannel"),
     SRC.indexOf("const channels"),
@@ -129,32 +134,128 @@ describe("R6OPS.2 ops-alert NotificationChannel (F-R6OPS.1-1)", () => {
     expect(channelBlock).toContain('type: "webhook_tokenauth"');
     expect(channelBlock).toContain("labels: { url: args.opsAlertWebhookUrl }");
     expect(channelBlock).toContain("enabled: true");
-    // no second channel construction may appear — policies share the one channel resource.
-    expect(SRC.match(/new gcp\.monitoring\.NotificationChannel/g)).toHaveLength(1);
+    // Exactly TWO channel resources exist — the webhook above + the RH-27 email channel below.
+    // The mobile leg is deliberately NOT a resource (GCP's API cannot mint `mobile_app`).
+    expect(SRC.match(/new gcp\.monitoring\.NotificationChannel/g)).toHaveLength(2);
   });
 
   it("materializes only when the rhema:opsAlertWebhookUrl secret config is bound", () => {
     expect(channelBlock).toContain("if (args.opsAlertWebhookUrl)");
     // The reference list is derived, never a literal: unset ⇒ [] (incident-only policies,
-    // clean preview); set ⇒ the one channel's resource name.
-    expect(SRC).toContain(
-      "const channels = notificationChannel ? [notificationChannel.name] : [];",
-    );
+    // clean preview); set ⇒ every configured channel's resource name.
+    expect(SRC).toContain("const channels: pulumi.Input<string>[] = [");
+    expect(SRC).toContain("...(notificationChannel ? [notificationChannel.name] : []),");
     // The URL rides a Pulumi SECRET config — getSecret, never get/getObject (it must stay
     // encrypted in stack state; the plaintext URL lives only in SM + the operator's env).
     expect(INDEX_SRC).toContain('rhemaConfig.getSecret("opsAlertWebhookUrl")');
     expect(INDEX_SRC).toContain("...(opsAlertWebhookUrl ? { opsAlertWebhookUrl } : {})");
   });
 
-  it("is referenced by every AlertPolicy — route-5xx and every per-signal SLO policy", () => {
-    // Exactly two AlertPolicy construction sites exist (route-5xx + the SLO_ALERT_SIGNALS map);
-    // both must carry the derived `channels` binding verbatim.
-    expect(SRC.match(/new gcp\.monitoring\.AlertPolicy/g)).toHaveLength(2);
+  it("is referenced by every AlertPolicy — route-5xx, per-signal SLO, burn-rate, uptime, absence", () => {
+    // Five AlertPolicy construction sites exist: route-5xx + the SLO_ALERT_SIGNALS map + the
+    // RH-20 burn-rate policy + the RH-22 uptime-failure policy + the RH-22 no-data/absence
+    // policy. Every one must carry the derived `channels` binding verbatim.
+    expect(SRC.match(/new gcp\.monitoring\.AlertPolicy/g)).toHaveLength(5);
     expect(policyBlock).toContain("notificationChannels: channels");
     expect(sloPolicyBlock).toContain("notificationChannels: channels");
     // No policy site may bind an empty literal or a hand-rolled channel list.
     expect(SRC).not.toContain("notificationChannels: []");
-    expect(SRC.match(/notificationChannels: channels/g)).toHaveLength(2);
+    expect(SRC.match(/notificationChannels: channels/g)).toHaveLength(5);
+  });
+});
+
+describe("RH-27 paging channels (273_R6OPS.5 — email + operator-paired mobile)", () => {
+  const channelBlock = SRC.slice(
+    SRC.indexOf("let notificationChannel"),
+    SRC.indexOf("const channels"),
+  );
+
+  it("creates ONE email channel to the configured on-call address, enabled", () => {
+    expect(channelBlock).toContain(
+      "new gcp.monitoring.NotificationChannel(`rhema-${stack}-ops-email`",
+    );
+    expect(channelBlock).toContain('type: "email"');
+    expect(channelBlock).toContain("labels: { email_address: args.opsAlertEmail }");
+    expect(channelBlock).toContain("enabled: true");
+    expect(channelBlock).toContain("if (args.opsAlertEmail)");
+    // The address is the operator's config act — a Pulumi SECRET key (encrypted in stack state),
+    // never a committed address.
+    expect(INDEX_SRC).toContain('rhemaConfig.getSecret("opsAlertEmail")');
+    expect(INDEX_SRC).toContain("...(opsAlertEmail ? { opsAlertEmail } : {})");
+    expect(SRC).toContain("...(emailChannel ? [emailChannel.name] : []),");
+  });
+
+  it("binds the GCP mobile-app channel by resource name — the program never tries to mint one", () => {
+    // GCP's API 404s every `mobile_app` create/get/update — console pairing (the operator's act,
+    // HUMAN row 274) is the only mint path. The scaffolding consumes the paired channel's
+    // resource name from plain config; the operator's remaining acts are pair + set + up.
+    expect(SRC).toContain("opsMobileChannelName");
+    expect(SRC).toContain("...(args.opsMobileChannelName ? [args.opsMobileChannelName] : []),");
+    expect(SRC.match(/type: "mobile_app"/g)).toBeNull();
+    expect(INDEX_SRC).toContain('rhemaConfig.get("opsMobileChannelName")');
+    expect(INDEX_SRC).toContain("...(opsMobileChannelName ? { opsMobileChannelName } : {})");
+  });
+});
+
+describe("RH-20 availability burn-rate alert (273_R6OPS.5 — ADR-054's missing policy)", () => {
+  // ADR-054 records the §13.5 burn-rate rule as "already implemented for the availability SLO" —
+  // only the Slo resource existed; no policy consumed it. These pins assert the honest add: a
+  // `select_slo_burn_rate` threshold condition on the real SLO resource name.
+  it("alerts on select_slo_burn_rate > 2 over the recorded 1h burn window", () => {
+    expect(SRC).toContain("apiBurnRatePolicy = new gcp.monitoring.AlertPolicy(");
+    expect(SRC).toContain("-api-burn-rate`");
+    expect(SRC).toContain("select_slo_burn_rate(");
+    expect(SRC).toContain(
+      'select_slo_burn_rate("projects/${project}/services/${apiService.serviceId}/serviceLevelObjectives/${apiAvailabilitySlo.sloId}", "3600s")',
+    );
+    expect(SRC).toContain("thresholdValue: 2");
+  });
+  it("depends on the SLO resource so the selector name resolves", () => {
+    const burnBlock = SRC.slice(SRC.indexOf("-api-burn-rate`"), SRC.indexOf("const uptimeTargets"));
+    expect(burnBlock).toContain("dependsOn: [apiAvailabilitySlo]");
+    expect(burnBlock).toContain("notificationChannels: channels");
+  });
+});
+
+describe("RH-22 uptime checks + no-data alerts (273_R6OPS.5)", () => {
+  it("checks app + api /healthz over the stage's public domains only", () => {
+    expect(SRC).toContain("new gcp.monitoring.UptimeCheckConfig(`rhema-${stack}-uptime-${key}`");
+    expect(SRC).toContain('["app", args.domains.app]');
+    expect(SRC).toContain('["api", args.domains.api]');
+    expect(SRC).toContain('path: "/healthz"');
+    expect(SRC).toContain("useSsl: true");
+    expect(SRC).toContain('type: "uptime_url"');
+    // The healthz handler's `"ok":true` marks the app-owned answer (a parked-host 200 still fails).
+    expect(SRC).toContain('content: \'"ok":true\'');
+    // Domain-less stages get no checks — index.ts only passes cfg.domains when the stage carries one.
+    expect(INDEX_SRC).toContain("...(cfg.domains ? { domains: cfg.domains } : {})");
+  });
+
+  it("pages on 2+ failing checker regions (count_false) on the check_passed metric", () => {
+    const uptimeBlock = SRC.slice(
+      SRC.indexOf("const uptimeFailPolicy"),
+      SRC.indexOf("const uptimeAbsentPolicy"),
+    );
+    expect(uptimeBlock).toContain('metric.type="monitoring.googleapis.com/uptime_check/check_passed"');
+    expect(uptimeBlock).toContain('resource.type="uptime_url"');
+    expect(uptimeBlock).toContain('metric.labels.check_id="${chk.uptimeCheckId}"');
+    expect(uptimeBlock).toContain('crossSeriesReducer: "REDUCE_COUNT_FALSE"');
+    expect(uptimeBlock).toContain('perSeriesAligner: "ALIGN_NEXT_OLDER"');
+    expect(uptimeBlock).toContain("thresholdValue: 1");
+    expect(uptimeBlock).toContain("dependsOn: uptimeChecks");
+  });
+
+  it("pages on absence: uptime metric silence AND the always-on worker going quiet", () => {
+    const absentBlock = SRC.slice(SRC.indexOf("const uptimeAbsentPolicy"), SRC.indexOf("const dashboard"));
+    expect(absentBlock).toContain("conditionAbsent:");
+    // (a) the check pipeline itself dead — no check_passed points for 15 min.
+    expect(absentBlock).toContain('metric.type="monitoring.googleapis.com/uptime_check/check_passed"');
+    // (b) the dead-worker class: the worker is min-instances 1 instance-billed, so a live worker
+    // emits billable_instance_time continuously and silence means dead.
+    expect(absentBlock).toContain('metric.type="run.googleapis.com/container/billable_instance_time"');
+    expect(absentBlock).toContain('resource.labels.service_name="${workerServiceName}"');
+    expect(absentBlock).toContain('duration: "900s"');
+    expect(absentBlock).toContain("notificationChannels: channels");
   });
 });
 
