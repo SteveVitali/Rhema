@@ -69,14 +69,14 @@ jobs:
     # nightly ≈70–90 min, 65-leg weekly ≈100–130 min; 180 covers both with headroom.
     timeout-minutes: 180
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           # R6ENG.1 (REQ-ENG-8): the deploy-neutral drift arm runs `git merge-base`/`git diff`
           # against the deployed SHA — ancestry is unresolvable under the default depth-1
           # clone, so the workflow fetches full history.
           fetch-depth: 0
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: pnpm
@@ -85,7 +85,7 @@ jobs:
       - name: Install Chrome (the scheduled run's browser channel)
         run: pnpm --filter @rhema/journeys exec playwright install chrome
       - id: auth
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2.1.13
         with:
           workload_identity_provider: ${{ vars.JOURNEY_WIF_PROVIDER }}
           # F-R6SWP.1-2: NO service_account + NO token_format — auth@v2 refuses access_token
@@ -123,7 +123,30 @@ jobs:
           [ -n "$INST" ] || { echo "no running rhema-prod-proxy instance"; exit 1; }
           NAME=${INST%%	*}; ZONE=${INST##*	}; ZONE=${ZONE##*/}
           echo "tunnelling via $NAME ($ZONE)"
-          ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+          # RH-26 (271_R6SEC.3) — strict host-key checking replaces the /dev/null bypass. The
+          # proxy is a MIG: instances are recreated and their SSH host keys regenerate, so a
+          # static known_hosts can't be committed. Instead the run scans the live host key
+          # THROUGH the same authenticated IAP tunnel it will forward over (start-iap-tunnel as
+          # a local listener → ssh-keyscan), rewrites the scanned host field to the instance
+          # name ssh will look up, then connects with StrictHostKeyChecking=yes. Within a run
+          # the presented key is therefore pinned, and a silent key swap fails the step. The
+          # residual is a MITM able to interpose inside Google's authenticated IAP path at scan
+          # time — strictly narrower than the old accept-anything posture.
+          SCAN_PORT=15434
+          gcloud compute start-iap-tunnel "$NAME" 22 \
+              --zone="$ZONE" --local-host-port="localhost:$SCAN_PORT" --verbosity=warning &
+          TUNNEL_PID=$!
+          for i in $(seq 1 30); do
+            (echo >"/dev/tcp/127.0.0.1/$SCAN_PORT") 2>/dev/null && break
+            sleep 1
+          done
+          ssh-keyscan -t ed25519,ecdsa,rsa -p "$SCAN_PORT" 127.0.0.1 2>/dev/null \
+            | sed "s/^\[127\.0\.0\.1\]:$SCAN_PORT /$NAME /" > /tmp/jrn-known-hosts
+          kill $TUNNEL_PID 2>/dev/null || true
+          if [ ! -s /tmp/jrn-known-hosts ]; then
+            echo "host-key scan through the IAP tunnel returned nothing"; exit 1
+          fi
+          ssh -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/tmp/jrn-known-hosts -o IdentitiesOnly=yes \
               -o "ProxyCommand=gcloud compute start-iap-tunnel $NAME 22 --listen-on-stdin --zone=$ZONE --verbosity=warning" \
               -i /tmp/jrn-ci-key -fN -L 15433:10.46.0.3:5432 "journeys-ci@$NAME"
           for i in $(seq 1 30); do
@@ -202,7 +225,7 @@ jobs:
           # directly from the workspace root so --out / JOURNEY_STATE_DIR relative paths land
           # where upload-artifact expects them.
           node packages/journeys/dist/cli.js "${args[@]}"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: journey-report-${{ github.run_id }}

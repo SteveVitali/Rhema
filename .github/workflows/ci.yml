@@ -57,8 +57,8 @@ jobs:
       base_sha: ${{ steps.decide.outputs.base_sha }}
       reason: ${{ steps.decide.outputs.reason }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
       - id: decide
@@ -73,9 +73,9 @@ jobs:
     needs: fast-path
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: pnpm
@@ -143,12 +143,12 @@ jobs:
     needs: [fast-path, typecheck-lint-unit]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           # HOT.1 — the additive-migration lint diffs against the PR base ref; it needs the history.
           fetch-depth: 0
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: pnpm
@@ -192,9 +192,9 @@ jobs:
         options: >-
           --health-cmd "pg_isready" --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: pnpm
@@ -241,9 +241,9 @@ jobs:
     needs: [fast-path, contracts]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: pnpm
@@ -317,7 +317,7 @@ jobs:
           grep -F "\"protocols_version\": \"$PV\"" "$artifact"
           ! grep -F "stub-0.0.0" "$artifact"
           echo "provenance protocols_version verified: $PV"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: needs.fast-path.outputs.mode == 'full'
         with:
           name: deploy-provenance
@@ -348,11 +348,11 @@ jobs:
       pull-requests: read
       actions: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: pnpm
@@ -373,7 +373,7 @@ jobs:
         run: pnpm turbo build --filter=@rhema/web...
       # R6CI.1 always-run guard: a docs diff can *contain* a secret — gitleaks runs on every head.
       - name: gitleaks (no secrets in the repo — REQ-ARCH-30)
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
         env:
           GITLEAKS_CONFIG: .gitleaks.toml
           # gitleaks-action v2 breaking change: PR scans require the token explicitly.
@@ -386,6 +386,11 @@ jobs:
       - name: no protocol markers in public bundles (REQ-ARCH-33)
         if: needs.fast-path.outputs.mode == 'full'
         run: pnpm check:protocol-markers
+      # RH-1 (271_R6SEC.3) always-run guard: a committed conflict marker (the 2026-11-15
+      # Pulumi.dev.yaml stash-pop commit) bricks `pulumi config` — the gate needs only
+      # `git ls-files`, so it runs on every head alongside gitleaks.
+      - name: no unresolved merge-conflict markers in tracked files (RH-1)
+        run: pnpm check:conflict-markers
       # R6CI.1 always-run guard: check:no-cookies reads docs/openapi.{yaml,json} — a docs diff
       # can change the ingestion surface — so it runs on every head.
       - name: never-cookies — no credential field/header/input on the ingestion surface (AC-I-B, REQ-INGEST-5)
@@ -432,8 +437,8 @@ jobs:
     needs: [fast-path, typecheck-lint-unit, contracts, integration, images, public-safe]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
       - name: write ci-pass payload (full runs only)
@@ -444,7 +449,7 @@ jobs:
           BASE_SHA: ${{ needs.fast-path.outputs.base_sha }}
           NON_DOCS_TREE: ${{ needs.fast-path.outputs.non_docs_tree }}
         run: node scripts/ci/write-anchor-payload.mjs
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: needs.fast-path.outputs.mode == 'full'
         with:
           name: ci-pass-${{ needs.fast-path.outputs.non_docs_tree }}
