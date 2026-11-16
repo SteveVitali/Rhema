@@ -245,6 +245,6 @@ describe("R6FIX.12 — the server-owned redirect stays for non-handoff document 
     const app = createWebApp({ ...deps, session: () => null }) as unknown as Hono;
     const res = await app.request("/app/new?entry=draft&held=1", { redirect: "manual" });
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("/login");
+    expect(res.headers.get("location")).toBe("/login?next=%2Fapp%2Fnew%3Fentry%3Ddraft%26held%3D1");
   });
 });

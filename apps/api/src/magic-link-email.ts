@@ -85,6 +85,9 @@ export function magicLinkInterstitialUrl(verifyUrl: string): string {
   }
   u.pathname = MAGIC_LINK_INTERSTITIAL_PATH;
   return u.toString();
+}
+
+/**
  * RH-5 (270_R6OPS.4) — the email-change confirm mail, same branded shell as the sign-in link.
  * Sent to the NEW address; the token lives ONLY in the URL (same rule as the magic link).
  */

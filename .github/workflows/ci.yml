@@ -432,15 +432,23 @@ jobs:
     name: ci-pass anchor
     # The same-tree anchor (ADR-115): a green FULL run — on any event — records
     # `ci-pass-<non_docs_tree>` so later PR heads can prove equivalence repo-wide.
-    # Skipped entirely whenever any leg is red (needs: + the default success() gate);
-    # on a fast-path head the upload itself is gated off — a fast run never writes anchors.
+    # RH-8 (267_R6SEC.2): this job is the branch-ruleset's required check, so `if: always()`
+    # is load-bearing — without it a red leg leaves the anchor `skipped`, and GitHub counts a
+    # SKIPPED required check as PASSED. The gate step below asserts every needed leg concluded
+    # `success`; a red/skipped/cancelled leg now FAILS this check instead of green-lighting the
+    # merge. On a fast-path head the upload itself stays gated off — a fast run never writes anchors.
     needs: [fast-path, typecheck-lint-unit, contracts, integration, images, public-safe]
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
+      - name: gate — every needed leg concluded success
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: node scripts/ci/assert-needs-green.mjs
       - name: write ci-pass payload (full runs only)
         if: needs.fast-path.outputs.mode == 'full'
         env:

@@ -131,10 +131,21 @@ export interface ApiEnv {
   readonly googleOauthClientId?: string;
   readonly googleOauthClientSecretName?: string;
   /**
-   * PRB.16 — dev/preview ONLY: trust the client-forgeable `x-rhema-*` identity headers when no session
-   * resolves (the PRB.15 deploy shim for stages without sign-in). NEVER set on prod.
+   * Non-prod ONLY (267_R6SEC.2 / RH-10): the `x-rhema-*` identity-header shim's opt-in flag
+   * (`IDENTITY_HEADERS=true`). The flag alone does NOT enable the shim — the caller-facing gate
+   * is the per-stage shared key below; without a resolvable key the middleware never trusts the
+   * headers. NEVER set on prod.
    */
   readonly identityHeaders?: boolean;
+  /**
+   * The shared key the header shim demands on `x-rhema-identity-key` alongside the three
+   * identity headers. Two carriers: `IDENTITY_HEADERS_SECRET_NAME` names the Secret Manager
+   * secret the deploy minted per-stage (the deployed path — values never ride env), and
+   * `IDENTITY_HEADERS_KEY` carries the value directly (local/dev runs only — there is no Secret
+   * Manager there; a real deployment always uses the NAME).
+   */
+  readonly identityHeadersSecretName?: string;
+  readonly identityHeadersKey?: string;
   /**
    * SEC.2 (ADR-040) — the audience the web service mints OIDC ID tokens for (`INTERNAL_AUTH_AUDIENCE`)
    * and the web runtime SA's email (`INTERNAL_CALLER_SA`). Both set ⇒ the api trusts the
@@ -278,8 +289,16 @@ export function readApiEnv(): ApiEnv {
     ...(process.env.GOOGLE_OAUTH_CLIENT_SECRET_NAME
       ? { googleOauthClientSecretName: process.env.GOOGLE_OAUTH_CLIENT_SECRET_NAME }
       : {}),
-    // PRB.16 — the identity-header shim: NEVER on prod (client-forgeable); dev/preview only.
+    // RH-10 — the identity-header shim: NEVER on prod; non-prod only, and dead without a key
+    // (the stage's shared `x-rhema-identity-key` — Secret-Manager NAME deployed, direct value
+    // for local runs). `IDENTITY_HEADERS=true` alone now resolves to a shim that stays OFF.
     ...(process.env.IDENTITY_HEADERS === "true" ? { identityHeaders: true } : {}),
+    ...(process.env.IDENTITY_HEADERS_SECRET_NAME
+      ? { identityHeadersSecretName: process.env.IDENTITY_HEADERS_SECRET_NAME }
+      : {}),
+    ...(process.env.IDENTITY_HEADERS_KEY
+      ? { identityHeadersKey: process.env.IDENTITY_HEADERS_KEY }
+      : {}),
     // SEC.2 (ADR-040) — the trusted web→api client-IP channel: the agreed OIDC audience + the web
     // runtime SA's email (both plain config; the channel is authenticated by the token itself).
     ...(process.env.INTERNAL_AUTH_AUDIENCE
