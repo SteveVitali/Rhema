@@ -511,7 +511,9 @@ export function createConvertJobPreview(args: ConvertJobArgs): {
         });
         if (!run.ok) {
           // Surface the API's error body — a bare status hides IAM vs quota vs API-disabled failures.
-          const detail = (await run.text().catch(() => "")).slice(0, 500);
+          // BL-124: bounded AND single-line — upstream text can echo user document bytes; a raw
+          // slice still let newlines forge log lines and 500 chars reach log group headers.
+          const detail = (await run.text().catch(() => "")).replace(/\s+/g, " ").slice(0, 200);
           throw new Error(`convert job run failed (${run.status}): ${detail}`);
         }
         const op = (await run.json()) as RunOperation;
@@ -710,7 +712,8 @@ export function createConvertServicePreview(args: ConvertServiceArgs): {
         throw new Error("convert-svc returned no preview");
       }
 
-      const detail = (await res.text().catch(() => "")).slice(0, 300);
+      // BL-124: same bound — single-line + capped, never raw upstream bytes in the thrown text.
+      const detail = (await res.text().catch(() => "")).replace(/\s+/g, " ").slice(0, 200);
       if (res.status >= 400 && res.status < 500) {
         // deterministic refusal — the Job would convert identically and fail identically; surface it.
         throw new Error(`convert-svc refused (${res.status}): ${detail}`);
