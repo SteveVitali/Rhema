@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createOrchestratorTestDb, seedProject, makeDeps, type OrchestratorTestDb, type TestDeps } from "@rhema/orchestrator/testing";
 import { ACCOUNT_DELETION_CONFIRMATION } from "@rhema/contracts";
 import { createSettingsRoutes, ACCOUNT_HARD_DELETE_QUEUE } from "./settings-routes.js";
@@ -125,11 +125,12 @@ describe("email change — verification row + auth.mail + confirm", () => {
     const res = await post("/settings/account/email", { email: "new@example.test" });
     expect(res.status).toBe(200);
     expect((await res.json()) as { pendingEmail: string }).toMatchObject({ pendingEmail: "new@example.test" });
-    // the mail rides the same auth.mail queue as the sign-in magic link, targeting the WEB confirm route.
+    // the mail rides the same auth.mail queue as the sign-in magic link, targeting the WEB confirm
+    // route — plus the RH-5 old-address notice (second send, to the incumbent address).
     const mail = deps.queue.ofName("auth.mail");
-    expect(mail).toHaveLength(1);
-    expect(mail[0]!.payload.to).toBe("new@example.test");
-    const link = (mail[0]!.payload.text as string).match(/confirmEmail=(\S+)/)?.[1];
+    const verify = mail.find((m) => m.payload.to === "new@example.test");
+    expect(verify).toBeTruthy();
+    const link = (verify!.payload.text as string).match(/confirmEmail=(\S+)/)?.[1];
     expect(link).toBeTruthy();
     // pending shows on the account read.
     const acct = (await (await get("/settings/account")).json()) as { user: { pendingEmail: string } };
@@ -149,6 +150,127 @@ describe("email change — verification row + auth.mail + confirm", () => {
     expect((await post("/settings/account/email", { email: "nope" })).status).toBe(422);
     const me = (await db.pg.query(`select email from "user" where id = $1`, [USER])).rows[0] as { email: string };
     expect((await post("/settings/account/email", { email: me.email })).status).toBe(422);
+  });
+});
+
+// RH-5 (270_R6OPS.4) — the email-change hardening arms, one test each.
+describe("RH-5 — email change hardening", () => {
+  const requestChange = (email = "new@example.test") =>
+    post("/settings/account/email", { email });
+  const tokenFromMail = async () => {
+    const verify = deps.queue
+      .ofName("auth.mail")
+      .find((m) => m.payload.to === "new@example.test" && /confirmEmail=/.test(m.payload.text as string));
+    const m = (verify!.payload.text as string).match(/confirmEmail=(\S+)/);
+    if (!m) throw new Error("no confirmEmail link in the verify mail");
+    return m[1]!;
+  };
+
+  it("arm 1 — a taken address is a 409 at request time, never the unique-constraint 500", async () => {
+    await db.pg.query(
+      `insert into "user"(id, email, name) values ('usr_other','taken@example.test','Other')`,
+    );
+    const res = await requestChange("taken@example.test");
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as { error: string }).error).toBe("email_taken");
+  });
+
+  it("arm 4 — the confirm mail is the branded Rhēma template, never bare 'Rhema' text", async () => {
+    await requestChange();
+    const verify = deps.queue
+      .ofName("auth.mail")
+      .find((m) => m.payload.to === "new@example.test");
+    expect(verify!.payload.subject).toContain("Rhēma");
+    expect(verify!.payload.html).toContain("Rhēma");
+    expect(verify!.payload.html as string).not.toMatch(/>Rhema account</);
+  });
+
+  it("arm 2 — the OLD address is notified at request AND at completion", async () => {
+    const me = (await db.pg.query(`select email from "user" where id = $1`, [USER])).rows[0] as { email: string };
+    await requestChange();
+    const notices = deps.queue.ofName("auth.mail").filter((m) => m.payload.to === me.email);
+    expect(notices).toHaveLength(1);
+    expect(notices[0]!.payload.subject).toContain("being changed");
+    const link = await tokenFromMail();
+    expect((await post("/settings/account/email/confirm", { token: decodeURIComponent(link) })).status).toBe(200);
+    const done = deps.queue.ofName("auth.mail").filter(
+      (m) => m.payload.to === me.email && /was changed/.test(m.payload.subject as string),
+    );
+    expect(done).toHaveLength(1);
+  });
+
+  it("arm 3 — confirm revokes every OTHER session; the confirming one survives", async () => {
+    const day = 24 * 3600_000;
+    await db.pg.query(
+      `insert into session(id, user_id, token, expires_at) values
+         ('s_cur',$1,'tok_cur', $2),
+         ('s_other',$1,'tok_other', $2)`,
+      [USER, new Date(NOW.getTime() + day)],
+    );
+    await requestChange();
+    const link = await tokenFromMail();
+    const res = await app().request("/settings/account/email/confirm", {
+      method: "POST",
+      headers: { "content-type": "application/json", cookie: "__Host-rhema.session_token=tok_cur.sig" },
+      body: JSON.stringify({ token: decodeURIComponent(link) }),
+    });
+    expect(res.status).toBe(200);
+    const left = (await db.pg.query(`select id from session where user_id = $1 order by id`, [USER])).rows as { id: string }[];
+    expect(left).toEqual([{ id: "s_cur" }]);
+  });
+
+  it("arm 5 — the verification row stores only the token hash; a wrong/tampered token 410s", async () => {
+    await requestChange();
+    const row = (
+      await db.pg.query(`select value from verification where identifier = $1`, [
+        `email-change:${USER}`,
+      ])
+    ).rows[0] as { value: string };
+    const parsed = JSON.parse(row.value) as { tokenHash?: string; token?: string };
+    expect(parsed.tokenHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(parsed.token).toBeUndefined();
+    expect(row.value).not.toContain("confirmEmail");
+    const link = await tokenFromMail();
+    // a wrong token 410s; the right one still confirms (timing-safe compare on the digest).
+    expect((await post("/settings/account/email/confirm", { token: "bogus" })).status).toBe(410);
+    expect((await post("/settings/account/email/confirm", { token: decodeURIComponent(link) })).status).toBe(200);
+  });
+});
+
+// RH-17 (270_R6OPS.4) — the swallowed hard-delete enqueue: the marker lands, the request stays
+// honest (the sweep repairs), but the failure is LOUD, never `.catch(() => undefined)`.
+describe("RH-17 — account.hard-delete enqueue failure is logged loudly", () => {
+  it("ok:true still returns but console.error carries the FAILED+id line", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const throwing = {
+      send: () => Promise.reject(new Error("pg-boss down")),
+    };
+    const app2 = createSettingsRoutes({
+      principal: () => principal(),
+      db: db.client,
+      txRunner: db.txRunner,
+      ids: deps.ids,
+      clock: deps.clock,
+      queue: throwing,
+      appBaseUrl: "http://app.test",
+    });
+    const res = await app2.request("/settings/account/delete", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ confirmation: ACCOUNT_DELETION_CONFIRMATION }),
+    });
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { ok: boolean }).ok).toBe(true);
+    // the marker still landed — the row is the state; the hourly sweep re-arms the missing job.
+    const u = (await db.pg.query(`select deletion_requested_at from "user" where id = $1`, [USER])).rows[0] as {
+      deletion_requested_at: Date | null;
+    };
+    expect(u.deletion_requested_at).toBeTruthy();
+    expect(spy).toHaveBeenCalledWith(
+      expect.stringContaining(`account.hard-delete enqueue FAILED for user ${USER}`),
+      expect.any(Error),
+    );
+    spy.mockRestore();
   });
 });
 

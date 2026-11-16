@@ -539,6 +539,93 @@ export async function handleProjectPurgeSweep(
   return { scanned: rows.length, rearmed };
 }
 
+// ------------------------------------------------------------------ account.hard-delete re-arm sweep (RH-4)
+
+/**
+ * `account.hard-delete` watchdog (RH-4/RH-17, 270_R6OPS.4 — the `project.purge` sweep's account
+ * twin): a deletion request stamps `user.deletion_requested_at` and the api enqueues the delayed
+ * arm at the 14-day grace end — the row is the state, the job is the timer. The same loss class
+ * F-R6WATCH.2-1 proved on `project.purge` applies here with a worse payload: if the armed job dies
+ * unexecuted (a swallowed handler throw → silent `failed` → 7-day prune, a dropped send, a
+ * queue-create race), the marker sits forever and the account is never destroyed — a deletion the
+ * user was promised never happens and nothing notices. This sweep is the repair: every pending
+ * deletion request MUST hold a live (created/retry/active) `account.hard-delete` job under
+ * `account.hard-delete:<userId>`; an orphan is re-armed at its own grace end (already-past ⇒ fires
+ * on the next poll). Riding the hourly `test-tenant.purge` tick beside `handleProjectPurgeSweep`.
+ */
+export interface AccountDeleteSweepDeps {
+  /** system-scoped client — reads `"user"`/`workspace_members` + `pgboss.job` (untenanted by design). */
+  readonly systemExec?: SqlClient;
+  /** re-enqueue the missing arm; send failure never fails the sweep (next tick retries). */
+  readonly queue?: Queue;
+  readonly now?: Date;
+}
+
+export interface AccountDeleteSweepResult {
+  /** pending deletion requests lacking a live hard-delete job. */
+  scanned: number;
+  /** user ids the sweep re-armed this tick. */
+  rearmed: string[];
+}
+
+/**
+ * Scan pending deletion requests for a missing live `account.hard-delete` arm and re-enqueue it. A
+ * marker younger than one hour is skipped — the api's own send may still be in flight (a duplicate
+ * arm is benign either way: the second fire re-reads the marker, and `singletonKey` dedupes on the
+ * `exclusive`-policy queue). The tenant comes from any live membership — the handler keys its
+ * workspace deletes off it and the user row off `userId`; a memberless account still arms (the
+ * tenant-scoped deletes simply match nothing before the `"user"` delete).
+ */
+export async function handleAccountDeleteSweep(
+  deps: AccountDeleteSweepDeps = {},
+): Promise<AccountDeleteSweepResult> {
+  const now = deps.now ?? new Date();
+  if (!deps.systemExec || !deps.queue) return { scanned: 0, rearmed: [] };
+  const rows = (
+    await deps.systemExec.query(
+      `select u.id as user_id, u.deletion_requested_at,
+              coalesce(m.workspace_id, u.id) as tenant_id
+         from "user" u
+         left join lateral (
+           select workspace_id from workspace_members
+            where user_id = u.id order by workspace_id limit 1
+         ) m on true
+        where u.deletion_requested_at is not null
+          and u.deletion_requested_at < now() - interval '1 hour'
+          and not exists (
+            select 1 from pgboss.job j
+             where j.name = 'account.hard-delete'
+               and j.singleton_key = 'account.hard-delete:' || u.id
+               and j.state in ('created', 'retry', 'active')
+          )
+        order by u.deletion_requested_at
+        limit 200`,
+      [],
+    )
+  ).rows as { user_id: string; deletion_requested_at: string | Date; tenant_id: string }[];
+  const rearmed: string[] = [];
+  for (const row of rows) {
+    const requestedAt = new Date(row.deletion_requested_at);
+    const startAfterMs = Math.max(
+      0,
+      requestedAt.getTime() + ACCOUNT_GRACE_DAYS * 24 * 60 * 60 * 1000 - now.getTime(),
+    );
+    await deps.queue
+      .send(
+        "account.hard-delete",
+        {
+          tenantId: row.tenant_id,
+          userId: row.user_id,
+          deletionRequestedAt: requestedAt.toISOString(),
+        },
+        { startAfterMs, singletonKey: `account.hard-delete:${row.user_id}` },
+      )
+      .then(() => rearmed.push(row.user_id))
+      .catch(() => undefined); // a send failure never fails the sweep — the next tick re-arms
+  }
+  return { scanned: rows.length, rearmed };
+}
+
 // ------------------------------------------------------------------ test-tenant auto-purge (JOURNEY.1)
 
 /**
@@ -613,11 +700,17 @@ export async function handleTestTenantPurge(
       row.user_id,
       pastGrace,
     ]);
-    await deps.queue.send("account.hard-delete", {
-      tenantId: row.workspace_id,
-      userId: row.user_id,
-      deletionRequestedAt: pastGrace.toISOString(),
-    });
+    await deps.queue.send(
+      "account.hard-delete",
+      {
+        tenantId: row.workspace_id,
+        userId: row.user_id,
+        deletionRequestedAt: pastGrace.toISOString(),
+      },
+      // RH-18 — keyed like the api's arm: the `exclusive` policy dedupes on it and the watchdog's
+      // live-arm check keys on the same string (a keyless send shares the '' singleton slot).
+      { singletonKey: `account.hard-delete:${row.user_id}` },
+    );
     enqueuedDeletes += 1;
   }
   return { scanned: stale.length, purgedWorkspaces, enqueuedDeletes };
