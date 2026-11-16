@@ -181,6 +181,9 @@ export type ApiDeps = RunApiDeps & SseApiDeps & Omit<EstimateApiDeps, "principal
 /** Extra deps for the beta shell (PRB.01) + draft import (PRB.02) routes. */
 export interface BetaApiDeps {
   db?: SqlClient;
+  /** 275_R6WEB.1 (RH-32) — the HMAC key for `acquisition_events.ip_hash` (a domain-separated
+   *  pepper derived from the auth secret at composition; see analytics-routes.ts). */
+  ipHashKey?: string;
   importConverter?: Converter;
   /** PRB.20 — the live presign binding (GCS v4 over the user-content bucket); mounts POST /import/presign. */
   importUploads?: ImportUploadDeps;
@@ -535,6 +538,8 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
         ids: deps.ids,
         // P1.17 — the pre-auth funnel write (acquisition_events) needs the raw client.
         ...(deps.db ? { db: deps.db } : {}),
+        // 275_R6WEB.1 (RH-32) — the keyed daily `ip_hash` digest's secret.
+        ...(deps.ipHashKey ? { ipHashKey: deps.ipHashKey } : {}),
       }),
     );
     // P1.01 — the theme endpoints (REQ-IDE-38 amended): the per-user app theme + the per-project paper pin.

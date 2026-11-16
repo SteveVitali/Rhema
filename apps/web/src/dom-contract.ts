@@ -222,6 +222,8 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     n("email", "required", "pages.tsx sign-in form"),
     n("method", "required", "pages.tsx sign-in form", "google|magic_link channel field"),
     n("code", "conditional", "pages.tsx invite form"),
+    n("next", "conditional", "pages.tsx sign-in form", "RH-34 — the gate's deep-link round-trip"),
+    a("data-magic-link-confirm", "conditional", "pages.tsx magic-link interstitial", "RH-31 — the token-consuming confirm submit"),
     n("intent", "conditional", "signup flow fields"),
     // ---- R6LGL.1 (REQ-LCH-1) — the legal/trust documents (/terms, /privacy, /refunds,
     // /acceptable-use, /contact): SSR-only like the rest of the public bucket ----

@@ -81,6 +81,15 @@ export const COPY = {
     errorLinkInvalid: "That sign-in link is no longer valid — request a new one.",
   },
 
+  // 275_R6WEB.1 (RH-31) — the magic-link interstitial: the emailed GET renders this page; the
+  // confirm click POSTs and only then is the one-shot token consumed.
+  magicLink: {
+    heading: "Finish signing in",
+    body: "This link signs you in to Rhēma. Confirm below to continue — nothing happens until you do.",
+    confirm: "Sign in",
+    invalid: "That sign-in link is incomplete — request a new one.",
+  },
+
   projects: {
     heading: "Your projects",
     empty: "No projects yet.",
