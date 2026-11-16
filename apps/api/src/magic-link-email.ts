@@ -67,6 +67,24 @@ export function renderMagicLinkEmail(args: {
 }
 
 /**
+ * 275_R6WEB.1 (RH-31) — the emailed link targets the web host's INTERSTITIAL, never the consuming
+ * verify GET: `GET /auth/magic-link?<same query>` renders a no-side-effect confirm page and the
+ * user's click POSTs, which is when the token is consumed (the web relays the verify upstream
+ * server-side). A mail scanner prefetching the href now renders a page instead of burning the
+ * one-shot token — the live-observed prefetch quirk (LEDGER 2026-09 line: links consumed before
+ * the user ever clicked). The token still only ever rides the link itself.
+ * The verify path is better-auth's fixed `<baseURL>/api/auth/magic-link/verify`; refuse loudly if
+ * the upstream URL ever deviates — emailing an un-rewritten link would silently restore the bug.
+ */
+export const MAGIC_LINK_INTERSTITIAL_PATH = "/auth/magic-link";
+
+export function magicLinkInterstitialUrl(verifyUrl: string): string {
+  const u = new URL(verifyUrl);
+  if (!u.pathname.endsWith("/api/auth/magic-link/verify")) {
+    throw new Error(`magic-link URL is not the verify endpoint: ${u.pathname}`);
+  }
+  u.pathname = MAGIC_LINK_INTERSTITIAL_PATH;
+  return u.toString();
  * RH-5 (270_R6OPS.4) — the email-change confirm mail, same branded shell as the sign-in link.
  * Sent to the NEW address; the token lives ONLY in the URL (same rule as the magic link).
  */
@@ -140,7 +158,7 @@ export function magicLinkSender(queue: {
 }): SendMagicLink {
   return async ({ email, url }) => {
     const mail = renderMagicLinkEmail({
-      url,
+      url: magicLinkInterstitialUrl(url),
       expiresInMinutes: MAGIC_LINK_EXPIRES_SECONDS / 60,
       sendNonce: randomBytes(6).toString("hex"),
     });

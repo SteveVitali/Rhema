@@ -15,6 +15,7 @@ import {
   type GateStructuredView,
 } from "@rhema/findings-core";
 import { OutlineSections, type OutlineSectionsLabels } from "./outline-sections.js";
+import { NonceScript } from "./nonce-script.js";
 
 // The §6.4 gate card — ONE generic component for every beta gate kind (REQ-BETA-1). Cards, never modals:
 // each card is a plain <form> whose action buttons POST the decision; the model comes from
@@ -589,7 +590,7 @@ export function GateCard({
       {/* presence pings — only an auto-proceed card carries them; a wait-default card can never arm the
           timer even if the URL were provided (the server rejects it there too). */}
       {model.autoProceed && activityUrl ? (
-        <script dangerouslySetInnerHTML={{ __html: presenceScript(activityUrl) }} />
+        <NonceScript dangerouslySetInnerHTML={{ __html: presenceScript(activityUrl) }} />
       ) : null}
     </section>
   );

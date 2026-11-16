@@ -106,7 +106,9 @@ export const notificationDeliveries = pgTable(
 
 // P1.17 (0037; §3.5) — the PRE-AUTH acquisition funnel: landing.viewed / landing.dropzone_used minted
 // before a session exists, so the analytics_events envelope (user/workspace identity) cannot apply.
-// Append-only, no PII (ip_hash for coarse dedupe); the api whitelists the two names at the route.
+// Append-only, no PII (ip_hash for coarse dedupe — RH-32: a keyed, daily-rotating HMAC of the
+// LB-appended hop, NULL when the key is unbound; stored rows are never rewritten); the api
+// whitelists the two names at the route.
 export const acquisitionEvents = pgTable("acquisition_events", {
   id: text("id").primaryKey(),
   event: text("event").notNull(),
