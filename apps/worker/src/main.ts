@@ -22,6 +22,7 @@ import {
   type SqlClient,
 } from "@rhema/orchestrator";
 import { USER_SERVING_ROLE } from "@rhema/db";
+import { errorLogValue, errorSummary } from "@rhema/contracts";
 import {
   SqlHoldLedger,
   STRIPE_EVENT_JOB,
@@ -215,10 +216,10 @@ export async function startWorker(): Promise<void> {
   // 'error' with no listener → ERR_UNHANDLED_ERROR → exit(1), losing the run consumers). Attach listeners so a
   // blip is logged and pg-boss/pg recover on their own retry cadence instead of killing the run lifecycle.
   boss.on("error", (err: unknown) =>
-    console.error("[worker] pg-boss error (non-fatal, will retry):", err),
+    console.error("[worker] pg-boss error (non-fatal, will retry):", errorLogValue(err)),
   );
-  pool.on("error", (err: unknown) => console.error("[worker] pg pool error (non-fatal):", err));
-  redis.on("error", (err: unknown) => console.error("[worker] redis error (non-fatal):", err));
+  pool.on("error", (err: unknown) => console.error("[worker] pg pool error (non-fatal):", errorLogValue(err)));
+  redis.on("error", (err: unknown) => console.error("[worker] redis error (non-fatal):", errorLogValue(err)));
 
   const clock = systemClock;
   const ids = randomUlids();
@@ -305,7 +306,7 @@ export async function startWorker(): Promise<void> {
           lastErr = err;
           console.error(
             `[worker] launch attempt ${attempt}/3 failed (will retry):`,
-            err instanceof Error ? err.message : err,
+            errorLogValue(err),
           );
           await new Promise((r) => setTimeout(r, 2000 * attempt));
         }
@@ -328,7 +329,7 @@ export async function startWorker(): Promise<void> {
   // `systemExec` is the bare cross-tenant exec for the sweeps.
   const systemPool = new pg.Pool({ connectionString: env.systemDatabaseUrl, max: 4, ...pgOpts });
   systemPool.on("error", (err: unknown) =>
-    console.error("[worker] system pg pool error (non-fatal):", err),
+    console.error("[worker] system pg pool error (non-fatal):", errorLogValue(err)),
   );
   const systemExec: SqlClient = {
     query: (sql, params) =>
@@ -345,7 +346,7 @@ export async function startWorker(): Promise<void> {
       setInstrumentedOverride(cell.workflow, cell.spec as EstimatorSpec);
     }
   } catch (err) {
-    console.warn("[worker] estimator_cells load failed — modeled estimators govern:", err);
+    console.warn("[worker] estimator_cells load failed — modeled estimators govern:", errorSummary(err));
   }
 
   // PRB.08 billing bindings: the provider Usage & Cost report source (admin key from Secret Manager — unset
@@ -550,7 +551,7 @@ export async function startWorker(): Promise<void> {
         lastErr = err;
         console.error(
           `[worker] startup ${label} attempt ${attempt} failed (will retry):`,
-          err instanceof Error ? err.message : err,
+          errorLogValue(err),
         );
         await new Promise((r) => setTimeout(r, Math.min(1000 * attempt, 5000)));
       }
@@ -585,6 +586,7 @@ export async function startWorker(): Promise<void> {
     ACCOUNT_HARD_DELETE_JOB, // the api enqueues at the deletion grace end (P1.20)
     PROJECT_PURGE_JOB, // the api enqueues at the tombstone's +30d (D-P1.04-2)
     TEST_TENANT_PURGE_JOB, // JOURNEY.1 — hourly flagged-tenant sweep (createQueue precedes work/send/schedule)
+    "slo.probe", // P1.22 — the 5-minute §13.5 signal sweep (was setInterval; R6LOW.1)
     "slo.review.weekly", // SLO.1 — the REQ-ARCH-34 weekly review readout (below)
     "cite.completeness.daily", // CITE.1 — the cross-tenant completeness rollup (below)
   ]) {
@@ -674,15 +676,16 @@ export async function startWorker(): Promise<void> {
       .then((r) => {
         if (r.claimed > 0) console.log(`[worker] pause-drain: ${JSON.stringify(r)}`);
       })
-      .catch((err: unknown) => console.error("[worker] pause-drain failed:", err));
+      .catch((err: unknown) => console.error("[worker] pause-drain failed:", errorLogValue(err)));
   void drainPause();
   setInterval(drainPause, PAUSE_SWEEP_INTERVAL_MS);
 
   // P1.22 W9 (§13.5; REQ-ARCH-34) — the SLO probe. Every 5 minutes `probeSlos` reads the DB-backed §13.5
   // signals on the system executor; each breach logs one structured `[slo]` line (the
   // `rhema_slo_violations` log-based metric + alert policies in infra/pulumi/monitoring.ts key on it) and
-  // pages the ops webhook. Unmeasured signals are logged once at startup, not per tick.
-  const SLO_SWEEP_INTERVAL_MS = 5 * 60_000;
+  // pages the ops webhook. Unmeasured signals are logged once at startup, not per tick. `error` readings
+  // are logged per tick too (R6LOW.1 — a permanently failing probe must not be invisible until Monday's
+  // review). The sweep rides pg-boss `slo.probe`, not setInterval, so the tick is a visible job row.
   const probeTick = () =>
     probeSlos(systemExec)
       .then((readings) => {
@@ -702,17 +705,22 @@ export async function startWorker(): Promise<void> {
               threshold: r.threshold,
               target: r.target,
             });
+          } else if (r.status === "error") {
+            console.error(`[slo] probe-error ${JSON.stringify({ signal: r.key, error: r.error ?? "unknown" })}`);
           }
         }
       })
-      .catch((err: unknown) => console.error("[worker] slo-probe failed:", err));
+      .catch((err: unknown) => console.error("[worker] slo-probe failed:", errorLogValue(err)));
   void probeSlos(systemExec).then((readings) => {
     for (const r of readings.filter((x) => x.status === "unmeasured")) {
       console.log(`[slo] unmeasured ${r.key}: ${r.unmeasuredReason ?? "no probe"}`);
     }
   });
   void probeTick();
-  setInterval(probeTick, SLO_SWEEP_INTERVAL_MS);
+  await boss.work("slo.probe", async () => {
+    await probeTick();
+  });
+  await boss.schedule("slo.probe", "*/5 * * * *");
 
   // SLO.1 / REQ-ARCH-34 — the WEEKLY review made operational (docs/ops/slo-review.md). `sloWeeklyReview`
   // reads every §13.5 signal over a 7-day window; the consumer logs one `[slo] weekly` JSON line per
@@ -734,7 +742,7 @@ export async function startWorker(): Promise<void> {
   await boss.work("slo.review.weekly", logWeeklyReadout);
   await boss.schedule("slo.review.weekly", "12 7 * * 1");
   void logWeeklyReadout().catch((err: unknown) =>
-    console.error("[worker] slo weekly readout failed:", err),
+    console.error("[worker] slo weekly readout failed:", errorLogValue(err)),
   );
 
   // CITE.1 (REQ-VIS-9; ADR-084) — the cross-tenant citation-completeness rollup: a REPORTED signal
@@ -760,7 +768,7 @@ export async function startWorker(): Promise<void> {
   };
   await boss.work("cite.completeness.daily", citeTick);
   await boss.schedule("cite.completeness.daily", "45 3 * * *");
-  void citeTick().catch((err: unknown) => console.error("[worker] cite completeness failed:", err));
+  void citeTick().catch((err: unknown) => console.error("[worker] cite completeness failed:", errorLogValue(err)));
 
   await boss.work(LEDGER_JOBS.sweepParked, async () => {
     await handleParkedSweep(deps);
@@ -925,7 +933,7 @@ export async function startWorker(): Promise<void> {
           console.log(`[worker] project.purge.sweep → ${JSON.stringify(s)}`);
         }
       } catch (err) {
-        console.error("[worker] project.purge.sweep failed (will retry next tick):", err);
+        console.error("[worker] project.purge.sweep failed (will retry next tick):", errorLogValue(err));
       }
       // RH-4 (270_R6OPS.4) — the same watchdog for `account.hard-delete`: a pending
       // `deletion_requested_at` must hold a live arm or the account is never destroyed.
@@ -955,10 +963,19 @@ export async function startWorker(): Promise<void> {
     for (const job of jobs) {
       const p = job.data as { to: string; subject: string; text: string; html: string };
       if (!deps.mailer) {
-        console.log(`[worker] auth.mail dropped (no mailer configured): to=${p.to}`);
+        // Never log the recipient address — a mailbox is PII (R6LOW.1 / RH-A1-6); the job id is enough
+        // to correlate the dropped row with the pg-boss record.
+        console.log(`[worker] auth.mail dropped (no mailer configured): job=${job.id}`);
         continue;
       }
-      await deps.mailer.send({ to: p.to, subject: p.subject, text: p.text, html: p.html });
+      await deps.mailer.send({
+        to: p.to,
+        subject: p.subject,
+        text: p.text,
+        html: p.html,
+        // pg-boss job id is the stable per-send identity — a redelivered job dedupes at the provider.
+        idempotencyKey: `auth.mail:${job.id}`,
+      });
     }
   });
 
@@ -1029,7 +1046,7 @@ export async function startWorker(): Promise<void> {
       } catch (err) {
         console.error(
           `[worker] project.purge ${job.data.projectId} FAILED — pg-boss retries/fails per queue policy:`,
-          err,
+          errorLogValue(err),
         );
         throw err;
       }
@@ -1042,7 +1059,7 @@ export async function startWorker(): Promise<void> {
 // Run when invoked as the container entrypoint (`node dist/main.js`), not when imported.
 if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
   startWorker().catch((err: unknown) => {
-    console.error("[worker] failed to start:", err);
+    console.error("[worker] failed to start:", errorLogValue(err));
     process.exit(1);
   });
 }

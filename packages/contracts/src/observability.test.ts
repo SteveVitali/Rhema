@@ -4,6 +4,8 @@ import {
   cloudLoggingTraceField,
   cloudTraceId,
   errorClass,
+  errorLogValue,
+  errorSummary,
   formatRouteErrorLine,
   resolveRequestId,
   routeErrorLine,
@@ -170,6 +172,34 @@ describe("error class + stack hygiene (nothing user-sourced escapes)", () => {
     expect(s).not.toContain("user prompt");
     expect(s).not.toContain("api_key");
     expect(s).not.toContain("/home/secret");
+  });
+  it("errorSummary keeps bounded driver tags and never the message (R6LOW.1)", () => {
+    const pg = Object.assign(new Error('duplicate key value violates unique constraint "u" (alice@x)'), {
+      code: "23505",
+      constraint: "users_email_key",
+      routine: "_bt_check_unique",
+    });
+    const s = errorSummary(pg);
+    expect(s).toBe("Error code=23505 constraint=users_email_key routine=_bt_check_unique");
+    expect(s).not.toContain("alice@x");
+    expect(s).not.toContain("duplicate key");
+    expect(errorSummary(Object.assign(new TypeError("host db.internal:5432 refused"), { code: "ECONNREFUSED" }))).toBe(
+      "TypeError code=ECONNREFUSED",
+    );
+    expect(errorSummary("user text thrown as a string")).toBe("NonErrorThrow");
+    // a tag value is sanitized to inert characters — never a carrier for payload text
+    const weird = Object.assign(new Error("m"), { code: "X 23505'; DROP--" });
+    expect(errorSummary(weird)).toBe("Error code=X23505DROP--");
+  });
+  it("errorLogValue is summary + message-stripped frames — groupable, never the message", () => {
+    const err = new Error("convert job run failed (403): <user document text>");
+    err.stack = "Error: convert job run failed (403): <user document text>\n    at poll (/srv/ingest.js:103:7)";
+    const v = errorLogValue(err);
+    expect(v.startsWith("Error\n")).toBe(true);
+    expect(v).toContain("at poll (/srv/ingest.js:103:7)");
+    expect(v).not.toContain("user document text");
+    expect(v).not.toContain("(403)");
+    expect(errorLogValue("string throw")).toBe("NonErrorThrow");
   });
   it("non-Error throws yield no stack and a fixed class — their toString is never logged", () => {
     const evil = { toString: () => "SESSION_COOKIE_VALUE hunter2" };
