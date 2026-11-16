@@ -10,7 +10,7 @@
 import type { BrowserContext, Page } from "playwright";
 import pg from "pg";
 import { sha256Hex } from "@rhema/contracts";
-import { seedDeliveredRunReport, seedOpenApprovalGate, seedWritableDossier, type MigrationDb } from "@rhema/db";
+import { seedDeliveredRunReport, seedOpenApprovalGate, seedWritableDossier, type MigrationDb, withTenant } from "@rhema/db";
 import { journeyUlid } from "./ulid.js";
 
 /** VERIF.1 — seeded-substrate row ids MUST be ULIDs, not UUIDs: any id that reaches a run-event
@@ -1234,10 +1234,9 @@ async function seededWritableDossier(email: string, tag: string): Promise<{ slug
   const { tenantId, ownerId } = await tenantIdentity(email);
   const client = await db().connect();
   try {
-    await client.query("begin");
-    // tenant-scoped like the api's txRunner — no-op under a BYPASSRLS system DSN (ADR-093),
-    // load-bearing when JOURNEY_DATABASE_URL binds an RLS role.
-    await client.query("select set_config('app.tenant_id', $1, true)", [tenantId]);
+    // withTenant owns the GUC + tx edges (BL-118) — same scope the api's txRunner carries:
+    // no-op under a BYPASSRLS system DSN (ADR-093), load-bearing on an RLS role.
+    return await withTenant(client, tenantId, async () => {
     const res = await seedWritableDossier(migrationDbOf(client), {
       workspaceId: tenantId,
       ownerId,
@@ -1246,11 +1245,8 @@ async function seededWritableDossier(email: string, tag: string): Promise<{ slug
       title: `JRN ${tag} dossier (seeded writable)`,
       seedLabel: "journey-dossier-seed",
     });
-    await client.query("commit");
     return { slug: res.slug, runId: res.reviewRunId };
-  } catch (e) {
-    await client.query("rollback").catch(() => undefined);
-    throw e;
+    });
   } finally {
     client.release();
   }
@@ -1354,10 +1350,9 @@ async function seededDeliveredRunReport(email: string, tag: string): Promise<{ s
   const { tenantId, ownerId } = await tenantIdentity(email);
   const client = await db().connect();
   try {
-    await client.query("begin");
-    // tenant-scoped like the api's txRunner — no-op under a BYPASSRLS system DSN (ADR-093),
-    // load-bearing when JOURNEY_DATABASE_URL binds an RLS role.
-    await client.query("select set_config('app.tenant_id', $1, true)", [tenantId]);
+    // withTenant owns the GUC + tx edges (BL-118) — same scope the api's txRunner carries:
+    // no-op under a BYPASSRLS system DSN (ADR-093), load-bearing on an RLS role.
+    return await withTenant(client, tenantId, async () => {
     const res = await seedDeliveredRunReport(migrationDbOf(client), {
       workspaceId: tenantId,
       ownerId,
@@ -1366,11 +1361,8 @@ async function seededDeliveredRunReport(email: string, tag: string): Promise<{ s
       title: `JRN ${tag} run report (seeded delivered)`,
       seedLabel: "journey-report-seed",
     });
-    await client.query("commit");
     return { slug: res.slug, runId: res.reviewRunId };
-  } catch (e) {
-    await client.query("rollback").catch(() => undefined);
-    throw e;
+    });
   } finally {
     client.release();
   }
@@ -1775,8 +1767,8 @@ async function seededGateDossier(email: string, tag: string): Promise<{ slug: st
   const { tenantId, ownerId } = await tenantIdentity(email);
   const client = await db().connect();
   try {
-    await client.query("begin");
-    await client.query("select set_config('app.tenant_id', $1, true)", [tenantId]);
+    // withTenant owns the GUC + tx edges (BL-118).
+    return await withTenant(client, tenantId, async () => {
     const res = await seedWritableDossier(migrationDbOf(client), {
       workspaceId: tenantId,
       ownerId,
@@ -1790,11 +1782,8 @@ async function seededGateDossier(email: string, tag: string): Promise<{ slug: st
       { ids: seedIds },
       { runId: res.reviewRunId },
     );
-    await client.query("commit");
     return { slug: res.slug, runId: res.reviewRunId, gateId: gate.gateId };
-  } catch (e) {
-    await client.query("rollback").catch(() => undefined);
-    throw e;
+    });
   } finally {
     client.release();
   }
@@ -1822,9 +1811,8 @@ async function ridingOpenGate(email: string): Promise<{ gateId: string } | null>
     return null;
   }
   try {
-    await client.query("begin");
-    await client.query("select set_config('app.tenant_id', $1, true)", [tenantId]);
-    const row = (
+    // withTenant owns the GUC + tx edges (BL-118); the blind read keeps its null-on-failure arm.
+    const row = await withTenant(client, tenantId, async () => (
       await client.query(
         `select g.id as gate_id
            from gates g join runs r on r.id = g.run_id join projects p on p.id = r.project_id
@@ -1833,11 +1821,9 @@ async function ridingOpenGate(email: string): Promise<{ gateId: string } | null>
           order by g.opened_at desc limit 1`,
         [ownerId],
       )
-    ).rows[0] as { gate_id: string } | undefined;
-    await client.query("commit");
+    ).rows[0] as { gate_id: string } | undefined);
     return row ? { gateId: row.gate_id } : null;
   } catch {
-    await client.query("rollback").catch(() => undefined);
     return null;
   } finally {
     client.release();
@@ -1898,8 +1884,8 @@ async function seedVoiceProfile(email: string, personaRef: string): Promise<void
   const { tenantId } = await tenantIdentity(email);
   const client = await db().connect();
   try {
-    await client.query("begin");
-    await client.query("select set_config('app.tenant_id', $1, true)", [tenantId]);
+    // withTenant owns the GUC + tx edges (BL-118).
+    await withTenant(client, tenantId, async () => {
     const persona = (
       await client.query(
         `select id, seed_sha256 from personas
@@ -1932,10 +1918,7 @@ async function seedVoiceProfile(email: string, personaRef: string): Promise<void
         ],
       );
     }
-    await client.query("commit");
-  } catch (e) {
-    await client.query("rollback").catch(() => undefined);
-    throw e;
+    });
   } finally {
     client.release();
   }
