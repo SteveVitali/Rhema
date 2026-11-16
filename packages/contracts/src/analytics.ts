@@ -319,3 +319,45 @@ export const BETA_GATE_THRESHOLDS = {
   },
 } as const satisfies Record<string, BetaGateThreshold>;
 export type BetaGateMetric = keyof typeof BETA_GATE_THRESHOLDS;
+
+// ---------------------------------------------------------------------------------------------------------
+// 264_R6FIX.14 — the self-traffic marker + the acquisition surface split (R-4).
+//
+// One UA token marks every automated client (the journeys suite, smoke legs, agent probes). The
+// pre-auth funnel ingest (`acquisition_events`, 0037) classifies it into `surface` — the column the
+// migration shipped but nothing wrote — so stored rows split marked-vs-organic at the QUERY layer.
+// Stored history is never rewritten: pre-marker rows all read `surface='web'` and stay 'web'
+// (honestly: "unmarked", not "proven organic" — the bounded retroactive split is recorded in
+// `docs/build/runs/264_R6FIX.14.md`).
+// ---------------------------------------------------------------------------------------------------------
+
+/** The automated-traffic UA token — appended verbatim to a client UA (`… +RhemaJourney`). The
+ *  journeys context seam (`packages/journeys/src/marked-context.ts`) stamps it on every harness
+ *  browser context; ad-hoc probes send it in `User-Agent` to self-mark. */
+export const AUTOMATED_TRAFFIC_UA_MARKER = "+RhemaJourney";
+
+/** The `acquisition_events.surface` vocabulary: `web` = unmarked, `web:auto` = marked automated
+ *  traffic. Distinct from the analytics envelope's `surface` enum (`web`/`mobile` — a device class). */
+export const ACQUISITION_SURFACES = ["web", "web:auto"] as const;
+export type AcquisitionSurface = (typeof ACQUISITION_SURFACES)[number];
+
+/** `<base UA> <marker>` — the wire form every automated context sends. */
+export function markedUserAgent(base: string): string {
+  return `${base} ${AUTOMATED_TRAFFIC_UA_MARKER}`;
+}
+
+/** Is this UA carrying the automated-traffic marker? */
+export function isAutomatedTrafficUserAgent(ua: string | null | undefined): boolean {
+  return ua != null && ua.includes(AUTOMATED_TRAFFIC_UA_MARKER);
+}
+
+/** The ingest classification: a marked UA is `web:auto`; anything else is `web` (unmarked). */
+export function acquisitionSurfaceForUserAgent(ua: string | null | undefined): AcquisitionSurface {
+  return isAutomatedTrafficUserAgent(ua) ? "web:auto" : "web";
+}
+
+/** Validate a caller-supplied surface field — `null` when absent or outside the vocabulary, so the
+ *  ingest can fall back to its own UA classification (a forged value never wins). */
+export function parseAcquisitionSurface(raw: unknown): AcquisitionSurface | null {
+  return raw === "web" || raw === "web:auto" ? raw : null;
+}

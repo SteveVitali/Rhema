@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
+import { AUTOMATED_TRAFFIC_UA_MARKER } from "@rhema/contracts";
 import { ApiError, type ProjectRow } from "@rhema/api-client";
 import { createWebApp, type WebDeps, type AuthOutcome } from "./server.js";
 import type { DataSource, DossierData } from "./data.js";
@@ -545,6 +546,48 @@ describe("PRB.13 — open self-serve signup (REQ-BETA-19 amended 2026-09-16)", (
     expect(html).not.toContain("Access is by invitation");
     expect(html).toContain('href="/signup'); // the funnel's CTA — open mode needs no code
   });
+
+// 264_R6FIX.14 (R-4) — the relay's inbound-UA classification rides every pre-auth beacon into
+// `recordLandingEvent.surface` (`web:auto` = the harness' +RhemaJourney token). Both hops of the
+// funnel channel classify: the server-side GET / beacon and the /a/landing drop-zone relay.
+describe("264_R6FIX.14 — the self-traffic surface classification at the web relay", () => {
+  const MARKED = `Mozilla/5.0 HeadlessChrome/131.0 Safari/537.36 ${AUTOMATED_TRAFFIC_UA_MARKER}`;
+  const landingEvents = () => {
+    const recordLandingEvent = vi.fn(async () => ({ ok: true }));
+    const deps = makeDeps({ signupMode: "open" });
+    deps.dataSource = { ...deps.dataSource, recordLandingEvent };
+    return { recordLandingEvent, app: createWebApp(deps) };
+  };
+
+  it("GET / with a marked UA records landing.viewed surface=web:auto; unmarked stays web", async () => {
+    const { recordLandingEvent, app } = landingEvents();
+    await app.request("/", { headers: { "user-agent": MARKED } });
+    expect(recordLandingEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ event: "landing.viewed", surface: "web:auto" }),
+    );
+    await app.request("/", { headers: { "user-agent": "Mozilla/5.0 real browser" } });
+    expect(recordLandingEvent).toHaveBeenLastCalledWith(
+      expect.objectContaining({ event: "landing.viewed", surface: "web" }),
+    );
+  });
+
+  it("POST /a/landing relays the marked drop-zone beacon with surface=web:auto", async () => {
+    const { recordLandingEvent, app } = landingEvents();
+    const res = await app.request("/a/landing", {
+      method: "POST",
+      headers: { "content-type": "application/json", "user-agent": MARKED },
+      body: JSON.stringify({ event: "landing.dropzone_used", props: { kind: "md" }, token: "hold_x" }),
+    });
+    expect(res.status).toBe(204);
+    expect(recordLandingEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: "landing.dropzone_used",
+        surface: "web:auto",
+        token: "hold_x",
+      }),
+    );
+  });
+});
 
   // SEC.2 (ADR-041) — the web-side magic-link limiter is RETIRED: the api owns the shared throttle, so
   // the web never refuses a send locally. What remains here is the refusal MAPPING — the api's
