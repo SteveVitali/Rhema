@@ -148,6 +148,77 @@ describe("sweepAutoReload", () => {
     expect((await readBalances(db, BA)).topup).toBeUndefined();
   });
 
+  it("the charge key is deterministic — auto-reload:<account>:<month>:<attempt-seq>, no clock in it (RH-3)", async () => {
+    await optIn();
+    const stripe = new StubStripePort();
+    await sweepAutoReload(db.client, sweepDeps(stripe), NOW);
+    const key = (stripe.calls[0]!.args as { idempotencyKey: string }).idempotencyKey;
+    expect(key).toBe(`auto-reload:${BA}:2026-09:1`);
+    expect(key).not.toContain(String(Math.floor(NOW.getTime() / 60000)));
+  });
+
+  it("a retry minutes later after a post-charge crash replays the SAME key — no double charge (RH-3)", async () => {
+    await optIn();
+    const stripe = new StubStripePort();
+    // The Stripe charge succeeds; the grant tx then crashes BEFORE committing — the pre-fix
+    // minute-component key let the next sweep charge the account a second time.
+    let crashed = false;
+    const base = sweepDeps(stripe);
+    const flaky = {
+      ...base,
+      runTx: async (ws: string, fn: (tx: SqlClient) => Promise<void>) => {
+        if (!crashed) {
+          crashed = true;
+          throw new Error("post-charge crash");
+        }
+        return base.runTx(ws, fn);
+      },
+    };
+    await expect(sweepAutoReload(db.client, flaky, NOW)).rejects.toThrow("post-charge crash");
+    expect(await events()).toHaveLength(0); // the grant tx never committed
+    // The next sweep — five minutes on, same month — must retry under the SAME Stripe key.
+    const retry = await sweepAutoReload(db.client, sweepDeps(stripe), new Date(NOW.getTime() + 5 * 60_000));
+    expect(retry.charged).toBe(1);
+    const keys = stripe.calls
+      .filter((c) => c.method === "chargeOffSession")
+      .map((c) => (c.args as { idempotencyKey: string }).idempotencyKey);
+    expect(keys).toEqual([`auto-reload:${BA}:2026-09:1`, `auto-reload:${BA}:2026-09:1`]);
+    expect((await readBalances(db, BA)).topup.available).toBe(1000); // granted exactly once
+  });
+
+  it("a recorded attempt advances the sequence — a genuinely new charge gets a new key", async () => {
+    await optIn();
+    const stripe = new StubStripePort();
+    await sweepAutoReload(db.client, sweepDeps(stripe), NOW); // charge 1 → 'below_threshold' row
+    // drain below the threshold again → the NEXT purchase is a new attempt, a new key.
+    await db.pg.query("update credit_balances set available = 10 where billing_account_id = $1 and bucket = 'topup'", [BA]);
+    stripe.primeCharge({ paymentIntentId: "pi_second", status: "succeeded" });
+    await sweepAutoReload(db.client, sweepDeps(stripe), new Date(NOW.getTime() + 3_600_000));
+    const keys = stripe.calls
+      .filter((c) => c.method === "chargeOffSession")
+      .map((c) => (c.args as { idempotencyKey: string }).idempotencyKey);
+    expect(keys).toEqual([`auto-reload:${BA}:2026-09:1`, `auto-reload:${BA}:2026-09:2`]);
+    const acc = (
+      await db.client.query("select auto_reload_spend_cents::int as s from billing_accounts where id = $1", [BA])
+    ).rows[0] as { s: number };
+    expect(acc.s).toBe(2000); // two distinct $10 charges — cap accounting stays honest
+  });
+
+  it("an account with several workspaces is charged ONCE — the sweep selects accounts distinctly (RH-3)", async () => {
+    await optIn();
+    // A second workspace on the same billing account — the pre-fix join produced a row PER WORKSPACE.
+    await db.pg.query(
+      "insert into workspaces(id, kind, name, billing_account_id) values ('ws_second','personal','Second',$1)",
+      [BA],
+    );
+    const stripe = new StubStripePort();
+    const res = await sweepAutoReload(db.client, sweepDeps(stripe), NOW);
+    expect(stripe.calls.filter((c) => c.method === "chargeOffSession")).toHaveLength(1);
+    expect(res).toEqual({ attempted: 1, charged: 1, skipped: 0, failed: 0 });
+    expect((await readBalances(db, BA)).topup.available).toBe(1000); // one grant, not two
+    expect(await events()).toHaveLength(1);
+  });
+
   it("a suspended account never gets an unattended charge", async () => {
     await optIn();
     await db.pg.query("update billing_accounts set suspended_at = now() where id = $1", [BA]);

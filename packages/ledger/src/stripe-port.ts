@@ -4,6 +4,8 @@
 // network directly: a port call is either pre-transaction (create a Checkout/Portal session → hand back a
 // URL) or an explicitly-audited unattended charge (auto-reload — the ONLY one; REQ-BILL-17).
 
+import { randomUUID } from "node:crypto";
+
 export interface CheckoutSessionRequest {
   /** our checkout_sessions row id — echoed in Stripe metadata so the webhook resolves the grant. */
   readonly sessionId: string;
@@ -50,12 +52,20 @@ export interface StripePort {
     subscriptionId: string;
     cancelAtPeriodEnd: boolean;
   }): Promise<void>;
-  /** The auto-reload charge — off-session on the customer's default payment method (REQ-BILL-17). */
+  /**
+   * The auto-reload charge — off-session on the customer's default payment method (REQ-BILL-17).
+   * `idempotencyKey` is forwarded as Stripe's `Idempotency-Key` header (RH-3); the account/workspace/
+   * pack triple lands on the intent's metadata so the `payment_intent.succeeded` reconcile arm can
+   * converge a charge whose post-charge grant tx never committed.
+   */
   chargeOffSession(args: {
     customerId: string;
     amountCents: number;
     idempotencyKey: string;
     description: string;
+    billingAccountId: string;
+    workspaceId: string;
+    packId: string;
   }): Promise<OffSessionChargeResult>;
 }
 
@@ -93,6 +103,9 @@ export class StubStripePort implements StripePort {
     amountCents: number;
     idempotencyKey: string;
     description: string;
+    billingAccountId: string;
+    workspaceId: string;
+    packId: string;
   }): Promise<OffSessionChargeResult> {
     this.calls.push({ method: "chargeOffSession", args });
     return this.chargeResult;
@@ -152,7 +165,14 @@ export class FetchStripePort implements StripePort {
     private readonly opts: { automaticTax?: boolean } = {},
   ) {}
 
-  private async post(path: string, params: Record<string, string>): Promise<Record<string, unknown>> {
+  /**
+   * Every POST carries `Idempotency-Key` (RH-3 — the header was never sent, so Stripe saw each retry
+   * as a fresh operation). The caller supplies the key: a DETERMINISTIC one where a durable call-site
+   * identifier exists (our checkout_sessions row id, the sweep's attempt key), else a per-request uuid —
+   * Stripe dedupes within its 24h window only when the SAME key replays, which is exactly the crash-
+   * retry gap these calls close.
+   */
+  private async post(path: string, params: Record<string, string>, idempotencyKey: string): Promise<Record<string, unknown>> {
     let res: Response;
     try {
       res = await fetch(`${this.baseUrl}${path}`, {
@@ -162,6 +182,7 @@ export class FetchStripePort implements StripePort {
           "content-type": "application/x-www-form-urlencoded",
           // RH-9 — pin the API version on EVERY request; the account default must never pick our shape.
           "stripe-version": STRIPE_API_VERSION,
+          "idempotency-key": idempotencyKey,
         },
         body: new URLSearchParams(params).toString(),
       });
@@ -235,15 +256,22 @@ export class FetchStripePort implements StripePort {
       params["subscription_data[metadata][plan]"] = req.plan.tier;
       params["subscription_data[metadata][cycle]"] = req.plan.cycle;
     }
-    const body = await this.post("/v1/checkout/sessions", params);
+    // deterministic key: our checkout_sessions row id — a retry of the same create collapses at Stripe.
+    const body = await this.post("/v1/checkout/sessions", params, `checkout-session:${req.sessionId}`);
     return { id: String(body.id), url: String(body.url) };
   }
 
   async createPortalSession(args: { customerId: string; returnUrl: string }): Promise<StripeSessionRef> {
-    const body = await this.post("/v1/billing_portal/sessions", {
-      customer: args.customerId,
-      return_url: args.returnUrl,
-    });
+    // no call-site key exists — a per-request uuid (a retry that rebuilds the call mints a new session,
+    // which is the honest behavior for a fresh portal link).
+    const body = await this.post(
+      "/v1/billing_portal/sessions",
+      {
+        customer: args.customerId,
+        return_url: args.returnUrl,
+      },
+      `portal-session:${randomUUID()}`,
+    );
     return { id: String(body.id), url: String(body.url) };
   }
 
@@ -251,9 +279,16 @@ export class FetchStripePort implements StripePort {
     subscriptionId: string;
     cancelAtPeriodEnd: boolean;
   }): Promise<void> {
-    await this.post(`/v1/subscriptions/${args.subscriptionId}`, {
-      cancel_at_period_end: args.cancelAtPeriodEnd ? "true" : "false",
-    });
+    // per-request uuid — the op is state-idempotent (writing the same flag twice is a no-op), and a
+    // deterministic key would replay-stale a flag toggled twice inside Stripe's 24h idempotency window
+    // (cancel → uncancel → cancel must reach Stripe every time).
+    await this.post(
+      `/v1/subscriptions/${args.subscriptionId}`,
+      {
+        cancel_at_period_end: args.cancelAtPeriodEnd ? "true" : "false",
+      },
+      `sub-cancel:${randomUUID()}`,
+    );
   }
 
   async chargeOffSession(args: {
@@ -261,16 +296,29 @@ export class FetchStripePort implements StripePort {
     amountCents: number;
     idempotencyKey: string;
     description: string;
+    billingAccountId: string;
+    workspaceId: string;
+    packId: string;
   }): Promise<OffSessionChargeResult> {
     try {
-      const body = await this.post("/v1/payment_intents", {
-        customer: args.customerId,
-        amount: String(args.amountCents),
-        currency: "usd",
-        confirm: "true",
-        off_session: "true",
-        description: args.description,
-      });
+      const body = await this.post(
+        "/v1/payment_intents",
+        {
+          customer: args.customerId,
+          amount: String(args.amountCents),
+          currency: "usd",
+          confirm: "true",
+          off_session: "true",
+          description: args.description,
+          // the reconcile arm's address: `payment_intent.succeeded` resolves the account + pack off
+          // this metadata when it converges a charged-but-ungranted intent.
+          "metadata[kind]": "auto_reload",
+          "metadata[billing_account_id]": args.billingAccountId,
+          "metadata[workspace_id]": args.workspaceId,
+          "metadata[pack_id]": args.packId,
+        },
+        args.idempotencyKey,
+      );
       const status = String(body.status);
       return {
         paymentIntentId: String(body.id),

@@ -9,6 +9,7 @@ import {
   type StripeEventDeps,
 } from "./stripe.js";
 import { SqlHoldLedger } from "./sql-ledger.js";
+import { grant } from "./entries.js";
 import { activateSubscription } from "./subscriptions.js";
 import { provisionTrial, gateTrialUnlock } from "./trial.js";
 import {
@@ -102,6 +103,7 @@ describe("STRIPE_WEBHOOK_EVENT_TYPES — the endpoint's enabled_events contract 
       "customer.subscription.updated",
       "invoice.paid",
       "invoice.payment_failed",
+      "payment_intent.succeeded",
     ]);
   });
 
@@ -993,5 +995,112 @@ describe("processStripeEvent — RH-7 livemode check", () => {
       id: "sub_live_1", status: "active", cancel_at_period_end: true, metadata: { billing_account_id: BA },
     }, { livemode: false });
     expect(out.kind).toBe("subscription_synced");
+  });
+});
+
+describe("processStripeEvent — payment_intent.succeeded: the auto-reload reconcile arm (RH-3)", () => {
+  // The sweep's off-session charge succeeds Stripe-side OUTSIDE the grant tx: a crash between
+  // them leaves a real charge with no credits. Stripe still delivers payment_intent.succeeded —
+  // this arm converges the account (grant + monthly counter + audit row) exactly-once.
+  const piPayload = (over: Record<string, unknown> = {}) => ({
+    id: "pi_ar_1",
+    amount: 1000,
+    currency: "usd",
+    customer: "cus_ar",
+    status: "succeeded",
+    metadata: { kind: "auto_reload", billing_account_id: BA, workspace_id: WS, pack_id: "topup_10" },
+    ...over,
+  });
+  const autoReloadEvents = () =>
+    db.client
+      .query("select reason, outcome, cents, stripe_ref from auto_reload_events where billing_account_id = $1 order by at, id", [BA])
+      .then((r) => r.rows as { reason: string; outcome: string; cents: number; stripe_ref: string | null }[]);
+
+  it("a succeeded auto-reload charge with no grant lands the pack + counter + audit row", async () => {
+    const out = await emit("evt_pi_ar", "payment_intent.succeeded", piPayload());
+    expect(out.kind).toBe("auto_reload_reconciled");
+    if (out.kind !== "auto_reload_reconciled") return;
+    expect(out.billingAccountId).toBe(BA);
+    expect((await readBalances(db, BA)).topup).toEqual({ available: 1000, held: 0 });
+    // the monthly counter advances exactly as the sweep's own tx would have left it.
+    const acc = (
+      await db.client.query(
+        "select auto_reload_spend_cents::int as s, auto_reload_month as m from billing_accounts where id = $1",
+        [BA],
+      )
+    ).rows[0] as { s: number; m: string };
+    expect(acc).toEqual({ s: 1000, m: NOW.toISOString().slice(0, 7) });
+    expect(await autoReloadEvents()).toEqual([
+      { reason: "webhook_reconcile", outcome: "charged", cents: 1000, stripe_ref: "pi_ar_1" },
+    ]);
+    const led = (
+      await db.client.query(
+        "select idempotency_key, reason, stripe_ref, source from credit_ledger where billing_account_id = $1 and bucket = 'topup'",
+        [BA],
+      )
+    ).rows;
+    expect(led).toHaveLength(1);
+    // the arm completes the sweep's interrupted write — the row matches what the sweep would have left.
+    expect(led[0]).toMatchObject({
+      idempotency_key: "auto-reload:grant:pi_ar_1",
+      reason: "auto_reload",
+      stripe_ref: "pi_ar_1",
+      source: "system",
+    });
+    expect((await stripeEventRow("evt_pi_ar"))!.processed_at).not.toBeNull();
+  });
+
+  it("interlocks with the sweep — a pi whose grant already landed is exactly-once (shared key)", async () => {
+    // the sweep's own post-charge tx committed this grant — the redelivered PI must not re-grant.
+    await db.txRunner.run(WS, (tx) =>
+      grant(tx, deps(), {
+        workspaceId: WS,
+        billingAccountId: BA,
+        bucket: "topup",
+        credits: 1000,
+        reason: "auto_reload",
+        stripeRef: "pi_ar_1",
+        idempotencyKey: "auto-reload:grant:pi_ar_1",
+      }),
+    );
+    const out = await emit("evt_pi_ar", "payment_intent.succeeded", piPayload());
+    expect(out.kind).toBe("ignored");
+    expect((await readBalances(db, BA)).topup.available).toBe(1000); // not 2000
+    expect(await autoReloadEvents()).toHaveLength(0); // no duplicate audit row
+    const acc = (
+      await db.client.query("select auto_reload_spend_cents::int as s from billing_accounts where id = $1", [BA])
+    ).rows[0] as { s: number };
+    expect(acc.s).toBe(0); // the sweep's counter row is the reconcile arm's business only when IT grants
+  });
+
+  it("a second delivery of the same pi reconciles once — replay is a no-op", async () => {
+    const a = await emit("evt_pi_ar", "payment_intent.succeeded", piPayload());
+    const b = await emit("evt_pi_ar2", "payment_intent.succeeded", piPayload());
+    expect(a.kind).toBe("auto_reload_reconciled");
+    expect(b.kind).toBe("ignored");
+    expect((await readBalances(db, BA)).topup.available).toBe(1000);
+    expect(await autoReloadEvents()).toHaveLength(1);
+  });
+
+  it("ignores a payment_intent that isn't an auto-reload charge — Checkout top-ups carry no kind", async () => {
+    const out = await emit("evt_pi_other", "payment_intent.succeeded", {
+      id: "pi_other",
+      amount: 5000,
+      metadata: { billing_account_id: BA, pack_id: "topup_10" }, // a Checkout topup PI shape — no `kind`
+    });
+    expect(out.kind).toBe("ignored");
+    expect((await readBalances(db, BA)).topup).toBeUndefined();
+    expect(await autoReloadEvents()).toHaveLength(0);
+  });
+
+  it("an auto-reload pi with no resolvable account is unresolved — the event stays retryable", async () => {
+    const out = await emit(
+      "evt_pi_orphan",
+      "payment_intent.succeeded",
+      piPayload({ metadata: { kind: "auto_reload", pack_id: "topup_10" } }),
+    );
+    expect(out.kind).toBe("unresolved");
+    expect((await stripeEventRow("evt_pi_orphan"))!.processed_at).toBeNull();
+    expect((await readBalances(db, BA)).topup).toBeUndefined();
   });
 });
