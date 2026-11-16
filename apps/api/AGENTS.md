@@ -59,14 +59,12 @@ pnpm exec vitest run packages/security-checks/src/rls-catalog.test.ts packages/s
    `tools/system-pool-boundary.json` and retain explicit workspace predicates.
 3. **Same-site does not mean trusted origin.** User content has its own host. Preserve the mutation
    origin allowlist and host-only auth cookie behavior; do not weaken them to make a browser test pass.
-4. **Header identity is not production auth.** The middleware's injected-header fallback is for
-   dev/preview only. `sessionScopedPrincipal` outside middleware returns null, never header identity.
-   *(2026-11-16 — superseded pending merge: #347 (267_R6SEC.2, RH-10/RH-39) replaces the unkeyed
-   three-header fallback with a keyed invariant — the shim resolves only when the request also
-   presents the stage's `x-rhema-identity-key`, minted per non-prod stage into Secret Manager;
-   the unkeyed headers alone are client-forgeable on the public allUsers-invoker api. Until that
-   lands this paragraph describes the pre-key behavior; never re-enable or extend the unkeyed
-   shim.)*
+4. **Header identity is not production auth — and on non-prod it is keyed.** The middleware's
+   `x-rhema-*` fallback resolves only when the request also presents the stage's shared key on
+   `x-rhema-identity-key` (Pulumi mints it into Secret Manager per non-prod stage; nothing wires
+   it on prod). The three identity headers alone are client-forgeable on the public
+   allUsers-invoker api — never re-enable or describe the unkeyed shim as acceptable.
+   `sessionScopedPrincipal` outside middleware returns null, never header identity.
 5. **Financial state belongs to the shared ledger.** Preserve idempotency, holds, refunds, and
    transaction coupling; do not add ad hoc balance writes in routes. Prices, estimates, and trial
    entitlements must come from their shared configuration.

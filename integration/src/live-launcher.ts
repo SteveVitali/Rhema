@@ -35,6 +35,13 @@ export interface LiveLauncherOptions {
   /** the deployed api base url, e.g. `https://api.dev.rhema…` (no trailing slash). */
   readonly apiBaseUrl: string;
   readonly principal: LivePrincipal;
+  /**
+   * RH-10 (267_R6SEC.2) — the stage's shared identity key, sent as `x-rhema-identity-key`.
+   * REQUIRED on stages that carry the keyed shim (every non-prod api post-fix): the api ignores
+   * the three identity headers without it. On prod the shim is never armed — the caller uses a
+   * real session cookie instead (see research-probe-live.ts's PROBE_SESSION_COOKIE).
+   */
+  readonly identityKey?: string;
   /** pg.Pool-backed executor for polling the `runs` row (no api status route exists — DB-poll fallback). */
   readonly sql: SqlClient;
   // ---- run-body defaults (match the G21 harness shape; overridable) ----
@@ -167,6 +174,8 @@ export class LiveWorkflowLauncher implements WorkflowLauncher {
         "x-rhema-user-id": this.opts.principal.userId,
         "x-rhema-workspace-id": this.opts.principal.workspaceId,
         "x-rhema-billing-account-id": this.opts.principal.billingAccountId,
+        // RH-10 — the keyed shim's shared-secret half; unset on cookie-authed targets (prod).
+        ...(this.opts.identityKey ? { "x-rhema-identity-key": this.opts.identityKey } : {}),
       },
       body: JSON.stringify(body),
     });

@@ -122,6 +122,19 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
   // verifies at /api/action/<token>; unset ⇒ the route 404s (notification emails are not minted either — the
   // worker holds the same seam).
   const emailActionSecret = env.emailActionSecretName ? await access(env.emailActionSecretName) : undefined;
+  // RH-10 (267_R6SEC.2): the non-prod identity-header shim's shared key resolves like every
+  // other api secret — a Secret-Manager NAME on deployed stages (`IDENTITY_HEADERS_SECRET_NAME`),
+  // a direct env value for local runs (`IDENTITY_HEADERS_KEY`). `IDENTITY_HEADERS=true` with no
+  // resolvable key fails CLOSED: the shim stays off rather than trusting forgeable headers.
+  const identityHeadersKey = env.identityHeaders
+    ? (env.identityHeadersKey ??
+      (env.identityHeadersSecretName ? await access(env.identityHeadersSecretName) : undefined))
+    : undefined;
+  if (env.identityHeaders && !identityHeadersKey) {
+    console.log(
+      "[api] IDENTITY_HEADERS set but no key resolved (IDENTITY_HEADERS_KEY / IDENTITY_HEADERS_SECRET_NAME) — the identity-header shim stays OFF",
+    );
+  }
   const notificationConfig =
     emailActionSecret && env.apiPublicUrl && env.appBaseUrl
       ? { actionSecret: emailActionSecret, apiBaseUrl: env.apiPublicUrl, appBaseUrl: env.appBaseUrl }
@@ -535,8 +548,9 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
       return token ? resolveSessionPrincipal(rawDb, token) : null;
     },
     ...(auth ? { auth: { handler: (req: Request) => auth.handler(req) } } : {}),
-    // dev/preview ONLY (never prod — env guard): trust the forgeable x-rhema-* identity headers.
-    ...(env.identityHeaders ? { identityHeaders: true } : {}),
+    // dev/preview ONLY (never prod — the stage never wires the env): the keyed identity-header
+    // shim — see the RH-10 resolution above; no key resolved ⇒ the dep is absent entirely.
+    ...(identityHeadersKey ? { identityHeadersKey } : {}),
     // the CSRF origin allowlist for mutations (single-zone: usercontent.* is same-site; SameSite=Lax
     // alone can't stop a user-content page from POSTing to the api with credentials).
     allowedOrigins: [env.appBaseUrl, env.apiPublicUrl].filter((o): o is string => !!o),
