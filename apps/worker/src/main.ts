@@ -113,6 +113,7 @@ import {
   type WorkerAccountExportDeps,
 } from "./export-jobs.js";
 import {
+  handleAccountDeleteSweep,
   handleAccountHardDelete,
   handleProjectPurge,
   handleProjectPurgeSweep,
@@ -127,6 +128,32 @@ import {
 const ACCOUNT_HARD_DELETE_JOB = "account.hard-delete";
 /** STB.2 / D-P1.04-2 — the `project.purge` queue name (the api enqueues at the tombstone's +30d). */
 const PROJECT_PURGE_JOB = "project.purge";
+
+/**
+ * RH-18 (270_R6OPS.4) — queues whose `singletonKey` sends intend send-time dedupe: `exclusive`
+ * policy (≤1 non-terminal job per key). Every producer on these queues MUST send a singletonKey —
+ * a keyless job shares the `''` slot with every other keyless job. Queues that stay `standard`:
+ * `mail.send`/`auth.mail` (keyless sends), `test-tenant.purge` + every `boss.schedule` cron (keyless
+ * inserts), `notify.sweep.*`/`ingest.sync.sweep`/`run.reap` fan-out drivers. Kept in one place and
+ * mirrored by `apps/api/src/server.ts` (either process may create a queue first).
+ */
+export const DEDUP_POLICY_QUEUES: ReadonlySet<string> = new Set([
+  "run.start",
+  "run.resume",
+  "run.cancel",
+  "run.deliver",
+  "run.finalize",
+  GATE_EXPIRY_QUEUE,
+  FIGURE_RENDER_QUEUE,
+  "notify",
+  STRIPE_EVENT_JOB,
+  "ingest.sync",
+  "ingest.reconstruct",
+  "voice.purge",
+  ACCOUNT_EXPORT_QUEUE,
+  "account.hard-delete",
+  "project.purge",
+]);
 
 /** The parked-run auto-cancel sweep queue (REQ-SPEC-24.4; D-P0.11-1). */
 export const LEDGER_JOBS = { sweepParked: "run.sweep_parked" } as const;
@@ -554,11 +581,21 @@ export async function startWorker(): Promise<void> {
   ]) {
     // SLO.1 — the run-launch queues carry `notify: true` so job creation wakes the consumer
     // immediately (the dispatch slice of queued→provisioning / gate→queued→launch). Idempotent —
-    // createQueue updates the queue's options on an existing row.
+    // createQueue is `ON CONFLICT DO NOTHING` on an existing row: it sets options on FIRST create
+    // only, which is why RH-18's policy flip also rides migration `0063` (prod's `standard` rows
+    // predate this declaration and the public API cannot change a policy post-create).
     const notify = name === RUN_JOBS.start || name === RUN_JOBS.resume;
-    await retryStartup(`createQueue ${name}`, () =>
-      boss.createQueue(name, notify ? { notify: true } : undefined),
-    );
+    // RH-18 — every send to these queues carries a `singletonKey` whose dedupe was INERT under
+    // `standard` policy (pg-boss 12's singleton unique indexes are policy-gated — verified against
+    // pg-boss@12.30.0 `plans.js` job_i1/i2/i3/i6). `exclusive` = at most one non-terminal
+    // (created/retry/active) job per key: the send-time dedupe the keys intend (`short` dedupes
+    // only `created`; `singleton` throttles `active` but still queues the duplicate; `stately`
+    // permits one of each). NEVER send keyless to an `exclusive` queue — all keyless jobs share the
+    // `coalesce(singleton_key,'')` slot and would dedupe against each other.
+    const policy = DEDUP_POLICY_QUEUES.has(name) ? "exclusive" : undefined;
+    const opts =
+      notify || policy ? { ...(notify ? { notify: true } : {}), ...(policy ? { policy } : {}) } : undefined;
+    await retryStartup(`createQueue ${name}`, () => boss.createQueue(name, opts));
   }
   console.log("[worker] startup: queues created; registering consumers");
 
@@ -881,6 +918,16 @@ export async function startWorker(): Promise<void> {
       } catch (err) {
         console.error("[worker] project.purge.sweep failed (will retry next tick):", err);
       }
+      // RH-4 (270_R6OPS.4) — the same watchdog for `account.hard-delete`: a pending
+      // `deletion_requested_at` must hold a live arm or the account is never destroyed.
+      try {
+        const s = await handleAccountDeleteSweep({ systemExec, queue: deps.queue });
+        if (s.scanned > 0) {
+          console.log(`[worker] account.hard-delete.sweep → ${JSON.stringify(s)}`);
+        }
+      } catch (err) {
+        console.error("[worker] account.hard-delete.sweep failed (will retry next tick):", err);
+      }
     }
   });
   await boss.send(
@@ -935,8 +982,20 @@ export async function startWorker(): Promise<void> {
   // grace destroys content + PII while retaining anonymized ledger/usage rows + the billing account.
   await boss.work<AccountHardDeleteJob>(ACCOUNT_HARD_DELETE_JOB, async (jobs) => {
     for (const job of jobs) {
-      const r = await handleAccountHardDelete(job.data, { systemExec });
-      console.log(`[worker] account.hard-delete ${job.data.userId} → ${JSON.stringify(r)}`);
+      // RH-4 — the F-R6WATCH.2-1 loud-failure arm on the destruction path: pg-boss swallows a
+      // handler throw into a silent `failed` row (no `error` event, the success log prints only
+      // post-return) — a throwing hard-delete used to vanish with no trace AND leave the promised
+      // deletion undone. Log the user id + error before rethrowing (retry semantics are pg-boss's).
+      try {
+        const r = await handleAccountHardDelete(job.data, { systemExec });
+        console.log(`[worker] account.hard-delete ${job.data.userId} → ${JSON.stringify(r)}`);
+      } catch (err) {
+        console.error(
+          `[worker] account.hard-delete ${job.data.userId} FAILED — pg-boss retries/fails per queue policy:`,
+          err,
+        );
+        throw err;
+      }
     }
   });
 
