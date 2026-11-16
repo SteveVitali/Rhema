@@ -129,6 +129,9 @@ describe("JourneySessions — the --invite-code mint channel", () => {
       // 264_R6FIX.14 — the marker seam's one-shot default-UA probe reads navigator.userAgent.
       evaluate: async () => "FakeHeadlessUA/1.0",
       locator: (sel: string) => ({
+        // 275_R6WEB.1 (RH-31) — the mailbox hands back an old-format verify link (below), which
+        // lands no `[data-magic-link-confirm]` interstitial: the mint's confirm arm is skipped.
+        count: async () => 0,
         // MAINT.6 — `codeVisible` models the invite-mode shape (the input rendered directly);
         // false models open-mode's collapsed <details> disclosure, which the mint opens first.
         isVisible: async () =>

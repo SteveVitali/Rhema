@@ -106,7 +106,7 @@ describe("export dialog — SSR (PRB.11)", () => {
     const app = createWebApp({ ...makeDeps(), session: () => null });
     const res = await app.request("/p/the-piece/export");
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("/login");
+    expect(res.headers.get("location")).toBe("/login?next=%2Fp%2Fthe-piece%2Fexport");
   });
 
   it("the twin ships the dialog verbatim — the leaf paints radios, the obligation line + the statement", async () => {
