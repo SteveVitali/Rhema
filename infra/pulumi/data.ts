@@ -137,6 +137,13 @@ export function createData(args: DataArgs): Data {
         ipConfiguration: {
           ipv4Enabled: false, // private-IP only — no public endpoint (REQ-ARCH-6 posture)
           privateNetwork: network.network.id, // same VPC + PSA peering as AlloyDB
+          // RH-35 (271_R6SEC.3): the instance's default sslMode (the permissive allow-both
+          // posture) accepted plaintext connections on the VPC path — every client DSN already carries
+          // `sslmode=require&uselibpqcompat=true` (the AlloyDB-era encrypt-no-pin posture), so
+          // server-side ENCRYPTED_ONLY is a posture match, not a client break. `verify-ca`
+          // (server-identity pinning against the instance CA) is the remaining hardening —
+          // it needs CA material plumbed to every consumer, tracked as D-R6SEC.3-1.
+          sslMode: "ENCRYPTED_ONLY",
         },
         backupConfiguration: {
           enabled: true,

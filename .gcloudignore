@@ -10,4 +10,10 @@
 .agents
 agent-scratch
 **/*.log
+# RH-25 (271_R6SEC.3) — local env files are gitignored, but THIS file is what `gcloud builds
+# submit` reads: without the rule an operator's `.env*` rides the upload context to Cloud Build.
+# `.env.example` stays shippable (a documented non-secret template), matching .gitignore.
+.env
+.env.*
+!.env.example
 # Keep: apps/run-task/vendor (the Agent SDK the run-task image COPYs explicitly).
