@@ -32,15 +32,29 @@ export class ResendMailSender implements MailSender {
     this.client = new Resend(apiKey);
   }
 
-  async send(msg: { to: string; subject: string; text: string; html: string; from?: string }): Promise<{ id: string }> {
-    const res = await this.client.emails.send({
-      from: msg.from ?? this.defaultFrom,
-      to: msg.to,
-      subject: msg.subject,
-      text: msg.text,
-      html: msg.html,
-    });
-    if (res.error) throw new Error(`resend: ${res.error.message}`);
+  async send(msg: {
+    to: string;
+    subject: string;
+    text: string;
+    html: string;
+    from?: string;
+    idempotencyKey?: string;
+  }): Promise<{ id: string }> {
+    const res = await this.client.emails.send(
+      {
+        from: msg.from ?? this.defaultFrom,
+        to: msg.to,
+        subject: msg.subject,
+        text: msg.text,
+        html: msg.html,
+      },
+      // R6LOW.1 / RH-A1-7 — the provider dedupe key: a retry after an ambiguous send result replays
+      // the original request instead of mailing twice.
+      msg.idempotencyKey ? { idempotencyKey: msg.idempotencyKey } : undefined,
+    );
+    // res.error.name is the bounded RESEND_ERROR_CODE enum; res.error.message is provider prose —
+    // the code is the log-safe diagnostic.
+    if (res.error) throw new Error(`resend: ${res.error.name}`);
     return { id: res.data?.id ?? "" };
   }
 }
