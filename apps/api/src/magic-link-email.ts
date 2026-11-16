@@ -85,6 +85,67 @@ export function magicLinkInterstitialUrl(verifyUrl: string): string {
   }
   u.pathname = MAGIC_LINK_INTERSTITIAL_PATH;
   return u.toString();
+ * RH-5 (270_R6OPS.4) — the email-change confirm mail, same branded shell as the sign-in link.
+ * Sent to the NEW address; the token lives ONLY in the URL (same rule as the magic link).
+ */
+export function renderEmailChangeVerifyEmail(args: { url: string; sendNonce: string }): MagicLinkMail {
+  const { url, sendNonce } = args;
+  const subject = `Confirm your new ${BRAND} email · ${sendNonce}`;
+  const text = [
+    `Confirm this address for your ${BRAND} account`,
+    "",
+    "Use this link to confirm the new sign-in email (it expires in 1 hour):",
+    url,
+    "",
+    "Didn't request this? Ignore this email — the address on the account is unchanged.",
+  ].join("\n");
+  const html = [
+    `<!doctype html><html lang="en"><body style="margin:0;padding:24px;background:#f4f2ee;font-family:Georgia,'Times New Roman',serif;color:#1d1f24;">`,
+    `<div style="max-width:480px;margin:0 auto;background:#ffffff;border:1px solid #e3ded4;border-radius:12px;padding:32px 28px;">`,
+    `<p style="margin:0 0 20px;font-size:20px;font-weight:600;letter-spacing:0.2px;">${BRAND}</p>`,
+    `<p style="margin:0 0 20px;font-size:15px;line-height:1.55;">Confirm this address for your ${BRAND} account — the link is yours alone and it expires in 1 hour.</p>`,
+    `<p style="margin:0 0 20px;"><a href="${esc(url)}" style="display:inline-block;background:#1d1f24;color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:8px;font-size:15px;font-weight:600;">Confirm this address</a></p>`,
+    `<p style="margin:0 0 6px;font-size:13px;line-height:1.5;color:#4a4e55;">If the button doesn't work, paste this link into your browser:</p>`,
+    `<p style="margin:0 0 20px;font-size:12px;line-height:1.5;word-break:break-all;"><a href="${esc(url)}" style="color:#4a4e55;">${esc(url)}</a></p>`,
+    `<p style="margin:0;font-size:13px;line-height:1.5;color:#6a6e75;">Didn't request this? Ignore this email — the address on the account is unchanged.</p>`,
+    `<p style="margin:16px 0 0;font-size:11px;color:#9a9da3;">Sent by ${BRAND} · ref ${esc(sendNonce)}</p>`,
+    `</div></body></html>`,
+  ].join("");
+  return { subject, text, html };
+}
+
+/**
+ * RH-5 — the OLD-address notice. `requested` warns while the change is still pending (a hijacked
+ * session can start a change; only the new mailbox can finish it); `completed` reports the change
+ * took effect. No token, no link — the notice is the arm.
+ */
+export function renderEmailChangeNoticeEmail(args: {
+  newEmail: string;
+  stage: "requested" | "completed";
+  sendNonce: string;
+}): MagicLinkMail {
+  const { newEmail, stage, sendNonce } = args;
+  const requested = stage === "requested";
+  const subject = requested
+    ? `Your ${BRAND} email is being changed · ${sendNonce}`
+    : `Your ${BRAND} email was changed · ${sendNonce}`;
+  const headline = requested
+    ? `Someone asked to change the sign-in email on your ${BRAND} account to ${newEmail}.`
+    : `The sign-in email on your ${BRAND} account was changed to ${newEmail}.`;
+  const tail = requested
+    ? "If this wasn't you, secure your account now — sign out every session and contact support. The change only completes when the new address confirms."
+    : "If you didn't make this change, contact support immediately — your account may be compromised.";
+  const text = [headline, "", tail].join("\n");
+  const html = [
+    `<!doctype html><html lang="en"><body style="margin:0;padding:24px;background:#f4f2ee;font-family:Georgia,'Times New Roman',serif;color:#1d1f24;">`,
+    `<div style="max-width:480px;margin:0 auto;background:#ffffff;border:1px solid #e3ded4;border-radius:12px;padding:32px 28px;">`,
+    `<p style="margin:0 0 20px;font-size:20px;font-weight:600;letter-spacing:0.2px;">${BRAND}</p>`,
+    `<p style="margin:0 0 20px;font-size:15px;line-height:1.55;">${esc(headline)}</p>`,
+    `<p style="margin:0;font-size:13px;line-height:1.5;color:#6a6e75;">${esc(tail)}</p>`,
+    `<p style="margin:16px 0 0;font-size:11px;color:#9a9da3;">Sent by ${BRAND} · ref ${esc(sendNonce)}</p>`,
+    `</div></body></html>`,
+  ].join("");
+  return { subject, text, html };
 }
 
 /**

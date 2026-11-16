@@ -24,7 +24,7 @@
 //   GET  /projects/:id/settings                 — the §4.2 project-settings read
 //   PUT  /projects/:id/settings                 — the REQ-GENRE-2 safe-field patch
 
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { Hono } from "hono";
 import { PROTOCOL_CARDS, protocolCard } from "@rhema/protocols";
 import {
@@ -47,6 +47,10 @@ import {
 } from "@rhema/contracts";
 import type { Queue, SqlClient } from "@rhema/orchestrator";
 import { sessionTokenFromCookieHeader } from "./auth-context.js";
+import {
+  renderEmailChangeNoticeEmail,
+  renderEmailChangeVerifyEmail,
+} from "./magic-link-email.js";
 import type { Principal } from "./run-routes.js";
 
 export interface SettingsApiDeps {
@@ -91,6 +95,15 @@ interface UserRow {
 
 const USER_COLS = `id, name, email, email_verified, image, byline, prefs, analytics_opt_out,
   consent_dont_ask_under, app_theme, deletion_requested_at`;
+
+/** RH-5 — the pending-change row stores the token's SHA-256, never the token itself. */
+const sha256Hex = (s: string): string => createHash("sha256").update(s, "utf8").digest("hex");
+/** Constant-time comparison of two hex digests (never a plaintext `!==` on a credential). */
+const tokenEqual = (storedHashHex: string, candidate: string): boolean => {
+  const a = Buffer.from(storedHashHex, "hex");
+  const b = Buffer.from(sha256Hex(candidate), "hex");
+  return a.length === b.length && timingSafeEqual(a, b);
+};
 
 async function loadUser(db: SqlClient, userId: string): Promise<UserRow | null> {
   return (
@@ -340,6 +353,15 @@ export function createSettingsRoutes(deps: SettingsApiDeps): Hono {
     const user = await loadUser(deps.db, principal.userId);
     if (!user) return c.json({ error: "not_found" }, 404);
     if (user.email.toLowerCase() === email) return c.json({ error: "same_email" }, 422);
+    // RH-5 arm 1 — dup pre-check: the unique constraint used to surface as a bare 500 at confirm;
+    // answer the conflict honestly up front (the TOCTOU half is caught at confirm below).
+    const taken = (
+      await deps.db.query(
+        `select 1 from "user" where lower(email) = lower($1) and id <> $2 limit 1`,
+        [email, principal.userId],
+      )
+    ).rows[0];
+    if (taken) return c.json({ error: "email_taken" }, 409);
 
     const token = randomBytes(24).toString("base64url");
     const now = deps.clock.now();
@@ -351,20 +373,43 @@ export function createSettingsRoutes(deps: SettingsApiDeps): Hono {
       [
         deps.ids("ver"),
         `email-change:${principal.userId}`,
-        JSON.stringify({ token, email }),
+        // RH-5 arm 5 — the row stores only the token's SHA-256 (confirm compares timing-safe).
+        JSON.stringify({ tokenHash: sha256Hex(token), email }),
         new Date(now.getTime() + EMAIL_CHANGE_TTL_MS),
       ],
     );
     if (deps.queue && deps.appBaseUrl) {
       const url = `${deps.appBaseUrl}/app/settings/account?confirmEmail=${encodeURIComponent(token)}`;
+      // RH-5 arm 4 — the branded template (Rhēma, macron — same shell as the sign-in link), and
+      // RH-17's arm here too: a dropped mail send is logged loudly, never swallowed.
       await deps.queue
         .send(AUTH_MAIL_QUEUE, {
           to: email,
-          subject: "Confirm your new Rhema email",
-          text: `Confirm this address for your Rhema account: ${url}`,
-          html: `<p><a href="${url}">Confirm this address</a> for your Rhema account.</p>`,
+          ...renderEmailChangeVerifyEmail({ url, sendNonce: randomBytes(6).toString("hex") }),
         })
-        .catch(() => undefined);
+        .catch((err: unknown) =>
+          console.error(
+            `[api] auth.mail enqueue FAILED for email-change ${principal.userId} — the verification row stands; the user can re-request:`,
+            err,
+          ),
+        );
+      // RH-5 arm 2 — the old-address notice: the change is only pending (the new mailbox holds
+      // the token), so the incumbent owner learns of the attempt BEFORE it can complete.
+      await deps.queue
+        .send(AUTH_MAIL_QUEUE, {
+          to: user.email,
+          ...renderEmailChangeNoticeEmail({
+            newEmail: email,
+            stage: "requested",
+            sendNonce: randomBytes(6).toString("hex"),
+          }),
+        })
+        .catch((err: unknown) =>
+          console.error(
+            `[api] auth.mail enqueue FAILED for email-change notice ${principal.userId}:`,
+            err,
+          ),
+        );
     }
     return c.json({ ok: true, pendingEmail: email });
   });
@@ -382,20 +427,64 @@ export function createSettingsRoutes(deps: SettingsApiDeps): Hono {
         [`email-change:${principal.userId}`, deps.clock.now()],
       )
     ).rows[0] as { id: string; value: string } | undefined;
-    let parsed: { token?: string; email?: string } = {};
+    let parsed: { tokenHash?: string; token?: string; email?: string } = {};
     try {
       parsed = row ? (JSON.parse(row.value) as typeof parsed) : {};
     } catch {
       parsed = {};
     }
-    if (!row || parsed.token !== token || !parsed.email) {
+    // RH-5 arm 5 — hashed/timing-safe compare. `tokenHash` rows are the new shape; a `token` row
+    // minted in the ≤1 h pre-deploy window still confirms (hash the stored plaintext both ways).
+    const tokenOk = parsed.tokenHash
+      ? tokenEqual(parsed.tokenHash, token)
+      : parsed.token
+        ? tokenEqual(sha256Hex(parsed.token), token)
+        : false;
+    if (!row || !tokenOk || !parsed.email) {
       return c.json({ error: "invalid_or_expired_token" }, 410);
     }
-    await deps.db.query(`update "user" set email = $2, email_verified = true, updated_at = now() where id = $1`, [
-      principal.userId,
-      parsed.email,
-    ]);
+    const oldEmail = (
+      await loadUser(deps.db, principal.userId)
+    )?.email;
+    try {
+      await deps.db.query(
+        `update "user" set email = $2, email_verified = true, updated_at = now() where id = $1`,
+        [principal.userId, parsed.email],
+      );
+    } catch (err) {
+      // RH-5 arm 1's TOCTOU half — the address was taken between request and confirm: surface the
+      // conflict, never a bare 500 on `user_email_key`.
+      if ((err as { code?: string }).code === "23505") {
+        return c.json({ error: "email_taken" }, 409);
+      }
+      throw err;
+    }
     await deps.db.query(`delete from verification where id = $1`, [row.id]);
+    // RH-5 arm 3 — session revoke: a credential change invalidates every OTHER session (the
+    // confirming one stays — it just proved control of the new mailbox).
+    const cookieToken = sessionTokenFromCookieHeader(c.req.header("cookie"));
+    await deps.db.query(
+      `delete from session where user_id = $1 and ($2::text is null or token <> $2)`,
+      [principal.userId, cookieToken],
+    );
+    // RH-5 arm 2's completion half — the old address learns the change took effect (recovery path).
+    if (deps.queue && oldEmail) {
+      await deps.queue
+        .send(AUTH_MAIL_QUEUE, {
+          to: oldEmail,
+          ...renderEmailChangeNoticeEmail({
+            newEmail: parsed.email,
+            stage: "completed",
+            sendNonce: randomBytes(6).toString("hex"),
+          }),
+        })
+        .catch((err: unknown) =>
+          console.error(
+            `[api] auth.mail enqueue FAILED for email-changed notice ${principal.userId}:`,
+            err,
+          ),
+        );
+    }
     return c.json({ ok: true, email: parsed.email });
   });
 
@@ -651,7 +740,15 @@ export function createSettingsRoutes(deps: SettingsApiDeps): Hono {
             singletonKey: `account.hard-delete:${principal.userId}`,
           },
         )
-        .catch(() => undefined);
+        // RH-17 — never a silent `.catch(() => undefined)`: the marker row still lands and the
+        // hourly `handleAccountDeleteSweep` re-arms any missing job, so `ok: true` stays honest —
+        // but a dropped arm must be VISIBLE (the 260 FAILED+id log shape).
+        .catch((err: unknown) =>
+          console.error(
+            `[api] account.hard-delete enqueue FAILED for user ${principal.userId} — the watchdog sweep re-arms within the hour:`,
+            err,
+          ),
+        );
     }
     return c.json({
       ok: true,

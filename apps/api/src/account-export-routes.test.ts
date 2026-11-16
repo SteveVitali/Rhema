@@ -296,3 +296,66 @@ describe("POST /account/import (REQ-ACCT-3 — the fresh-account half)", () => {
     expect(((await res.json()) as { error: string }).error).toBe("not_a_rhema_export");
   });
 });
+
+// RH-19 (270_R6OPS.4) — the `building` wedge: a stale building row deduped every later POST
+// forever, and a `queue.send` throw after the insert left the row `building` permanently.
+describe("RH-19 — export building-row staleness + honest enqueue failure", () => {
+  it("a `building` row older than the stale bound fails honestly and a fresh POST builds", async () => {
+    const res = await app().request("/account/export", { method: "POST" });
+    expect(res.status).toBe(202);
+    const { export: ex } = (await res.json()) as { export: { id: string } };
+    // wedge it: the row is `building` but older than any legit build (pg-boss expire 15 min ×
+    // retries) — backdated against the route's injected clock, not the DB wall clock.
+    await db.pg.query(`update account_exports set created_at = $2 where id = $1`, [
+      ex.id,
+      new Date(deps.clock.now().getTime() - 2 * 60 * 60 * 1000),
+    ]);
+
+    const again = await app().request("/account/export", { method: "POST" });
+    const dto = (await again.json()) as { export: { id: string; status: string }; deduped: boolean };
+    expect(again.status).toBe(202);
+    expect(dto.deduped).toBe(false);
+    expect(dto.export.id).not.toBe(ex.id);
+    expect(queue.sent).toHaveLength(2);
+    // the wedged row was marked failed — the state read no longer shows a phantom live build.
+    const stale = (await db.pg.query(`select status, error from account_exports where id = $1`, [ex.id]))
+      .rows[0] as { status: string; error: string };
+    expect(stale.status).toBe("failed");
+    expect(stale.error).toContain("build_expired");
+  });
+
+  it("a `queue.send` throw fails the insert row honestly and 503s — the next POST is not deduped", async () => {
+    const spy = (await import("vitest")).vi.spyOn(console, "error").mockImplementation(() => {});
+    const throwing = {
+      sent: [] as { name: string }[],
+      async send(name: string) {
+        this.sent.push({ name });
+        throw new Error("pg-boss down");
+      },
+    };
+    const app2 = createApp({
+      ...deps,
+      principal: () => principal(),
+      db: sql,
+      systemExec: sql,
+      contentStore: store,
+      queue: throwing,
+      exportPresign: presignGet,
+    });
+    const res = await app2.request("/account/export", { method: "POST" });
+    expect(res.status).toBe(503);
+    expect(((await res.json()) as { error: string }).error).toBe("enqueue_failed");
+    const row = (
+      await db.pg.query(`select status, error from account_exports where workspace_id = $1`, [
+        seed.workspaceId,
+      ])
+    ).rows[0] as { status: string; error: string };
+    expect(row.status).toBe("failed");
+    expect(row.error).toContain("enqueue_failed");
+    spy.mockRestore();
+
+    // a later request on a working queue builds fresh — the failed row never dedupes.
+    const res2 = await app().request("/account/export", { method: "POST" });
+    expect(res2.status).toBe(202);
+  });
+});
