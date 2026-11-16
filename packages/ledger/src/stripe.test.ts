@@ -247,9 +247,15 @@ async function checkoutSessionRow(args: {
   );
 }
 
-async function emit(id: string, type: string, object: Record<string, unknown>) {
-  await insertStripeEvent(db.client, { id, type, payload: { id, type, data: { object } }, receivedAt: NOW });
-  return processStripeEvent(db.client, deps(), id);
+async function emit(
+  id: string,
+  type: string,
+  object: Record<string, unknown>,
+  envelope: Record<string, unknown> = {},
+  d: StripeEventDeps = deps(),
+) {
+  await insertStripeEvent(db.client, { id, type, payload: { id, type, ...envelope, data: { object } }, receivedAt: NOW });
+  return processStripeEvent(db.client, d, id);
 }
 
 async function subRowByStripeId(stripeId: string) {
@@ -399,23 +405,23 @@ describe("processStripeEvent — topup for a nanoid (Better Auth) member (F-R6H1
   });
 });
 
-describe("processStripeEvent — invoice + subscription arms (P1.16; §14.6)", () => {
-  async function activate(stripeId = "sub_live_1") {
-    await db.txRunner.run(WS, (tx) =>
-      activateSubscription(tx, testEntryDeps(NOW), {
-        workspaceId: WS,
-        billingAccountId: BA,
-        tier: "writer",
-        cycle: "monthly",
-        stripeSubscriptionId: stripeId,
-        stripeCustomerId: "cus_live",
-        periodStart: P0,
-        periodEnd: P1,
-        idempotencyKey: `evt:act:${stripeId}`,
-      }),
-    );
-  }
+async function activate(stripeId = "sub_live_1") {
+  await db.txRunner.run(WS, (tx) =>
+    activateSubscription(tx, testEntryDeps(NOW), {
+      workspaceId: WS,
+      billingAccountId: BA,
+      tier: "writer",
+      cycle: "monthly",
+      stripeSubscriptionId: stripeId,
+      stripeCustomerId: "cus_live",
+      periodStart: P0,
+      periodEnd: P1,
+      idempotencyKey: `evt:act:${stripeId}`,
+    }),
+  );
+}
 
+describe("processStripeEvent — invoice + subscription arms (P1.16; §14.6)", () => {
   it("invoice.paid rolls the period and grants the new period's included credits (REQ-BILL-14)", async () => {
     await activate();
     const out = await emit("evt_inv_paid", "invoice.paid", {
@@ -814,5 +820,178 @@ describe("processStripeEvent — the customer id backfill (BILL.3)", () => {
     expect(
       (await db.client.query("select stripe_customer_id from billing_accounts where id = $1", [BA])).rows[0],
     ).toMatchObject({ stripe_customer_id: "cus_pl_1" });
+  });
+});
+
+// ---- 268_R6BILL.1 — RH-9 basil payload shapes + RH-7 created-ordering / livemode guards ---------------
+// The decisive read (2026-11-16, recorded in the run record): the live endpoint `we_1UH99C2MLe3ETP9Sk4UQBKXs`
+// reports `api_version: None` ⇒ the ACCOUNT DEFAULT governs, and the account default is already post-basil
+// (the live sub returns `current_period_*` only at `items.data[]`). Each basil fixture below fails on the
+// pre-fix code: no `invoice.subscription` ⇒ ignored-but-processed; no top-level `current_period_*` ⇒
+// clock.now() bounds. The pre-basil shapes above stay green through the fallback path.
+
+const P2 = new Date("2026-11-01T00:00:00Z");
+
+describe("processStripeEvent — RH-9 basil payload shapes (≥ 2025-03-31.basil)", () => {
+  it("invoice.paid reads parent.subscription_details.subscription — renewal + grant land", async () => {
+    await activate();
+    const out = await emit("evt_inv_basil", "invoice.paid", {
+      id: "in_basil_1",
+      // basil: NO top-level `subscription`; the pointer moved under `parent` (type-verified).
+      parent: { type: "subscription_details", subscription_details: { subscription: "sub_live_1" } },
+      customer: "cus_live",
+      period_start: unix(P1),
+      period_end: unix(P2),
+      metadata: { billing_account_id: BA },
+    });
+    expect(out).toMatchObject({ kind: "renewal_paid", billingAccountId: BA });
+    const s = await subRowByStripeId("sub_live_1");
+    expect(new Date(s!.period_start as string).toISOString()).toBe(P1.toISOString());
+    expect(new Date(s!.period_end as string).toISOString()).toBe(P2.toISOString());
+    expect((await readBalances(db, BA)).included!.available).toBe(4000); // 2000 activation + 2000 renewal
+    expect((await stripeEventRow("evt_inv_basil"))!.processed_at).not.toBeNull();
+  });
+
+  it("invoice.payment_failed (basil) marks past_due + notifies", async () => {
+    await activate();
+    const sent: { reason: string }[] = [];
+    const d = { ...deps(), notify: async (p: { reason: string }) => { sent.push(p); } };
+    const out = await emit("evt_inv_basil_fail", "invoice.payment_failed", {
+      id: "in_basil_2",
+      parent: { type: "subscription_details", subscription_details: { subscription: "sub_live_1" } },
+      customer: "cus_live",
+      metadata: { billing_account_id: BA },
+    }, {}, d);
+    expect(out).toMatchObject({ kind: "renewal_failed", billingAccountId: BA });
+    expect((await subRowByStripeId("sub_live_1"))!.status).toBe("past_due");
+    expect(sent).toHaveLength(1);
+  });
+
+  it("a non-subscription parent falls back to the top-level invoice.subscription", async () => {
+    await activate();
+    const out = await emit("evt_inv_parent_other", "invoice.paid", {
+      id: "in_mixed",
+      parent: { type: "quote", quote: "qt_1" }, // not subscription_details → the pre-basil field governs
+      subscription: "sub_live_1",
+      customer: "cus_live",
+      period_start: unix(P1),
+      period_end: unix(P2),
+      metadata: { billing_account_id: BA },
+    });
+    expect(out).toMatchObject({ kind: "renewal_paid", billingAccountId: BA });
+  });
+
+  it("customer.subscription.updated (basil: item-level current_period_*) syncs the stored bounds", async () => {
+    await activate();
+    const out = await emit("evt_sub_basil_upd", "customer.subscription.updated", {
+      id: "sub_live_1",
+      status: "active",
+      cancel_at_period_end: false,
+      // basil: no top-level current_period_* — they live on the item.
+      items: { data: [{ price: { recurring: { interval: "month" } }, current_period_start: unix(P1), current_period_end: unix(P2) }] },
+      metadata: { billing_account_id: BA },
+    });
+    expect(out).toMatchObject({ kind: "subscription_synced", billingAccountId: BA });
+    const s = await subRowByStripeId("sub_live_1");
+    expect(new Date(s!.period_start as string).toISOString()).toBe(P1.toISOString());
+    expect(new Date(s!.period_end as string).toISOString()).toBe(P2.toISOString());
+  });
+
+  it("customer.subscription.created (basil) activates with the item's period + price.recurring.interval", async () => {
+    const out = await emit("evt_sub_basil_new", "customer.subscription.created", {
+      id: "sub_basil_1",
+      status: "active",
+      customer: "cus_basil",
+      items: { data: [{ price: { recurring: { interval: "year" } }, current_period_start: unix(P0), current_period_end: unix(new Date("2027-09-01T00:00:00Z")) }] },
+      metadata: { billing_account_id: BA, plan: "writer" },
+    });
+    expect(out).toMatchObject({ kind: "subscription_synced", billingAccountId: BA });
+    const s = await subRowByStripeId("sub_basil_1");
+    expect(s).toMatchObject({ tier: "writer", status: "active", billing_cycle: "annual" });
+    expect(new Date(s!.period_start as string).toISOString()).toBe(P0.toISOString());
+    expect(new Date(s!.period_end as string).toISOString()).toBe("2027-09-01T00:00:00.000Z");
+    expect((await readBalances(db, BA)).included!.available).toBe(2000);
+  });
+});
+
+describe("processStripeEvent — RH-7 `created` ordering guard", () => {
+  it("an older redelivered subscription.updated cannot overwrite newer state", async () => {
+    await activate();
+    // Stripe redelivery is unordered: the NEWER event (cancel scheduled, created 10-02) processes first…
+    const newer = await emit("evt_upd_new", "customer.subscription.updated", {
+      id: "sub_live_1", status: "active", cancel_at_period_end: true, metadata: { billing_account_id: BA },
+    }, { created: unix(new Date("2026-10-02T00:00:00Z")) });
+    expect(newer.kind).toBe("subscription_synced");
+    expect((await subRowByStripeId("sub_live_1"))!.cancel_at_period_end).toBe(true);
+    // …then the OLDER redelivery (still-renewing snapshot, created 10-01) lands — it must not roll back.
+    const older = await emit("evt_upd_old", "customer.subscription.updated", {
+      id: "sub_live_1", status: "active", cancel_at_period_end: false, metadata: { billing_account_id: BA },
+    }, { created: unix(new Date("2026-10-01T00:00:00Z")) });
+    expect(older.kind).toBe("skipped");
+    expect(older).toMatchObject({ reason: expect.stringContaining("evt_upd_new") });
+    expect((await subRowByStripeId("sub_live_1"))!.cancel_at_period_end).toBe(true);
+    // terminal verdict — processed_at stamps; the unprocessed sweep must not re-drive it.
+    expect((await stripeEventRow("evt_upd_old"))!.processed_at).not.toBeNull();
+  });
+
+  it("an older invoice.paid cannot overwrite the newer period bounds", async () => {
+    await activate();
+    const newer = await emit("evt_inv_new", "invoice.paid", {
+      id: "in_new", subscription: "sub_live_1", customer: "cus_live",
+      period_start: unix(P1), period_end: unix(P2), metadata: { billing_account_id: BA },
+    }, { created: unix(new Date("2026-10-05T00:00:00Z")) });
+    expect(newer.kind).toBe("renewal_paid");
+    const older = await emit("evt_inv_old", "invoice.paid", {
+      id: "in_old", subscription: "sub_live_1", customer: "cus_live",
+      period_start: unix(P0), period_end: unix(P1), metadata: { billing_account_id: BA },
+    }, { created: unix(new Date("2026-10-04T00:00:00Z")) });
+    expect(older.kind).toBe("skipped");
+    const s = await subRowByStripeId("sub_live_1");
+    expect(new Date(s!.period_start as string).toISOString()).toBe(P1.toISOString());
+    expect(new Date(s!.period_end as string).toISOString()).toBe(P2.toISOString());
+  });
+
+  it("an event carrying no `created` cannot be ordered — processes unguarded (recorded choice)", async () => {
+    await activate();
+    const out = await emit("evt_upd_nocreated", "customer.subscription.updated", {
+      id: "sub_live_1", status: "active", cancel_at_period_end: true, metadata: { billing_account_id: BA },
+    });
+    expect(out.kind).toBe("subscription_synced");
+    expect((await subRowByStripeId("sub_live_1"))!.cancel_at_period_end).toBe(true);
+  });
+});
+
+describe("processStripeEvent — RH-7 livemode check", () => {
+  it("a livemode:false event against an sk_live_* expectation is skipped — nothing writes", async () => {
+    await activate();
+    const out = await emit("evt_lm_test", "customer.subscription.updated", {
+      id: "sub_live_1", status: "active", cancel_at_period_end: true, metadata: { billing_account_id: BA },
+    }, { livemode: false }, { ...deps(), expectLivemode: true });
+    expect(out.kind).toBe("skipped");
+    expect(out).toMatchObject({ reason: expect.stringContaining("livemode") });
+    expect((await subRowByStripeId("sub_live_1"))!.cancel_at_period_end).toBe(false);
+    expect((await stripeEventRow("evt_lm_test"))!.processed_at).not.toBeNull();
+  });
+
+  it("a matching livemode:true processes; a mode-less payload fails closed (never a match)", async () => {
+    await activate();
+    const live = await emit("evt_lm_live", "customer.subscription.updated", {
+      id: "sub_live_1", status: "active", cancel_at_period_end: true, metadata: { billing_account_id: BA },
+    }, { livemode: true }, { ...deps(), expectLivemode: true });
+    expect(live.kind).toBe("subscription_synced");
+    expect((await subRowByStripeId("sub_live_1"))!.cancel_at_period_end).toBe(true);
+    const missing = await emit("evt_lm_none", "customer.subscription.updated", {
+      id: "sub_live_1", status: "active", cancel_at_period_end: false, metadata: { billing_account_id: BA },
+    }, {}, { ...deps(), expectLivemode: true });
+    expect(missing.kind).toBe("skipped");
+    expect((await subRowByStripeId("sub_live_1"))!.cancel_at_period_end).toBe(true);
+  });
+
+  it("an unset expectation disables the check (unconfigured stage)", async () => {
+    await activate();
+    const out = await emit("evt_lm_free", "customer.subscription.updated", {
+      id: "sub_live_1", status: "active", cancel_at_period_end: true, metadata: { billing_account_id: BA },
+    }, { livemode: false });
+    expect(out.kind).toBe("subscription_synced");
   });
 });

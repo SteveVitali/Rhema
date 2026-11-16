@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { FetchStripePort, StripeRequestError, type CheckoutSessionRequest } from "./stripe-port.js";
+import { FetchStripePort, StripeRequestError, STRIPE_API_VERSION, type CheckoutSessionRequest } from "./stripe-port.js";
 
 // BILL.3 (REQ-BILL-16; ADR-030) — the Checkout request contract, asserted byte-for-byte. The 2026-10-01
 // prod finding: `customer_update[address]` sent beside `customer_email` 400'd EVERY checkout
@@ -10,6 +10,7 @@ import { FetchStripePort, StripeRequestError, type CheckoutSessionRequest } from
 interface CapturedCall {
   url: string;
   auth: string;
+  headers: Record<string, string>;
   params: URLSearchParams;
 }
 
@@ -19,6 +20,7 @@ function stubFetch(body: Record<string, unknown>, status = 200): CapturedCall[] 
     calls.push({
       url: String(url),
       auth: String((init?.headers as Record<string, string>)?.authorization ?? ""),
+      headers: (init?.headers as Record<string, string>) ?? {},
       params: new URLSearchParams(String(init?.body)),
     });
     return new Response(JSON.stringify(body), { status });
@@ -112,6 +114,28 @@ describe("FetchStripePort.createCheckoutSession — the request contract", () =>
     const port = new FetchStripePort("sk_test_x", "https://api.stripe.test");
     await port.createCheckoutSession({ ...BASE_REQ, require3ds: true });
     expect(calls[0]!.params.get("payment_method_options[card][request_three_d_secure]")).toBe("any");
+  });
+});
+
+describe("FetchStripePort — the Stripe-Version pin (RH-9; 268_R6BILL.1)", () => {
+  it("pins STRIPE_API_VERSION = `2025-03-31.basil` — the version the handlers' field reads are written for", () => {
+    // Basil is the FIRST release carrying invoice.parent.subscription_details.subscription +
+    // item-level current_period_*; clover/dahlia/endive add breaking changes this integration has
+    // not audited (e.g. Clover's flexible-billing default on Checkout-minted subscriptions).
+    expect(STRIPE_API_VERSION).toBe("2025-03-31.basil");
+  });
+
+  it("EVERY request carries `Stripe-Version` — checkout, portal, subscription update, off-session charge", async () => {
+    const calls = stubFetch({ id: "x_1", url: "https://x.test", status: "succeeded" });
+    const port = new FetchStripePort("sk_test_x", "https://api.stripe.test");
+    await port.createCheckoutSession(BASE_REQ);
+    await port.createPortalSession({ customerId: "cus_1", returnUrl: "https://app.test/billing" });
+    await port.setSubscriptionCancelAtPeriodEnd({ subscriptionId: "sub_1", cancelAtPeriodEnd: true });
+    await port.chargeOffSession({ customerId: "cus_1", amountCents: 1000, idempotencyKey: "k1", description: "d" });
+    expect(calls).toHaveLength(4);
+    for (const c of calls) expect(c.headers["stripe-version"]).toBe("2025-03-31.basil");
+    // and it pins the exported constant, not a drifting literal.
+    for (const c of calls) expect(c.headers["stripe-version"]).toBe(STRIPE_API_VERSION);
   });
 });
 

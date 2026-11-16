@@ -123,6 +123,19 @@ export class StripeRequestError extends Error {
 }
 
 /**
+ * RH-9 (268_R6BILL.1) — the `Stripe-Version` every request pins. `2025-03-31.basil` is the first
+ * release carrying the payload shape the handlers are written for (`invoice.parent
+ * .subscription_details.subscription`, item-level `current_period_*`); later flora releases
+ * (clover/dahlia/endive) add breaking changes this integration has not audited — e.g. Clover makes
+ * flexible billing mode the default for Checkout-created subscriptions. The pin makes the request
+ * contract deliberate: upgrading past basil is an audited step, never an account-default drift.
+ * NOTE: the pin governs OUR API calls only — webhook payloads follow the endpoint's `api_version`
+ * (unset ⇒ the account default, already post-basil per the RH-9 live read), so `stripe.ts` keeps
+ * dual-shape reads with pre-basil fallback.
+ */
+export const STRIPE_API_VERSION = "2025-03-31.basil" as const;
+
+/**
  * The live REST port — Stripe's form-encoded API over fetch (Node ≥ 20). Bound by the api only when
  * `STRIPE_SECRET_KEY` is configured; absent ⇒ checkout routes refuse with `stripe_unconfigured` (never a
  * silent fallback that pretends a real session exists).
@@ -147,6 +160,8 @@ export class FetchStripePort implements StripePort {
         headers: {
           authorization: `Bearer ${this.secretKey}`,
           "content-type": "application/x-www-form-urlencoded",
+          // RH-9 — pin the API version on EVERY request; the account default must never pick our shape.
+          "stripe-version": STRIPE_API_VERSION,
         },
         body: new URLSearchParams(params).toString(),
       });
