@@ -15,6 +15,7 @@ try {
     console.log(JSON.stringify(r.rows, null, 1).slice(0, 16000));
   } else {
     await c.query("begin");
+    // eslint-disable-next-line rhema/no-raw-set-tenant -- deliberate ROLLBACK probe: withTenant's commit-only tx can't express "read prod, never write" (the argv SQL may be write-shaped by design).
     await c.query("select set_config('app.tenant_id', $1, true)", [ws]);
     const r = await c.query(sql, params);
     console.log(JSON.stringify(r.rows, null, 1).slice(0, 16000));
