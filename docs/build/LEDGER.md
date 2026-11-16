@@ -24,8 +24,8 @@
 ## CURRENT STATE
 ```
 projectStatus:   IN_PROGRESS
-nextTicket:        (maintenance mode)  # 281_R6FIX.18 this run; the handoff chain 266–277 + fix inserts 278–281 await the operator's bottom-up merges; per GD-MAINT.R6 work is inserted only for defects or operator-asked items
-lastCompleted:   281_R6FIX.18     # BL-118 — no-raw-set-tenant catches set_config('app.tenant_id') outside rls.ts; 10 hand-rolls migrated to withTenant; 2 rollback probes justified-allowlisted — PR this run, unmerged
+nextTicket:        (maintenance mode)  # 282_R6FIX.19 done — the whole handoff chain 266–278 is operator-merged; per GD-MAINT.R6 work is inserted only for defects or operator-asked items (open BL rows: BL-117/BL-120..BL-135 cluster)
+lastCompleted:   282_R6FIX.19     # BL-119 — migration runner: pinned single conn + session pg_advisory_lock + per-file file+record atomicity + -- no-migration-tx hatch; pool callers migrated — PR this run, unmerged
 blockedOn:       (none)
 pauseRequested:  false
 returnPass:      (none)
@@ -36,12 +36,12 @@ dispatchTarget:  subagent
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main              # flat mode — inserts branch off origin/main
 pinnedBaseSha:   a34eb51           # round-7 fork point (unchanged)
-chainTip:        stevevitali/r6fix-18-set-tenant-lint
+chainTip:        stevevitali/r6fix-19-migrate-tx
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
 round:           7                  # post-round maintenance per GD-MAINT.R6
-updatedAt:       2026-11-16T17:2xZ  # merge main @50a4f9d3 (#363 landed) — CURRENT STATE collapsed to this PR's own 281_R6FIX.18 transition per GD-OPS-RULES.R6
+updatedAt:       2026-11-16T16:5xZ  # 282_R6FIX.19 run-time insert (BL-119) on main @50a4f9d3 — #364/#365 still open; this PR's own transition per GD-OPS-RULES.R6
 ```
 
 ## OPEN FINDINGS

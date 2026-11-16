@@ -32,11 +32,11 @@
 
 import pg from "pg";
 import {
-  applyMigrations,
   agentTypesSeed,
   protocolsSeed,
   seedRealProjects,
   type MigrationDb,
+  applyMigrationsPinned,
 } from "@rhema/db";
 import { buildDeploymentProvenance, stageKindFor } from "@rhema/infra";
 
@@ -232,7 +232,8 @@ export async function runMigrate(env: {
     };
 
     // 2 — forward-only migrations.
-    const applied = await applyMigrations(db, { onApplied: (n) => log(`[migrate] applied ${n}`) });
+    // BL-119 — the run pins ONE connection: advisory lock + file/record atomicity per migration.
+    const applied = await applyMigrationsPinned(pool, { onApplied: (n) => log(`[migrate] applied ${n}`) });
     if (applied.length === 0) log("[migrate] no new migrations — schema already up to date");
 
     // 3 — REQ-SPEC-30: turn the generated role secrets live. The roles exist post-migration
@@ -353,7 +354,8 @@ export async function main(): Promise<number> {
           exec: (sql) => pool.query(sql),
           query: (sql, params) => pool.query(sql, params as unknown[]),
         };
-        await applyMigrations(db, { onApplied: (n) => console.log(`[seed-invite] migrated ${n}`) });
+        // BL-119 — pinned single connection for the migrate leg (lock + per-file tx).
+        await applyMigrationsPinned(pool, { onApplied: (n) => console.log(`[seed-invite] migrated ${n}`) });
         const res = await seedPreviewInviteRow(db, code);
         console.log(
           `[seed-invite] ${res.code} live — email NULL, used ${res.usedCount}/${res.maxUses} (idempotent upsert)`,

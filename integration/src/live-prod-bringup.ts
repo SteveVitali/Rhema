@@ -17,7 +17,7 @@
 import pg from "pg";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { applyMigrations, agentTypesSeed, type MigrationDb } from "@rhema/db";
+import { applyMigrationsPinned, agentTypesSeed, type MigrationDb } from "@rhema/db";
 import { seedProtocols } from "@rhema/protocols";
 
 export interface ProdBringupResult {
@@ -56,7 +56,9 @@ export async function runProdMigrateSeed(
     );
   }
 
-  const applied = await applyMigrations(db, { onApplied: (name) => log(`[migrate] applied ${name}`) });
+  // BL-119 — pinned single connection for the migrate leg (lock + per-file tx); the seeds keep
+  // the pool-level wrapper — they're idempotent upserts, not the file+record pair.
+  const applied = await applyMigrationsPinned(pool, { onApplied: (name) => log(`[migrate] applied ${name}`) });
   if (applied.length === 0) log("[migrate] no new migrations — schema already up to date");
   const recorded = (await pool.query("select count(*)::int n from _migrations")).rows[0] as { n: number };
   log(`[migrate] ${recorded.n} migrations recorded`);
