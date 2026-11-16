@@ -91,9 +91,39 @@ describe("the allowlisted structured error line (ADR-053)", () => {
         "errorClass",
         "logging.googleapis.com/trace",
         "stack",
+        "serviceContext",
       ].sort(),
     );
     expect(parsed.severity).toBe("ERROR");
+    // RH-21 residual — serviceContext always carries the allowlisted service name; a release
+    // stamp lands as `version` only when one was provided.
+    expect(parsed.serviceContext).toEqual({ service: "api" });
+  });
+  it("stamps serviceContext.version from the resolved release (Error Reporting attribution)", () => {
+    const parsed = JSON.parse(
+      formatRouteErrorLine({ ...base, serviceVersion: "d24dbed8cafe1234" }),
+    ) as Record<string, unknown>;
+    expect(parsed.serviceContext).toEqual({ service: "api", version: "d24dbed8cafe1234" });
+  });
+  it("drops a hostile serviceVersion rather than emitting it (the allowlist contract is inert-only)", () => {
+    const parsed = JSON.parse(
+      formatRouteErrorLine({ ...base, serviceVersion: '"><script>alert(1)</script>' }),
+    ) as Record<string, unknown>;
+    expect(parsed.serviceContext).toEqual({ service: "api" });
+  });
+  it("routeErrorLine binds serviceVersion from the context — a call site cannot set it", () => {
+    const { requestId: _r, trace: _t, ...rest } = base;
+    const line = routeErrorLine(
+      { requestId: "ctx-req", trace: null, serviceVersion: "abc1234" },
+      rest,
+    );
+    const parsed = JSON.parse(line) as Record<string, unknown>;
+    expect(parsed.serviceContext).toEqual({ service: "api", version: "abc1234" });
+    // An unset context version emits the bare serviceContext — no version key, no null.
+    const bare = JSON.parse(
+      routeErrorLine({ requestId: "r", trace: null }, rest),
+    ) as Record<string, unknown>;
+    expect(bare.serviceContext).toEqual({ service: "api" });
   });
   it("drops null optional fields rather than emitting them", () => {
     const parsed = JSON.parse(

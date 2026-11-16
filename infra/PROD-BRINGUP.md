@@ -137,6 +137,17 @@ runbook is exactly how `collabDatabaseUrl` drifted):
   AlertPolicies page through (`monitoring.ts`); unset on a stage ⇒ policies still record
   incidents unnotified. Keep it equal to the SM version — if the sink URL ever rotates, rotate
   both.
+- `rhema:opsAlertEmail` — **added 273_R6OPS.5 (RH-27), operator act.** Pulumi SECRET config for
+  the on-call email NotificationChannel (`type: "email"`): `pulumi config set --secret
+  rhema:opsAlertEmail '<on-call address>'`. Secret-config so the address stays encrypted in
+  stack state — never a committed address. Unset ⇒ no email leg.
+- `rhema:opsMobileChannelName` — **added 273_R6OPS.5 (RH-27), operator act.** PLAIN config
+  (`pulumi config set`, a resource name is not a secret) holding the paired GCP mobile-app
+  channel's `projects/<p>/notificationChannels/<id>` resource name. GCP's Monitoring API cannot
+  mint `mobile_app` channels (404 on create/get/update — pairing the Cloud Console app is the
+  only path), so the program binds the paired channel by name onto every AlertPolicy; the
+  operator's acts are pair → set → `pulumi up`, then the dated test page (`D-R6OPS.5-1`,
+  HUMAN row 274). Unset ⇒ no mobile leg.
 - `rhema:ciRepository` — JOURNEY.1's GitHub `owner/repo` for the WIF token-creator condition
   (default `SteveVitali/Rhema`).
 - `rhema:gitSha` / `rhema:protocolsVersion` — OPS.1 deploy-provenance inputs for the NON-PROD
