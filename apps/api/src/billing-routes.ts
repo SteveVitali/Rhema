@@ -20,7 +20,6 @@ import {
   startCheckout,
   readCheckoutSession,
   markCheckoutSessionReturnViewed,
-  changePlan,
   requestCancellation,
   configureAutoReload,
   effectivePlanTier,
@@ -602,36 +601,19 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
     }
   });
 
-  // ---- change plan: upgrade applies now; downgrade schedules to period end (§14.6) ---------------------
+  // ---- change plan: FENCED OFF (263_R6FIX.13, D-R6FIX.5-1) ---------------------------------------------
+  // An in-app plan change writes local records only — `changePlan` never propagates to Stripe (the
+  // Checkout mints subscriptions with inline `price_data`, which Stripe cannot price-switch in
+  // place), so the local tier and the billed price silently diverge. Until the plan×cycle →
+  // `price_…` registry + `customer.subscription.updated` sync-arm lands (the D-R6FIX.5-1 ticket),
+  // the feature is OFF: every arm answers the typed feature-off refusal — never a silent 200,
+  // never a record write, never a Stripe call. The refusal fires before the body is even parsed,
+  // so a malformed request cannot reach the mutation path. The operator turns plan switching off
+  // in the hosted Stripe Customer Portal themselves — their act, never this repo's.
   app.post("/billing/subscription/change-plan", async (c) => {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
-    const body = (await c.req.json().catch(() => null)) as { tier?: unknown; cycle?: unknown } | null;
-    const tier = typeof body?.tier === "string" && (PLAN_TIERS as readonly string[]).includes(body.tier)
-      ? (body.tier as PlanTier)
-      : null;
-    if (!tier || tier === "free") return c.json({ error: "tier required" }, 400);
-    if (planOf(tier).waitlist) return c.json({ error: "plan_waitlisted" }, 422);
-    const cycle = body?.cycle === "annual" ? "annual" : undefined;
-    const out = await deps.txRunner.run(principal.workspaceId, async (tx) => {
-      const sub = (
-        await tx.query(
-          `select id from subscriptions where billing_account_id = $1 and status in ('active','past_due')
-             order by created_at desc limit 1`,
-          [principal.billingAccountId],
-        )
-      ).rows[0] as { id: string } | undefined;
-      if (!sub) return { error: "no_subscription" as const };
-      return changePlan(tx, deps, {
-        subscriptionId: sub.id,
-        billingAccountId: principal.billingAccountId,
-        workspaceId: principal.workspaceId,
-        newTier: tier,
-        ...(cycle ? { cycle } : {}),
-      });
-    });
-    if ("error" in out) return c.json(out, 404);
-    return c.json(out);
+    return c.json({ error: "change_plan_unavailable" }, 403);
   });
 
   // ---- the checkout-return poll (§14.6 webhook lag: ≤30 s, then the email fallback) --------------------

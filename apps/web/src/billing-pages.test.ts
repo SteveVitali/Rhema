@@ -104,6 +104,7 @@ function makeDeps(opts: {
   checkout?: { sessionId: string; url: string };
   checkoutError?: ApiError;
   portalError?: ApiError;
+  changePlanError?: ApiError;
   checkoutStatus?: CheckoutStatusDto;
   usageAccount?: UsageAccountDto;
   usageProject?: UsageProjectDto;
@@ -133,7 +134,11 @@ function makeDeps(opts: {
         return { url: opts.checkout.url };
       },
       cancelSubscription: async () => { rec("cancel", true); return { applied: true }; },
-      changePlan: async (_s: unknown, tier: unknown, cycle: unknown) => { rec("changePlan", { tier, cycle }); return { applied: "scheduled" }; },
+      changePlan: async (_s: unknown, tier: unknown, cycle: unknown) => {
+        rec("changePlan", { tier, cycle });
+        if (opts.changePlanError) throw opts.changePlanError;
+        return { applied: "scheduled" };
+      },
       getCheckoutSession: async () =>
         opts.checkoutStatus ?? {
           state: "open",
@@ -305,7 +310,7 @@ describe("the /settings/billing plan card (§14.2/14.6)", () => {
     // SPA.27 — the notice's verbatim copy is leaf paint now (billing leaf dom tests); the server
     // contract that survives is the classified `?notice=<code>` redirect per refusal.
     const cases: readonly {
-      path: string; body?: URLSearchParams; code: string; portal?: boolean;
+      path: string; body?: URLSearchParams; code: string; portal?: boolean; changePlan?: boolean;
     }[] = [
       { path: "subscribe", body: new URLSearchParams({ tier: "writer" }), code: "purchase_closed" },
       { path: "subscribe", body: new URLSearchParams({ tier: "writer" }), code: "plan_waitlisted" },
@@ -315,10 +320,20 @@ describe("the /settings/billing plan card (§14.2/14.6)", () => {
       { path: "topup", body: new URLSearchParams({ packId: "pack_10" }), code: "topups_require_plan" },
       { path: "topup", body: new URLSearchParams({ packId: "pack_10" }), code: "first_month_cap" },
       { path: "portal", code: "no_stripe_customer", portal: true },
+      // 263_R6FIX.13 — the fenced change-plan answers its own feature-off code, not the generic
+      // `notice=change` (the api's `change_plan_unavailable` rides the ApiError through verbatim).
+      {
+        path: "change-plan", body: new URLSearchParams({ tier: "writer", cycle: "monthly" }),
+        code: "change_plan_unavailable", changePlan: true,
+      },
     ];
     for (const row of cases) {
       const app = createWebApp(makeDeps(
-        row.portal ? { portalError: apiFailure(404, row.code) } : { checkoutError: apiFailure(403, row.code) },
+        row.portal
+          ? { portalError: apiFailure(404, row.code) }
+          : row.changePlan
+            ? { changePlanError: apiFailure(403, row.code) }
+            : { checkoutError: apiFailure(403, row.code) },
       ));
       const res = await app.request(`/settings/billing/${row.path}`, {
         method: "POST",

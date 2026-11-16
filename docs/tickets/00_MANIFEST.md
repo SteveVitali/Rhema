@@ -1251,3 +1251,17 @@ sequence (BM-COMPAT-05 — historical filenames are not renamed).
 | 265 | `265_R6PRIV.1__public-repo-artifact-cleanup.md` | post-intervention | **intervention insert P-1** — public-repo artifact cleanup (Pulumi stack exports, unredacted gitleaks reports, magic-link tokens, `.gitleaks.toml` narrowing, privacy standing rule); normal commits at HEAD, no history rewrite | after 262's deploy |
 | 261 | `261_R6FIX.11__purge-fk-leaves.md` | R6 tail | **run-time insert** — `handleProjectPurge` fails on `claims_draft_id_fkey`; ~12 NO-ACTION FK leaves missing from the delete order (F-R7DEPMAIN-1 / BL-113; deploy-proven 2026-11-12) | — |
 | 266 | `266_R6SEC.1__better-auth-ghsa.md` | security hotfix | **handoff insert RH-0 — CRITICAL, goes first:** better-auth GHSA-965c-763c-88jm (unauth sign-in as known email); bump all better-auth pkgs together to current stable + auth suite + expedited-deploy PREPARED only | pre-auth prep (operator ruling 2026-11-15) |
+
+### Plan extensions — handoff 2026-11-15
+
+| 267 | `267_R6SEC.2__ci-anchor-and-nonprod-auth.md` | handoff | CI anchor `always()` + assert needs results (RH-8) | per handoff order |
+| 268 | `268_R6BILL.1__stripe-version-basil.md` | handoff | RH-9 + RH-7: pin `Stripe-Version` + read post-basil field paths (`invoice.subscription`, `current_period_*`, `items[].plan.interval`) | per handoff order |
+| 269 | `269_R6BILL.2__stripe-idempotency.md` | handoff | (c) RH-3: `Idempotency-Key` on every Stripe POST | per handoff order |
+| 270 | `270_R6OPS.4__delayed-job-watchdog.md` | handoff | (d) RH-4+RH-17+RH-5: extend the purge-sweep watchdog to `account.hard-delete` + stop swallowing the enqueue (`settings-routes.ts:654`) | per handoff order |
+| 271 | `271_R6SEC.3__config-hardening.md` | handoff | (a) RH-1 Pulumi.dev.yaml markers (choose correct side read-only vs `pulumi config --stack dev`) + repo-wide conflict-marker CI guard | per handoff order |
+| 272 | `272_R6BILL.3__billing-correctness.md` | handoff | RH-11 webhook stranding (sweep on `processed_at is null`) | per handoff order |
+| 273 | `273_R6OPS.5__alerting-paging.md` | handoff | RH-27 code half: email channel + uptime checks (apex/app/healthz) + dated test-page arm (phone pairing is HUMAN row 274) | per handoff order |
+| 274 | `274_HUMAN__operator-acts.md` | handoff | HUMAN row | per handoff order |
+| 275 | `275_R6WEB.1__web-hardening.md` | handoff | RH-30 CSP nonce stamped author-side not regex | per handoff order |
+| 276 | `276_R6DOC.3__agent-docs-bridges.md` | handoff | docs-only: RH-37 scoped `CLAUDE.md` `@AGENTS.md` bridges ×11 | per handoff order |
+| 277 | `277_R6LOW.1__low-catchall.md` | handoff | LOW/info sweep: invite over-redemption race, duplicate personal workspaces, email GET-consumption, recipient emails in logs, Resend Idempotency-Key, `no-raw-set-tenant` lint gap, migration runner over pool, dunning dup, provenance SHA-prefix length, `:80` listener, AR cleanup policy, docs-drift, licence name-match, `slo.probe` setInterval + e.message, retention classes unenforced, retention-backup no-consumer test | per handoff order |

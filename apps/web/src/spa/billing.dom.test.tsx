@@ -346,6 +346,15 @@ describe("GET /app/settings/billing mounted (SPA.16)", () => {
     expect(el()!.querySelector("[data-notice]")?.textContent).toContain("Purchases are paused");
   });
 
+  // 263_R6FIX.13 — the fenced change-plan's feature-off code paints its own sentence, not the
+  // generic "didn't apply" retry line (plan switching is off; a retry invite would be a lie).
+  it("the change_plan_unavailable flash paints the feature-off copy verbatim", async () => {
+    await mountAt("/app/settings/billing?notice=change_plan_unavailable", BOOT, makeFetch());
+    expect(el()!.querySelector("[data-notice]")?.textContent).toBe(
+      "Plan changes are off right now — your current plan is unchanged.",
+    );
+  });
+
   it("the ?saved=1 flash renders through validated search", async () => {
     await mountAt("/app/settings/billing?saved=1", BOOT, makeFetch());
     expect(el()!.querySelector("[data-saved]")?.textContent).toBe(COPY.billing.saved);

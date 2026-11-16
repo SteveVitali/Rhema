@@ -21,6 +21,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { DEMO_DOCUMENT_ROUTE_IDS } from "@rhema/contracts";
 import type { Browser, BrowserContext, Page } from "playwright";
+import { newMarkedContext } from "./marked-context.js";
 
 // ---------------------------------------------------------------------------
 // The allowlist — the demo's whole outbound contract.
@@ -97,7 +98,7 @@ export async function runDemoWalk(opts: {
   readonly pageHook?: (page: Page) => Promise<void>;
 }): Promise<DemoWalkResult> {
   const origin = new URL(opts.baseUrl).origin;
-  const context: BrowserContext = await opts.browser.newContext({
+  const context: BrowserContext = await newMarkedContext(opts.browser, {
     baseURL: opts.baseUrl,
     viewport: { width: opts.width, height: opts.height ?? 900 },
   });
