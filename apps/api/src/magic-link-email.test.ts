@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { renderMagicLinkEmail, magicLinkSender } from "./magic-link-email.js";
+import {
+  renderMagicLinkEmail,
+  magicLinkSender,
+  magicLinkInterstitialUrl,
+} from "./magic-link-email.js";
 import { MAGIC_LINK_EXPIRES_SECONDS } from "./auth.js";
 
 // UX.1 — the branded magic-link email (replaces the bare "Sign in to Rhema" payload): macron'd
@@ -87,6 +91,34 @@ describe("magicLinkSender — the live SendMagicLink composition", () => {
       expect(String(msg.text)).toContain("expires in 15 minutes");
     }
     expect(sent[0]!.msg.subject).not.toBe(sent[1]!.msg.subject);
+  });
+});
+
+describe("RH-31 — the emailed link is the no-consume interstitial, never the verify GET", () => {
+  it("magicLinkInterstitialUrl swaps the verify path for /auth/magic-link, keeping the query", () => {
+    const out = magicLinkInterstitialUrl(URL);
+    expect(out).toBe(
+      "https://api.rhema.tools/auth/magic-link?token=TOK123&callbackURL=https%3A%2F%2Frhema.tools%2Fapp",
+    );
+    // a non-verify path refuses loudly — a silently un-rewritten link would restore the bug
+    expect(() => magicLinkInterstitialUrl("https://api.rhema.tools/other?token=x")).toThrow();
+  });
+
+  it("the enqueued mail carries the interstitial URL, never the consuming verify GET", async () => {
+    const sent: { name: string; msg: Record<string, unknown> }[] = [];
+    const send = magicLinkSender({
+      send: async (name, msg) => {
+        sent.push({ name, msg });
+      },
+    });
+    await send({ email: "a@x.test", url: URL, token: "TOK123" });
+    const msg = sent[0]!.msg;
+    expect(String(msg.html)).toContain("/auth/magic-link?token=TOK123");
+    expect(String(msg.text)).toContain("/auth/magic-link?token=TOK123");
+    expect(String(msg.html)).not.toContain("/api/auth/magic-link/verify");
+    expect(String(msg.text)).not.toContain("/api/auth/magic-link/verify");
+    // the token still rides ONLY the link — the scanner-safe GET carries it but consumes nothing
+    expect(String(msg.subject)).not.toContain("TOK123");
   });
 });
 

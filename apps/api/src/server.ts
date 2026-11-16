@@ -5,7 +5,7 @@
 // unit-tested in-process, so this file is wiring only (it is not exercised offline — it needs a live deploy).
 
 import { serve } from "@hono/node-server";
-import { randomUUID } from "node:crypto";
+import { createHmac, randomUUID } from "node:crypto";
 import pg from "pg";
 import { Redis } from "ioredis";
 import { PgBoss } from "pg-boss";
@@ -204,11 +204,12 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
   // A partial config leaves the surface 404 — a half-mounted auth is worse than none.
   const authSecretsReady =
     env.betterAuthSecretName && env.googleOauthClientId && env.googleOauthClientSecretName && env.appBaseUrl;
+  const betterAuthSecret = authSecretsReady ? await access(env.betterAuthSecretName!) : undefined;
   const auth = authSecretsReady
     ? createAuth(
         {
           baseURL: env.appBaseUrl!,
-          betterAuthSecret: await access(env.betterAuthSecretName!),
+          betterAuthSecret: betterAuthSecret!,
           googleClientId: env.googleOauthClientId!,
           googleClientSecret: await access(env.googleOauthClientSecretName!),
           // the api's own origin stays trusted for direct hits (runbook smoke, health probes of the auth
@@ -530,6 +531,16 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
     // the Better Auth surface at /api/auth/*.
     principal: sessionScopedPrincipal,
     db: createScopedDb(pool, { role: USER_SERVING_ROLE }),
+    // 275_R6WEB.1 (RH-32) — the `ip_hash` HMAC key: a domain-separated pepper derived once at boot
+    // from the auth secret already loaded for Better Auth (no new secret, no deploy change). Auth
+    // unconfigured ⇒ no key ⇒ the column writes NULL honestly, never an unsalted hash.
+    ...(betterAuthSecret
+      ? {
+          ipHashKey: createHmac("sha256", betterAuthSecret)
+            .update("rhema:acq-ip-hash:v1")
+            .digest("hex"),
+        }
+      : {}),
     sessionResolver: async (req) => {
       const token = sessionTokenFromCookieHeader(req.headers.get("cookie") ?? undefined);
       return token ? resolveSessionPrincipal(rawDb, token) : null;

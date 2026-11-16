@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import { MONEY_FMT_INLINE_JS, MODEL_TIER_DISPLAY, formatCredits, formatUsd, type ModelTier } from "@rhema/contracts";
+import { NonceScript } from "./nonce-script.js";
 import type { RunSheetView } from "@rhema/run-sheet";
 
 // The run sheet (§5.6) — the launcher, and the product's ONLY paywall (REQ-GROWTH-13) and consent gate.
@@ -659,11 +660,11 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction, 
       {/* Progressive enhancement (§5.6 item 2): recompute the estimate box in place on a Rigor change from
           the embedded per-rigor table (no client bundle — REQ-BETA-21). With JS off the levers still submit
           the form. Advanced toggles recompute on submit (they are under the fold). */}
-      <script dangerouslySetInnerHTML={{ __html: recomputeScript(view.recompute) }} />
+      <NonceScript dangerouslySetInnerHTML={{ __html: recomputeScript(view.recompute) }} />
       {/* SPA.6 (REQ-VFY-4): the same lever matrix as a typed JSON embed — the renderer-agnostic
           read the journeys (and later the SPA's lever-recompute) share; the `var R=` script above
           stays the no-bundle progressive enhancement. Numbers/keys only (JSON.stringify output). */}
-      <script
+      <NonceScript
         type="application/json"
         data-estimate-matrix="true"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(view.recompute) }}
