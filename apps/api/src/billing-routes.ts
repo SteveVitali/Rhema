@@ -145,8 +145,19 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
       payload: event,
       receivedAt: deps.clock.now(),
     });
-    // A replayed id is a no-op (nothing inserted, nothing enqueued) — still 200 per §14.6.
-    if (inserted) {
+    // A replayed id is a no-op (nothing inserted) — still 200 per §14.6. RH-11 (272_R6BILL.3):
+    // …unless the parked row is still UNPROCESSED — then the original `queue.send` failed after the
+    // insert committed, and Stripe's own retry is the repair: re-enqueue (idempotent; the queued
+    // arms dedupe). Without this the send-failure class stranded events until an operator ran
+    // `stripe-redrive` by hand — the hourly sweep covers the retry that never arrives.
+    const enqueuable =
+      inserted ||
+      (
+        (await systemExec.query("select 1 from stripe_events where id = $1 and processed_at is null", [
+          event.id,
+        ])).rows.length > 0
+      );
+    if (enqueuable) {
       await deps.queue.send(STRIPE_EVENT_JOB, { eventId: event.id }, { singletonKey: `stripe:${event.id}` });
     }
     return c.json({ received: true });
@@ -332,7 +343,6 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
       cycle?: unknown;
       packId?: unknown;
       returnTo?: unknown;
-      email?: unknown;
     } | null;
     const kind = body?.kind;
     const returnTo = safeReturnToPath(body?.returnTo);
@@ -356,6 +366,13 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
               principal.billingAccountId,
             ])
           ).rows[0] as { stripe_customer_id: string | null } | undefined;
+          // RH-16 (272_R6BILL.3) — `customer_email` is the VERIFIED account email, never a request
+          // field: a forged `email` in the body would route Stripe receipts/dunning to an address
+          // the user never verified.
+          const accountEmail = (
+            (await tx.query('select email from "user" where id = $1', [principal.userId]))
+              .rows[0] as { email: string } | undefined
+          )?.email;
           return startCheckout(tx, { ids: deps.ids, clock: deps.clock, stripe: deps.stripe! }, {
             workspaceId: principal.workspaceId,
             billingAccountId: principal.billingAccountId,
@@ -365,7 +382,7 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
             cycle,
             ...(returnTo ? { returnTo } : {}),
             customerId: acct?.stripe_customer_id ?? null,
-            ...(typeof body?.email === "string" ? { customerEmail: body.email } : {}),
+            ...(accountEmail ? { customerEmail: accountEmail } : {}),
             appBaseUrl: deps.appBaseUrl!,
             unitAmountCents: priceCents(tier, cycle),
             planDisplay: planOf(tier).display,
@@ -420,6 +437,12 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
           const today = deps.clock.now().toISOString().slice(0, 10);
           const dailyCents = acct?.daily_topup_date === today ? Number(acct.daily_topup_cents) : 0;
           const require3ds = dailyCents + pack.usd * 100 > PRICING.topUp.threeDsDailyThresholdUsd * 100;
+          // RH-16 — same verified-email rule as the subscribe arm (the request body's email never
+          // reaches Stripe).
+          const accountEmail = (
+            (await tx.query('select email from "user" where id = $1', [principal.userId]))
+              .rows[0] as { email: string } | undefined
+          )?.email;
           const r = await startCheckout(tx, { ids: deps.ids, clock: deps.clock, stripe: deps.stripe! }, {
             workspaceId: principal.workspaceId,
             billingAccountId: principal.billingAccountId,
@@ -428,7 +451,7 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
             packId: pack.id,
             ...(returnTo ? { returnTo } : {}),
             customerId: acct?.stripe_customer_id ?? null,
-            ...(typeof body?.email === "string" ? { customerEmail: body.email } : {}),
+            ...(accountEmail ? { customerEmail: accountEmail } : {}),
             appBaseUrl: deps.appBaseUrl!,
             packUsd: pack.usd,
             packCredits: pack.credits,
@@ -466,15 +489,17 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
     const access = await deps.txRunner.run(principal.workspaceId, async (tx) => {
-      // BILL.3 — the closed switch admits no Stripe call, Portal included. A JOURNEY.1 tenant is the
-      // only allowlisted caller while the mode is closed.
+      // BILL.3 + RH-13 (272_R6BILL.3) — the closed switch gates PURCHASE only: minting new charges
+      // stays refused, but a `stripe_customer_id` proves an existing Stripe relationship and the
+      // Portal is how paying customers update their card or cancel — locking them out under closed
+      // mode is worse than closed itself. No customer id ⇒ nothing to manage ⇒ purchase_closed.
       const test = await isTestWorkspace(tx, principal.workspaceId);
       const customerId = (
         (await tx.query("select stripe_customer_id from billing_accounts where id = $1", [
           principal.billingAccountId,
         ])).rows[0] as { stripe_customer_id: string | null } | undefined
       )?.stripe_customer_id;
-      return { customerId, allowed: deps.purchaseMode === "open" || test };
+      return { customerId, allowed: deps.purchaseMode === "open" || test || customerId != null };
     });
     if (!access.allowed) return c.json({ error: "purchase_closed" }, 403);
     // The Portal needs BOTH the port and the absolute app return origin. Check after the purchase

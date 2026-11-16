@@ -262,7 +262,8 @@ describe("the catch-all split (REQ-BND-4/11)", () => {
     for (const path of ["/app/future", "/p/acme/future", "/v/per_1/x", "/usage/x"]) {
       const res = await app.request(path);
       expect(res.status, path).toBe(302);
-      expect(res.headers.get("location"), path).toBe("/login");
+      // RH-34 — the signed-out deep link carries itself as `?next=` (validated same-origin at /login).
+      expect(res.headers.get("location"), path).toBe(`/login?next=${encodeURIComponent(path)}`);
     }
   });
 
@@ -368,7 +369,7 @@ describe("the catch-all split (REQ-BND-4/11)", () => {
     ]) {
       const denied = await anon.request("/app/future?renderer=spa", init);
       expect(denied.status).toBe(302);
-      expect(denied.headers.get("location")).toBe("/login");
+      expect(denied.headers.get("location")).toBe("/login?next=%2Fapp%2Ffuture%3Frenderer%3Dspa");
     }
   });
 

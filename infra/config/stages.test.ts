@@ -379,17 +379,24 @@ describe("stage secret requirements (PRB.15 — HUMAN-H6's seeding checklist; RE
       }
     }
     // The generated set + the shared ALL_SECRET_IDS cover every required non-prod id — a required
-    // id with no provisioned container would hang the wiring (the `system-database-url` container
-    // is provisioned by the program's extraIds path, asserted in compute.test.ts).
+    // id with no provisioned container would hang the wiring (the `system-database-url` +
+    // `identity-headers-key` containers are provisioned by the program's extraIds path, asserted
+    // in compute.test.ts).
     for (const id of STAGES.dev.requiredSecrets) {
       expect(
-        id === "system-database-url" || (ALL_SECRET_IDS as readonly string[]).includes(id),
+        id === "system-database-url" ||
+          id === "identity-headers-key" ||
+          (ALL_SECRET_IDS as readonly string[]).includes(id),
         `${id} must have a provisioned container`,
       ).toBe(true);
     }
     // Prod is untouched: system-database-url never enters prod's provisioned or required set.
     expect(ALL_SECRET_IDS).not.toContain("system-database-url");
     expect(PROD_REQUIRED_SECRETS).not.toContain("system-database-url");
+    // RH-10 — the identity-header shim's key is non-prod-only the same way: a prod container
+    // would imply a prod shim, and prod's provisioned/required sets stay byte-identical.
+    expect(ALL_SECRET_IDS).not.toContain("identity-headers-key");
+    expect(PROD_REQUIRED_SECRETS).not.toContain("identity-headers-key");
   });
 });
 

@@ -8,6 +8,7 @@ import type { SessionHeaders } from "./data.js";
 import {
   parseSignupMode,
   forwardedClientIp,
+  sameOriginPath,
   INTERNAL_CLIENT_IP_HEADER,
   INTERNAL_IDENTITY_HEADER,
   INVITE_CODE_PARAM,
@@ -21,7 +22,15 @@ import {
 // when a gateway injects it — the API only honors those headers on non-prod stages. Runs only when
 // invoked directly, so importing this module in tests never starts a listener.
 
-const IDENTITY_HEADERS = ["x-rhema-user-id", "x-rhema-workspace-id", "x-rhema-billing-account-id"] as const;
+// RH-10 — `x-rhema-identity-key` relays like the rest of the shim family: the api honors the
+// identity headers only when a caller also presents the stage's shared key, so forwarding it
+// changes nothing a direct api call can't do — a caller without the key gets no principal.
+const IDENTITY_HEADERS = [
+  "x-rhema-user-id",
+  "x-rhema-workspace-id",
+  "x-rhema-billing-account-id",
+  "x-rhema-identity-key",
+] as const;
 const SESSION_COOKIE_NAME = "__Host-rhema.session_token";
 const DEV_SESSION_COOKIE_NAME = "rhema-dev.session_token";
 
@@ -174,17 +183,37 @@ export function startWebServer(): void {
       });
       return relayResponse(upstream);
     },
+    // 275_R6WEB.1 (RH-31) — the interstitial's consuming half: the browser's confirm POST becomes a
+    // server-side GET of the api's verify endpoint (the ONLY call that consumes the token). The
+    // upstream answer — session Set-Cookie + the 302 to callbackURL — is relayed verbatim so the
+    // cookie still plants host-only on this host. The caller's cookie rides (a stale session is
+    // just replaced) and the resolved browser IP stamps the trusted channel for the api's
+    // admission/throttle hooks, same as authProxy.
+    verifyMagicLink: async (query, c) => {
+      const clientIp = forwardedClientIp(c.req.header("x-forwarded-for"));
+      const upstream = await apiFetch(
+        `/api/auth/magic-link/verify?${query}`,
+        { method: "GET" },
+        c.req.header("cookie"),
+        clientIp === "unknown" ? undefined : clientIp,
+        requestLogContext(c).requestId,
+      );
+      return relayResponse(upstream);
+    },
     async beginAuth(method, args, c) {
       // SEC.2 — the resolved browser IP under the LB rule (penultimate XFF hop — never the
       // caller-controlled first hop); it rides the trusted stamp on every server-side auth call.
       const clientIp = forwardedClientIp(c?.req.header("x-forwarded-for"));
       const cookie = c?.req.header("cookie");
       // the post-sign-in landing — the app host's /app (a trusted origin on the api); P1.17 lets the
-      // caller carry a same-origin path (the funnel intent's ?entry&held&src fallback). SEC.2 — a
-      // supplied invite code rides `rhema_ic` on the callbackURL so the api's magic-link verify /
-      // OAuth callback admission hook sees the SAME code POST /signup validated.
-      const next = args.next && args.next.startsWith("/") && !args.next.startsWith("//") ? args.next : "/app";
+      // caller carry a same-origin path (the funnel intent's ?entry&held&src fallback; RH-34's
+      // login-gate `next`). SEC.2 — a supplied invite code rides `rhema_ic` on the callbackURL so the
+      // api's magic-link verify / OAuth callback admission hook sees the SAME code POST /signup
+      // validated.
+      // 275_R6WEB.1 (RH-33) — the candidate is judged by its RESOLVED origin, not a prefix sniff:
+      // `/\evil.example` parses to `//evil.example` under `new URL(next, origin)` and must refuse.
       const appOrigin = appBaseUrl ?? new URL(c?.req.url ?? "http://localhost").origin;
+      const next = sameOriginPath(args.next, appOrigin) ?? "/app";
       const cb = new URL(next, appOrigin);
       if (args.code?.trim()) cb.searchParams.set(INVITE_CODE_PARAM, args.code.trim());
       const callbackURL = cb.toString();

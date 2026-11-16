@@ -196,6 +196,8 @@ export function evaluateProbeEvidence(
 export interface DriveProbeOptions {
   readonly apiBaseUrl: string;
   readonly principal: LivePrincipal;
+  /** the stage's shared identity key (`x-rhema-identity-key`) — required on non-prod shim stages (RH-10). */
+  readonly identityKey?: string;
   /** the project holding the planted-error excerpt draft (the probe fixture, already ingested). */
   readonly projectId: string;
   /** pg-backed executor for terminal polling + evidence rows. */
@@ -216,6 +218,7 @@ export async function driveResearchProbe(opts: DriveProbeOptions): Promise<Probe
   const launcher = new LiveWorkflowLauncher({
     apiBaseUrl: opts.apiBaseUrl,
     principal: opts.principal,
+    ...(opts.identityKey ? { identityKey: opts.identityKey } : {}),
     sql: opts.sql,
     // the probe's own bound: a small cap so a misbehaving run dies at cap instead of the budget.
     modelTier: "base",

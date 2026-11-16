@@ -49,6 +49,9 @@ describe("LiveWorkflowLauncher — run creation contract", () => {
     expect(headers["x-rhema-workspace-id"]).toBe("ws_seed");
     expect(headers["x-rhema-billing-account-id"]).toBe("bill_seed");
     expect(headers["content-type"]).toBe("application/json");
+    // no identityKey configured ⇒ the shim's shared-secret header is absent entirely (RH-10 —
+    // a cookie-authed target like prod must never carry it).
+    expect(headers["x-rhema-identity-key"]).toBeUndefined();
     const body = JSON.parse(calls[0]!.init.body as string) as { workflow: string; rigor: string; idempotencyKey: string; inputs: { second_read?: boolean; sidecar?: boolean } };
     expect(body.workflow).toBe("review");
     expect(body.rigor).toBe("standard");
@@ -56,6 +59,20 @@ describe("LiveWorkflowLauncher — run creation contract", () => {
     // a review run opts second_read OUT (G1 delivery mode, D-P0.15h-5) and always emits sidecars.
     expect(body.inputs.second_read).toBe(false);
     expect(body.inputs.sidecar).toBe(true);
+  });
+
+  it("stamps x-rhema-identity-key when the stage's shared key is configured (RH-10)", async () => {
+    const { fetch, calls } = fakeFetch({ status: 201, body: { runId: "run_k" } });
+    const sql = scriptedSql([{ state: "completed", current_attempt: 1, created_at: new Date(0), started_at: new Date(0) }]);
+    const launcher = new LiveWorkflowLauncher({
+      apiBaseUrl: "https://api.dev", principal: PRINCIPAL, sql, fetch,
+      identityKey: "stage-shared-key",
+      sleep: () => Promise.resolve(),
+    });
+    await launcher.launch({ projectId: "p1", workflow: "review" });
+    const headers = calls[0]!.init.headers as Record<string, string>;
+    expect(headers["x-rhema-identity-key"]).toBe("stage-shared-key");
+    expect(headers["x-rhema-user-id"]).toBe("user_seed");
   });
 
   it("maps full rigor to full_board and quick_voice to a quick profile_voice run", async () => {

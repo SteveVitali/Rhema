@@ -9,13 +9,25 @@
 // availability SLO as a Cloud Run request-based `gcp.monitoring.Slo` (the `api_availability_monthly_pct`
 // row is measured platform-side, not by the DB probe), and lays out the §13.5 dashboard.
 //
-// The notification channel is a webhook to the ops-alert sink; its URL is a SECRET (Pulumi secret config
-// `rhema:opsAlertWebhookUrl`, mirroring the worker's OPS_ALERT_WEBHOOK_URL Secret Manager container). The
-// channel + channel wiring exist only when that config is set — the policies still record incidents
+// Notification channels (RH-27 code half, 2026-11-16): three paths to a human —
+//   (a) `webhook_tokenauth` → the ops-alert sink; its URL is a SECRET (Pulumi secret config
+//       `rhema:opsAlertWebhookUrl`, mirroring the worker's OPS_ALERT_WEBHOOK_URL Secret Manager
+//       container). A log line in the catcher is NOT a page (docs/ops/on-call.md) — it proves the
+//       sink received, nothing about a human being woken.
+//   (b) `email` → the on-call address from Pulumi secret config `rhema:opsAlertEmail` (the operator
+//       fills the key; no personal address is ever committed).
+//   (c) GCP mobile-app push → the real page. A `mobile_app` channel CANNOT be provisioned by this
+//       program: GCP's API 404s every create/get/update on that type — pairing the Google Cloud
+//       Console app in the console is the only mint path, and it is the operator's act (HUMAN row
+//       274). The scaffolding here binds the result: after pairing, the operator sets
+//       `rhema:opsMobileChannelName` to the paired channel's `projects/<p>/notificationChannels/<id>`
+//       resource name and this program attaches it to every policy on the next `up`.
+// Every channel exists only when its config is set — the policies still record incidents
 // unnotified on unseeded stages, which keeps `pulumi preview` clean.
 
 import * as pulumi from "@pulumi/pulumi";
 import * as gcp from "@pulumi/gcp";
+import type { StageDomains } from "../config/stages";
 
 export interface MonitoringArgs {
   readonly stack: string;
@@ -28,6 +40,22 @@ export interface MonitoringArgs {
   readonly region: pulumi.Input<string>;
   /** the ops webhook URL (Pulumi secret config) — the channel exists only when set. */
   readonly opsAlertWebhookUrl?: pulumi.Output<string> | string;
+  /** the on-call email (Pulumi secret config `rhema:opsAlertEmail`) — the channel exists only when set. */
+  readonly opsAlertEmail?: pulumi.Output<string> | string;
+  /**
+   * The resource name of the operator-PAIRED `mobile_app` channel (plain config
+   * `rhema:opsMobileChannelName` — a resource name, not a secret). GCP's API refuses `mobile_app`
+   * creates (console pairing is the only mint), so this program binds the paired channel by name
+   * rather than building one. Unset ⇒ the mobile leg simply isn't attached.
+   */
+  readonly opsMobileChannelName?: pulumi.Input<string>;
+  /**
+   * The stage's public domains — uptime checks target `domains.app`/`domains.api` `/healthz`
+   * (RH-22). Domain-less stages get no checks: there is no public host to probe (a `*.run.app`
+   * origin would only prove Cloud Run answered, and the GFE already intercepts bare `/healthz`
+   * there — VERIF.2/F-OPS.1-10).
+   */
+  readonly domains?: StageDomains;
 }
 
 /** The §13.5 signals the worker probe measures + logs as `[slo] violation` lines. One policy each. */
@@ -62,7 +90,9 @@ export function createMonitoring(args: MonitoringArgs): {
   dashboard: gcp.monitoring.Dashboard;
   alertPolicies: gcp.monitoring.AlertPolicy[];
   apiAvailabilitySlo: gcp.monitoring.Slo;
+  uptimeChecks: gcp.monitoring.UptimeCheckConfig[];
   notificationChannel?: gcp.monitoring.NotificationChannel;
+  emailChannel?: gcp.monitoring.NotificationChannel;
 } {
   const { stack, project, region } = args;
 
@@ -88,8 +118,9 @@ export function createMonitoring(args: MonitoringArgs): {
   const workerServiceName = args.workerServiceName ?? `rhema-${stack}-worker`;
   const apiServiceName = args.apiServiceName ?? `rhema-${stack}-api`;
 
-  // The notification channel — only when the webhook URL is configured (unseeded stages still get the
-  // policies; they record incidents, they just don't page).
+  // The notification channels — each exists only when its config is set (unseeded stages still get
+  // the policies; they record incidents, they just don't page). Three paths to a human (RH-27):
+  // the ops-webhook catcher, the on-call email, and the operator-paired GCP mobile-app channel.
   let notificationChannel: gcp.monitoring.NotificationChannel | undefined;
   if (args.opsAlertWebhookUrl) {
     notificationChannel = new gcp.monitoring.NotificationChannel(`rhema-${stack}-ops-webhook`, {
@@ -100,7 +131,26 @@ export function createMonitoring(args: MonitoringArgs): {
       enabled: true,
     });
   }
-  const channels = notificationChannel ? [notificationChannel.name] : [];
+  // The email channel — `rhema:opsAlertEmail` is the operator's config act (never a committed
+  // address; secret-config so the address stays encrypted in stack state).
+  let emailChannel: gcp.monitoring.NotificationChannel | undefined;
+  if (args.opsAlertEmail) {
+    emailChannel = new gcp.monitoring.NotificationChannel(`rhema-${stack}-ops-email`, {
+      type: "email",
+      displayName: `rhema-${stack} ops alert email`,
+      project,
+      labels: { email_address: args.opsAlertEmail },
+      enabled: true,
+    });
+  }
+  // The mobile-app channel is bound by resource name only — see the file header: GCP's API cannot
+  // mint `mobile_app` channels, so the operator's console pairing produces it and
+  // `rhema:opsMobileChannelName` binds it here (their only remaining acts: pair + config + up).
+  const channels: pulumi.Input<string>[] = [
+    ...(notificationChannel ? [notificationChannel.name] : []),
+    ...(emailChannel ? [emailChannel.name] : []),
+    ...(args.opsMobileChannelName ? [args.opsMobileChannelName] : []),
+  ];
 
   // The log-based counter over the worker's `[slo] violation` lines, labelled by signal.
   const sloViolationsMetric = new gcp.logging.Metric(`rhema-${stack}-slo-violations`, {
@@ -361,6 +411,136 @@ export function createMonitoring(args: MonitoringArgs): {
     { deletedWith: apiService, deleteBeforeReplace: true },
   );
 
+  // RH-20 — the §13.5 error-budget burn alert ADR-054 records as implemented ("the §13.5 rule,
+  // already implemented for the availability SLO" — it wasn't; only the Slo resource existed).
+  // `select_slo_burn_rate` is the Monitoring time-series selector for SLO burn rate: the condition's
+  // `filter` IS the selector (SLO conditions take no metric/resource pair), the `3600s` lookback is
+  // the documented burn window for a monthly budget, and threshold 2 is the spec's literal ">2×" —
+  // a sustained double-rate burn over the past hour pages; isolated spikes stay under it.
+  const apiBurnRatePolicy = new gcp.monitoring.AlertPolicy(
+    `rhema-${stack}-api-burn-rate`,
+    {
+      displayName: `API availability error-budget burn > 2x (${stack})`,
+      project,
+      combiner: "OR",
+      conditions: [
+        {
+          displayName: "SLO burn rate > 2x (1h lookback)",
+          conditionThreshold: {
+            filter: pulumi.interpolate`select_slo_burn_rate("projects/${project}/services/${apiService.serviceId}/serviceLevelObjectives/${apiAvailabilitySlo.sloId}", "3600s")`,
+            comparison: "COMPARISON_GT",
+            thresholdValue: 2,
+            duration: "0s",
+            trigger: { count: 1 },
+          },
+        },
+      ],
+      notificationChannels: channels,
+      alertStrategy: { autoClose: "1800s" },
+      enabled: true,
+    },
+    { dependsOn: [apiAvailabilitySlo] },
+  );
+
+  // RH-22 + RH-27 — uptime checks on the public edge hosts' `/healthz`. An edge that is DOWN never
+  // emits a 5xx line (the LB/app trail this file's other policies read only exists while something
+  // serves), so a dead edge went unnoticed until this check: the probe is platform-side, from GCP's
+  // checker regions, independent of the app. Domain-less stages get no checks — there is no public
+  // host to probe (see MonitoringArgs.domains).
+  const uptimeTargets: ReadonlyArray<readonly [string, string]> = args.domains
+    ? [
+        ["app", args.domains.app],
+        ["api", args.domains.api],
+      ]
+    : [];
+  const uptimeChecks = uptimeTargets.map(
+    ([key, host]) =>
+      new gcp.monitoring.UptimeCheckConfig(`rhema-${stack}-uptime-${key}`, {
+        displayName: `${key} /healthz (${stack})`,
+        project,
+        period: "60s",
+        timeout: "10s",
+        httpCheck: { path: "/healthz", port: 443, useSsl: true, validateSsl: true },
+        monitoredResource: {
+          type: "uptime_url",
+          labels: { project_id: project, host },
+        },
+        // The healthz handler's literal `"ok":true` marks the app-owned answer — a bare 200 from a
+        // fallback or parked surface still fails the check.
+        contentMatchers: [{ content: '"ok":true', matcher: "CONTAINS_STRING" }],
+      }),
+  );
+
+  // The uptime alert: `check_passed` carries one series per checker region; ALIGN_NEXT_OLDER keeps
+  // each region's latest verdict and REDUCE_COUNT_FALSE counts the failing regions — page when 2+
+  // regions fail inside the window (a single-region blip is a GCP-side transient, not a page).
+  const uptimeFailPolicy =
+    uptimeChecks.length > 0
+      ? new gcp.monitoring.AlertPolicy(
+          `rhema-${stack}-uptime-fail`,
+          {
+            displayName: `public edge /healthz failing (2+ regions, ${stack})`,
+            project,
+            combiner: "OR",
+            conditions: uptimeChecks.map((chk, i) => ({
+              displayName: `${uptimeTargets[i]![0]} /healthz — 2+ checker regions failing`,
+              conditionThreshold: {
+                filter: pulumi.interpolate`metric.type="monitoring.googleapis.com/uptime_check/check_passed" AND resource.type="uptime_url" AND metric.labels.check_id="${chk.uptimeCheckId}"`,
+                comparison: "COMPARISON_GT",
+                thresholdValue: 1,
+                duration: "0s",
+                aggregations: [
+                  {
+                    alignmentPeriod: "300s",
+                    perSeriesAligner: "ALIGN_NEXT_OLDER",
+                    crossSeriesReducer: "REDUCE_COUNT_FALSE",
+                    groupByFields: ["resource.label.project_id", "resource.label.host"],
+                  },
+                ],
+                trigger: { count: 1 },
+              },
+            })),
+            notificationChannels: channels,
+            alertStrategy: { autoClose: "1800s" },
+            enabled: true,
+          },
+          { dependsOn: uptimeChecks },
+        )
+      : undefined;
+
+  // The absence/no-data half of RH-22: a failed check fires the policy above, but a check (or a
+  // service) that emits NOTHING is the silent-death class — `conditionAbsent` pages when the
+  // platform stops receiving points. Two arms: (a) the uptime metric itself goes quiet (the check
+  // pipeline is dead — the failure alert above cannot see that); (b) the always-on worker's
+  // `billable_instance_time` goes quiet — the worker is min-instances 1 instance-billed, so a live
+  // worker emits points continuously and 15 min of silence means the worker is dead.
+  const uptimeAbsentPolicy = new gcp.monitoring.AlertPolicy(`rhema-${stack}-monitoring-absent`, {
+    displayName: `monitoring silence — uptime/worker no-data (${stack})`,
+    project,
+    combiner: "OR",
+    conditions: [
+      ...uptimeChecks.map((chk, i) => ({
+        displayName: `${uptimeTargets[i]![0]} uptime check emitting no data`,
+        conditionAbsent: {
+          filter: pulumi.interpolate`metric.type="monitoring.googleapis.com/uptime_check/check_passed" AND resource.type="uptime_url" AND metric.labels.check_id="${chk.uptimeCheckId}"`,
+          duration: "900s",
+          trigger: { count: 1 },
+        },
+      })),
+      {
+        displayName: "worker billable-instance silence (dead worker)",
+        conditionAbsent: {
+          filter: pulumi.interpolate`metric.type="run.googleapis.com/container/billable_instance_time" AND resource.type="cloud_run_revision" AND resource.labels.service_name="${workerServiceName}"`,
+          duration: "900s",
+          trigger: { count: 1 },
+        },
+      },
+    ],
+    notificationChannels: channels,
+    alertStrategy: { autoClose: "3600s" },
+    enabled: true,
+  });
+
   // The §13.5 dashboard — one widget per probe signal's breach counter + the api request latency/error
   // tiles + the availability SLO tile (select_slo_health over the Slo resource, name interpolated after
   // the Slo exists). dashboardJson is the Cloud Monitoring grid layout.
@@ -556,8 +736,16 @@ export function createMonitoring(args: MonitoringArgs): {
     lb5xxMetric,
     route5xxMetric,
     dashboard,
-    alertPolicies: [...alertPolicies, route5xxPolicy],
+    alertPolicies: [
+      ...alertPolicies,
+      route5xxPolicy,
+      apiBurnRatePolicy,
+      ...(uptimeFailPolicy ? [uptimeFailPolicy] : []),
+      uptimeAbsentPolicy,
+    ],
     apiAvailabilitySlo,
+    uptimeChecks,
     ...(notificationChannel ? { notificationChannel } : {}),
+    ...(emailChannel ? { emailChannel } : {}),
   };
 }

@@ -74,13 +74,16 @@ export interface ComputeArgs {
   /** the worker's Resend From address (`EMAIL_FROM`, plain deploy config). */
   emailFrom?: pulumi.Input<string>;
   /**
-   * MAINT.6 (D-OPS.1-1) — mount `RESEND_API_KEY_SECRET` on the worker even though
-   * `resend-api-key` is not in the non-prod `requiredSecrets` set: index.ts sets this when a
-   * `rhema:resendApiKey` secret config seeded the REAL key version (the placeholder stays
-   * unmounted — an unkeyed preview's mail.send keeps no-op'ing exactly as before). Prod needs
-   * nothing here: `requiredSecrets` already carries `resend-api-key` there.
+   * RH-29 (271_R6SEC.3) — non-prod shared-reference mounts: the full pinned-version resource
+   * (`projects/<p>/secrets/<shared>/versions/<n>`) of the operator-seeded nonprod secret, bound
+   * by `preview-stack.mjs resend-pull`/`stripe-pull` via plain `rhema:nonprod*Version` config.
+   * Mounted as `RESEND_API_KEY_SECRET`/`STRIPE_SECRET_KEY_NAME` INSTEAD of the stack-local
+   * container — the key value never transits Pulumi stack state, and the pin holds until the
+   * next pull. Undefined on prod (the configs are refused there) and on stages whose
+   * `requiredSecrets` carry the stack-local container, which the `requires()` arm still mounts.
    */
-  resendSecretWired?: boolean;
+  resendSecretVersion?: pulumi.Input<string>;
+  stripeSecretVersion?: pulumi.Input<string>;
   /** the digest-pinned run-task image the worker launches as the two-uid GKE Job. */
   runTaskImageDigest?: pulumi.Input<string>;
   /**
@@ -473,17 +476,23 @@ export function createCompute(args: ComputeArgs): Compute {
     ...(requires("anthropic-admin-key")
       ? [{ name: "ANTHROPIC_ADMIN_KEY_SECRET", value: secretVersion(secrets.anthropicAdminKey) }]
       : []),
-    ...(requires("resend-api-key") || args.resendSecretWired === true
-      ? [{ name: "RESEND_API_KEY_SECRET", value: secretVersion(secrets.resendApiKey) }]
-      : []),
+    ...(args.resendSecretVersion
+      ? [{ name: "RESEND_API_KEY_SECRET", value: args.resendSecretVersion }]
+      : requires("resend-api-key")
+        ? [{ name: "RESEND_API_KEY_SECRET", value: secretVersion(secrets.resendApiKey) }]
+        : []),
     ...(requires("email-action-secret")
       ? [{ name: "EMAIL_ACTION_SECRET_NAME", value: secretVersion(secrets.emailActionSecret) }]
       : []),
     // P1.16 — the Stripe Billing key as a secret NAME for the auto-reload sweep's off-session charge
     // (the ONLY unattended charge path, REQ-BILL-17); unset ⇒ the sweep logs `no_stripe_port` skips.
-    ...(requires("stripe-secret")
-      ? [{ name: "STRIPE_SECRET_KEY_NAME", value: secretVersion(secrets.stripeSecret) }]
-      : []),
+    // RH-29 — a ruled preview mounts the shared nonprod secret's PINNED version instead of the
+    // stack-local container (the value never transits stack state).
+    ...(args.stripeSecretVersion
+      ? [{ name: "STRIPE_SECRET_KEY_NAME", value: args.stripeSecretVersion }]
+      : requires("stripe-secret")
+        ? [{ name: "STRIPE_SECRET_KEY_NAME", value: secretVersion(secrets.stripeSecret) }]
+        : []),
     // The ops alert webhook is a value-bearing secret — Cloud Run mounts it via secretKeyRef (the
     // worker's SA holds secretAccessor on it — iam.ts), so it never sits in Pulumi config.
     ...(requires("ops-alert-webhook-url")
@@ -965,9 +974,22 @@ export function createCompute(args: ComputeArgs): Compute {
                     ...(args.stripePaymentLinkUrl
                       ? [{ name: "STRIPE_PAYMENT_LINK_URL", value: args.stripePaymentLinkUrl }]
                       : []),
-                    // PRB.16 — the x-rhema-* identity-header shim is dev/preview ONLY (client-forgeable;
-                    // prod's identity path is the session cookie). Never set on prod.
-                    ...(cfg.kind !== "prod" ? [{ name: "IDENTITY_HEADERS", value: "true" }] : []),
+                    // RH-10 (267_R6SEC.2) — the x-rhema-* identity-header shim is dev/preview ONLY
+                    // and now KEYED: the api also resolves the stage's shared key
+                    // (`IDENTITY_HEADERS_SECRET_NAME`, program-minted into Secret Manager — the api
+                    // reads the NAME like every other secret, never a plaintext value). A public
+                    // caller who cannot present `x-rhema-identity-key` gets no principal — the
+                    // three identity headers alone were client-forgeable on this allUsers-invoker
+                    // service. Never set on prod (no container exists there to mount).
+                    ...(cfg.kind !== "prod" && secrets.byId["identity-headers-key"]
+                      ? [
+                          { name: "IDENTITY_HEADERS", value: "true" },
+                          {
+                            name: "IDENTITY_HEADERS_SECRET_NAME",
+                            value: secretVersion(secrets.byId["identity-headers-key"]),
+                          },
+                        ]
+                      : []),
                     // PRB.20 — the live ingestion wiring (D-PRB.02-1): the user-content bucket the presign
                     // targets + the convert Job's full v2 resource name + its bucket mount path. BOTH set ⇒
                     // the api mounts /import/presign + import/preview|create (server.ts's fail-closed gate).

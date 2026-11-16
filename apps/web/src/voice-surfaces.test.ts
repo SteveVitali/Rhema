@@ -241,7 +241,7 @@ describe("the voice library (§9.1)", () => {
     const app = createWebApp({ ...makeDeps(), session: () => null });
     const res = await app.request("/voices");
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("/login");
+    expect(res.headers.get("location")).toBe("/login?next=%2Fvoices");
   });
 
   it("POST /v/:id/fork copies a read-only card into your voices and lands on it", async () => {

@@ -194,6 +194,17 @@ export class JourneySessions {
     );
     await page.goto(link, { waitUntil: "domcontentloaded" });
     await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => undefined);
+    // 275_R6WEB.1 (RH-31) — the emailed href lands the no-consume interstitial; the confirm
+    // click POSTs and only then does the verify mint the session cookie + 302 to callbackURL.
+    // (An old-format link landing the verify GET directly skips this arm harmlessly.)
+    const confirm = page.locator("[data-magic-link-confirm]");
+    if (await confirm.count()) {
+      await Promise.all([
+        page.waitForLoadState("domcontentloaded"),
+        confirm.first().click(),
+      ]);
+      await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => undefined);
+    }
     // Signed-in assertion: landed inside the app (any non-auth path) AND the session cookie exists.
     const pathNow = new URL(page.url()).pathname;
     if (/\/login|\/signup/.test(pathNow)) {
