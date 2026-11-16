@@ -38,19 +38,36 @@ export interface AutoReloadResult {
  */
 export async function sweepAutoReload(exec: SqlClient, deps: AutoReloadDeps, now: Date): Promise<AutoReloadResult> {
   const month = now.toISOString().slice(0, 7);
+  // The attempt sequence counts THIS month's recorded charge outcomes (charged/failed/reconciled —
+  // the rows written only after a Stripe round-trip). It never counts a cap/no-card skip, which
+  // reached no Stripe request. UTC month boundary is passed as a parameter — never `date_trunc`,
+  // which would evaluate in the session's timezone.
+  const monthStart = new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)) - 1, 1));
   const accounts = (
     await exec.query(
+      // RH-3: ONE row per account. The pre-fix `join workspaces` multiplied an account by its
+      // workspaces — an account with N workspaces was charged N times in one sweep. The lateral
+      // picks the account's home workspace (the stripe.ts convention) for the tx + audit row.
       `select b.id, b.stripe_customer_id, b.auto_reload_threshold_credits, b.auto_reload_pack_id,
               b.auto_reload_month_cap_cents, b.auto_reload_spend_cents, b.auto_reload_month,
               w.id as workspace_id,
               coalesce((select sum(available)::int from credit_balances cb
                           where cb.billing_account_id = b.id), 0) as spendable,
               (select wm.user_id from workspace_members wm where wm.workspace_id = w.id
-                 order by case wm.role when 'owner' then 0 else 1 end, wm.user_id limit 1) as user_id
+                 order by case wm.role when 'owner' then 0 else 1 end, wm.user_id limit 1) as user_id,
+              (select count(*)::int from auto_reload_events e
+                where e.billing_account_id = b.id and e.at >= $1
+                  and e.reason in ('below_threshold','payment_failed','webhook_reconcile')) as attempts_this_month
          from billing_accounts b
-         join workspaces w on w.billing_account_id = b.id
+         join lateral (
+           select w0.id from workspaces w0
+            where w0.billing_account_id = b.id
+            order by w0.created_at, w0.id
+            limit 1
+         ) w on true
         where b.auto_reload_enabled = true
           and b.suspended_at is null`,
+      [monthStart],
     )
   ).rows as {
     id: string;
@@ -63,6 +80,7 @@ export async function sweepAutoReload(exec: SqlClient, deps: AutoReloadDeps, now
     workspace_id: string;
     spendable: number;
     user_id: string | null;
+    attempts_this_month: number;
   }[];
 
   let attempted = 0;
@@ -107,8 +125,16 @@ export async function sweepAutoReload(exec: SqlClient, deps: AutoReloadDeps, now
     const charge = await deps.stripe.chargeOffSession({
       customerId: a.stripe_customer_id,
       amountCents: packCents,
-      idempotencyKey: `auto-reload:${a.id}:${month}:${attempted}:${Math.floor(now.getTime() / 60000)}`,
+      // RH-3: deterministic per (account, month, attempt). The seq counts this month's RECORDED
+      // charge outcomes — a retry of a charge whose post-charge tx crashed re-derives the same
+      // seq and replays the same Stripe key (Stripe returns the stored intent; no second charge),
+      // while a genuinely new attempt mints a new one. The pre-fix minute component meant a retry
+      // in a later minute always charged again. NO clock belongs in this key.
+      idempotencyKey: `auto-reload:${a.id}:${month}:${a.attempts_this_month + 1}`,
       description: `Rhema auto-reload: ${pack.credits} credits`,
+      billingAccountId: a.id,
+      workspaceId: a.workspace_id,
+      packId: pack.id,
     });
 
     if (charge.status === "succeeded") {
