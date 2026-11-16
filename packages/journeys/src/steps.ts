@@ -40,6 +40,7 @@ import {
 // UX.2 (ADR-068) — axe-core as the WCAG 2.2 AA checker: the prebuilt script source injects into the
 // page (never bundled into shipped artifacts; journeys is dev tooling, MPL-2.0 exception checked in).
 import axeCore from "axe-core";
+import { withTenant } from "@rhema/db";
 
 /** The injectable axe build (UMD — `page.addScriptTag({content})`, not an import in the page). */
 export const AXE_SOURCE = axeCore.source;
@@ -2670,10 +2671,8 @@ async function ridingRefundTargets(
     if (!tenant) return [];
     const c = await pool.connect();
     try {
-      await c.query("begin");
-      // tenant-scoped like the api's txRunner (no-op under a BYPASSRLS system DSN).
-      await c.query("select set_config('app.tenant_id', $1, true)", [tenant]);
-      const rows = (
+      // withTenant owns begin → set_config → commit/rollback (BL-118; no-op under BYPASSRLS).
+      const rows = (await withTenant(c, tenant, async () => (
         await c.query(
           `select r.id as run_id, p.slug
              from runs r join projects p on p.id = r.project_id
@@ -2693,8 +2692,7 @@ async function ridingRefundTargets(
             limit $3`,
           [[...USER_REFUNDABLE_RUN_STATES], REFUND_WINDOW_DAYS, needed],
         )
-      ).rows as { run_id: string; slug: string }[];
-      await c.query("commit");
+      ))).rows as { run_id: string; slug: string }[];
       return rows.map((r) => ({ slug: r.slug, runId: r.run_id }));
     } finally {
       c.release();

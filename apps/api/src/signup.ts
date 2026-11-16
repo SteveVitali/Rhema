@@ -59,6 +59,8 @@ export interface SignupPolicyDeps {
   readonly showcaseSeed?: (workspaceId: string, ownerId: string) => Promise<unknown>;
   /** JOURNEY.1 — the configured test mailbox (see ProvisionOptions.testMailbox). */
   readonly testMailbox?: string;
+  /** BL-115 — the provision's one-transaction seam (see ProvisionOptions.txRunner). */
+  readonly txRunner?: { run<T>(workspaceId: string, fn: (tx: SqlClient) => Promise<T>): Promise<T> };
 }
 
 interface ExistingMembership {
@@ -158,6 +160,7 @@ export async function admitSignup(
   const provisioned = await provisionPersonalAccount(deps.db, deps.ids, userId, {
     ...(deps.showcaseSeed ? { seedShowcase: deps.showcaseSeed } : {}),
     ...(deps.testMailbox ? { testMailbox: deps.testMailbox } : {}),
+    ...(deps.txRunner ? { txRunner: deps.txRunner } : {}),
   });
   // P1.17 — persist the signup intent on the new account only (a returning user's intent is theirs;
   // a fresh record here would rewrite history the precedence redirect already consumed).
@@ -194,6 +197,14 @@ export interface ProvisionOptions {
    * nothing is ever flagged.
    */
   readonly testMailbox?: string;
+  /**
+   * BL-115 — the one-transaction seam: the lock + re-check + every provision write ride a single
+   * tenant tx keyed to the minted workspace id (the tenant being created; the account tables carry
+   * no RLS so the scope affects only `workspace_members`' workspace_id check, which matches).
+   * Production bindings always pass it — a bare `SqlClient` fallback exists only for
+   * single-connection test seams (a pooled `query` cannot hold a transaction).
+   */
+  readonly txRunner?: { run<T>(workspaceId: string, fn: (tx: SqlClient) => Promise<T>): Promise<T> };
 }
 
 export async function provisionPersonalAccount(
@@ -202,64 +213,86 @@ export async function provisionPersonalAccount(
   userId: string,
   opts?: ProvisionOptions,
 ): Promise<{ workspaceId: string; billingAccountId: string }> {
-  // already provisioned ⇒ return the existing personal workspace (a second personal workspace would fork
-  // the session→principal resolution).
-  const existing = (
-    await db.query(
-      `select w.id as workspace_id, w.billing_account_id
-         from workspaces w join workspace_members m on m.workspace_id = w.id
-        where m.user_id = $1 and w.kind = 'personal' limit 1`,
-      [userId],
-    )
-  ).rows[0] as { workspace_id: string; billing_account_id: string } | undefined;
-  if (existing) {
-    if (opts?.seedShowcase) {
-      await opts.seedShowcase(existing.workspace_id, userId).catch(() => undefined);
-    }
-    return { workspaceId: existing.workspace_id, billingAccountId: existing.billing_account_id };
-  }
   const billingAccountId = ids("ba");
   const workspaceId = ids("ws");
-  await db.query(`insert into billing_accounts(id) values ($1) on conflict (id) do nothing`, [
-    billingAccountId,
-  ]);
-  // P1.16 (§14.3; REQ-GROWTH-10): every new account starts `trial_pending` with a LOCKED trial
-  // entitlement (one Review ≤6,000 words, Standard, Base). The pocket grants only at the unlock gate —
-  // identity-before-spend.
-  await provisionTrial(
-    db,
-    { ids: (prefix?: string) => ids(prefix ?? "id"), clock: { now: () => new Date() } },
-    { billingAccountId },
-  );
-  await db.query(
-    `insert into workspaces(id, kind, name, billing_account_id) values ($1, 'personal', $2, $3)
-       on conflict (id) do nothing`,
-    [workspaceId, "Personal", billingAccountId],
-  );
-  await db.query(
-    `insert into workspace_members(workspace_id, user_id, role) values ($1, $2, 'admin')
-       on conflict (workspace_id, user_id) do nothing`,
-    [workspaceId, userId],
-  );
-  // JOURNEY.1 — flag the workspace when the account's stored signup email matches the configured test
-  // mailbox (exact base or base+tag). This is THE flag write path: never reachable from an API route,
-  // grants nothing — only SLO/trial exclusion + the auto-purge sweep (ADR-020).
-  if (opts?.testMailbox) {
+
+  // BL-115 — the whole provision rides ONE transaction when `opts.txRunner` is passed
+  // (279_R6FIX.16's sibling fix): `pg_advisory_xact_lock` serializes concurrent provisions per
+  // user, so the in-tx re-check returns the racing winner's rows instead of double-provisioning —
+  // previously two concurrent calls both passed the pre-read and inserted two billing_accounts +
+  // two 'personal' workspaces + two memberships, forking the session→principal `limit 1` join.
+  // The five writes also commit-or-rollback together: a mid-provision failure no longer leaves a
+  // billing_account + trial row without their workspace/membership. On a bare `SqlClient`
+  // (single-connection test seams only — a pooled query can't hold a tx) the same body runs
+  // sequentially; the advisory lock degrades to a no-op.
+  const provision = async (tx: SqlClient) => {
+    await tx.query(`select pg_advisory_xact_lock(hashtext($1))`, [userId]);
+    // already provisioned ⇒ return the existing personal workspace (a second personal workspace
+    // would fork the session→principal resolution).
+    const existing = (
+      await tx.query(
+        `select w.id as workspace_id, w.billing_account_id
+           from workspaces w join workspace_members m on m.workspace_id = w.id
+          where m.user_id = $1 and w.kind = 'personal' limit 1`,
+        [userId],
+      )
+    ).rows[0] as { workspace_id: string; billing_account_id: string } | undefined;
+    if (existing) {
+      return {
+        workspaceId: existing.workspace_id,
+        billingAccountId: existing.billing_account_id,
+        fresh: false,
+      };
+    }
+    await tx.query(`insert into billing_accounts(id) values ($1) on conflict (id) do nothing`, [
+      billingAccountId,
+    ]);
+    // P1.16 (§14.3; REQ-GROWTH-10): every new account starts `trial_pending` with a LOCKED trial
+    // entitlement (one Review ≤6,000 words, Standard, Base). The pocket grants only at the unlock
+    // gate — identity-before-spend.
+    await provisionTrial(
+      tx,
+      { ids: (prefix?: string) => ids(prefix ?? "id"), clock: { now: () => new Date() } },
+      { billingAccountId },
+    );
+    await tx.query(
+      `insert into workspaces(id, kind, name, billing_account_id) values ($1, 'personal', $2, $3)
+         on conflict (id) do nothing`,
+      [workspaceId, "Personal", billingAccountId],
+    );
+    await tx.query(
+      `insert into workspace_members(workspace_id, user_id, role) values ($1, $2, 'admin')
+         on conflict (workspace_id, user_id) do nothing`,
+      [workspaceId, userId],
+    );
+    return { workspaceId, billingAccountId, fresh: true };
+  };
+
+  const r = opts?.txRunner
+    ? await opts.txRunner.run(workspaceId, provision)
+    : await provision(db);
+
+  // Post-commit side effects — each carries its own transaction internally (the flag is one
+  // statement; the seed its own tenant tx), so they stay OUTSIDE the provision tx.
+  // JOURNEY.1 — flag the workspace when the account's stored signup email matches the configured
+  // test mailbox (exact base or base+tag). This is THE flag write path: never reachable from an
+  // API route, grants nothing — only SLO/trial exclusion + the auto-purge sweep (ADR-020).
+  if (opts?.testMailbox && r.fresh) {
     const email = (
       await db.query(`select email from "user" where id = $1`, [userId])
     ).rows[0] as { email: string } | undefined;
     if (email) {
       await flagWorkspaceIfTestTenant(db, {
-        workspaceId,
+        workspaceId: r.workspaceId,
         email: email.email,
         testMailbox: opts.testMailbox,
       });
     }
   }
   if (opts?.seedShowcase) {
-    await opts.seedShowcase(workspaceId, userId).catch(() => undefined);
+    await opts.seedShowcase(r.workspaceId, userId).catch(() => undefined);
   }
-  return { workspaceId, billingAccountId };
+  return { workspaceId: r.workspaceId, billingAccountId: r.billingAccountId };
 }
 
 export interface SignupApiDeps extends SignupPolicyDeps {

@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createOrchestratorTestDb, makeDeps, type OrchestratorTestDb, type TestDeps } from "@rhema/orchestrator/testing";
 import { createIpEmailThrottle, type IpEmailThrottle } from "@rhema/contracts";
 import { processStripeEvent, signStripePayload, SqlHoldLedger } from "@rhema/ledger";
-import { createApp, type Principal } from "./index.js";
+import { createApp, type Principal, type SqlClient } from "./index.js";
+import { provisionPersonalAccount } from "./signup.js";
 
 // PRB.13 — REQ-BETA-19 (amended 2026-09-16): `signup.mode` drives the api's account-creation path.
 // Deterministic on PGlite via Hono's app.request — no network, no live auth.
@@ -568,5 +569,85 @@ describe("F-R6SWP.1-5 — test-mailbox identities ride the dedicated bucket on P
     const res = await postSignup(a, { email: "test+j3@rhema.tools" }, ip);
     expect(res.status).toBe(429);
     expect(await res.json()).toEqual({ error: "rate_limited" });
+  });
+});
+
+// BL-115 — 279_R6FIX.16's sibling hardening: the provision's lock + re-check + writes ride ONE tenant
+// tx via opts.txRunner, so a racing duplicate provision returns the winner's rows and a mid-provision
+// failure rolls back atomically. (A true two-connection race can't run on PGlite's single wire — the
+// serialization seam is `pg_advisory_xact_lock` keyed on the user id; the pins below prove the in-tx
+// re-check + the atomic write set.)
+describe("provisionPersonalAccount — BL-115 one-tx + per-user serialization", () => {
+  const seedUser = (id: string) => db.pg.query(`insert into "user"(id, email) values ($1, $2)`, [id, `${id}@x.test`]);
+  const txRunner = { run: <T>(ws: string, fn: (tx: SqlClient) => Promise<T>) => db.txRunner.run(ws, fn) };
+
+  it("a second provision returns the SAME personal workspace — the in-tx re-check wins", async () => {
+    await seedUser("usr_bl115a");
+    const r1 = await provisionPersonalAccount(db.client, deps.ids, "usr_bl115a", { txRunner });
+    const r2 = await provisionPersonalAccount(db.client, deps.ids, "usr_bl115a", { txRunner });
+    expect(r2).toEqual(r1);
+    const ws = (
+      await db.pg.query(
+        `select count(*)::int n from workspaces w join workspace_members m on m.workspace_id = w.id
+          where m.user_id = 'usr_bl115a' and w.kind = 'personal'`,
+      )
+    ).rows[0] as { n: number };
+    expect(ws.n).toBe(1);
+    const ba = (await db.pg.query(`select count(*)::int n from billing_accounts`)).rows[0] as { n: number };
+    expect(ba.n).toBe(1);
+  });
+
+  it("the per-user advisory lock runs INSIDE the tx, before the re-check — the race-closing seam", async () => {
+    // `pg_advisory_xact_lock` serializes at the session level: on PGlite's single wire a concurrent
+    // re-acquire can't block, so the pin here is the mechanism — the lock statement executes on the
+    // provision's own tx client, before the existence re-check, keyed on the user id. In production
+    // each txRunner.run checks out a DISTINCT pooled connection, which is where the lock serializes
+    // two racing provisions (the loser then sees the winner's committed rows in the re-check).
+    await seedUser("usr_bl115b");
+    const inTxSql: { sql: string; params?: readonly unknown[] }[] = [];
+    const tappingTx = {
+      run: <T>(ws: string, fn: (tx: SqlClient) => Promise<T>) =>
+        db.txRunner.run(ws, (tx) =>
+          fn({
+            query: async (sql: string, params?: readonly unknown[]) => {
+              inTxSql.push({ sql, params });
+              return tx.query(sql, params);
+            },
+          }),
+        ),
+    };
+    const r = await provisionPersonalAccount(db.client, deps.ids, "usr_bl115b", { txRunner: tappingTx });
+    const lockIdx = inTxSql.findIndex((s) => s.sql.includes("pg_advisory_xact_lock"));
+    const recheckIdx = inTxSql.findIndex((s) => s.sql.includes("where m.user_id"));
+    expect(lockIdx).toBe(0); // the FIRST statement on the tx
+    expect(inTxSql[lockIdx]?.params).toEqual(["usr_bl115b"]); // keyed on the user id
+    expect(recheckIdx).toBeGreaterThan(lockIdx); // the re-check rides the locked tx
+    expect(inTxSql.every((s) => !s.sql.match(/^(begin|commit|rollback)/i))).toBe(true); // no nested tx churn
+    const ws = (
+      await db.pg.query(`select count(*)::int n from workspaces where id = $1`, [r.workspaceId])
+    ).rows[0] as { n: number };
+    expect(ws.n).toBe(1);
+  });
+
+  it("a mid-provision failure rolls back EVERYTHING — no orphaned billing/trial/workspace rows", async () => {
+    await seedUser("usr_bl115c");
+    const failingTx = {
+      run: <T>(ws: string, fn: (tx: SqlClient) => Promise<T>) =>
+        db.txRunner.run(ws, (tx) =>
+          fn({
+            query: (sql: string, params?: readonly unknown[]) => {
+              if (sql.includes("insert into workspace_members")) throw new Error("injected mid-provision failure");
+              return tx.query(sql, params);
+            },
+          }),
+        ),
+    };
+    await expect(
+      provisionPersonalAccount(db.client, deps.ids, "usr_bl115c", { txRunner: failingTx }),
+    ).rejects.toThrow("injected mid-provision failure");
+    for (const table of ["billing_accounts", "workspaces", "workspace_members", "trial_entitlements"]) {
+      const n = (await db.pg.query(`select count(*)::int n from ${table}`)).rows[0] as { n: number };
+      expect(n.n, table).toBe(0);
+    }
   });
 });

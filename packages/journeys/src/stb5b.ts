@@ -12,6 +12,7 @@ import type { BrowserContext } from "playwright";
 import type { StepCtx, StepFn } from "./runner.js";
 import { apiFetch, db } from "./stb5a.js";
 import { SEED_SPEND_EXCLUSION_SQL } from "./spend-guard.js";
+import { withTenant } from "@rhema/db";
 import {
   assertLegCapUsd,
   baitUserSource,
@@ -54,15 +55,16 @@ async function tenantIdFor(email: string): Promise<string> {
 }
 
 /** A tenant-scoped read (the FORCE-RLS tables: runs, run_events, usage_records, artifacts,
- *  projects). Read-only transaction — the same seam stb5a-scoped-query.mjs uses. */
+ *  projects). Read-only transaction through withTenant (BL-118; stb5a-scoped-query.mjs keeps a
+ *  hand-rolled + allowlisted rollback arm for argv-shaped SQL — a commit tx can't express it). */
 async function scopedQuery(tenantId: string, sql: string, params: unknown[] = []): Promise<Record<string, unknown>[]> {
   const c = await db().connect();
   try {
-    await c.query("begin");
-    await c.query("select set_config('app.tenant_id', $1, true)", [tenantId]);
-    const r = await c.query(sql, params);
-    await c.query("rollback");
-    return r.rows as Record<string, unknown>[];
+    // withTenant owns the GUC + tx edges (BL-118); commit vs rollback is equivalent on a read-only tx.
+    return await withTenant(c, tenantId, async () => {
+      const r = await c.query(sql, params);
+      return r.rows as Record<string, unknown>[];
+    });
   } finally {
     c.release();
   }
