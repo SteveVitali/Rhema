@@ -25,8 +25,8 @@
 
 ```
 projectStatus:   IN_PROGRESS
-nextTicket:        (maintenance mode)  # 265_R6PRIV.1 done — board empty; per GD-MAINT.R6 work is inserted only for defects or operator-asked items; 263/264/265 await the operator's bottom-up merges
-lastCompleted:   265_R6PRIV.1      # public-repo artifact cleanup (P-1) — PR this run, unmerged
+nextTicket:        277_R6LOW.1  # 276_R6DOC.3 done — agent-doc bridges + hygiene + LOW BL recording; handoff order continues to the LOW catch-all sweep (inserts 266–276 + 263/264/265 await the operator's bottom-up merges)
+lastCompleted:   276_R6DOC.3      # 2026-11-16 — agent-docs bridges + hygiene (handoff RH-37/38/39 + LOW catch-all BL recording + rh-verify.md commit; docs-only, $0): 11 byte-identical CLAUDE.md @AGENTS.md bridges beside every scoped AGENTS.md; web AGENTS Critical Gotchas lifted :174→:21 pure move (measured 30,819 B root+web vs 32 KiB); dated superseded note on api gotcha 4 (#347 open); BL-116…BL-135 rh-low rows; runs/rh-verify.md reconstructed — PR open, unmerged
 blockedOn:       (none)
 pauseRequested:  false
 returnPass:      (none)
