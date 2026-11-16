@@ -25,8 +25,8 @@
 
 ```
 projectStatus:   IN_PROGRESS
-nextTicket:        (maintenance mode)  # 279_R6FIX.16 done — the whole handoff chain 266–278 is operator-merged; per GD-MAINT.R6 work is inserted only for defects or operator-asked items (open BL rows: BL-115..BL-135 cluster)
-lastCompleted:   279_R6FIX.16     # BL-116 — signed email-action links consumed on GET (RH-31 class): GET /api/action/:token + /action/:token render a no-consume interstitial; POST carries the unchanged consume+holdGate+303 contract — PR this run, unmerged
+nextTicket:        (maintenance mode)  # 285_R6FIX.22 done — per GD-MAINT.R6 (open: BL-123..BL-135 rh-low cluster)
+lastCompleted:   285_R6FIX.22     # BL-122 — AR cleanup policies (keep-tagged + keep-30 + delete-untagged->30d) behind cleanupPolicyDryRun per operator ruling — PR this run, unmerged
 blockedOn:       (none)
 pauseRequested:  false
 returnPass:      (none)
@@ -37,12 +37,12 @@ dispatchTarget:  subagent
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main              # flat mode — inserts branch off origin/main
 pinnedBaseSha:   a34eb51           # round-7 fork point (unchanged)
-chainTip:        stevevitali/r6fix-16-action-interstitial
+chainTip:        stevevitali/r6fix-22-ar-cleanup
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
 round:           7                  # post-round maintenance per GD-MAINT.R6
-updatedAt:       2026-11-16T16:4xZ  # 279_R6FIX.16 run-time insert (BL-116) on main @3a840396 — the full handoff chain + 278 are operator-merged; this PR's own transition per GD-OPS-RULES.R6
+updatedAt:       2026-11-16T17:2xZ  # 285_R6FIX.22 run-time insert (BL-122) on main @50a4f9d3 — #364-#368 still open; this PR's own transition per GD-OPS-RULES.R6
 ```
 
 ## OPEN FINDINGS

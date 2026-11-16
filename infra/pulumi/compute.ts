@@ -445,6 +445,29 @@ export function createCompute(args: ComputeArgs): Compute {
     repositoryId: `rhema-${stack}`,
     location: region,
     format: "DOCKER",
+    // BL-122 — unbounded image growth vs. a blanket cleanup eating a digest-pinned rollback target.
+    // Operator ruling 2026-11-16: dry-run first — policies evaluate/report and delete nothing until a
+    // later apply flips this off. Shape: tagged versions never prune (release/deploy tags are always
+    // rollback-reachable); the 30 most recent digests per image are pinned (≈a month of daily deploys
+    // of rollback depth); untagged versions older than 30 days prune.
+    cleanupPolicyDryRun: true,
+    cleanupPolicies: [
+      {
+        id: "keep-tagged",
+        action: "KEEP",
+        condition: { tagState: "TAGGED" },
+      },
+      {
+        id: "keep-recent-30",
+        action: "KEEP",
+        mostRecentVersions: { keepCount: 30 },
+      },
+      {
+        id: "delete-untagged-30d",
+        action: "DELETE",
+        condition: { tagState: "UNTAGGED", olderThan: "2592000s" },
+      },
+    ],
   });
   const runTaskImageRepo = pulumi.interpolate`${region}-docker.pkg.dev/${project}/${imageRepo.repositoryId}/run-task`;
 
