@@ -10,7 +10,7 @@
 // cannot import them; the thin `scripts/live/migrate-seed.mjs` runner spawns tsx on this file, where they resolve.
 
 import pg from "pg";
-import { applyMigrations, seedRealProjects, type MigrationDb } from "@rhema/db";
+import { applyMigrationsPinned, seedRealProjects, type MigrationDb } from "@rhema/db";
 
 /** The obligation_transitions ids the seed inserts WITHOUT `on conflict` — their presence ⇒ the seed already ran. */
 const SEED_MARKERS = ["tr_pv1", "tr_sd1", "tr_cr1"];
@@ -37,7 +37,8 @@ export async function runMigrateSeed(pool: pg.Pool, log: (msg: string) => void =
     query: (sql, params) => pool.query(sql, params as unknown[]),
   };
 
-  const applied = await applyMigrations(db, { onApplied: (name) => log(`[migrate] applied ${name}`) });
+  // BL-119 — pinned single connection for the migrate leg; the seed keeps the pool-level wrapper.
+  const applied = await applyMigrationsPinned(pool, { onApplied: (name) => log(`[migrate] applied ${name}`) });
   if (applied.length === 0) log("[migrate] no new migrations — schema already up to date");
   const recorded = (await pool.query("select count(*)::int n from _migrations")).rows[0] as { n: number };
   log(`[migrate] ${recorded.n} migrations recorded`);
