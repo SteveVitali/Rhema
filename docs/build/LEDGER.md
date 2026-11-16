@@ -25,8 +25,8 @@
 
 ```
 projectStatus:   IN_PROGRESS
-nextTicket:        (maintenance mode)  # 278_R6FIX.15 done — the handoff chain 266–277 + this insert await the operator's bottom-up merges; per GD-MAINT.R6 work is inserted only for defects or operator-asked items
-lastCompleted:   278_R6FIX.15     # main-red repair — REQ-COPY-2 inventory +3 (`email_taken`/`enqueue_failed` from #351, `magic_link_incomplete` from #356) + additive-migrations pin +1 (`0063`) + #356 test-surface fallout (RH-34 `?next=` expectations + census exemption + journey mock) — PR this run, unmerged
+nextTicket:        (maintenance mode)  # 279_R6FIX.16 done — the whole handoff chain 266–278 is operator-merged; per GD-MAINT.R6 work is inserted only for defects or operator-asked items (open BL rows: BL-115..BL-135 cluster)
+lastCompleted:   279_R6FIX.16     # BL-116 — signed email-action links consumed on GET (RH-31 class): GET /api/action/:token + /action/:token render a no-consume interstitial; POST carries the unchanged consume+holdGate+303 contract — PR this run, unmerged
 blockedOn:       (none)
 pauseRequested:  false
 returnPass:      (none)
@@ -37,12 +37,12 @@ dispatchTarget:  subagent
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main              # flat mode — inserts branch off origin/main
 pinnedBaseSha:   a34eb51           # round-7 fork point (unchanged)
-chainTip:        stevevitali/r6fix-15-main-red
+chainTip:        stevevitali/r6fix-16-action-interstitial
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
 round:           7                  # post-round maintenance per GD-MAINT.R6
-updatedAt:       2026-11-16T14:2xZ  # merge main @0ddc00e3 — CURRENT STATE collapsed to this PR's own 278_R6FIX.15 transition per GD-OPS-RULES.R6 (union on CURRENT STATE forbidden); the 267 pair main carried in from #347's landing dropped
+updatedAt:       2026-11-16T16:4xZ  # 279_R6FIX.16 run-time insert (BL-116) on main @3a840396 — the full handoff chain + 278 are operator-merged; this PR's own transition per GD-OPS-RULES.R6
 ```
 
 ## OPEN FINDINGS

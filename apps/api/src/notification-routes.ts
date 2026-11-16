@@ -11,6 +11,9 @@
 //                                 token IS the credential. Consumption is atomic (single-use, expiry, HMAC);
 //                                 `hold` pauses the countdown ("Wait for me"), `open` redirects to the deep
 //                                 link. There is no Approve action anywhere in this surface.
+//   POST <same two paths>       — 279_R6FIX.16 (BL-116, the RH-31 class): the GET arm renders a
+//                                 no-consume interstitial so a mail-scanner prefetch burns nothing;
+//                                 only the confirm click's POST consumes the token and acts.
 
 import { Hono, type Context } from "hono";
 import {
@@ -168,6 +171,20 @@ export function createNotificationRoutes(deps: NotificationApiDeps): Hono {
   // ---- the signed one-click action (unauthenticated — the token is the credential) ---------------------
   // Mounted twice: `/api/action/:token` is the path mintEmailAction puts in the email (STB.3 F9 — the
   // minted URL was a dead 404); `/action/:token` keeps the unprefixed surface that leg exercised.
+  // 279_R6FIX.16 (BL-116; the RH-31 magic-link class) — the emailed link's GET must consume nothing:
+  // a mail gateway's link-scanner prefetch would burn the one-shot token (the real click lands on a
+  // 410) and, for `hold`, pause the gate without the user's intent. GET renders a confirm page whose
+  // form POSTs the same URL; only the POST verifies + consumes + acts. The response contract on the
+  // POST (303 deep link / 400 + 410 pages) is unchanged from the pre-interstitial GET.
+  const actionInterstitial = (c: Context) => {
+    const config = deps.notifications;
+    if (!config) return c.json({ error: "email actions are not configured" }, 404);
+    return c.html(
+      `<!doctype html><html><head><meta charset="utf-8"><title>Rhēma — confirm action</title></head>` +
+        `<body><p>This link works once — confirm to continue.</p>` +
+        `<form method="post"><button type="submit" data-email-action-confirm>Continue</button></form></body></html>`,
+    );
+  };
   const consumeSignedAction = async (c: Context) => {
     const config = deps.notifications;
     if (!config) return c.json({ error: "email actions are not configured" }, 404);
@@ -198,8 +215,10 @@ export function createNotificationRoutes(deps: NotificationApiDeps): Hono {
     });
     return c.redirect(link, 303);
   };
-  app.get("/api/action/:token", consumeSignedAction);
-  app.get("/action/:token", consumeSignedAction);
+  app.get("/api/action/:token", actionInterstitial);
+  app.get("/action/:token", actionInterstitial);
+  app.post("/api/action/:token", consumeSignedAction);
+  app.post("/action/:token", consumeSignedAction);
 
   // ---- the Inbox (P1.19; REQ-IDE-2 amended / REQ-MOBILE-19) --------------------------------------------
   //   GET  /inbox            — the §5.11 ordered item list (blocked-on-you → unread events → stale voices).
