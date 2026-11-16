@@ -27,7 +27,13 @@ customer.subscription.updated
 customer.subscription.deleted
 charge.dispute.created
 charge.dispute.closed
+payment_intent.succeeded
 ```
+
+> **2026-11-16 (269_R6BILL.2, RH-3):** `payment_intent.succeeded` joined the canonical list —
+> it feeds the auto-reload charge→grant reconcile arm (`processPaymentIntentSucceeded`). Until
+> the endpoint update below runs (operator act, owed on `D-R6BILL.2-1`), the arm is dormant:
+> Stripe will not deliver the type and ungranted off-session charges stay unreconciled.
 
 ## Preconditions
 
@@ -54,10 +60,11 @@ stripe webhook_endpoints update we_1UH99C2MLe3ETP9Sk4UQBKXs --live \
   -d 'enabled_events[5]=customer.subscription.updated' \
   -d 'enabled_events[6]=customer.subscription.deleted' \
   -d 'enabled_events[7]=charge.dispute.created' \
-  -d 'enabled_events[8]=charge.dispute.closed'
+  -d 'enabled_events[8]=charge.dispute.closed' \
+  -d 'enabled_events[9]=payment_intent.succeeded'
 ```
 
-(Dashboard equivalent: edit the endpoint, tick all nine event types, save.)
+(Dashboard equivalent: edit the endpoint, tick all ten event types, save.)
 
 ## Step 2 — verify
 
