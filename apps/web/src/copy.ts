@@ -1437,6 +1437,10 @@ export const COPY = {
     stripeRejectedNote:
       "Stripe refused that checkout — nothing was charged. The detail is logged; try again in a moment.",
     changeFailedNote: "The plan change didn't apply — try again.",
+    // 263_R6FIX.13 — the feature-off refusal (D-R6FIX.5-1): switching plans is off everywhere,
+    // so the note names the state plainly instead of inviting a retry.
+    changePlanUnavailableNote:
+      "Plan changes are off right now — your current plan is unchanged.",
     cancelFailedNote: "Cancellation didn't apply — try again.",
     autoReloadFailedNote: "The auto-reload settings didn't save — check the values and try again.",
     waitlistFailedNote: "That didn't join the waitlist — check the email and try again.",
@@ -2448,6 +2452,7 @@ export const COPY = {
     billingRefused: "The billing provider refused that request.",
     noBillingAccount: "There's no billing account set up yet.",
     purchasesPaused: "Purchases are paused right now.",
+    planChangesOff: "Plan changes are off right now.",
     planWaitlisted: "That plan has a waitlist — join it from Billing.",
     firstMonthCap: "That exceeds the first-month limit.",
     accountSuspended: "This account is suspended.",
