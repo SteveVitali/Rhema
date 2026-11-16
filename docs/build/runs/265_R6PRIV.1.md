@@ -76,7 +76,7 @@ test-cookie placeholders (`Cookie: <session>` masked literals), `PROXY_PLACEHOLD
 - [x] gitleaks with narrowed config green on HEAD history: **0 leaks / 1,753 commits**
 - [x] none of the four `.gz` / three unredacted reports / two token values at HEAD
 - [x] `check-append-only --base origin/main` — **OK** (deletions ruling-named, expected)
-- [x] `ci-boundary.sh --pr 342` — **pass #342@22acc89** (run 43780638869 — all seven
+- [x] `ci-boundary.sh --pr 342` — **pass #342@fa32531** (run 43784724667 — all seven
   legs + `ci-pass` anchor: fast-path · typecheck/lint/unit · contracts · integration ·
   images · public-safe [gitleaks/markers/licence] · anchor)
 - [x] `check-current-state` — OK · `check-build-memory` — 42 violations all inherited
