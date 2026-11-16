@@ -34,7 +34,7 @@ Run the guard from the repository root. Its source documents the accepted verbs 
 
 1. `init pr-<n>` to create the owned stack.
 2. `config` to pin built service/proxy/run-task images and public origins required by the chosen preview topology.
-3. `resend-pull pr-<n>` to pipe the operator-seeded nonproduction mail key into encrypted config. Optional Stripe posture tests use the separate `stripe-pull` path and a nonproduction Stripe key.
+3. `resend-pull pr-<n>` to pin the shared nonproduction mail secret's enabled version into plain `rhema:nonprodResendVersion` config (mounted by reference — the value never enters stack state) and set the nonprod `previews@rhema.tools` sender. Optional Stripe posture tests use the separate `stripe-pull` path and a nonproduction Stripe key.
 4. `preview`, review the plan and budget, then `up`.
 5. Apply the stage's Kubernetes configuration and execute its `rhema-<stack>-migrate` Cloud Run Job.
 6. `seed-invite pr-<n>` to create the deterministic non-secret `prv-<n>-test` code, then run [journeys](../../packages/journeys/README.md) with the preview URLs and `--invite-code`.

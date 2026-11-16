@@ -17,6 +17,7 @@
     "typecheck": "turbo run typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
+    "check:conflict-markers": "node scripts/check-conflict-markers.mjs",
     "check:licenses": "node scripts/check-licenses.mjs",
     "check:protocol-markers": "node scripts/check-protocol-markers.mjs",
     "check:no-cookies": "node scripts/check-no-cookies.mjs",
