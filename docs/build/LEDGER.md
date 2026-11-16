@@ -25,10 +25,8 @@
 
 ```
 projectStatus:   IN_PROGRESS
-nextTicket:        276                 # 275_R6WEB.1 done — handoff-insert chain continues; per GD-MAINT.R6 work is inserted only for defects or operator-asked items; 262–265, 275 await the operator's bottom-up merges
-lastCompleted:   275_R6WEB.1      # web-hardening cluster (RH-30/31/23/32/33/34) — PR this run, unmerged
-nextTicket:        271_R6SEC.3     # 270_R6OPS.4 done — handoff order (266→267 landed first per GD-HANDOFF.R6; 274 is a HUMAN row)
-lastCompleted:   270_R6OPS.4      # delayed-job watchdog + account/email hardening (RH-4/17/18/19, RH-5) — PR this run, unmerged
+nextTicket:        (maintenance mode)  # 278_R6FIX.15 done — the handoff chain 266–277 + this insert await the operator's bottom-up merges; per GD-MAINT.R6 work is inserted only for defects or operator-asked items
+lastCompleted:   278_R6FIX.15     # main-red repair — REQ-COPY-2 inventory +3 (`email_taken`/`enqueue_failed` from #351, `magic_link_incomplete` from #356) + additive-migrations pin +1 (`0063`) — PR this run, unmerged
 blockedOn:       (none)
 pauseRequested:  false
 returnPass:      (none)
@@ -39,14 +37,12 @@ dispatchTarget:  subagent
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main              # flat mode — inserts branch off origin/main
 pinnedBaseSha:   a34eb51           # round-7 fork point (unchanged)
-chainTip:        stevevitali/r6ops-4-watchdog
+chainTip:        stevevitali/r6fix-15-main-red
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
 round:           7                  # post-round maintenance per GD-MAINT.R6
-updatedAt:       2026-11-16T08:0xZ  # 275_R6WEB.1 — ci boundary: boundary at head on this PR — the #339 squash + #338 merge re-stacked CURRENT STATE (13→26 copies) and duplicated 2 rows; block restored to the single block of 89a458cc (#342), stacked copy archived to reports/2026-11-15_state-collapse/CURRENT-STATE-main-784a2e54-stacked.txt; union-merging CURRENT STATE is FORBIDDEN (GD-OPS-RULES.R6)
-harness:         devin-desktop/swe-2-high/subagent   # BM-HARNESS-01 — round-7 planning/decomposition ran in claude-code/claude-opus-5.5; the drive resumes on devin-desktop/swe-2-high at the pre-209 boundary (the legal switch point)
-updatedAt:       2026-11-16T07:0xZ  # R-0 repair ×3 — the #339 squash + #338 merge re-stacked CURRENT STATE (13→26 copies) and duplicated 2 rows; block restored to the single block of 89a458cc (#342), stacked copy archived to reports/2026-11-15_state-collapse/CURRENT-STATE-main-784a2e54-stacked.txt; union-merging CURRENT STATE is FORBIDDEN (GD-OPS-RULES.R6)
+updatedAt:       2026-11-16T12:1xZ  # 278_R6FIX.15 — the #356-squash stacked CURRENT STATE collapsed to a single block per GD-OPS-RULES.R6 (keeps the newest transitions, drops the inherited 270_R6OPS.4 copy + the stray harness: key; converges with the #360 repair's intent)
 ```
 
 ## OPEN FINDINGS
