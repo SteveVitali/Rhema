@@ -25,7 +25,14 @@ import { createMonitoring } from "./monitoring";
 import { createJourneys } from "./journeys";
 import { createTurboCache } from "./turbo-cache";
 import { createBilling } from "./billing";
-import { NONPROD_OPERATOR_PLACEHOLDER_IDS, resendVersionPlan } from "./resend-key";
+import {
+  NONPROD_OPERATOR_PLACEHOLDER_IDS,
+  NONPROD_RESEND_SECRET_NAME,
+  NONPROD_RESEND_SENDER,
+  NONPROD_STRIPE_SECRET_NAME,
+  PROD_RESEND_SENDER,
+  resendVersionPlan,
+} from "./resend-key";
 
 // The Pulumi stack name IS the Rhema stage name (dev | pr-<n> | prod); config resolves the stage kind.
 const stack = pulumi.getStack();
@@ -107,17 +114,28 @@ const uploadCorsOrigins = rhemaConfig.get("uploadCorsOrigins");
 const gitSha = rhemaConfig.get("gitSha");
 const protocolsVersion = rhemaConfig.get("protocolsVersion");
 // MAINT.6 (D-OPS.1-1) — a REAL Resend key for non-prod session minting (the magic-link leg every
-// signed-in preview journey needs). Set via `preview-stack.mjs resend-pull`, which pipes the
-// operator-seeded shared secret `rhema-nonprod-resend-api-key` into this SECRET config — encrypted
-// in state, never in argv/logs/the repo (REQ-ARCH-30). The send-only key on the prod Resend account
-// keeps `rhema.tools` a verified sender while previews stay off prod secrets (REQ-ARCH-38).
+// signed-in preview journey needs). RH-29 (271_R6SEC.3): `preview-stack.mjs resend-pull` pins the
+// shared operator-seeded `rhema-nonprod-resend-api-key`'s newest ENABLED VERSION into this PLAIN
+// config (a version number is not a secret) — the program mounts
+// `projects/…/versions/<n>` on the worker and the key VALUE never enters stack state. The legacy
+// `rhema:resendApiKey` value-carrying config is refused on every stage (below).
 const resendApiKey = rhemaConfig.getSecret("resendApiKey");
-// R6POST.2 (REQ-POST-6) — the Stripe TEST-MODE key for the Stripe-bearing posture stage, set via
-// `preview-stack.mjs stripe-pull` (the shared `rhema-nonprod-stripe-secret`, piped over stdin —
-// the resend-pull shape; never argv/logs/the repo). Same plan semantics as resendApiKey: the
-// config value becomes the stack's `stripe-secret` SecretVersion in place of the OPS.1
-// placeholder; prod refuses the config outright (fail-closed).
+const nonprodResendVersion = rhemaConfig.get("nonprodResendVersion");
+// R6POST.2 (REQ-POST-6) — the Stripe TEST-MODE key for the Stripe-bearing posture stage, same
+// RH-29 reference shape via `preview-stack.mjs stripe-pull` → `rhema:nonprodStripeVersion`.
 const stripeSecretConfig = rhemaConfig.getSecret("stripeSecret");
+const nonprodStripeVersion = rhemaConfig.get("nonprodStripeVersion");
+// A pinned version is digits only — `latest`, a resource name, or garbage fails closed.
+for (const [key, value] of [
+  ["rhema:nonprodResendVersion", nonprodResendVersion],
+  ["rhema:nonprodStripeVersion", nonprodStripeVersion],
+] as const) {
+  if (value !== undefined && !/^\d+$/.test(value)) {
+    throw new pulumi.RunError(
+      `${key} must be a Secret Manager version NUMBER (the pull pins the newest ENABLED version) — got '${value}'`,
+    );
+  }
+}
 // R6POST.2 — the two ruled posture stages' per-stack overrides (non-prod only; prod refuses
 // inside `withPostureOverrides`):
 //   `rhema:postureDomains`    — {"app","api","userContent"} hosts for a domains-bearing pr-<n>
@@ -141,23 +159,57 @@ if (postureLbAddress !== undefined && cfg.kind === "prod") {
     "rhema:postureLbAddress is refused on prod — prod's LB address is program-reserved",
   );
 }
-const stripePlan = resendVersionPlan(cfg.kind, stripeSecretConfig !== undefined);
+const stripePlan = resendVersionPlan(cfg.kind, {
+  valueSet: stripeSecretConfig !== undefined,
+  versionSet: nonprodStripeVersion !== undefined,
+});
 if (stripePlan === "refused") {
   throw new pulumi.RunError(
-    "rhema:stripeSecret is refused on prod — prod's stripe-secret version stays operator-seeded " +
-      "out of band (REQ-ARCH-30/REQ-ARCH-38); the config path exists only so a ruled non-prod " +
-      "posture stage can bind the shared nonprod sk_test",
+    "rhema:stripeSecret / rhema:nonprodStripeVersion are refused on prod — prod's stripe-secret " +
+      "version stays operator-seeded out of band (REQ-ARCH-30/REQ-ARCH-38); the reference path " +
+      "exists only so a ruled non-prod posture stage can bind the shared nonprod sk_test",
+  );
+}
+if (stripePlan === "copied") {
+  // RH-29 — the value-carrying config path is gone everywhere: it moved key material into
+  // encrypted stack state, which the shared-secret reference makes unnecessary.
+  throw new pulumi.RunError(
+    "rhema:stripeSecret is refused — a secret VALUE in stack state is what the pinned-version " +
+      "reference replaced (RH-29); run `scripts/live/preview-stack.mjs stripe-pull` to bind " +
+      "rhema:nonprodStripeVersion instead",
   );
 }
 
 const isProd = cfg.kind === "prod";
-// MAINT.6 — fail-closed: the config is a non-prod-only path; a prod stack carrying it refuses the
-// entire program before a single resource is created (prod's resend key stays operator-seeded).
-const resendPlan = resendVersionPlan(cfg.kind, resendApiKey !== undefined);
+// MAINT.6 — fail-closed: a prod stack carrying either resend config refuses the entire program
+// before a single resource is created (prod's resend key stays operator-seeded); the value-
+// carrying config is refused on EVERY stage (RH-29).
+const resendPlan = resendVersionPlan(cfg.kind, {
+  valueSet: resendApiKey !== undefined,
+  versionSet: nonprodResendVersion !== undefined,
+});
 if (resendPlan === "refused") {
   throw new pulumi.RunError(
-    "rhema:resendApiKey is refused on prod — prod's resend-api-key version stays operator-seeded " +
-      "out of band (REQ-ARCH-30/REQ-ARCH-38); the config path exists only so pr-<n>/dev can mint test sessions",
+    "rhema:resendApiKey / rhema:nonprodResendVersion are refused on prod — prod's resend-api-key " +
+      "version stays operator-seeded out of band (REQ-ARCH-30/REQ-ARCH-38); the reference path " +
+      "exists only so pr-<n>/dev can mint test sessions",
+  );
+}
+if (resendPlan === "copied") {
+  throw new pulumi.RunError(
+    "rhema:resendApiKey is refused — a secret VALUE in stack state is what the pinned-version " +
+      "reference replaced (RH-29); run `scripts/live/preview-stack.mjs resend-pull` to bind " +
+      "rhema:nonprodResendVersion instead",
+  );
+}
+// RH-29 — non-prod never sends as prod's sender identity: `hello@rhema.tools` is prod's committed
+// From (Pulumi.prod.yaml); previews carry `previews@rhema.tools` (preview-stack resend-pull).
+// (Residual: the shared send-only key is account-scoped, so the refusal governs the declared
+// posture — full sender-domain separation needs a distinct verified nonprod domain, an operator act.)
+if (!isProd && emailFrom === PROD_RESEND_SENDER) {
+  throw new pulumi.RunError(
+    `rhema:emailFrom '${PROD_RESEND_SENDER}' is refused on non-prod — previews send as ` +
+      `${NONPROD_RESEND_SENDER} (RH-29: no preview mail impersonates the prod sender)`,
   );
 }
 const network = createNetwork({ stack, cfg, region });
@@ -372,11 +424,6 @@ if (!isProd) {
   // (any real provider/billing call 401s — which is what $0-inference previews WANT); prod still
   // refuses to run this block and keeps hand-seeded values only.
   for (const id of NONPROD_OPERATOR_PLACEHOLDER_IDS) {
-    // MAINT.6 — when `rhema:resendApiKey` carries the real non-prod key it replaces the
-    // `resend-api-key` placeholder version entirely (the worker's mail.send transport goes live).
-    if (id === "resend-api-key" && resendPlan === "real") continue;
-    // R6POST.2 — a ruled Stripe stage's real sk_test replaces the stripe-secret placeholder.
-    if (id === "stripe-secret" && stripePlan === "real") continue;
     secretVersions.push(
       new gcp.secretmanager.SecretVersion(`rhema-${stack}-${id}-placeholder-v1`, {
         secret: secrets.byId[id].id,
@@ -384,32 +431,45 @@ if (!isProd) {
       }),
     );
   }
-  // MAINT.6 — the real-key version (plan "real" ⇔ resendApiKey defined on a non-prod stack; prod
-  // with the config set never reaches this block — the program threw above). The version lives only
-  // in Secret Manager + encrypted stack state, exactly like the generated DSN set.
-  if (resendPlan === "real" && resendApiKey) {
-    secretVersions.push(
-      new gcp.secretmanager.SecretVersion(`rhema-${stack}-resend-api-key-v1`, {
-        secret: secrets.byId["resend-api-key"].id,
-        secretData: resendApiKey,
-      }),
-    );
-  }
-  // R6POST.2 — the shared nonprod sk_test becomes the stack's stripe-secret SecretVersion
-  // (`stripe-pull` pipes it over stdin — the resend-pull shape). Paired with
-  // `extraRequiredSecrets: stripe-secret`, which is what mounts `STRIPE_SECRET_KEY_NAME` on
-  // api + worker (`requires("stripe-secret")`); every unruled preview keeps the placeholder +
-  // absent mount (`stripe_unconfigured` — REQ-ARCH-38).
-  if (stripePlan === "real" && stripeSecretConfig) {
-    secretVersions.push(
-      new gcp.secretmanager.SecretVersion(`rhema-${stack}-stripe-secret-v1`, {
-        secret: secrets.byId["stripe-secret"].id,
-        secretData: stripeSecretConfig,
+  // RH-29 — the "real" copy-into-state SecretVersion writes are gone: resend/stripe consumers on
+  // shared-plan stacks mount the shared nonprod secret's pinned version directly (below), so the
+  // placeholders stay on the stack-local containers unread — and no key value ever transits state.
+}
+const iam = createIam({ stack, project, secrets, buckets: data.buckets });
+// RH-29 — the shared-secret mounts: the consuming SAs get `secretAccessor` on the SHARED
+// operator-seeded containers (same project, referenced by literal name — never stack-managed
+// resources) so the worker/api can resolve the pinned versions at boot. Pushed onto iam.members
+// BEFORE createCompute so the consumers' containerPrereqs order the revision after the grant.
+if (resendPlan === "shared" && nonprodResendVersion) {
+  iam.members.push(
+    new gcp.secretmanager.SecretIamMember(`rhema-${stack}-worker-reads-shared-resend`, {
+      secretId: `projects/${project}/secrets/${NONPROD_RESEND_SECRET_NAME}`,
+      role: "roles/secretmanager.secretAccessor",
+      member: pulumi.interpolate`serviceAccount:${iam.serviceAccounts["worker"].email}`,
+    }),
+  );
+}
+if (stripePlan === "shared" && nonprodStripeVersion) {
+  for (const svc of ["api", "worker"] as const) {
+    iam.members.push(
+      new gcp.secretmanager.SecretIamMember(`rhema-${stack}-${svc}-reads-shared-stripe`, {
+        secretId: `projects/${project}/secrets/${NONPROD_STRIPE_SECRET_NAME}`,
+        role: "roles/secretmanager.secretAccessor",
+        member: pulumi.interpolate`serviceAccount:${iam.serviceAccounts[svc].email}`,
       }),
     );
   }
 }
-const iam = createIam({ stack, project, secrets, buckets: data.buckets });
+// RH-29 — the pinned shared-secret version resources the consumers mount (undefined unless the
+// pull bound a version — the "shared" plan guarantees the config is set here).
+const sharedResendRef =
+  resendPlan === "shared" && nonprodResendVersion
+    ? `projects/${project}/secrets/${NONPROD_RESEND_SECRET_NAME}/versions/${nonprodResendVersion}`
+    : undefined;
+const sharedStripeRef =
+  stripePlan === "shared" && nonprodStripeVersion
+    ? `projects/${project}/secrets/${NONPROD_STRIPE_SECRET_NAME}/versions/${nonprodStripeVersion}`
+    : undefined;
 // OPS.1 — Memorystore's `redis://<host>:6379` URL carries no credential (private-IP, no AUTH), so the
 // program composes it from the instance output instead of an operator-set `rhema:redisUrl`/`workerRedisUrl`
 // secret config. The configs still win when present (prod's shared `rhema:redisUrl` is unchanged).
@@ -461,7 +521,10 @@ const compute = createCompute({
   // MAINT.6 — mount the resend secret NAME on the worker ONLY when the real key was seeded
   // (the placeholder version is never mounted: the env stays absent and mail.send no-ops exactly
   // as an unkeyed preview does today).
-  ...(resendPlan === "real" ? { resendSecretWired: true } : {}),
+  // RH-29 — the shared-plan mounts (undefined otherwise; compute.ts falls back to the stack-local
+  // container on stages whose requiredSecrets wire it, i.e. prod).
+  ...(sharedResendRef ? { resendSecretVersion: sharedResendRef } : {}),
+  ...(sharedStripeRef ? { stripeSecretVersion: sharedStripeRef } : {}),
   ...(googleOauthClientId ? { googleOauthClientId } : {}),
   ...(appBaseUrl ? { appBaseUrl } : {}),
   ...(apiPublicUrl ? { apiPublicUrl } : {}),

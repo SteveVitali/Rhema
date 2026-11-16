@@ -31,7 +31,7 @@ import { assertHarnessOnly, NON_OWNER_PERMISSION_MASK } from "@rhema/run-task";
 //      asserted to carry only its non-secret allowlist (no `secretKeyRef`, no `*_SECRET` value pointers),
 //      per REQ-ARCH-30's "no secret as a plaintext env var to web/collab".
 //
-// The actual gitleaks sweep runs in CI (`public-safe` job, gitleaks-action@v2 + .gitleaks.toml); this file
+// The actual gitleaks sweep runs in CI (`public-safe` job, gitleaks-action v2, SHA-pinned + .gitleaks.toml); this file
 // asserts that wiring exists, and the P1.22 run ledger records the local `gitleaks dir` result.
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -227,7 +227,9 @@ describe("the Cloud Run service envs — no plaintext secrets to web/collab (REQ
 describe("the secrets sweep wiring — gitleaks in CI + config in-repo (REQ-ARCH-30)", () => {
   it("the public-safe CI job runs gitleaks-action with the repo's .gitleaks.toml", () => {
     const ci = read(".github/workflows/ci.yml");
-    expect(ci).toContain("gitleaks/gitleaks-action@v2");
+    // RH-26 (271_R6SEC.3): the action is SHA-pinned with a `# v…` comment (scripts/ci/action-pinning.test.mjs);
+    // the wiring check follows the pin — still gitleaks-action, still the v2 major.
+    expect(ci).toMatch(/uses:\s*gitleaks\/gitleaks-action@[0-9a-f]{40}\s+#\s*v2\./);
     expect(ci).toContain("GITLEAKS_CONFIG: .gitleaks.toml");
     expect(readFileSync(join(REPO, ".gitleaks.toml"), "utf8").length).toBeGreaterThan(0);
   });
