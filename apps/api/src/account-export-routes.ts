@@ -20,6 +20,13 @@ export const ACCOUNT_EXPORT_QUEUE = "account.export";
 export const ACCOUNT_EXPORT_LINK_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 /** The import body cap — an account zip is draft bytes; 256 MB is far beyond any sane account. */
 const MAX_IMPORT_BYTES = 256 * 1024 * 1024;
+/**
+ * RH-19 (270_R6OPS.4) — a `building` row's staleness bound. A legit build is bounded by pg-boss's
+ * `expire_seconds` (15 min) × `retry_limit` (2) plus queue wait — far under an hour; a `building`
+ * row older than this never had a worker reach it (the enqueue threw after the insert, or the job
+ * died before the handler stamped `failed`) and would otherwise dedupe every later POST forever.
+ */
+export const ACCOUNT_EXPORT_BUILDING_STALE_MS = 60 * 60 * 1000;
 
 export interface AccountExportRow {
   id: string;
@@ -111,26 +118,50 @@ export function createAccountExportRoutes(deps: AccountExportApiDeps): Hono {
         [principal.workspaceId],
       )
     ).rows[0] as AccountExportRow | undefined;
+    // RH-19 — a `building` row only dedupes while it's plausibly in flight: one older than
+    // ACCOUNT_EXPORT_BUILDING_STALE_MS is wedged (the worker never reached it) — mark it `failed`
+    // honestly so the read stops showing a live build, and let the request start a fresh one.
+    const existingBuildingLive =
+      existing?.status === "building" &&
+      now.getTime() - existing.created_at.getTime() < ACCOUNT_EXPORT_BUILDING_STALE_MS;
     if (
       existing &&
-      (existing.status === "building" ||
+      (existingBuildingLive ||
         (existing.status === "ready" &&
           existing.expires_at != null &&
           existing.expires_at.getTime() > now.getTime()))
     ) {
       return c.json({ export: rowDto(existing, now, null), deduped: true });
     }
+    if (existing?.status === "building" && !existingBuildingLive) {
+      await deps.db.query(
+        `update account_exports set status = 'failed', error = $2 where id = $1`,
+        [existing.id, "build_expired — the build job never completed; a fresh export may be requested"],
+      );
+    }
     const id = deps.ids("aexp");
     await deps.db.query(
       `insert into account_exports (id, workspace_id, user_id, kind, status) values ($1,$2,$3,'account_zip','building')`,
       [id, principal.workspaceId, principal.userId],
     );
-    // singletonKey dedupes a double-click racing the insert read above.
-    await deps.queue.send(
-      ACCOUNT_EXPORT_QUEUE,
-      { exportId: id, workspaceId: principal.workspaceId, userId: principal.userId },
-      { singletonKey: `${ACCOUNT_EXPORT_QUEUE}:${id}` },
-    );
+    // singletonKey dedupes a double-click racing the insert read above. RH-19 — a send that THROWS
+    // used to leave the row `building` forever (wedging every later POST behind the dedupe). Fail
+    // the row honestly so the next request isn't deduped against a job that never existed, and
+    // answer 503 like the other unavailable-transport arms.
+    try {
+      await deps.queue.send(
+        ACCOUNT_EXPORT_QUEUE,
+        { exportId: id, workspaceId: principal.workspaceId, userId: principal.userId },
+        { singletonKey: `${ACCOUNT_EXPORT_QUEUE}:${id}` },
+      );
+    } catch (err) {
+      await deps.db.query(
+        `update account_exports set status = 'failed', error = $2 where id = $1`,
+        [id, "enqueue_failed — the build could not be queued; retry the request"],
+      );
+      console.error(`[api] account.export enqueue FAILED for export ${id}:`, err);
+      return c.json({ error: "enqueue_failed" }, 503);
+    }
     const row = (
       await deps.db.query(
         `select id, status, sha256, bytes, s3_key, error, created_at, ready_at, expires_at, downloaded_at
