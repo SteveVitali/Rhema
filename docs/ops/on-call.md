@@ -1,5 +1,15 @@
 # On-call / incident response — REQ-DEP-2(e) (R6OPS.1, 2026-10-22)
 
+**Update, 273_R6OPS.5 code half (2026-11-16):** the paging-path code now carries three channel
+legs — the `webhook_tokenauth` catcher, an `email` channel gated on `rhema:opsAlertEmail`, and
+the GCP mobile-app push leg bound by `rhema:opsMobileChannelName` (the console pairing is the
+operator's act — GCP's API cannot mint `mobile_app` channels) — plus `/healthz` uptime checks on
+the apex/app + api hosts, a dead-edge/dead-worker no-data alert, and the api availability
+burn-rate policy ADR-054 always described. None of it reaches a human until the operator's
+config + pairing + `pulumi up` and the **test page** land — tracked as `D-R6OPS.5-1` /
+`D-R6OPS.5-2` (HUMAN row 274 names the same acts). The standing rule below stays binding until
+that receipt verifies: **a log line is not a page.**
+
 **Update, source review 2026-10-27:** the 2026-10-23 R6OPS.2 amendment in
 [`PROD-BRINGUP.md`](../../infra/PROD-BRINGUP.md) records binding the Monitoring notification
 channel. The R6OPS.1 unarmed-state observations below remain the 2026-10-22 record and are
