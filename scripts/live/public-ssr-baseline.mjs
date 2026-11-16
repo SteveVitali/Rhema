@@ -64,8 +64,11 @@ const warn = (m) => {
 
 mkdirSync(outDir, { recursive: true });
 
+// 264_R6FIX.14 — this smoke sweep mints landing.viewed rows on `/`; mark it self-traffic
+// (AUTOMATED_TRAFFIC_UA_MARKER "+RhemaJourney" — keep in sync with packages/contracts).
+const UA = "rhema-public-ssr-baseline +RhemaJourney";
 for (const path of ROUTES) {
-  const res = await fetch(`${web}${path}`);
+  const res = await fetch(`${web}${path}`, { headers: { "user-agent": UA } });
   const html = await res.text();
   const file = `${path === "/" ? "index" : path.replaceAll("/", "_").replace(/^_/, "")}.html`;
   writeFileSync(join(outDir, file), html);

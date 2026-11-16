@@ -30,6 +30,7 @@ import type {
   NotificationPrefs,
   QuietHours,
   WorkspaceSearchGroups,
+  AcquisitionSurface,
 } from "@rhema/contracts";
 export type {
   AccountSettingsDto,
@@ -1403,6 +1404,12 @@ export interface LandingEventRequestDto {
   readonly props?: Record<string, unknown>;
   /** the drop-zone hold token (localStorage key suffix — the claim lands post-auth). */
   readonly token?: string;
+  /**
+   * 264_R6FIX.14 — the relay's inbound-UA classification (`web:auto` = marked automated traffic).
+   *  The api re-validates against ACQUISITION_SURFACES and falls back to its own UA read — a
+   *  forged/absent value never wins.
+   */
+  readonly surface?: AcquisitionSurface;
 }
 
 /**

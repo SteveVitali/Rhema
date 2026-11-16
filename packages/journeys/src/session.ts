@@ -15,6 +15,7 @@ import path from "node:path";
 import type { Browser, BrowserContext, Page } from "playwright";
 import type { MailboxClient } from "./mailbox.js";
 import { TEST_MAILBOX } from "./mailbox.js";
+import { newMarkedContext } from "./marked-context.js";
 
 /** the pinned mailbox's local-part and domain — `test` + `rhema.tools`. */
 const [BASE_LOCAL, BASE_DOMAIN] = TEST_MAILBOX.split("@") as [string, string];
@@ -115,7 +116,7 @@ export class JourneySessions {
   }
 
   private async open(storageState: string): Promise<{ context: BrowserContext; page: Page }> {
-    const context = await this.deps.browser.newContext({
+    const context = await newMarkedContext(this.deps.browser, {
       baseURL: this.deps.webBaseUrl,
       storageState,
       ...(this.deps.viewport ? { viewport: this.deps.viewport } : {}),
@@ -131,7 +132,7 @@ export class JourneySessions {
    * mailbox, navigate it, and land signed-in. Asserts the "link sent" UI state AND the mailbox leg.
    */
   private async mint(email: string): Promise<{ context: BrowserContext; page: Page }> {
-    const context = await this.deps.browser.newContext({
+    const context = await newMarkedContext(this.deps.browser, {
       baseURL: this.deps.webBaseUrl,
       ...(this.deps.viewport ? { viewport: this.deps.viewport } : {}),
     });

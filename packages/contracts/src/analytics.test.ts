@@ -183,3 +183,33 @@ describe("REQ-BETA-18 gate registry (pre-registered thresholds)", () => {
     });
   });
 });
+
+// 264_R6FIX.14 — the self-traffic marker + acquisition surface vocabulary (one seam, both deployables).
+describe("264_R6FIX.14 — the +RhemaJourney marker / surface split", () => {
+  it("markedUserAgent appends the token verbatim; the classifier reads it back", async () => {
+    const { markedUserAgent, isAutomatedTrafficUserAgent, acquisitionSurfaceForUserAgent, AUTOMATED_TRAFFIC_UA_MARKER } =
+      await import("./analytics.js");
+    expect(AUTOMATED_TRAFFIC_UA_MARKER).toBe("+RhemaJourney");
+    const ua = markedUserAgent("Mozilla/5.0 HeadlessChrome/131.0");
+    expect(ua).toBe("Mozilla/5.0 HeadlessChrome/131.0 +RhemaJourney");
+    expect(isAutomatedTrafficUserAgent(ua)).toBe(true);
+    expect(acquisitionSurfaceForUserAgent(ua)).toBe("web:auto");
+  });
+
+  it("unmarked/absent UAs stay `web` — never auto", async () => {
+    const { isAutomatedTrafficUserAgent, acquisitionSurfaceForUserAgent } = await import("./analytics.js");
+    for (const ua of ["Mozilla/5.0 real browser", undefined, null, ""]) {
+      expect(isAutomatedTrafficUserAgent(ua)).toBe(false);
+      expect(acquisitionSurfaceForUserAgent(ua)).toBe("web");
+    }
+  });
+
+  it("parseAcquisitionSurface admits only the vocabulary — forged values are null", async () => {
+    const { parseAcquisitionSurface } = await import("./analytics.js");
+    expect(parseAcquisitionSurface("web")).toBe("web");
+    expect(parseAcquisitionSurface("web:auto")).toBe("web:auto");
+    for (const raw of ["botnet", "auto", "WEB", 0, null, undefined, {}]) {
+      expect(parseAcquisitionSurface(raw)).toBeNull();
+    }
+  });
+});

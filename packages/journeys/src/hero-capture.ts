@@ -28,6 +28,7 @@ import { pathToFileURL } from "node:url";
 import { chromium } from "playwright";
 import { HERO_RECORDING } from "@rhema/contracts";
 import { TOUR_STEPS } from "./r7legs.js";
+import { newMarkedContext } from "./marked-context.js";
 
 const TOUR_ESSAY = "structure-of-political-difference";
 
@@ -128,7 +129,7 @@ async function main(): Promise<number> {
   const videoDir = join(outDir, "raw-video");
   mkdirSync(videoDir, { recursive: true });
   const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({
+  const context = await newMarkedContext(browser, {
     viewport: { width: 1440, height: 900 },
     recordVideo: { dir: videoDir, size: { width: HERO_RECORDING.width, height: HERO_RECORDING.height } },
   });
