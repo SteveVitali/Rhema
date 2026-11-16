@@ -12,6 +12,7 @@ const zipBytes = new Uint8Array(readFileSync(process.argv[4] ?? "/tmp/stb5a-expo
 const c = await pool.connect();
 try {
   await c.query("begin");
+  // eslint-disable-next-line rhema/no-raw-set-tenant -- deliberate ROLLBACK repro (never persists the import); withTenant commits on success, which would write to prod.
   await c.query("select set_config('app.tenant_id', $1, true)", [ws]);
   const exec = { query: (sql, params) => c.query(sql, params) };
   const store = { put: async () => ({ key: "x" }), get: async () => null };
