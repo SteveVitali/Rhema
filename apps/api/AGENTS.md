@@ -61,6 +61,12 @@ pnpm exec vitest run packages/security-checks/src/rls-catalog.test.ts packages/s
    origin allowlist and host-only auth cookie behavior; do not weaken them to make a browser test pass.
 4. **Header identity is not production auth.** The middleware's injected-header fallback is for
    dev/preview only. `sessionScopedPrincipal` outside middleware returns null, never header identity.
+   *(2026-11-16 — superseded pending merge: #347 (267_R6SEC.2, RH-10/RH-39) replaces the unkeyed
+   three-header fallback with a keyed invariant — the shim resolves only when the request also
+   presents the stage's `x-rhema-identity-key`, minted per non-prod stage into Secret Manager;
+   the unkeyed headers alone are client-forgeable on the public allUsers-invoker api. Until that
+   lands this paragraph describes the pre-key behavior; never re-enable or extend the unkeyed
+   shim.)*
 5. **Financial state belongs to the shared ledger.** Preserve idempotency, holds, refunds, and
    transaction coupling; do not add ad hoc balance writes in routes. Prices, estimates, and trial
    entitlements must come from their shared configuration.
