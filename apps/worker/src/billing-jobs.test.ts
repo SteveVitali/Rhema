@@ -8,7 +8,7 @@ import {
   type TestDeps,
 } from "@rhema/orchestrator/testing";
 import { testEntryDeps } from "@rhema/ledger/testing";
-import { SqlHoldLedger, insertStripeEvent, applyLedgerEntry } from "@rhema/ledger";
+import { SqlHoldLedger, insertStripeEvent, applyLedgerEntry, STRIPE_EVENT_JOB } from "@rhema/ledger";
 import {
   InMemoryContentStore,
   normalizeUrl,
@@ -20,6 +20,7 @@ import {
   handleStripeEvent,
   handleUsageReconcile,
   handleRunDeliver,
+  handleBillingPeriodTick,
   type WorkerBillingDeps,
 } from "./billing-jobs.js";
 import { ProviderReportFetchError } from "./provider-report.js";
@@ -419,5 +420,40 @@ describe("handleRunDeliver (run.deliver — the withheld-delivery re-drive)", ()
     expect(fin.state).toBe("completed");
     expect(fin.pending_delivery).toBeNull();
     expect(fin.delivery_withheld_at).toBeNull();
+  });
+});
+
+// ---- RH-11 — the stranded stripe event watchdog rides the hourly period tick (272_R6BILL.3) ---------
+// The webhook intake commits `stripe_events` before `queue.send`; a send failure (or a consumed job
+// that died unresolved) leaves a parked row Stripe's retry can't always repair. The hourly tick's
+// sweep re-enqueues `stripe.event` for every `processed_at is null` row past the grace window with no
+// live job — the watchdog half beside the intake's re-send-on-replay and `admin stripe-redrive`.
+
+describe("handleBillingPeriodTick — stranded stripe event sweep (RH-11)", () => {
+  beforeEach(async () => {
+    await db.pg.query("create schema if not exists pgboss");
+    await db.pg.query(
+      "create table if not exists pgboss.job(name text, singleton_key text, state text, data jsonb)",
+    );
+  });
+
+  it("re-enqueues a parked unprocessed event past the grace window; a fresh row is left alone", async () => {
+    await insertStripeEvent(db.client, {
+      id: "evt_stranded",
+      type: "ping",
+      payload: { id: "evt_stranded", type: "ping" },
+      receivedAt: new Date(NOW.getTime() - 3600_000),
+    });
+    await insertStripeEvent(db.client, {
+      id: "evt_fresh",
+      type: "ping",
+      payload: { id: "evt_fresh", type: "ping" },
+      receivedAt: NOW,
+    });
+    const res = await handleBillingPeriodTick(deps());
+    expect(res.strandedStripeEvents).toEqual({ scanned: 1, requeued: 1 });
+    const jobs = base.queue.ofName(STRIPE_EVENT_JOB);
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0]!.payload).toEqual({ eventId: "evt_stranded" });
   });
 });

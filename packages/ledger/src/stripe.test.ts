@@ -5,7 +5,9 @@ import {
   signStripePayload,
   insertStripeEvent,
   processStripeEvent,
+  sweepStrandedStripeEvents,
   STRIPE_WEBHOOK_EVENT_TYPES,
+  STRIPE_EVENT_JOB,
   type StripeEventDeps,
 } from "./stripe.js";
 import { SqlHoldLedger } from "./sql-ledger.js";
@@ -430,15 +432,53 @@ describe("processStripeEvent — invoice + subscription arms (P1.16; §14.6)", (
       id: "in_1",
       subscription: "sub_live_1",
       customer: "cus_live",
-      period_start: unix(P1),
-      period_end: unix(new Date("2026-11-01T00:00:00Z")),
+      // RH-15 — the billed SERVICE period rides the invoice's subscription line
+      // (`lines.data[].period` — the same window the subscription item's `current_period_*`
+      // carries), never the invoice's own `period_start`/`period_end` collection window.
+      lines: { data: [{ period: { start: unix(P1), end: unix(new Date("2026-11-01T00:00:00Z")) } }] },
       metadata: { billing_account_id: BA },
     });
     expect(out).toMatchObject({ kind: "renewal_paid", billingAccountId: BA });
     const s = await subRowByStripeId("sub_live_1");
     expect(new Date(s!.period_start as string).toISOString()).toBe(P1.toISOString());
+    expect(new Date(s!.period_end as string).toISOString()).toBe("2026-11-01T00:00:00.000Z");
     // 2000 activation + 2000 renewal = exactly the 2× rollover cap
     expect((await readBalances(db, BA)).included!.available).toBe(4000);
+  });
+
+  it("RH-15: the invoice's own period_* window is never stored — the line's service period wins", async () => {
+    await activate();
+    // Real-world divergence: the invoice's collection window (when its items were added) is not
+    // the service period being billed — on a proration-bearing invoice it opens EARLIER. Storing
+    // it shifts the subscription's bounds backwards and mis-keys the included-grant window.
+    const out = await emit("evt_inv_paid_svc", "invoice.paid", {
+      id: "in_svc",
+      subscription: "sub_live_1",
+      customer: "cus_live",
+      billing_reason: "subscription_cycle",
+      period_start: unix(new Date("2026-09-15T00:00:00Z")), // the collection window, not the period
+      period_end: unix(P1),
+      lines: { data: [{ period: { start: unix(P1), end: unix(new Date("2026-11-01T00:00:00Z")) } }] },
+      metadata: { billing_account_id: BA },
+    });
+    expect(out).toMatchObject({ kind: "renewal_paid", billingAccountId: BA });
+    const s = await subRowByStripeId("sub_live_1");
+    expect(new Date(s!.period_start as string).toISOString()).toBe(P1.toISOString());
+    expect(new Date(s!.period_end as string).toISOString()).toBe("2026-11-01T00:00:00.000Z");
+  });
+
+  it("RH-15: an event without line periods rolls the subscription's stored bounds one cycle forward", async () => {
+    await activate(); // monthly, period P0 → P1
+    const out = await emit("evt_inv_paid_nolines", "invoice.paid", {
+      id: "in_nl",
+      subscription: "sub_live_1",
+      customer: "cus_live",
+      metadata: { billing_account_id: BA },
+    });
+    expect(out).toMatchObject({ kind: "renewal_paid", billingAccountId: BA });
+    const s = await subRowByStripeId("sub_live_1");
+    expect(new Date(s!.period_start as string).toISOString()).toBe(P1.toISOString());
+    expect(new Date(s!.period_end as string).toISOString()).toBe("2026-11-01T00:00:00.000Z");
   });
 
   it("invoice.payment_failed marks past_due + notifies — the plan stays up in the grace window", async () => {
@@ -506,6 +546,48 @@ describe("processStripeEvent — invoice + subscription arms (P1.16; §14.6)", (
       metadata: { billing_account_id: BA },
     });
     expect((await subRowByStripeId("sub_live_1"))!.cancel_at_period_end).toBe(false);
+  });
+
+  it("RH-2 residual: a Portal price change syncs the tier off the item's price — stale metadata.plan can't veto it", async () => {
+    // D-R6FIX.5-1's residual arm: `metadata.plan` is stamped at Checkout creation and Stripe never
+    // rewrites it — a Portal price switch leaves it lying. The billed amount + interval (inverted
+    // through the shared `priceCents` config) is the truth until the price_ registry lands.
+    await activate(); // writer, monthly
+    const out = await emit("evt_portal_upgrade", "customer.subscription.updated", {
+      id: "sub_live_1",
+      status: "active",
+      metadata: { billing_account_id: BA, plan: "writer" }, // the creation-time plan — stale by definition
+      items: { data: [{ price: { unit_amount: 10000, recurring: { interval: "month" } } }] }, // Studio $100/mo
+    });
+    expect(out).toMatchObject({ kind: "subscription_synced", billingAccountId: BA });
+    const s = await subRowByStripeId("sub_live_1");
+    expect(s!.tier).toBe("studio");
+    expect(s!.included_credits).toBe(12000);
+    expect(s!.billing_cycle).toBe("monthly");
+  });
+
+  it("RH-2 residual: the pre-basil item shape (`plan.amount` + `plan.interval`) maps the tier too", async () => {
+    await activate(); // writer, monthly
+    const out = await emit("evt_portal_upgrade_legacy", "customer.subscription.updated", {
+      id: "sub_live_1",
+      status: "active",
+      metadata: { billing_account_id: BA, plan: "writer" },
+      items: { data: [{ plan: { amount: 20000, interval: "month" } }] }, // Studio Max $200/mo
+    });
+    expect(out).toMatchObject({ kind: "subscription_synced", billingAccountId: BA });
+    expect((await subRowByStripeId("sub_live_1"))!.tier).toBe("studio_max");
+  });
+
+  it("RH-2 residual: an unmappable price falls back to metadata.plan (the registry design's interim posture)", async () => {
+    await activate(); // writer, monthly — a bespoke $37.50 price can't map to the ladder
+    const out = await emit("evt_portal_custom_price", "customer.subscription.updated", {
+      id: "sub_live_1",
+      status: "active",
+      metadata: { billing_account_id: BA, plan: "studio" },
+      items: { data: [{ price: { unit_amount: 3750, recurring: { interval: "month" } } }] },
+    });
+    expect(out).toMatchObject({ kind: "subscription_synced", billingAccountId: BA });
+    expect((await subRowByStripeId("sub_live_1"))!.tier).toBe("studio"); // metadata fallback — D-R6FIX.5-1 owns the registry
   });
 
   it("customer.subscription.created for an unknown subscription activates it whole (the Checkout race arm)", async () => {
@@ -584,8 +666,11 @@ describe("processStripeEvent — invoice + subscription arms (P1.16; §14.6)", (
       subscription: "sub_race_2",
       customer: "cus_race2",
       billing_reason: "subscription_create",
-      period_start: unix(NOW),
-      period_end: unix(new Date(NOW.getTime() + 31 * 24 * 60 * 60 * 1000)),
+      // RH-15 — the service period rides the subscription line, matching the period the
+      // `created` event already wrote (the window dedupe keys on it).
+      lines: {
+        data: [{ period: { start: unix(NOW), end: unix(new Date(NOW.getTime() + 31 * 24 * 60 * 60 * 1000)) } }],
+      },
       metadata: { billing_account_id: BA },
     });
     const n = (
@@ -607,6 +692,15 @@ describe("processStripeEvent — invoice + subscription arms (P1.16; §14.6)", (
     });
     expect(out).toMatchObject({ kind: "subscription_ended", billingAccountId: BA });
     expect((await subRowByStripeId("sub_live_9"))!.status).toBe("ended");
+  });
+
+  it("RH-14: a deleted event with no resolvable account stays unresolved + unprocessed — never silently processed", async () => {
+    const out = await emit("evt_sub_del_orphan", "customer.subscription.deleted", {
+      id: "sub_ghost",
+      customer: "cus_ghost", // no metadata.billing_account_id, no client_reference_id, unknown customer
+    });
+    expect(out.kind).toBe("unresolved");
+    expect((await stripeEventRow("evt_sub_del_orphan"))!.processed_at).toBeNull();
   });
 
   it("an invoice for an unknown account stays unresolved (the retry stays live)", async () => {
@@ -822,6 +916,60 @@ describe("processStripeEvent — the customer id backfill (BILL.3)", () => {
     expect(
       (await db.client.query("select stripe_customer_id from billing_accounts where id = $1", [BA])).rows[0],
     ).toMatchObject({ stripe_customer_id: "cus_pl_1" });
+  });
+});
+
+// ---- RH-11 — the webhook stranding watchdog (272_R6BILL.3) ---------------------------------------------
+// `insertStripeEvent` commits before `queue.send`: a send failure leaves a parked row Stripe's retry
+// acknowledges (the replay inserts nothing) without a job ever existing. The sweep is the repair half
+// beside the intake's re-send-on-replay and the operator's manual `stripe-redrive` (admin-cli).
+
+describe("sweepStrandedStripeEvents (RH-11 — processed_at is null watchdog)", () => {
+  beforeEach(async () => {
+    // a `pgboss.job` stub for the live-job guard (PGlite carries no pg-boss schema — the same stub
+    // shape the purge/hard-delete sweeps' tests install).
+    await db.pg.query("create schema if not exists pgboss");
+    await db.pg.query(
+      "create table if not exists pgboss.job(name text, singleton_key text, state text, data jsonb)",
+    );
+  });
+
+  it("re-enqueues a parked event past the grace window with no live job; leaves fresh/processed/live ones", async () => {
+    const queue = new InMemoryQueue();
+    const old = new Date(NOW.getTime() - 3600_000);
+    await insertStripeEvent(db.client, { id: "evt_stranded", type: "ping", payload: {}, receivedAt: old });
+    await insertStripeEvent(db.client, { id: "evt_fresh", type: "ping", payload: {}, receivedAt: NOW });
+    await insertStripeEvent(db.client, { id: "evt_done", type: "ping", payload: {}, receivedAt: old });
+    await db.client.query("update stripe_events set processed_at = $2 where id = $1", ["evt_done", NOW]);
+    await insertStripeEvent(db.client, { id: "evt_live", type: "ping", payload: {}, receivedAt: old });
+    await db.pg.query(
+      "insert into pgboss.job(name, singleton_key, state, data) values ('stripe.event','stripe:evt_live','retry',$1)",
+      [JSON.stringify({ eventId: "evt_live" })],
+    );
+
+    const res = await sweepStrandedStripeEvents(db.client, queue, { now: NOW });
+    expect(res).toEqual({ scanned: 1, requeued: ["evt_stranded"] });
+    const jobs = queue.ofName(STRIPE_EVENT_JOB);
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0]!.payload).toEqual({ eventId: "evt_stranded" });
+    expect(jobs[0]!.singletonKey).toBe(`stripe:evt_stranded`); // the intake's key — a redelivery dedupes
+  });
+
+  it("a send failure never fails the sweep — the row stays stranded for the next tick", async () => {
+    const queue = new InMemoryQueue();
+    const realSend = queue.send.bind(queue);
+    let calls = 0;
+    queue.send = async (name: string, payload: Record<string, unknown>, opts?: Parameters<typeof realSend>[2]) => {
+      calls += 1;
+      if (calls === 1) throw new Error("pg-boss unavailable");
+      return realSend(name, payload, opts);
+    };
+    const old = new Date(NOW.getTime() - 3600_000);
+    await insertStripeEvent(db.client, { id: "evt_s1", type: "ping", payload: {}, receivedAt: old });
+    await insertStripeEvent(db.client, { id: "evt_s2", type: "ping", payload: {}, receivedAt: old });
+    const res = await sweepStrandedStripeEvents(db.client, queue, { now: NOW });
+    expect(res.scanned).toBe(2);
+    expect(res.requeued).toEqual(["evt_s2"]); // evt_s1's send threw — still stranded, retryable next tick
   });
 });
 
