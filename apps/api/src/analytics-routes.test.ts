@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { AUTOMATED_TRAFFIC_UA_MARKER } from "@rhema/contracts";
 import { createOrchestratorTestDb, seedProject, makeDeps, type OrchestratorTestDb, type TestDeps } from "@rhema/orchestrator/testing";
 import { createAnalyticsRoutes } from "./analytics-routes.js";
 import { createBillingRoutes } from "./billing-routes.js";
@@ -170,6 +171,53 @@ describe("POST /analytics/demo — the anonymous demo funnel carve-out", () => {
     await post(app, { event: "demo.tour_started", essay: "x", step: 1000, src: "s" });
     const rows = await demoRows();
     expect(rows[1]).toMatchObject({ event: "demo.tour_started", essay: "x", step: null, src: "s" });
+  });
+});
+
+// 264_R6FIX.14 (R-4) — POST /analytics/landing writes `acquisition_events.surface`: the relay
+// forwards its inbound-UA classification in `body.surface`; this ingest also classifies the UA
+// it sees itself. `web:auto` is additive — either channel marking wins; a `web` value or a
+// forged field can never un-mark a marked UA.
+describe("POST /analytics/landing — the surface split (264_R6FIX.14)", () => {
+  const MARKED = `Mozilla/5.0 HeadlessChrome/131.0 Safari/537.36 ${AUTOMATED_TRAFFIC_UA_MARKER}`;
+  const post = (body: unknown, headers: Record<string, string> = {}) =>
+    analyticsApp({ db: db.client }).request("/analytics/landing", {
+      method: "POST",
+      headers: { "content-type": "application/json", ...headers },
+      body: JSON.stringify(body),
+    });
+  const surfaces = async () =>
+    (await db.client.query("select event, surface from acquisition_events order by created_at, id")).rows as {
+      event: string; surface: string;
+    }[];
+
+  it("an unmarked visitor lands `web` — the stored default, honest 'unmarked' class", async () => {
+    const res = await post({ event: "landing.viewed" }, { "user-agent": "Mozilla/5.0 real browser" });
+    expect(res.status).toBe(200);
+    expect(await surfaces()).toEqual([{ event: "landing.viewed", surface: "web" }]);
+  });
+
+  it("the relay's `body.surface: web:auto` classification is honored", async () => {
+    await post({ event: "landing.dropzone_used", surface: "web:auto", props: { kind: "md" } });
+    expect((await surfaces())[0]).toMatchObject({ event: "landing.dropzone_used", surface: "web:auto" });
+  });
+
+  it("a marked UA on a direct hit classifies `web:auto` with no body field (the api's own read)", async () => {
+    await post({ event: "landing.viewed" }, { "user-agent": MARKED });
+    expect((await surfaces())[0]!.surface).toBe("web:auto");
+  });
+
+  it("`web:auto` is additive — a `web` body value or a forged field cannot un-mark the UA", async () => {
+    await post({ event: "landing.viewed", surface: "web" }, { "user-agent": MARKED });
+    await post({ event: "landing.viewed", surface: "browser" }, { "user-agent": MARKED });
+    const rows = await surfaces();
+    expect(rows).toHaveLength(2);
+    expect(rows.every((r) => r.surface === "web:auto")).toBe(true);
+  });
+
+  it("an out-of-vocabulary `surface` body value falls back to the UA read", async () => {
+    await post({ event: "landing.viewed", surface: "botnet" }, { "user-agent": "Mozilla/5.0 real" });
+    expect((await surfaces())[0]!.surface).toBe("web");
   });
 });
 

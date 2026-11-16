@@ -141,7 +141,7 @@ import type {
   UserPrefs,
   NotificationPrefsDto,
 } from "@rhema/api-client";
-import type { ConversionResult, WorkspaceSearchGroups } from "@rhema/contracts";
+import type { ConversionResult, WorkspaceSearchGroups, AcquisitionSurface } from "@rhema/contracts";
 // SPA.21 — the dossier's view contract lives in the shared SSR↔SPA module (see DossierData below).
 import type { DossierViewData } from "./dossier-view.js";
 import { noteDegradedUpstream } from "./observability.js";
@@ -785,12 +785,15 @@ export interface DataSource {
     req: AnalyticsEventRequestDto,
   ): Promise<{ ok: boolean; recorded: boolean }>;
   /** P1.17 — the pre-auth landing beacon (acquisition_events; no session). `ip` forwards the
-   *  browser's source IP so the api's hash dedupes the real client, not the web box. */
+   *  browser's source IP so the api's hash dedupes the real client, not the web box.
+   *  264_R6FIX.14 — `surface` forwards the relay's inbound-UA classification (`web:auto` =
+   *  marked automated traffic); the api re-validates it against the vocabulary. */
   recordLandingEvent?(req: {
     event: "landing.viewed" | "landing.dropzone_used";
     props?: Record<string, unknown>;
     token?: string;
     ip?: string;
+    surface?: AcquisitionSurface;
   }): Promise<{ ok: boolean }>;
   /**
    * R7DEM.6b (REQ-TOUR-9) — the anonymous demo funnel beacon (demo_events; no session, no

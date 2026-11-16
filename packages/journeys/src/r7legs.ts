@@ -20,6 +20,7 @@ import {
   AXE_SOURCE,
   IPHONE_USER_AGENT,
 } from "./steps.js";
+import { newMarkedContext } from "./marked-context.js";
 import { u3ProbePage, u3UnscrimmedViolation } from "./u3-probe.js";
 import { U4_SURFACES, assertU4Clean, u4ProbePage } from "./u4-probe.js";
 import { assertActionable } from "./occlusion.js";
@@ -169,7 +170,7 @@ const R11_DEMO: StepFn = async (ctx) => {
  */
 const P1_DEMO: StepFn = async (ctx) => {
   for (const w of [390, 320] as const) {
-    const phone = await ctx.browser.newContext({
+    const phone = await newMarkedContext(ctx.browser, {
       baseURL: ctx.webBaseUrl,
       userAgent: IPHONE_USER_AGENT,
       viewport: { width: w, height: 844 },
@@ -469,7 +470,7 @@ const U3_OCCLUSION: StepFn = async (ctx) => {
     await u3ProbePage(page, w, h, { shot: `${ctx.outDir}/u3-occlusion-${w}x${h}.png` });
   }
   {
-    const demo = await ctx.browser.newContext({
+    const demo = await newMarkedContext(ctx.browser, {
       baseURL: ctx.webBaseUrl,
       viewport: { width: 390, height: 844 },
     });

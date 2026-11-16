@@ -13,6 +13,7 @@ import type { MailboxClient } from "./mailbox.js";
 import { JourneySessions, stableIdentity, freshIdentity, assertTestIdentity } from "./session.js";
 import { CapOverrunError } from "./spend-guard.js";
 import { marker } from "./nonce.js";
+import { newMarkedContext } from "./marked-context.js";
 import { spaRouteFor, type SpaSurface } from "@rhema/contracts";
 import {
   gatedRouteIds,
@@ -320,7 +321,7 @@ export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
       ...(deps.inviteCode ? { inviteCode: deps.inviteCode } : {}),
       marker: (name) => marker(deps.nonce, name),
       async anon() {
-        const context = await deps.browser.newContext({
+        const context = await newMarkedContext(deps.browser, {
           baseURL: deps.webBaseUrl,
         });
         const page = await context.newPage();
