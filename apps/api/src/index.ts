@@ -364,7 +364,15 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
   const app = new Hono();
   // OBS.1 (ADR-053) — request correlation FIRST: every later middleware/route/onError line joins the
   // same requestId + the LB's trace when the hop carried one, and every response echoes the id.
-  app.use("*", requestContext(deps?.gcpProject ?? process.env.GOOGLE_CLOUD_PROJECT));
+  // RH-21 residual — the second arg stamps `serviceContext.version` (the image-baked deploy SHA)
+  // on every structured error line so Error Reporting groups attribute to a release.
+  app.use(
+    "*",
+    requestContext(
+      deps?.gcpProject ?? process.env.GOOGLE_CLOUD_PROJECT,
+      deps?.buildGitSha ?? process.env.RHEMA_BUILD_GIT_SHA,
+    ),
+  );
   // OBS.1 — every unhandled route error produces exactly ONE structured line (allowlisted fields,
   // route TEMPLATE not path, message-stripped stack) and a bare 500 carrying only the requestId.
   app.onError(apiOnError);

@@ -90,6 +90,15 @@ const stripePaymentLinkUrl = rhemaConfig.get("stripePaymentLinkUrl");
 // the `ops-alert-webhook-url` Secret Manager container as OPS_ALERT_WEBHOOK_URL). Unset ⇒ the §13.5 alert
 // policies still record incidents; they just don't page.
 const opsAlertWebhookUrl = rhemaConfig.getSecret("opsAlertWebhookUrl");
+// RH-27 (273_R6OPS.5) — the on-call EMAIL notification channel. The address is the operator's
+// config act (`pulumi config set --secret rhema:opsAlertEmail`) — never a committed address;
+// secret-config keeps it encrypted in stack state. Unset ⇒ the email leg isn't attached.
+const opsAlertEmail = rhemaConfig.getSecret("opsAlertEmail");
+// RH-27 — the GCP mobile-app push channel. GCP's API cannot mint `mobile_app` channels (console
+// pairing is the only path, the operator's act — HUMAN row 274); after pairing they set this plain
+// config to the paired channel's `projects/<p>/notificationChannels/<id>` resource name and the
+// next `up` binds it to every alert policy.
+const opsMobileChannelName = rhemaConfig.get("opsMobileChannelName");
 // PRB.15 — the real digest-pinned service images as a JSON `{service: ref}` map (the images CI publishes
 // it; REQ-ARCH-39). Missing entries fall back to the placeholder so `preview` stays plannable.
 const serviceImages = rhemaConfig.getObject<Record<string, string>>("serviceImages");
@@ -500,6 +509,10 @@ createMonitoring({
   ...(compute.services.api ? { apiServiceName: compute.services.api.name } : {}),
   ...(compute.services.worker ? { workerServiceName: compute.services.worker.name } : {}),
   ...(opsAlertWebhookUrl ? { opsAlertWebhookUrl } : {}),
+  ...(opsAlertEmail ? { opsAlertEmail } : {}),
+  ...(opsMobileChannelName ? { opsMobileChannelName } : {}),
+  // RH-22 — the public-domain uptime checks (apex/app + api `/healthz`); domain-less stages get none.
+  ...(cfg.domains ? { domains: cfg.domains } : {}),
 });
 
 // Stack outputs — consumed by the deploy step (to feed the app env) and by the post-deploy network

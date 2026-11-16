@@ -352,7 +352,15 @@ export function createWebApp(deps: WebDeps): Hono {
   // the hop carried one, else minted), stash the Cloud Logging trace field, and normalize non-Error
   // throws so EVERY failure reaches `onError` (a non-Error throw otherwise escapes `app.fetch` to a
   // silent bare 500 — the "5xx with no app log line" defect).
-  app.use("*", obsRequestContext(deps.gcpProject ?? process.env.GOOGLE_CLOUD_PROJECT));
+  // RH-21 residual — the second arg stamps `serviceContext.version` (the image-baked deploy SHA)
+  // on every structured error line so Error Reporting groups attribute to a release.
+  app.use(
+    "*",
+    obsRequestContext(
+      deps.gcpProject ?? process.env.GOOGLE_CLOUD_PROJECT,
+      deps.buildGitSha ?? process.env.RHEMA_BUILD_GIT_SHA,
+    ),
+  );
   // OBS.1 — stamp the resolved request id on the forwarded session headers once: every api-client
   // call (chat, SSE proxy, dossier, …) then carries `x-rhema-request-id` to the api unchanged.
   const innerSession = deps.session;
