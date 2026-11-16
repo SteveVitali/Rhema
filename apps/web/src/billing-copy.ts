@@ -31,6 +31,8 @@ export function billingNoticeFor(code: string | undefined): string {
     case "stripe_unconfigured":
     case "stripe_credentials_unconfigured":
       return COPY.billing.stripeUnconfiguredNote;
+    case "change_plan_unavailable":
+      return COPY.billing.changePlanUnavailableNote;
     case "change":
       return COPY.billing.changeFailedNote;
     case "cancel":

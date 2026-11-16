@@ -838,7 +838,8 @@ export interface DataSource {
   getSubscription(session: SessionHeaders): Promise<BillingSubscriptionDto>;
   /** cancel = cancel_at_period_end (§14.6 — access runs to the paid-through date). */
   cancelSubscription(session: SessionHeaders): Promise<{ applied: boolean }>;
-  /** change plan — an upgrade applies now; a downgrade schedules to period end. */
+  /** change plan — FENCED OFF at the api (263_R6FIX.13): every call answers the
+   *  `change_plan_unavailable` ApiError until D-R6FIX.5-1's price_ registry lands. */
   changePlan(
     session: SessionHeaders,
     tier: string,
