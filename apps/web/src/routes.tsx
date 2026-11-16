@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { matchRoutes } from "react-router";
-import { InvitePage, LoginPage, ProjectPage, RevisionPage, PagePage, ComparePage, NotFoundPage } from "./pages.js";
+import { InvitePage, LoginPage, MagicLinkPage, ProjectPage, RevisionPage, PagePage, ComparePage, NotFoundPage } from "./pages.js";
 import { LandingPage, PricingPage, SignupPage, ShowcasePage } from "./marketing.js";
 import { legalElements } from "./legal.js";
 import { DemoHubPage, DemoReadOnlyPage } from "./demo-page.js";
@@ -30,6 +30,7 @@ export interface AppRoute {
 
 export const inviteElement = <InvitePage />;
 export const loginElement = <LoginPage />;
+export const magicLinkElement = <MagicLinkPage />;
 // P1.17 — the public funnel elements (§15.1 landing, §15.2 pricing, §15.3 signup-with-intent).
 export const landingElement = <LandingPage />;
 export const pricingElement = <PricingPage />;

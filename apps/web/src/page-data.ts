@@ -131,6 +131,13 @@ export interface PageData {
     readonly email?: string;
     /** PRB.13 — `signup.mode === "open"`: the code field is optional and the copy shifts to self-serve. */
     readonly signupOpen?: boolean;
+    /** 275_R6WEB.1 (RH-34) — the gate's same-origin-validated deep link; hidden-field round-trip. */
+    readonly next?: string;
+  };
+  /** 275_R6WEB.1 (RH-31) — the magic-link interstitial's state: `invalid` renders the honest
+   *  "link is incomplete" arm instead of the confirm form. */
+  readonly magicLink?: {
+    readonly invalid?: boolean;
   };
   /** PRB.13 — the public invite/landing page's mode flag (the access note + sign-in CTA copy). */
   readonly invite?: {
