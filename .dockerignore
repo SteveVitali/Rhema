@@ -9,6 +9,11 @@
 agent-scratch
 .github
 **/*.log
+# RH-25 (271_R6SEC.3) — same class as .gcloudignore: a local `.env*` must never enter the build
+# context either (a broad `COPY` would bake it into an image layer). `.env.example` stays.
+.env
+.env.*
+!.env.example
 # NOTE: apps/run-task/vendor (the Agent SDK) is intentionally NOT excluded — the run-task Dockerfile's
 # explicit `COPY apps/run-task/vendor/ /app/vendor/` needs it in the build context (a .dockerignore
 # exclusion is context-global and would silently defeat that COPY, yielding a no-SDK image). It is not a
