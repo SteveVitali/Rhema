@@ -15,6 +15,8 @@ import {
   systemClock,
   randomUlids,
   RUN_JOBS,
+  GATE_EXPIRY_QUEUE,
+  FIGURE_RENDER_QUEUE,
 } from "@rhema/orchestrator";
 import { USER_SERVING_ROLE } from "@rhema/db";
 import { SqlHoldLedger, circuitBreakerState, recordAnalyticsEvent, STRIPE_EVENT_JOB, FetchStripePort, settleUnverifiedDelivery, loadEstimatorCells } from "@rhema/ledger";
@@ -534,8 +536,32 @@ export async function startApiServer(): Promise<void> {
   const env = readApiEnv();
   const { deps, boss } = await buildApiDeps(env);
 
-  // pg-boss requires each queue to exist before a send; the api sends to the run.* queues (the worker also
-  // creates them — createQueue is idempotent). The startup connection BURST can hit a transient AlloyDB connect
+  // pg-boss requires each queue to exist before a send — and a send to a missing queue does NOT throw:
+  // the insert joins `pgboss.queue`, matches nothing, and returns null (the job is silently dropped).
+  // The api therefore creates every queue ANY of its request paths may send to — `account.hard-delete`,
+  // `gate.expiry`, `figure.render`, and the ingest trio were missing here (RH-4/RH-17: an api boot
+  // ordered ahead of the worker's would have swallowed those sends inertly). The worker creates the
+  // same set; `createQueue` is `ON CONFLICT DO NOTHING` — first-create wins, so BOTH sides declare the
+  // same policy (mirrors `DEDUP_POLICY_QUEUES` in apps/worker/src/main.ts; RH-18's prod flip rides
+  // migration 0063 — createQueue cannot change a policy on an existing row).
+  const DEDUP_POLICY_QUEUES = new Set([
+    "run.start",
+    "run.resume",
+    "run.cancel",
+    "run.deliver",
+    "run.finalize",
+    GATE_EXPIRY_QUEUE,
+    FIGURE_RENDER_QUEUE,
+    "notify",
+    STRIPE_EVENT_JOB,
+    "ingest.sync",
+    "ingest.reconstruct",
+    "voice.purge",
+    "account.export",
+    "account.hard-delete",
+    "project.purge",
+  ]);
+  // The startup connection BURST can hit a transient AlloyDB connect
   // timeout over Cloud Run Direct-VPC egress (a throw here escapes → exit(1) → a slow restart loop, live
   // P0.15h); retry the idempotent init a few times with backoff so one slow connect does not crash the api
   // before it listens (mirrors the worker).
@@ -562,8 +588,17 @@ export async function startApiServer(): Promise<void> {
     "auth.mail",
     "account.export", // P1.18 — the account-zip build (the worker consumes; both sides createQueue).
     "project.purge", // D-P1.04-2 — the tombstone +30d sweep (the worker consumes; both createQueue).
+    "account.hard-delete", // P1.20 — the deletion grace-end arm (the settings route sends it).
+    GATE_EXPIRY_QUEUE, // PRB.16b — `scheduleGateExpiry` sends it post-commit from api contexts.
+    FIGURE_RENDER_QUEUE, // P1.13 — the card render enqueue (figure-routes sends it).
+    "ingest.sync", // P1.15 — the manual/auto sync enqueues (ingest-routes send them).
+    "ingest.reconstruct",
+    "voice.purge",
   ]) {
-    await retryStartup(`createQueue ${name}`, () => boss.createQueue(name));
+    // RH-18 — `exclusive` on the singletonKey-dedupe queues (see DEDUP_POLICY_QUEUES above).
+    await retryStartup(`createQueue ${name}`, () =>
+      boss.createQueue(name, DEDUP_POLICY_QUEUES.has(name) ? { policy: "exclusive" } : undefined),
+    );
   }
 
   const app = createApp(deps);
