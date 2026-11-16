@@ -230,7 +230,9 @@ const network = createNetwork({ stack, cfg, region });
 const secrets = createSecrets({
   stack,
   region,
-  extraIds: isProd ? ["proxy-database-url"] : ["system-database-url"],
+  // RH-10 — `identity-headers-key` joins `system-database-url` in the non-prod-only container set
+  // (the api's keyed identity-header shim resolves it at boot; prod never provisions it).
+  extraIds: isProd ? ["proxy-database-url"] : ["system-database-url", "identity-headers-key"],
 });
 // OPS.1 — non-prod postgres bootstrap: the operator's `rhema:alloydbPassword` config still wins when
 // set (prod + any operator-seeded dev); otherwise a @pulumi/random value lives ONLY in encrypted
@@ -413,6 +415,16 @@ if (!isProd) {
     new gcp.secretmanager.SecretVersion(`rhema-${stack}-email-action-secret-v1`, {
       secret: secrets.byId["email-action-secret"].id,
       secretData: new random.RandomPassword("rhema-email-action", { length: 48, special: false }).result,
+    }),
+    // RH-10 (267_R6SEC.2) — the identity-header shim's per-stage shared key. The api mounts only
+    // the NAME (`IDENTITY_HEADERS_SECRET_NAME`); the caller-facing value lives here + in encrypted
+    // stack state, unguessable to a public caller of the allUsers-invoker non-prod api.
+    new gcp.secretmanager.SecretVersion(`rhema-${stack}-identity-headers-key-v1`, {
+      secret: secrets.byId["identity-headers-key"].id,
+      secretData: new random.RandomPassword("rhema-identity-headers-key", {
+        length: 48,
+        special: false,
+      }).result,
     }),
   );
   // OPS.1 (F-OPS.1-9 — live finding: the pr-102 worker crash-looped on `anthropic-api-key` "no

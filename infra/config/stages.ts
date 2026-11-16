@@ -117,6 +117,11 @@ export const NONPROD_GENERATED_SECRET_IDS = [
   "system-database-url",
   "turbo-cache-token", // OPS.2 — program-written on every stage (all-stages generated: prod's token
   //   is ALSO IaC-minted — a brand-new secret with no operator-seeded state to adopt).
+  "identity-headers-key", // 267_R6SEC.2 (RH-10) — the per-stage shared key the api's
+  //   non-prod x-rhema-* identity-header shim demands on `x-rhema-identity-key`; program-minted
+  //   like the rest of this set. NON-PROD ONLY: kept OUT of ALL_SECRET_IDS (the
+  //   system-database-url precedent — prod's provisioned set stays byte-identical and the shim
+  //   itself is never armed on prod).
 ] as const;
 
 /** The dev secret set (OPS.1 — trimmed 2026-10-04): the shared-integration stack boots on the

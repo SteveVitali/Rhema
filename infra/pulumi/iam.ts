@@ -130,6 +130,12 @@ export function createIam(args: IamArgs): Iam {
   if (secrets.byId["system-database-url"]) {
     grantSecret("proxy-reads-sysdb", secrets.byId["system-database-url"], serviceAccounts["egress-proxy"]);
   }
+  // RH-10 (267_R6SEC.2) — the api reads the identity-header shim's per-stage shared key at boot
+  // (`IDENTITY_HEADERS_SECRET_NAME` → Secret Manager). Non-prod-only container: absent on prod,
+  // so prod's IAM surface is untouched and the shim can never arm there.
+  if (secrets.byId["identity-headers-key"]) {
+    grantSecret("api-reads-identity-headers-key", secrets.byId["identity-headers-key"], serviceAccounts["api"]);
+  }
 
   // Bucket access: the api/worker read+write artifacts + user-content; the run-task harness reads
   // artifacts (to materialize /work); the benchmark-enclave bucket is granted to NO product SA here — it

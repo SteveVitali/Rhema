@@ -974,9 +974,22 @@ export function createCompute(args: ComputeArgs): Compute {
                     ...(args.stripePaymentLinkUrl
                       ? [{ name: "STRIPE_PAYMENT_LINK_URL", value: args.stripePaymentLinkUrl }]
                       : []),
-                    // PRB.16 — the x-rhema-* identity-header shim is dev/preview ONLY (client-forgeable;
-                    // prod's identity path is the session cookie). Never set on prod.
-                    ...(cfg.kind !== "prod" ? [{ name: "IDENTITY_HEADERS", value: "true" }] : []),
+                    // RH-10 (267_R6SEC.2) — the x-rhema-* identity-header shim is dev/preview ONLY
+                    // and now KEYED: the api also resolves the stage's shared key
+                    // (`IDENTITY_HEADERS_SECRET_NAME`, program-minted into Secret Manager — the api
+                    // reads the NAME like every other secret, never a plaintext value). A public
+                    // caller who cannot present `x-rhema-identity-key` gets no principal — the
+                    // three identity headers alone were client-forgeable on this allUsers-invoker
+                    // service. Never set on prod (no container exists there to mount).
+                    ...(cfg.kind !== "prod" && secrets.byId["identity-headers-key"]
+                      ? [
+                          { name: "IDENTITY_HEADERS", value: "true" },
+                          {
+                            name: "IDENTITY_HEADERS_SECRET_NAME",
+                            value: secretVersion(secrets.byId["identity-headers-key"]),
+                          },
+                        ]
+                      : []),
                     // PRB.20 — the live ingestion wiring (D-PRB.02-1): the user-content bucket the presign
                     // targets + the convert Job's full v2 resource name + its bucket mount path. BOTH set ⇒
                     // the api mounts /import/presign + import/preview|create (server.ts's fail-closed gate).
