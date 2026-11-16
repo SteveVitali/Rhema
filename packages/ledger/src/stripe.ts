@@ -19,7 +19,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { RUN_JOBS, type SqlClient, type Queue } from "@rhema/orchestrator";
 import { topUpPack, PLAN_TIERS, type PlanTier, type BillingCycle } from "@rhema/contracts";
-import { applyLedgerEntry } from "./entries.js";
+import { applyLedgerEntry, grant } from "./entries.js";
 import { applyChargeback, applyDisputeWon, type ChargebackDeps } from "./chargeback.js";
 import { recordAnalyticsEvent } from "./analytics.js";
 import {
@@ -59,6 +59,11 @@ export const STRIPE_WEBHOOK_EVENT_TYPES = [
   "customer.subscription.deleted",
   "charge.dispute.created",
   "charge.dispute.closed",
+  // RH-3 — the auto-reload charge→grant reconcile arm (the ONLY unattended charge path: the
+  // sweep's Stripe charge succeeds OUTSIDE the grant tx; this arm converges a charged-but-
+  // ungranted intent). The deployed endpoint needs `enabled_events` += this type (operator act —
+  // docs/ops/stripe-webhook-endpoint.md; D-R6BILL.2-1).
+  "payment_intent.succeeded",
 ] as const;
 export type StripeWebhookEventType = (typeof STRIPE_WEBHOOK_EVENT_TYPES)[number];
 /** The re-drive queue for deliveries a chargeback withheld (the pod's original POST was refused). */
@@ -165,6 +170,7 @@ export type StripeEventOutcome =
   | { readonly kind: "subscription_ended"; readonly billingAccountId: string | null }
   | { readonly kind: "chargeback"; readonly billingAccountId: string; readonly cancelled: readonly string[]; readonly withheld: readonly string[]; readonly clawed: number; readonly debt: number }
   | { readonly kind: "dispute_won"; readonly billingAccountId: string; readonly restored: number; readonly redeliver: readonly string[] }
+  | { readonly kind: "auto_reload_reconciled"; readonly billingAccountId: string }
   | { readonly kind: "ignored" }
   | { readonly kind: "unresolved"; readonly reason: string };
 
@@ -219,6 +225,17 @@ interface DisputeObject {
   payment_intent?: string;
   metadata?: { billing_account_id?: string };
 }
+interface PaymentIntentObject {
+  id?: string;
+  customer?: string;
+  status?: string;
+  metadata?: {
+    kind?: string;
+    billing_account_id?: string;
+    workspace_id?: string;
+    pack_id?: string;
+  };
+}
 
 /**
  * Process one stored `stripe_events` row. Reads the row by id (the webhook already inserted it), dispatches
@@ -237,7 +254,11 @@ export async function processStripeEvent(
   const payload = (typeof row.payload === "string" ? JSON.parse(row.payload) : row.payload) as {
     data?: { object?: unknown };
   };
-  const object = (payload.data?.object ?? {}) as CheckoutSession & DisputeObject & SubscriptionObject & InvoiceObject;
+  const object = (payload.data?.object ?? {}) as CheckoutSession &
+    DisputeObject &
+    SubscriptionObject &
+    InvoiceObject &
+    PaymentIntentObject;
 
   let outcome: StripeEventOutcome;
   switch (row.type) {
@@ -305,6 +326,9 @@ export async function processStripeEvent(
       outcome = { kind: "dispute_won", billingAccountId, restored: r.restored, redeliver: r.withheldRuns };
       break;
     }
+    case "payment_intent.succeeded":
+      outcome = await processPaymentIntentSucceeded(exec, deps, object);
+      break;
     default:
       outcome = { kind: "ignored" };
   }
@@ -767,6 +791,73 @@ async function processTopUp(
     }
   });
   return { kind: "topup_granted", ledgerId, credits: amountCents, billingAccountId, applied };
+}
+
+/**
+ * `payment_intent.succeeded` — the auto-reload charge→grant reconcile arm (RH-3; REQ-BILL-17).
+ * The sweep's off-session charge succeeds Stripe-side OUTSIDE the grant transaction: a crash between
+ * them leaves a real charge with no credits, no counter bump, no audit row — and no local trace (the
+ * event row lives in the same tx). Stripe still delivers `payment_intent.succeeded`, so this arm
+ * converges the account: grant with the SHARED `auto-reload:grant:<pi>` key (exactly-once against the
+ * sweep's own post-charge tx — whichever path lands first wins; the loser returns `ignored`), the
+ * monthly-cap counter, and the `webhook_reconcile` audit row that keeps `auto_reload_events` complete
+ * and the attempt-sequence honest.
+ *
+ * Chosen over a DB-side resweep: a sweep cannot SEE the orphaned charge — the crash erased the only
+ * would-be local record (polling Stripe for intent lists would need a new port verb + pagination, and
+ * still couldn't fix an intent whose delivery never arrived). The webhook is Stripe's own durable,
+ * retried delivery channel for exactly this fact; `stripe_events` intake already dedupes it.
+ * Non-auto-reload intents (Checkout top-up PIs carry `billing_account_id`/`pack_id` but no `kind`)
+ * are ignored — their stranding is the stripe_events resweep's domain (272_R6BILL.3), not this arm's.
+ */
+async function processPaymentIntentSucceeded(
+  exec: SqlClient,
+  deps: StripeEventDeps,
+  pi: PaymentIntentObject,
+): Promise<StripeEventOutcome> {
+  if (pi.metadata?.kind !== "auto_reload") return { kind: "ignored" };
+  if (!pi.id) return { kind: "unresolved", reason: "payment_intent has no id" };
+  const billingAccountId = pi.metadata.billing_account_id ?? (await accountFor(exec, pi));
+  if (!billingAccountId) {
+    return { kind: "unresolved", reason: `auto_reload payment_intent ${pi.id} has no resolvable billing account` };
+  }
+  const pack = pi.metadata.pack_id ? topUpPack(pi.metadata.pack_id) : undefined;
+  if (!pack) {
+    return { kind: "unresolved", reason: `auto_reload payment_intent ${pi.id} has no resolvable pack` };
+  }
+  const workspaceId = pi.metadata.workspace_id ?? (await homeWorkspace(exec, billingAccountId));
+  if (!workspaceId) return { kind: "unresolved", reason: `no workspace for ${billingAccountId}` };
+  const now = deps.clock.now();
+  const month = now.toISOString().slice(0, 7);
+  const packCents = pack.usd * 100;
+  let applied = false;
+  await deps.runTx(workspaceId, async (tx) => {
+    applied = (
+      await grant(tx, deps, {
+        workspaceId,
+        billingAccountId,
+        bucket: "topup",
+        credits: pack.credits,
+        reason: "auto_reload",
+        expiresAt: new Date(now.getTime() + TOPUP_EXPIRY_MS),
+        stripeRef: pi.id,
+        idempotencyKey: `auto-reload:grant:${pi.id}`,
+      })
+    ).applied;
+    if (!applied) return; // the sweep's own post-charge tx (or an earlier delivery) already landed it.
+    await tx.query(
+      `update billing_accounts set auto_reload_month = $2,
+          auto_reload_spend_cents = case when auto_reload_month = $2 then auto_reload_spend_cents + $3 else $3 end
+        where id = $1`,
+      [billingAccountId, month, packCents],
+    );
+    await tx.query(
+      `insert into auto_reload_events (id, workspace_id, billing_account_id, at, pack_id, credits, cents, stripe_ref, reason, outcome)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,'webhook_reconcile','charged')`,
+      [deps.ids("are"), workspaceId, billingAccountId, now, pack.id, pack.credits, packCents, pi.id],
+    );
+  });
+  return applied ? { kind: "auto_reload_reconciled", billingAccountId } : { kind: "ignored" };
 }
 
 /** A dispute names a payment intent — resolve its account through the top-up grant's `stripe_ref`
