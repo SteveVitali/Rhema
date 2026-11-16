@@ -252,6 +252,55 @@ describe("changePlan (§14.6)", () => {
   });
 });
 
+describe("runBillingPeriodTick — cancel_at_period_end at the boundary (RH-12)", () => {
+  async function activateCancelScheduled() {
+    await inTx((tx) =>
+      activateSubscription(tx, deps(), {
+        workspaceId: WS,
+        billingAccountId: BA,
+        tier: "writer",
+        cycle: "monthly",
+        stripeSubscriptionId: "sub_stripe_1",
+        periodStart: P0,
+        periodEnd: P1,
+        idempotencyKey: "evt:act:1",
+      }),
+    );
+    // §14.6: cancel = cancel_at_period_end — the plan runs to the paid-through date, then ENDS.
+    await inTx((tx) =>
+      tx.query("update subscriptions set cancel_at_period_end = true where billing_account_id = $1", [BA]),
+    );
+  }
+
+  it("a cancel-scheduled row reaching period end ENDS — it does not renew, does not grant, does not un-cancel", async () => {
+    await activateCancelScheduled();
+    const res = await runBillingPeriodTick(db.client, subDeps(), new Date(P1.getTime() + 1000));
+    expect(res.cancelsCompleted).toBe(1);
+    expect(res.includedGrants).toBe(0);
+    const s = await subRow();
+    expect(s?.status).toBe("ended");
+    // the recorded truth stays: the plan ran to term — the flag is never silently cleared.
+    expect(s?.cancel_at_period_end).toBe(true);
+    // …and the period did NOT roll (no unpaid renewal month).
+    expect(new Date(s!.period_end as string).toISOString()).toBe(P1.toISOString());
+    // only the first period's grant exists — no new period's included credits were minted.
+    expect((await readBalances(db, BA)).included.available).toBe(planOf("writer").includedCreditsMonthly);
+    // the account is Free now — the next tick arms the daily allowance.
+    expect(await inTx((tx) => effectivePlanTier(tx, BA))).toBe("free");
+  });
+
+  it("a mid-period cancel-scheduled row still holds this period's paid grant; a renewing row is untouched", async () => {
+    await activateCancelScheduled();
+    // mid-period: the tick keeps the current period's grant honest (the customer paid through P1).
+    const mid = await runBillingPeriodTick(db.client, subDeps(), new Date("2026-09-15T00:00:00Z"));
+    expect(mid.cancelsCompleted).toBe(0);
+    const s = await subRow();
+    expect(s?.status).toBe("active");
+    expect(s?.cancel_at_period_end).toBe(true);
+    expect((await readBalances(db, BA)).included.available).toBe(planOf("writer").includedCreditsMonthly);
+  });
+});
+
 describe("runBillingPeriodTick — daily Free allowance + grant idempotency", () => {
   it("grants 10 daily credits to a free account, once per day", async () => {
     const res = await runBillingPeriodTick(db.client, subDeps(), NOW);
