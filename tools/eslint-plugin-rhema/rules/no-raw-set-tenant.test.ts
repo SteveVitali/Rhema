@@ -10,11 +10,14 @@ const ruleTester = new RuleTester({
 });
 
 describe("no-raw-set-tenant", () => {
-  it("flags raw SET app.tenant_id and allows set_config", () => {
+  it("flags raw SET app.tenant_id everywhere", () => {
     ruleTester.run("no-raw-set-tenant", rule, {
       valid: [
-        { code: `db.query("select set_config('app.tenant_id', $1, true)", [t]);` },
-        { code: "const s = `select set_config('app.tenant_id', ${'$1'}, true)`;" },
+        // BL-118: set_config is allowed ONLY inside the wrapper itself (filename-scoped).
+        {
+          code: `db.query("select set_config('app.tenant_id', $1, true)", [t]);`,
+          filename: "packages/db/src/rls.ts",
+        },
         { code: `const s = "select * from projects";` },
       ],
       invalid: [
@@ -29,6 +32,35 @@ describe("no-raw-set-tenant", () => {
         {
           code: `db.query("set app.tenant_id = 'x'");`,
           errors: [{ messageId: "rawSetTenant" }],
+        },
+      ],
+    });
+  });
+
+  it("flags set_config('app.tenant_id', …) outside the wrapper — the BL-118/RH-A1-9 gap", () => {
+    ruleTester.run("no-raw-set-tenant", rule, {
+      valid: [
+        {
+          code: `await client.query("select set_config('app.tenant_id', $1, true)", [t]);`,
+          filename: "/repo/packages/db/src/rls.ts",
+        },
+        { code: `await client.query("select set_config('role', $1, true)", [t]);` }, // other GUCs untouched
+        { code: `await withTenant(client, t, fn);` },
+      ],
+      invalid: [
+        // The journeys-substrate hand-roll this ticket removes.
+        {
+          code: `await c.query("select set_config('app.tenant_id', $1, true)", [tenantId]);`,
+          filename: "packages/journeys/src/stb5a.ts",
+          errors: [{ messageId: "setConfigTenant" }],
+        },
+        {
+          code: "await c.query(`select set_config('app.tenant_id', $1, true)`, [t]);",
+          errors: [{ messageId: "setConfigTenant" }],
+        },
+        {
+          code: `await c.query("select set_config(\\"app.tenant_id\\", $1, true)", [t]);`,
+          errors: [{ messageId: "setConfigTenant" }],
         },
       ],
     });

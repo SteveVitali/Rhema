@@ -22,7 +22,6 @@
 - **P-1 prod-artifact hygiene (operator ruling 2026-11-15, GD-PRIVACY.R6):** never commit Pulumi stack exports, unredacted scanner output, session/magic-link tokens, or signed-in screenshots of real (non-test) accounts; redact before committing any prod artifact; gitleaks on the staged diff before every records commit. Enacted by 265_R6PRIV.1 (the four named stack exports removed to private retention with sha256 pointer notes; the three unredacted gitleaks reports redacted in place; two magic-link tokens masked; the blanket `docs/` gitleaks skip narrowed to targeted allowlist entries).
 
 ## CURRENT STATE
-
 ```
 projectStatus:   IN_PROGRESS
 nextTicket:        (maintenance mode)  # 282_R6FIX.19 done — the whole handoff chain 266–278 is operator-merged; per GD-MAINT.R6 work is inserted only for defects or operator-asked items (open BL rows: BL-117/BL-120..BL-135 cluster)
