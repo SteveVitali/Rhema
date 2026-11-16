@@ -22,11 +22,10 @@
 - **P-1 prod-artifact hygiene (operator ruling 2026-11-15, GD-PRIVACY.R6):** never commit Pulumi stack exports, unredacted scanner output, session/magic-link tokens, or signed-in screenshots of real (non-test) accounts; redact before committing any prod artifact; gitleaks on the staged diff before every records commit. Enacted by 265_R6PRIV.1 (the four named stack exports removed to private retention with sha256 pointer notes; the three unredacted gitleaks reports redacted in place; two magic-link tokens masked; the blanket `docs/` gitleaks skip narrowed to targeted allowlist entries).
 
 ## CURRENT STATE
-
 ```
 projectStatus:   IN_PROGRESS
-nextTicket:        (maintenance mode)  # 278_R6FIX.15 done — the handoff chain 266–277 + this insert await the operator's bottom-up merges; per GD-MAINT.R6 work is inserted only for defects or operator-asked items
-lastCompleted:   278_R6FIX.15     # main-red repair — REQ-COPY-2 inventory +3 (`email_taken`/`enqueue_failed` from #351, `magic_link_incomplete` from #356) + additive-migrations pin +1 (`0063`) + #356 test-surface fallout (RH-34 `?next=` expectations + census exemption + journey mock) — PR this run, unmerged
+nextTicket:        (maintenance mode)  # 280_R6FIX.17 this run; the handoff chain 266–277 + fix inserts 278–280 await the operator's bottom-up merges; per GD-MAINT.R6 work is inserted only for defects or operator-asked items
+lastCompleted:   280_R6FIX.17     # BL-115 — provisionPersonalAccount check-then-write race closed: one-tx provision (pg_advisory_xact_lock + in-tx re-check + 4 writes) on the existing txRunner seam — PR this run, unmerged
 blockedOn:       (none)
 pauseRequested:  false
 returnPass:      (none)
@@ -37,12 +36,12 @@ dispatchTarget:  subagent
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main              # flat mode — inserts branch off origin/main
 pinnedBaseSha:   a34eb51           # round-7 fork point (unchanged)
-chainTip:        stevevitali/r6fix-15-main-red
+chainTip:        stevevitali/r6fix-17-provision-tx
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
 round:           7                  # post-round maintenance per GD-MAINT.R6
-updatedAt:       2026-11-16T14:2xZ  # merge main @0ddc00e3 — CURRENT STATE collapsed to this PR's own 278_R6FIX.15 transition per GD-OPS-RULES.R6 (union on CURRENT STATE forbidden); the 267 pair main carried in from #347's landing dropped
+updatedAt:       2026-11-16T16:4xZ  # 280_R6FIX.17 (BL-115) branch cut off main @3a840396
 ```
 
 ## OPEN FINDINGS
