@@ -65,6 +65,9 @@ describe("JourneySessions — wiring order (REQ-VFY-7)", () => {
         order.push("goto");
         return { status: () => 200 };
       },
+      // 264_R6FIX.14 — the marker seam probes the browser's default UA once per Browser
+      // (evaluate navigator.userAgent on an about:blank page — no navigation, no wire requests).
+      evaluate: async () => "FakeHeadlessUA/1.0",
       waitForLoadState: async () => undefined,
     } as unknown as Page;
     const context = {
@@ -92,9 +95,14 @@ describe("JourneySessions — wiring order (REQ-VFY-7)", () => {
     const s = await sessions.signIn(email, { useCache: true });
     expect(s.via).toBe("cache");
     // SPA.28 — the context carries NO extraHTTPHeaders (the x-rhema-renderer pin is retired);
-    // the wiring still precedes the probe's first navigation.
-    expect(ctxOpts[0]).not.toHaveProperty("extraHTTPHeaders");
-    expect(order).toEqual(["newPage", "onPage", "goto"]);
+    // the wiring still precedes the probe's first navigation. ctxOpts[0] is the marker seam's
+    // one-shot UA probe (264_R6FIX.14); the real context is the last call — marked, headerless.
+    const real = ctxOpts.at(-1)!;
+    expect(real).not.toHaveProperty("extraHTTPHeaders");
+    expect(real.userAgent).toBe("FakeHeadlessUA/1.0 +RhemaJourney");
+    // the probe's own newPage leads (it reads navigator.userAgent); the session page's tail is
+    // unchanged: wire (onPage) BEFORE the session page's first navigation.
+    expect(order.slice(-3)).toEqual(["newPage", "onPage", "goto"]);
   });
 });
 
@@ -118,6 +126,8 @@ describe("JourneySessions — the --invite-code mint channel", () => {
       waitForSelector: async () => ({}),
       waitForLoadState: async () => undefined,
       waitForTimeout: async () => undefined,
+      // 264_R6FIX.14 — the marker seam's one-shot default-UA probe reads navigator.userAgent.
+      evaluate: async () => "FakeHeadlessUA/1.0",
       locator: (sel: string) => ({
         // MAINT.6 — `codeVisible` models the invite-mode shape (the input rendered directly);
         // false models open-mode's collapsed <details> disclosure, which the mint opens first.
