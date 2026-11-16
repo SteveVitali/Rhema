@@ -19,6 +19,7 @@ import {
   type ConversionResult,
   type SignedUrlProvider,
   type UserContentSigner,
+  errorSummary,
 } from "@rhema/contracts";
 import { fetchGceMetadataAccessToken } from "./k8s-launcher.js";
 
@@ -696,7 +697,7 @@ export function createConvertServicePreview(args: ConvertServiceArgs): {
           return readResult(quarantineKey);
         }
         // transport error — the service is unreachable; the Job is the resilience leg.
-        console.warn(`[ingest] convert-svc unreachable, falling back to the Job: ${String((e as Error)?.message ?? e).slice(0, 160)}`);
+        console.warn(`[ingest] convert-svc unreachable, falling back to the Job: ${errorSummary(e)}`);
         return args.fallback.preview(quarantineKey, opts);
       }
 
@@ -714,7 +715,8 @@ export function createConvertServicePreview(args: ConvertServiceArgs): {
         // deterministic refusal — the Job would convert identically and fail identically; surface it.
         throw new Error(`convert-svc refused (${res.status}): ${detail}`);
       }
-      console.warn(`[ingest] convert-svc ${res.status}, falling back to the Job: ${detail}`);
+      // status only — the upstream response body (${detail}) is unbounded text and never logged (R6LOW.1)
+      console.warn(`[ingest] convert-svc ${res.status}, falling back to the Job`);
       return args.fallback.preview(quarantineKey, opts);
     },
   };

@@ -22,7 +22,20 @@ export function evaluateLicense(name, license, policy) {
   const exceptions = policy.exceptions?.exceptions ?? {};
 
   if (Object.prototype.hasOwnProperty.call(exceptions, name)) {
-    return { ok: true, reason: `exception: ${exceptions[name].rationale}` };
+    const exc = exceptions[name];
+    // R6LOW.1 / RH-A4-4 — an exception records the licence it was granted FOR; a package that has
+    // been relicensed since (SSPL, BUSL, a missing licence field) is a NEW policy question, not a
+    // covered exception. Fail closed and let the diff re-review.
+    if (typeof exc.license === "string" && exc.license.trim() !== "") {
+      if (typeof license !== "string" || license.trim() !== exc.license.trim()) {
+        return {
+          ok: false,
+          reason: `exception package relicensed (recorded '${exc.license}', observed '${license ?? "missing"}') — re-review required`,
+        };
+      }
+      return { ok: true, reason: `exception: ${exc.rationale}` };
+    }
+    return { ok: true, reason: `exception (licence unpinned): ${exc.rationale}` };
   }
 
   if (!license) {

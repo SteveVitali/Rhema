@@ -21,7 +21,7 @@
 // The Connection model carries NO cookie/session-token field anywhere (AC-I-B — REQ-INGEST-2/16).
 
 import { Hono } from "hono";
-import { policyFor, artifactKindSchema, parseQuarantineKey, type ModelTier } from "@rhema/contracts";
+import { policyFor, artifactKindSchema, errorSummary, parseQuarantineKey, type ModelTier } from "@rhema/contracts";
 import { buildEstimate } from "@rhema/run-sheet";
 import {
   createRun,
@@ -335,7 +335,7 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
         }),
       )
       .catch((err: unknown) =>
-        console.error("[api] voice.created analytics failed:", err instanceof Error ? err.message : err),
+        console.error("[api] voice.created analytics failed:", errorSummary(err)),
       );
     return c.json({ personaId, mode, seedAuthoredBy: agentDrafted ? "persona_builder" : "user", status: res }, 201);
   });

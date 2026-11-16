@@ -59,6 +59,8 @@ import {
   createIpEmailThrottle,
   createRedisThrottleStore,
   createSharedIpEmailThrottle,
+  errorLogValue,
+  errorSummary,
 } from "@rhema/contracts";
 import { provisionPersonalAccount, SIGNUP_THROTTLE_DEFAULTS } from "./signup.js";
 import { MAGIC_LINK_THROTTLE_DEFAULTS, OAUTH_SIGNIN_THROTTLE_DEFAULTS, TEST_IDENTITY_THROTTLE_DEFAULTS } from "./auth.js";
@@ -85,10 +87,10 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
   // Cloud Run Direct-VPC egress, which pg-boss/pg surface as an EMITTED 'error' event; an unhandled emitter
   // 'error' throws and kills the process). Handle them non-fatally, exactly as the worker does — a transient
   // pool/boss/redis error must not take the api down; the next query/poll reconnects.
-  pool.on("error", (err: unknown) => console.error("[api] pg pool error (non-fatal):", err instanceof Error ? err.message : err));
-  boss.on("error", (err: unknown) => console.error("[api] pg-boss error (non-fatal):", err instanceof Error ? err.message : err));
-  redis.on("error", (err: unknown) => console.error("[api] redis error (non-fatal):", err instanceof Error ? err.message : err));
-  subscriber.on("error", (err: unknown) => console.error("[api] redis subscriber error (non-fatal):", err instanceof Error ? err.message : err));
+  pool.on("error", (err: unknown) => console.error("[api] pg pool error (non-fatal):", errorSummary(err)));
+  boss.on("error", (err: unknown) => console.error("[api] pg-boss error (non-fatal):", errorSummary(err)));
+  redis.on("error", (err: unknown) => console.error("[api] redis error (non-fatal):", errorSummary(err)));
+  subscriber.on("error", (err: unknown) => console.error("[api] redis subscriber error (non-fatal):", errorSummary(err)));
 
   const clock = systemClock;
   const ids = randomUlids();
@@ -280,7 +282,7 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
       setInstrumentedOverride(cell.workflow, cell.spec as EstimatorSpec);
     }
   } catch (err) {
-    console.warn("[api] estimator_cells load failed — modeled estimators govern:", err);
+    console.warn("[api] estimator_cells load failed — modeled estimators govern:", errorSummary(err));
   }
   // Hoisted so RES.2's `settleUnverified` closure binds the same ledger + writer the run paths use.
   const holdLedger = new SqlHoldLedger({ ids, clock });
@@ -457,7 +459,7 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
           }),
         )
         .catch((err: unknown) =>
-          console.error("[api] finding.disposed analytics failed:", err instanceof Error ? err.message : err),
+          console.error("[api] finding.disposed analytics failed:", errorSummary(err)),
         );
     },
     emitEstimated: (ctx, event) => {
@@ -472,7 +474,7 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
           }),
         )
         .catch((err: unknown) =>
-          console.error("[api] run.estimated analytics failed:", err instanceof Error ? err.message : err),
+          console.error("[api] run.estimated analytics failed:", errorSummary(err)),
         );
     },
     // DEF.2 (F6; closes D-PRB.03-1) — the estimate service's live seams. `estimate_cache` is
@@ -629,7 +631,7 @@ export async function startApiServer(): Promise<void> {
 // Run when invoked as the container entrypoint (`node dist/server.js`), not when imported.
 if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
   startApiServer().catch((err: unknown) => {
-    console.error("[api] failed to start:", err);
+    console.error("[api] failed to start:", errorLogValue(err));
     process.exit(1);
   });
 }
