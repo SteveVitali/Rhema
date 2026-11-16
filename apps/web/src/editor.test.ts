@@ -80,7 +80,7 @@ describe("editor page — the /edit/ route is superseded (P1.02)", () => {
     const app = createWebApp({ ...makeDeps(), session: () => null });
     const res = await app.request("/p/the-piece/edit/d_2");
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("/login");
+    expect(res.headers.get("location")).toBe("/login?next=%2Fp%2Fthe-piece%2Fedit%2Fd_2");
   });
 
   it("redirects to the Page's /v/:n route (the CodeMirror surface is dormant)", async () => {

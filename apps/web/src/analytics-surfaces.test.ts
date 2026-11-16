@@ -111,8 +111,10 @@ describe("P1.20 — the REQ-PROD-15 opt-out toggle in the §14.7 Data section", 
 
   it("redirects to /login unauthenticated", async () => {
     const app = createWebApp(makeDeps({ session: () => null }));
-    expect((await app.request("/settings")).headers.get("location")).toBe("/login");
-    expect((await app.request("/app/settings/data")).headers.get("location")).toBe("/login");
+    expect((await app.request("/settings")).headers.get("location")).toBe("/login?next=%2Fsettings");
+    expect((await app.request("/app/settings/data")).headers.get("location")).toBe(
+      "/login?next=%2Fapp%2Fsettings%2Fdata",
+    );
     expect(
       (await app.request("/app/settings/data/privacy", { method: "POST", ...form({}) })).headers.get("location"),
     ).toBe("/login");
@@ -136,7 +138,7 @@ describe("GET /usage — the §14.5 level-1 glance", () => {
 
   it("redirects to /login unauthenticated", async () => {
     const res = await createWebApp(makeDeps({ session: () => null })).request("/usage");
-    expect(res.headers.get("location")).toBe("/login");
+    expect(res.headers.get("location")).toBe("/login?next=%2Fusage");
   });
 });
 
