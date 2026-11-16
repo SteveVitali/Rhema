@@ -160,6 +160,12 @@ function makeFetch(opts: FetchOpts = {}) {
     if (url === "/app/new") {
       return jsonResponse(200, opts.newPost ?? { ok: true, redirect: "/p/fresh?created=scratch" });
     }
+    if (url === "/bff/app") {
+      // the §5.2 home aggregate's minimal shape — enough for the in-router /app leaf to mount.
+      return jsonResponse(200, {
+        rows: [], voices: [], groupBy: "attention", balance: null, protocols: [], deletedRows: [],
+      });
+    }
     if (url === "/app/new/create") {
       return jsonResponse(200, opts.createPost ?? {
         ok: true,
@@ -298,6 +304,25 @@ describe("GET /app/new mounted (R7HOME.2b — the immediate create)", () => {
     });
     const { router } = await mountAt("/app/new", BOOT, refusing);
     expect(router.state.location.pathname).toBe("/app");
+  });
+
+  it("R6FIX.12 — the refused-create arm lands on the mounted /app list leaf (its twin read, zero document navigations)", async () => {
+    const base = makeFetch();
+    const refusing = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      if (url === "/app/new" && init?.method === "POST") {
+        return jsonResponse(400, { error: "refused" });
+      }
+      return base(input, init);
+    });
+    // a "spa" verdict on /app so the in-router leaf mounts (the production boot's verdict).
+    const { router } = await mountAt("/app/new", bootFor({ ...SPA_ALL, "/app": "spa" }), refusing);
+    expect(router.state.location.pathname).toBe("/app");
+    // the pin: the handoff ran IN-ROUTER — the /app leaf fetched its own twin — while ZERO
+    // document navigations fired. A `href:` arm would have doc-navved to /app, where the
+    // server precedence redirect could bounce a lingering intent straight back to /app/new.
+    expect(refusing.mock.calls.some(([u]) => String(u) === "/bff/app")).toBe(true);
+    expect(docNavSpy).not.toHaveBeenCalled();
   });
 
   it("?held=1 lands the NEW project's import surface, which hydrates the held file", async () => {

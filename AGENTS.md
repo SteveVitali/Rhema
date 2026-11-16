@@ -46,7 +46,11 @@
 - Flip 1 stays parked: every stage fact runs `debitMode: "committed"` (`infra/config/stages.ts`)
   and its early evaluation/execution is carrier `256_R6FLIP.1` under the 2026-11-11 ruling.
   The REQ-SPEC-32 committed-versus-metered disclosure stands until it lands.
-- Standing ops rules: the golden re-run (`docs/ops/golden-rerun-rule.md`) fires after every
+- Standing ops rules: **prod-artifact hygiene (operator ruling P-1, 2026-11-15):** never
+  commit Pulumi stack exports, unredacted scanner output, session/magic-link tokens, or
+  signed-in screenshots of real (non-test) accounts; redact before committing any prod
+  artifact; run gitleaks on the staged diff before every records commit. The golden
+  re-run (`docs/ops/golden-rerun-rule.md`) fires after every
   protocol-affecting deploy — the four-fixture cohort, $100 measured hard cap, never trimmed
   silently. The deploy-neutral provenance allowlist is `scripts/deploy-neutral-paths.txt`
   (`docs/` + `.gitleaks.toml` only): a trailing deployed SHA passes only as a git ancestor with
