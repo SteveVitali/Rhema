@@ -10,6 +10,7 @@
 // `--slug` defaults to `demo~the-borrowed-commons` (the demo essay works with zero auth).
 
 import { chromium } from "playwright";
+import { newMarkedContext } from "./marked-context.js";
 
 const SAMPLES = 20;
 // REQ-SPEED-5's budgets — recorded, never gating (the flag is emitted so the record says so).
@@ -36,7 +37,7 @@ async function main(): Promise<number> {
     slug,
   };
   try {
-    const context = await browser.newContext();
+    const context = await newMarkedContext(browser);
     const page = await context.newPage();
     const url = `${web}/p/${slug}`;
 

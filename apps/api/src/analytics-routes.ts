@@ -17,7 +17,12 @@
 
 import { createHash } from "node:crypto";
 import { Hono } from "hono";
-import { CLIENT_ANALYTICS_EVENT_NAMES, type AnalyticsEventName } from "@rhema/contracts";
+import {
+  CLIENT_ANALYTICS_EVENT_NAMES,
+  acquisitionSurfaceForUserAgent,
+  parseAcquisitionSurface,
+  type AnalyticsEventName,
+} from "@rhema/contracts";
 
 /** P1.17 (§3.5) — the small acquisition funnel allowed on `POST /analytics/acquisition`.
  *  Identity is always bound server-side from the session; this channel only reports the
@@ -151,6 +156,7 @@ export function createAnalyticsRoutes(deps: AnalyticsApiDeps): Hono {
         event?: unknown;
         props?: unknown;
         token?: unknown;
+        surface?: unknown;
       } | null;
       if (
         typeof body?.event !== "string" ||
@@ -169,10 +175,20 @@ export function createAnalyticsRoutes(deps: AnalyticsApiDeps): Hono {
       if (typeof body.token === "string" && body.token.length <= 80) safeProps.token = body.token;
       const ip = c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ?? "";
       const ipHash = ip ? createHash("sha256").update(ip).digest("hex").slice(0, 24) : null;
+      // 264_R6FIX.14 — the self-traffic split: `web:auto` is ADDITIVE — either channel marking
+      // classifies auto (the relay's validated inbound-UA verdict in `body.surface`, or the UA
+      // this ingest sees itself — a marked direct probe still lands `web:auto`). A `web` body
+      // value can never UN-mark a marked UA. Written into the `surface` column 0037 shipped —
+      // a query-layer split, never a stored-history rewrite.
+      const surface =
+        parseAcquisitionSurface(body?.surface) === "web:auto" ||
+        acquisitionSurfaceForUserAgent(c.req.header("user-agent")) === "web:auto"
+          ? "web:auto"
+          : "web";
       await db
         .query(
-          `insert into acquisition_events (id, event, props, ip_hash, created_at) values ($1,$2,$3,$4,$5)`,
-          [deps.ids("acq"), body.event, JSON.stringify(safeProps), ipHash, deps.clock.now().toISOString()],
+          `insert into acquisition_events (id, event, props, surface, ip_hash, created_at) values ($1,$2,$3,$4,$5,$6)`,
+          [deps.ids("acq"), body.event, JSON.stringify(safeProps), surface, ipHash, deps.clock.now().toISOString()],
         )
         .catch(() => undefined); // analytics never 500s the funnel
       return c.json({ ok: true });
