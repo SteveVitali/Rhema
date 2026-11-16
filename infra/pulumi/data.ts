@@ -176,13 +176,12 @@ export function createData(args: DataArgs): Data {
     databaseHost = cloudSqlInstance.privateIpAddress;
   }
 
-  // --- GCS buckets: versioned, isolated per stage, with the §13.3 retention lifecycle rules. ---
-  const lifecycleRules = Object.values(RETENTION_SCHEDULE)
-    .filter((r) => r.days != null) // restore points are per-plan, applied at write time
-    .map((r) => ({
-      condition: { age: r.days as number, matchesPrefixes: [`${r.class}/`] },
-      action: { type: "Delete" },
-    }));
+  // --- GCS buckets: versioned, isolated per stage. BL-123 (operator ruling 2026-11-16) — the
+  // §13.3 per-class lifecycle rules matched `<class>/` key prefixes no write path ever used: they
+  // were dead rules claiming coverage that did not exist. Dropped rather than rebound — expiry is
+  // honestly owned by the DB prune jobs (run_events.retention, admin_actions.retention, the purge
+  // pipeline) and the declared RETENTION_SCHEDULE. The access-logs bucket's real unscoped rule stays.
+  const lifecycleRules: { condition: { age: number }; action: { type: string } }[] = [];
 
   // A dedicated bucket for GCS access logs — the benchmark-enclave bucket logs every object read here
   // (REQ-EVAL-3): a corpus-draft or gold-annotation read leaves a bucket-access-log line, in a keyspace

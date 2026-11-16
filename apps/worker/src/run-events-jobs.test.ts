@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createOrchestratorTestDb, seedProject, seedRun, type OrchestratorTestDb } from "@rhema/orchestrator/testing";
 import { FixedClock } from "@rhema/orchestrator";
 import {
+  handleAdminActionsRetention,
   handleRunEventsRetention,
   handleRunEventsPartition,
   RUN_EVENT_JOBS,
@@ -75,5 +76,28 @@ describe("queue registration", () => {
   it("registers the maintenance queues in WORKER_QUEUES", () => {
     expect(WORKER_QUEUES).toContain(RUN_EVENT_JOBS.retention);
     expect(WORKER_QUEUES).toContain(RUN_EVENT_JOBS.partition);
+  });
+});
+
+describe("handleAdminActionsRetention — the audit class's 90-day enforcer (BL-123)", () => {
+  it("deletes admin_actions rows older than 90 days and keeps recent ones", async () => {
+    const ins = (id: string, at: string) =>
+      db.client.query(
+        `insert into admin_actions (id, actor, action, at) values ($1, 'test', 'house_credit_grant', $2)`,
+        [id, at],
+      );
+    await ins("a1", "2026-07-01T00:00:00Z"); // ~106 days old → expires
+    await ins("a2", "2026-07-16T00:00:00Z"); // ~91 days old → expires
+    await ins("a3", "2026-10-10T00:00:00Z"); // 5 days old → survives
+    const { deleted } = await handleAdminActionsRetention(deps);
+    expect(deleted).toBe(2);
+    const remaining = (await db.client.query("select id from admin_actions order by id")).rows as {
+      id: string;
+    }[];
+    expect(remaining.map((r) => r.id)).toEqual(["a3"]);
+  });
+
+  it("the queue is registered in WORKER_QUEUES", () => {
+    expect(WORKER_QUEUES).toContain("admin_actions.retention");
   });
 });
