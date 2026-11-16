@@ -11,6 +11,14 @@ D-R6OSS.1-1). This run is the row's closeout re-verification: the audit surface 
 
 ## Committed evidence
 
+> **2026-11-15 (265_R6PRIV.1, operator ruling P-1):** `gitleaks-unfiltered-head.json`
+> and `gitleaks-unfiltered-delta.json` are now the **redacted** form of the same
+> scans — identical 220 / 129 findings (files, commits, fingerprints, classes), with
+> `Secret`/`Match` secret literals and `Email` masked. A literal rescan over the
+> recorded range was not reproducible (the scanned branch's patch series changed
+> post-merge: the same log range now yields 490 findings instead of 129), so the
+> committed JSONs were redacted in place — same evidence, no unredacted values.
+
 - `gitleaks-committed-config.json` — `gitleaks git --config .gitleaks.toml`, HEAD history:
   **1,678 commits scanned, 0 findings** (report `[]`).
 - `gitleaks-unfiltered-head.json` — the unfiltered audit config

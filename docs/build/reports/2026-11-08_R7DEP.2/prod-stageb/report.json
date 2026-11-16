@@ -34,7 +34,7 @@
         "GET https://rhema.tools/app net::ERR_TOO_MANY_REDIRECTS"
       ],
       "durationMs": 9494,
-      "error": "page.goto: net::ERR_TOO_MANY_REDIRECTS at https://rhema.tools/api/auth/magic-link/verify?token=nxOHlqWRjtGIxzqyirlMiGkTABdKuULc&callbackURL=https%3A%2F%2Frhema.tools%2Fapp%3Fentry%3Ddraft%26held%3D1&errorCallbackURL=https%3A%2F%2Frhema.tools%2Flogin\nCall log:\n  - navigating to \"https://rhema.tools/api/auth/magic-link/verify?token=nxOHlqWRjtGIxzqyirlMiGkTABdKuULc&callbackURL=https%3A%2F%2Frhema.tools%2Fapp%3Fentry%3Ddraft%26held%3D1&errorCallbackURL=https%3A%2F%2Frhema.tools%2Flogin\", waiting until \"domcontentloaded\"\n",
+      "error": "page.goto: net::ERR_TOO_MANY_REDIRECTS at https://rhema.tools/api/auth/magic-link/verify?token=<redacted>&callbackURL=https%3A%2F%2Frhema.tools%2Fapp%3Fentry%3Ddraft%26held%3D1&errorCallbackURL=https%3A%2F%2Frhema.tools%2Flogin\nCall log:\n  - navigating to \"https://rhema.tools/api/auth/magic-link/verify?token=<redacted>&callbackURL=https%3A%2F%2Frhema.tools%2Fapp%3Fentry%3Ddraft%26held%3D1&errorCallbackURL=https%3A%2F%2Frhema.tools%2Flogin\", waiting until \"domcontentloaded\"\n",
       "screenshot": "N1.png"
     },
     {
@@ -73,7 +73,7 @@
         "GET https://rhema.tools/app net::ERR_TOO_MANY_REDIRECTS"
       ],
       "durationMs": 8476,
-      "error": "page.goto: net::ERR_TOO_MANY_REDIRECTS at https://rhema.tools/api/auth/magic-link/verify?token=HSfeQEogYaCqoMeXMjGEnAyYsNFyAYvx&callbackURL=https%3A%2F%2Frhema.tools%2Fapp%3Fentry%3Ddraft%26held%3D1&errorCallbackURL=https%3A%2F%2Frhema.tools%2Flogin\nCall log:\n  - navigating to \"https://rhema.tools/api/auth/magic-link/verify?token=HSfeQEogYaCqoMeXMjGEnAyYsNFyAYvx&callbackURL=https%3A%2F%2Frhema.tools%2Fapp%3Fentry%3Ddraft%26held%3D1&errorCallbackURL=https%3A%2F%2Frhema.tools%2Flogin\", waiting until \"domcontentloaded\"\n",
+      "error": "page.goto: net::ERR_TOO_MANY_REDIRECTS at https://rhema.tools/api/auth/magic-link/verify?token=<redacted>&callbackURL=https%3A%2F%2Frhema.tools%2Fapp%3Fentry%3Ddraft%26held%3D1&errorCallbackURL=https%3A%2F%2Frhema.tools%2Flogin\nCall log:\n  - navigating to \"https://rhema.tools/api/auth/magic-link/verify?token=<redacted>&callbackURL=https%3A%2F%2Frhema.tools%2Fapp%3Fentry%3Ddraft%26held%3D1&errorCallbackURL=https%3A%2F%2Frhema.tools%2Flogin\", waiting until \"domcontentloaded\"\n",
       "screenshot": "N3.png"
     },
     {
