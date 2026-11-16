@@ -82,7 +82,7 @@ describe("GET/PUT /notifications/prefs (REQ-ACCT-1)", () => {
   });
 });
 
-describe("GET /action/:token — the signed one-click consume", () => {
+describe("the signed one-click action — GET renders the no-consume interstitial, POST consumes (279_R6FIX.16 / BL-116)", () => {
   async function mint(action: "open" | "hold", expiresInMs = 60 * 60 * 1000) {
     const runId = "run_a1";
     await seedRun(db, { runId, workspaceId: seed.workspaceId, projectId: seed.projectId, state: "waiting_gate" });
@@ -106,23 +106,48 @@ describe("GET /action/:token — the signed one-click consume", () => {
     return { ...m, gateId, runId };
   }
 
-  it("the MINTED /api/action/<token> URL consumes — the emailed link contract (DEF.3 / STB.3 F9)", async () => {
+  it("the MINTED /api/action/<token> URL answers — the emailed link contract (DEF.3 / STB.3 F9)", async () => {
     // mintEmailAction returns `url = <apiBaseUrl>/api/action/<payload>.<sig>` — the string that
-    // actually lands in the email. The api mounts at the listener root, so the consume handler must
+    // actually lands in the email. The api mounts at the listener root, so the action handler must
     // answer at /api/action/:token or every emailed link is a dead 404 (observed on prod, STB.3).
     const m = await mint("hold");
     const path = new URL(m.url).pathname;
     expect(path).toBe(`/api/action/${m.token}`);
-    const r1 = await app.request(path);
+    const g = await app.request(path);
+    expect(g.status).toBe(200); // the no-consume interstitial, not a consume
+    const r1 = await app.request(path, { method: "POST" });
     expect(r1.status).toBe(303);
     expect(r1.headers.get("location")).toBe(`https://app.test/p/slug-${seed.projectId}/review/${m.runId}?gate=${m.gateId}`);
-    const r2 = await app.request(path);
+    const r2 = await app.request(path, { method: "POST" });
     expect(r2.status).toBe(410);
+  });
+
+  it("a scanner's GET prefetch burns nothing — the confirm POST still consumes once (BL-116 / RH-31 class)", async () => {
+    const m = await mint("hold");
+    // A mail gateway's link scanner GETs the emailed URL — under the pre-interstitial contract
+    // that burned the token and paused the gate; now it must see only a confirm page.
+    for (const path of [`/action/${m.token}`, `/api/action/${m.token}`]) {
+      const g = await app.request(path);
+      expect(g.status).toBe(200);
+      const body = await g.text();
+      expect(body).toContain("<form method=\"post\"");
+      expect(body).toContain("data-email-action-confirm");
+    }
+    // Neither prefetch consumed the token or touched the gate.
+    const before = (await db.client.query("select held from gates where id = $1", [m.gateId])).rows[0] as { held: boolean };
+    expect(before.held).toBe(false);
+    // The real confirm click still consumes — once.
+    const p1 = await app.request(`/action/${m.token}`, { method: "POST" });
+    expect(p1.status).toBe(303);
+    const after = (await db.client.query("select held from gates where id = $1", [m.gateId])).rows[0] as { held: boolean };
+    expect(after.held).toBe(true);
+    const p2 = await app.request(`/action/${m.token}`, { method: "POST" });
+    expect(p2.status).toBe(410);
   });
 
   it("hold consumes once, holds the gate, and redirects to the deep link; the replay is 410", async () => {
     const m = await mint("hold");
-    const r1 = await app.request(`/action/${m.token}`);
+    const r1 = await app.request(`/action/${m.token}`, { method: "POST" });
     expect(r1.status).toBe(303);
     // P1.19 — deep links are slug-based (the fixtures seed `slug-<projectId>`).
     expect(r1.headers.get("location")).toBe(`https://app.test/p/slug-${seed.projectId}/review/${m.runId}?gate=${m.gateId}`);
@@ -133,14 +158,14 @@ describe("GET /action/:token — the signed one-click consume", () => {
     expect(gate.held).toBe(true);
     expect(gate.deadline_at).toBeNull();
 
-    const r2 = await app.request(`/action/${m.token}`);
+    const r2 = await app.request(`/action/${m.token}`, { method: "POST" });
     expect(r2.status).toBe(410);
   });
 
   it("a tampered token is 400 and never touches the gate", async () => {
     const m = await mint("hold");
     const tampered = `${Buffer.from(JSON.stringify({ tid: "eat_evil", ws: seed.workspaceId })).toString("base64url")}.${m.token.split(".")[1]}`;
-    const r = await app.request(`/action/${tampered}`);
+    const r = await app.request(`/action/${tampered}`, { method: "POST" });
     expect(r.status).toBe(400);
     const gate = (await db.client.query("select held from gates where id = $1", [m.gateId])).rows[0] as { held: boolean };
     expect(gate.held).toBe(false);
@@ -149,7 +174,7 @@ describe("GET /action/:token — the signed one-click consume", () => {
   it("an expired token is 410", async () => {
     const m = await mint("open", 1000);
     deps.clock.advance(2000);
-    const r = await app.request(`/action/${m.token}`);
+    const r = await app.request(`/action/${m.token}`, { method: "POST" });
     expect(r.status).toBe(410);
   });
 
