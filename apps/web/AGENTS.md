@@ -18,6 +18,46 @@
   the JSON twin carries `project.showcase` + `project.readOnlyProject` as row facts. No leaf
   chooses a renderer for a twin fact any more; `SsrHandoff` remains the boot-verdict fallback.
 
+## Critical Gotchas
+
+1. **Do not resurrect renderer controls.** `?ssr=1`, `?renderer=spa`, `x-rhema-renderer`,
+   `SPA_OVERRIDES`, the `SPA_SURFACES` environment variable, and `rhema:spaSurfaces` are retired.
+   `SPA_SURFACES`, `SPA_IDE_FRAMED_*`, and `SPA_DOCUMENT_ROUTES` remain contract vocabulary;
+   the census still builds metadata, but none is an activation flag. A `surfaces: null` route
+   is a server-owned redirect registered as a `reloadDocument` stub.
+2. **Keep one navigation interceptor.** `mountSpa`, never `createSpaRouter`, installs the single
+   bubble-phase document click listener. Preserve the ordered guards in
+   `apps/web/src/spa/nav-intercept.ts`: claimed event, non-primary button, modifiers,
+   contenteditable, target/download/`data-spa-native`, foreign origin, hash-only navigation,
+   out-of-tree match, then `RELOAD_STUB_IDS`. These stay native or take document navigation.
+   In-tree interception is unconditional: no `surfaces`, `deviceClass`, `twinForcesSsr`, or
+   `spaRouteFor` check. Clicks push; intent preloading is disabled because loaders can have effects.
+3. **Use the document-navigation seam.** `navigateDocument` / `replaceDocument` in
+   `apps/web/src/spa/dom.ts` share the `spaRuntime` arms. Logout, external handoffs, and binaries
+   are document navigations. Keep the IDE controller's native `hashchange` listener: those hops
+   can bypass TanStack entirely. The demo boundary is the other sanctioned class (S-14): every
+   link into or out of `/demo*` is `data-spa-native` by name — sidebar "Demo", landing, the
+   Showcase link, the demo wordmark — never an SPA hop that would leak the workspace boot.
+4. **Preserve settle evidence.** Every served document starts `data-nav-count="0"`; HeadManager
+   ticks committed transitions and removes `data-mounted` while navigation is pending.
+   `data-page-session` on `[data-page-root]` identifies the keep-alive session. Keep `data-renderer`
+   and `data-route` truthful on both renderers; tests must distinguish client and document navigation.
+5. **Selectors are a contract.** Declare hooks, roles, and field names in
+   `apps/web/src/dom-contract.ts`, emit them, and assert them. `check:dom-contract` requires
+   journeys ⊆ manifest ⊆ emitted and asserted selectors; a made-up hook is not acceptable.
+6. **SSR islands are permanent while mounted.** `apps/web/client-entries.mjs` lists
+   `ide`, `page`, and `landing`; `page.js` / `ide.js` still mount on forced-SSR Pages and SSR IDE
+   documents. `outline` and `editor` entries are retired. Remove an entry only when no served
+   document can mount it; removing `page`/`ide` changes the REQ-ED-12 design.
+7. **Source mode does not replace the editor.** `apps/web/src/spa/page-source-mode.ts` dynamically
+   imports plain-text CodeMirror 6 in the `codemirror` async group. Do not add the Markdown language
+   bundle without resolving the bundle ceiling. Commits use `applySourceMarkdown` in
+   `packages/editor/src/source-mode.ts` (three-way top-level-block merge); ProseMirror remains
+   mounted and dispatching inside `data-pm-host`.
+8. **A local build proves no deployment.** Surface acceptance needs a served route, screenshot,
+   controls, and the expected deployed SHA. Ordered activation lives in
+   `docs/build/INTEGRATION_PLAN.md`; renderer rollback is `git revert` + redeploy, never a flag flip.
+
 ## Key Files
 
 | File                                | Lines (approx) | Purpose                                                |
@@ -170,46 +210,6 @@ pnpm check:protocol-markers
   runtime code — it must stay out of the entry bundle.
 - The `?` sheet is **generated**: `CHEAT_SHEET` maps every `IDE_KEYMAP` row, and
   `shortcutFor(actionKind)` is the only way a tooltip or menu shows a chord — never a literal.
-
-## Critical Gotchas
-
-1. **Do not resurrect renderer controls.** `?ssr=1`, `?renderer=spa`, `x-rhema-renderer`,
-   `SPA_OVERRIDES`, the `SPA_SURFACES` environment variable, and `rhema:spaSurfaces` are retired.
-   `SPA_SURFACES`, `SPA_IDE_FRAMED_*`, and `SPA_DOCUMENT_ROUTES` remain contract vocabulary;
-   the census still builds metadata, but none is an activation flag. A `surfaces: null` route
-   is a server-owned redirect registered as a `reloadDocument` stub.
-2. **Keep one navigation interceptor.** `mountSpa`, never `createSpaRouter`, installs the single
-   bubble-phase document click listener. Preserve the ordered guards in
-   `apps/web/src/spa/nav-intercept.ts`: claimed event, non-primary button, modifiers,
-   contenteditable, target/download/`data-spa-native`, foreign origin, hash-only navigation,
-   out-of-tree match, then `RELOAD_STUB_IDS`. These stay native or take document navigation.
-   In-tree interception is unconditional: no `surfaces`, `deviceClass`, `twinForcesSsr`, or
-   `spaRouteFor` check. Clicks push; intent preloading is disabled because loaders can have effects.
-3. **Use the document-navigation seam.** `navigateDocument` / `replaceDocument` in
-   `apps/web/src/spa/dom.ts` share the `spaRuntime` arms. Logout, external handoffs, and binaries
-   are document navigations. Keep the IDE controller's native `hashchange` listener: those hops
-   can bypass TanStack entirely. The demo boundary is the other sanctioned class (S-14): every
-   link into or out of `/demo*` is `data-spa-native` by name — sidebar "Demo", landing, the
-   Showcase link, the demo wordmark — never an SPA hop that would leak the workspace boot.
-4. **Preserve settle evidence.** Every served document starts `data-nav-count="0"`; HeadManager
-   ticks committed transitions and removes `data-mounted` while navigation is pending.
-   `data-page-session` on `[data-page-root]` identifies the keep-alive session. Keep `data-renderer`
-   and `data-route` truthful on both renderers; tests must distinguish client and document navigation.
-5. **Selectors are a contract.** Declare hooks, roles, and field names in
-   `apps/web/src/dom-contract.ts`, emit them, and assert them. `check:dom-contract` requires
-   journeys ⊆ manifest ⊆ emitted and asserted selectors; a made-up hook is not acceptable.
-6. **SSR islands are permanent while mounted.** `apps/web/client-entries.mjs` lists
-   `ide`, `page`, and `landing`; `page.js` / `ide.js` still mount on forced-SSR Pages and SSR IDE
-   documents. `outline` and `editor` entries are retired. Remove an entry only when no served
-   document can mount it; removing `page`/`ide` changes the REQ-ED-12 design.
-7. **Source mode does not replace the editor.** `apps/web/src/spa/page-source-mode.ts` dynamically
-   imports plain-text CodeMirror 6 in the `codemirror` async group. Do not add the Markdown language
-   bundle without resolving the bundle ceiling. Commits use `applySourceMarkdown` in
-   `packages/editor/src/source-mode.ts` (three-way top-level-block merge); ProseMirror remains
-   mounted and dispatching inside `data-pm-host`.
-8. **A local build proves no deployment.** Surface acceptance needs a served route, screenshot,
-   controls, and the expected deployed SHA. Ordered activation lives in
-   `docs/build/INTEGRATION_PLAN.md`; renderer rollback is `git revert` + redeploy, never a flag flip.
 
 ## Terminology
 
