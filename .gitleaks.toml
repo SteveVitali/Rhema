@@ -6,9 +6,14 @@ title = "Rhema gitleaks policy"
 useDefault = true
 
 [allowlist]
-description = "Paths that are documentation or fixtures, not secret-bearing source."
+description = "Targeted exemptions — 265_R6PRIV.1 (ruling P-1) replaced the blanket docs/ skip. Each entry is justified by a verified false-positive class; prod artifacts must be redacted BEFORE commit (the standing rule), never exempted after the fact."
 paths = [
-  '''docs/.*''',
+  # 265_R6PRIV.1 — scanner-output evidence files embed the literals they captured:
+  # `"Secret"`/`"Match"` JSON fields re-fire `generic-api-key` on the audit's own
+  # benign classes (self-referential evidence). Path-scoped to committed
+  # `gitleaks-*.json` reports only — HEAD content is committed redacted (P-1);
+  # this entry exists because the pre-redaction blobs stay in history.
+  '''docs/build/reports/.*/gitleaks-[^/]*\.json$''',
   '''.*\.example$''',
   '''pnpm-lock\.yaml''',
   # Better-Auth test fixture (carried from main, 57aaaf5)
@@ -58,4 +63,22 @@ regexes = [
   # generic-api-key only because its entropy (3.58) clears the 3.5 floor. Pinned in history by
   # 244498c. Anchored: the whole secret must be exactly `v<N>-published`.
   '''^v[0-9]+-published$''',
+  # 265_R6PRIV.1 (ruling P-1) — targeted replacements for the removed `docs/` skip.
+  # Each class verified against `gitleaks git` over full history (794 findings → 0):
+  # (a) `"api": "<sha>"` provenance fields in committed report.json evidence and the
+  #     `api: `<sha>``/`sha256:` provenance literals in run ledgers — a 40- or
+  #     64-char lowercase-hex literal is a git SHA / content digest identifier,
+  #     not a credential. Shape-anchored to pure-hex secrets.
+  '''^[0-9a-f]{40}$''',
+  '''^[0-9a-f]{64}$''',
+  # (b) env-var name literal in run prose (`api: `MAX_USD_PER_RUN=10``) — an
+  #     operator-set knob name, not a credential.
+  '''^MAX_USD_PER_RUN=[0-9]+$''',
+  # (c) quarantine object-KEY paths in docs prose (`quarantine/ws1/img`,
+  #     `quarantine/<ULID>/`) — same object-key class as the pinned
+  #     `quarantine/ws<n>/up<n>` fixtures above.
+  '''^quarantine/[A-Za-z0-9]+(/[A-Za-z0-9]+)?/?$''',
+  # (d) doc-path literal `obligations/new` (design-doc prose) — a repo path, not
+  #     a credential.
+  '''^obligations/[a-z]+$''',
 ]
