@@ -72,6 +72,8 @@ describe("REQ-RELOAD-4 — mutationOutcome census over server.ts POST handlers",
   const EXEMPT: Readonly<Record<string, string>> = {
     "/signup": "funnel form — re-renders the signup document with the inline error, never raw JSON",
     "/login": "funnel form — re-renders the login document with the inline error",
+    "/auth/magic-link":
+      "funnel auth form (275_R6WEB.1 RH-31 interstitial) — answers the api verify's response verbatim (session Set-Cookie + callbackURL 302)",
     "/ide/theme": "JSON-only island write (no form posts it)",
     "/p/:project/paper-theme": "JSON-only island write",
     "/p/:project/edit/:draftId/save": "autosave/beacon — JSON + text/plain, never a form",
