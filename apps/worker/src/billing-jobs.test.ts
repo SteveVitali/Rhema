@@ -82,6 +82,47 @@ describe("handleStripeEvent (stripe.event consumer — §14.6)", () => {
     ).rows[0] as { a: number } | undefined;
     expect(bal?.a).toBe(2500);
   });
+
+  it("threads expectLivemode → a livemode:false event is skipped with zero writes (RH-7; 268_R6BILL.1)", async () => {
+    const payload = {
+      id: "evt_w_lm",
+      type: "checkout.session.completed",
+      livemode: false, // a test-mode event must never write live state
+      data: {
+        object: {
+          id: "cs_lm",
+          amount_total: 2500,
+          payment_intent: "pi_lm",
+          client_reference_id: BA,
+          metadata: { workspace_id: WS },
+        },
+      },
+    };
+    await insertStripeEvent(db.client, {
+      id: "evt_w_lm",
+      type: "checkout.session.completed",
+      receivedAt: NOW,
+      payload,
+    });
+    const out = await handleStripeEvent(deps({ expectLivemode: true }), { eventId: "evt_w_lm" });
+    expect(out.kind).toBe("skipped");
+    const bal = (
+      await db.client.query(
+        "select available::int as a from credit_balances where billing_account_id = $1 and bucket = 'topup'",
+        [BA],
+      )
+    ).rows[0] as { a: number } | undefined;
+    expect(bal?.a ?? 0).toBe(0);
+    // the matching livemode:true payload still processes — the check gates mode, not the event class.
+    await insertStripeEvent(db.client, {
+      id: "evt_w_lm2",
+      type: "checkout.session.completed",
+      receivedAt: NOW,
+      payload: { ...payload, id: "evt_w_lm2", livemode: true },
+    });
+    const live = await handleStripeEvent(deps({ expectLivemode: true }), { eventId: "evt_w_lm2" });
+    expect(live.kind).toBe("topup_granted");
+  });
 });
 
 describe("handleUsageReconcile (nightly usage.reconcile — REQ-BILL-13 + REQ-SPEC-24.1)", () => {

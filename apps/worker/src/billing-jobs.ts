@@ -68,6 +68,12 @@ export type AlertSink = (a: ReconcileAlert) => void | Promise<void>;
 export interface WorkerBillingDeps extends WorkerLedgerDeps {
   readonly reportSource?: ProviderReportSource;
   readonly alert?: AlertSink;
+  /**
+   * RH-7 (268_R6BILL.1) — the `livemode` `stripe.event`s must carry before they may write state.
+   * main.ts derives it from the bound Stripe key's mode prefix (`sk_live_*`/`rk_live_*` ⇒ `true`,
+   * `*_test_*` ⇒ `false`); unconfigured ⇒ `undefined` and events process unchecked.
+   */
+  readonly expectLivemode?: boolean;
   /** the estimator recalibration fold (bound to @rhema/protocols' recordInstrumentedFold at deploy). */
   readonly recalibrate?: (m: ReconcileMeasurement) => void | Promise<void>;
   /** a workspace-bound content store for the delivery re-drive (the api's `contentStoreFor` shape). */
@@ -92,6 +98,7 @@ export function handleStripeEvent(
       runTx: (workspaceId, fn) => deps.txRunner.run(workspaceId, fn),
       eventWriter: deps.eventWriter,
       queue: deps.queue,
+      ...(deps.expectLivemode !== undefined ? { expectLivemode: deps.expectLivemode } : {}),
       // P1.16 — billing emails ride the notify queue (`trial_payment` carries a free reason string).
       // BILL.3 — a `tag` (e.g. `checkout:<sessionId>`) keys the pending-checkout mail exactly-once.
       notify: async (p) => {
