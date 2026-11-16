@@ -70,3 +70,19 @@ describe("R6INF.1 — Cloud SQL availabilityType is a stage fact (REQ-DEP-3; GD-
     expect(sqlBlock).not.toMatch(/availabilityType:\s*"ZONAL"|availabilityType:\s*"REGIONAL"/);
   });
 });
+
+describe("RH-35 (271_R6SEC.3) — Cloud SQL refuses unencrypted connections", () => {
+  it("the instance pins sslMode ENCRYPTED_ONLY inside ipConfiguration", () => {
+    const ipBlock = SRC.slice(
+      SRC.indexOf("ipConfiguration: {"),
+      SRC.indexOf("backupConfiguration: {"),
+    );
+    expect(ipBlock).toContain('sslMode: "ENCRYPTED_ONLY"');
+    expect(ipBlock).not.toContain("ALLOW_UNENCRYPTED_AND_ENCRYPTED");
+  });
+  it("the generated DSNs already demand TLS client-side (sslmode=require)", () => {
+    // index.ts composes every DSN with `sslmode=require&uselibpqcompat=true` — the client half
+    // that makes the server-side ENCRYPTED_ONLY flip a no-op for traffic shape.
+    expect(INDEX_SRC.match(/sslmode=require/g)?.length ?? 0).toBeGreaterThanOrEqual(3);
+  });
+});

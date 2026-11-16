@@ -15,6 +15,7 @@
 // the ops webhook. REQ-ARCH-34's weekly-review/breach-pauses-feature-work rule lives in
 // docs/ops/slo-review.md.
 
+import { errorSummary } from "@rhema/contracts";
 import type { SqlClient } from "./tx.js";
 
 export interface SloSignalDef {
@@ -425,7 +426,9 @@ async function runProbes(system: SqlClient, sqlOf: (sig: SloSignalDef) => string
         threshold: sig.threshold,
         comparator: sig.comparator,
         status: "error",
-        error: e instanceof Error ? e.message.slice(0, 200) : String(e).slice(0, 200),
+        // errorSummary, never e.message — a Postgres error message can embed row values; the
+        // bounded class+SQLSTATE/constraint tags carry the diagnostic (R6LOW.1 / N-A6 #9).
+        error: errorSummary(e),
       });
       return null;
     });

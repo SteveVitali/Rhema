@@ -86,6 +86,44 @@ export function stackForLog(err: unknown): string | null {
   return frames.length > 0 ? `${errorClass(err)}\n${frames}` : errorClass(err);
 }
 
+/** Bounded non-Error metadata fields that survive `errorSummary` (driver/driver-adjacent facts, never values). */
+const ERROR_TAG_FIELDS = ["code", "constraint", "routine", "syscall"] as const;
+
+/**
+ * One-line error summary for logs: `errorClass` plus any bounded driver tags a thrown Error carries
+ * (node `code` like `ECONNREFUSED`, Postgres `code`/`constraint`/`routine` like `23503` /
+ * `claims_draft_id_fkey` — field NAMES and enum tokens, never `err.message` which can embed user
+ * text or row values). Non-Error throws collapse to `NonErrorThrow`. Use where a full
+ * `stackForLog` line is too heavy (heartbeat/sweep/best-effort diagnostics).
+ */
+export function errorSummary(err: unknown): string {
+  if (!(err instanceof Error)) return "NonErrorThrow";
+  const rec = err as Error & Record<string, unknown>;
+  const tags: string[] = [];
+  for (const k of ERROR_TAG_FIELDS) {
+    const v = rec[k];
+    if (typeof v === "string" && v.length > 0) {
+      const clean = v.replace(/[^A-Za-z0-9_.$-]/g, "").slice(0, 80);
+      if (clean.length > 0) tags.push(`${k}=${clean}`);
+    }
+  }
+  return tags.length > 0 ? `${errorClass(err)} ${tags.join(" ")}` : errorClass(err);
+}
+
+/**
+ * The whole-Error log value for `console.error(prefix, errorLogValue(err))`: `errorSummary` on the
+ * first line plus the message-stripped frames, so the emitted line groups sanely in Error Reporting
+ * (frame identity) while never carrying `err.message` text. This is the ADR-053-safe replacement
+ * for passing a raw `err`/`err.message` to a console sink.
+ */
+export function errorLogValue(err: unknown): string {
+  const summary = errorSummary(err);
+  const stack = stackForLog(err);
+  if (!stack) return summary;
+  const frames = stack.split("\n").slice(1).join("\n");
+  return frames ? `${summary}\n${frames}` : summary;
+}
+
 /**
  * The fields of the ONE structured error line. This is the allowlist — anything not named here
  * cannot be logged (no `msg`, no `path`, no `query`, no `body`, no `upstreamBody` fields exist).
@@ -125,6 +163,23 @@ export interface RouteErrorFields {
    * from the output when null/undefined.
    */
   readonly degradedCount?: number | null;
+  /**
+   * RH-21 residual — the running release (the image-baked `RHEMA_BUILD_GIT_SHA`), emitted as
+   * `serviceContext.version` so Cloud Error Reporting attributes each grouped error to a release
+   * instead of an unversioned bucket. Service-level identity (like `service`), never request data;
+   * `routeErrorLine` always binds it from the resolved context — a call site cannot forge it.
+   */
+  readonly serviceVersion?: string | null;
+}
+
+/**
+ * A release stamp is inert transport text — a git SHA or Cloud Run revision token (`[\w.:+\-/]+`,
+ * bounded). Anything else is dropped: the formatter's output contract is that no field can carry
+ * user text, and `serviceVersion` is env-derived but still validated at the emit seam.
+ */
+function sanitizeServiceVersion(version: string | null | undefined): string | null {
+  const v = typeof version === "string" ? version.trim() : "";
+  return v.length > 0 && v.length <= 80 && /^[\w.:+\-/]+$/.test(v) ? v : null;
 }
 
 /**
@@ -134,6 +189,7 @@ export interface RouteErrorFields {
  * hostile content that somehow reaches a field value.
  */
 export function formatRouteErrorLine(f: RouteErrorFields): string {
+  const serviceVersion = sanitizeServiceVersion(f.serviceVersion);
   const entry: Record<string, unknown> = {
     severity: f.severity ?? "ERROR",
     msg: f.msg,
@@ -145,6 +201,13 @@ export function formatRouteErrorLine(f: RouteErrorFields): string {
     upstreamCode: f.upstreamCode,
     requestId: f.requestId,
     errorClass: f.errorClass,
+    // Cloud Error Reporting's release attribution field: `service` is already allowlisted; the
+    // `version` half lands only when a sanitized release stamp was provided (RH-21 residual —
+    // unversioned errors group but never attribute to a release).
+    serviceContext: {
+      service: f.service,
+      ...(serviceVersion ? { version: serviceVersion } : {}),
+    },
   };
   if (f.trace) entry["logging.googleapis.com/trace"] = f.trace;
   if (f.stack) entry.stack = f.stack;
@@ -156,16 +219,29 @@ export function formatRouteErrorLine(f: RouteErrorFields): string {
 export interface RequestLogContext {
   readonly requestId: string;
   readonly trace: string | null;
+  /**
+   * The service-level release stamp the `requestContext` middleware resolved once (env
+   * `RHEMA_BUILD_GIT_SHA`), carried on the request context so every emitted line attributes to the
+   * running release. Not request data — requestId/trace stay per-request.
+   */
+  readonly serviceVersion?: string | null;
 }
 
 /**
  * Build a compliant error line for one request. `errorFields` may only override the
- * request-invariant fields — requestId/trace always come from the resolved context, so a call
- * site can never log a line that cannot be traced back.
+ * request-invariant fields — requestId/trace/serviceVersion always come from the resolved
+ * context, so a call site can never log a line that cannot be traced back nor forge the release
+ * stamp. `serviceVersion` is Omit'd for the same reason: it is service identity (one release per
+ * process), not per-call data — a direct `formatRouteErrorLine` caller may still set it.
  */
 export function routeErrorLine(
   ctx: RequestLogContext,
-  f: Omit<RouteErrorFields, "requestId" | "trace">,
+  f: Omit<RouteErrorFields, "requestId" | "trace" | "serviceVersion">,
 ): string {
-  return formatRouteErrorLine({ ...f, requestId: ctx.requestId, trace: ctx.trace });
+  return formatRouteErrorLine({
+    ...f,
+    requestId: ctx.requestId,
+    trace: ctx.trace,
+    serviceVersion: ctx.serviceVersion ?? null,
+  });
 }

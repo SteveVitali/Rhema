@@ -161,7 +161,9 @@ describe("R6HRD.1 — the proxy DSN leaves template metadata for a Secret Manage
   });
 
   it("prod gains the dedicated `proxy-database-url` container + a program-managed version", () => {
-    expect(INDEX_SRC).toContain('isProd ? ["proxy-database-url"] : ["system-database-url"]');
+    expect(INDEX_SRC).toContain(
+      'isProd ? ["proxy-database-url"] : ["system-database-url", "identity-headers-key"]',
+    );
     expect(INDEX_SRC).toContain("rhema-${stack}-proxy-database-url-v1");
     expect(INDEX_SRC).toContain('secrets.byId["proxy-database-url"].id');
     // the config value lands ONLY in Secret Manager — the metadata arg is the version NAME.
@@ -176,6 +178,42 @@ describe("R6HRD.1 — the proxy DSN leaves template metadata for a Secret Manage
     expect(IAM_SRC).toContain(
       'grantSecret("proxy-reads-sysdb", secrets.byId["system-database-url"], serviceAccounts["egress-proxy"])',
     );
+  });
+});
+
+describe("267_R6SEC.2 (RH-10) — the identity-header shim is keyed + non-prod only", () => {
+  const INDEX_SRC = readFileSync(new URL("./index.ts", import.meta.url), "utf8");
+  const STAGES_SRC = readFileSync(new URL("../config/stages.ts", import.meta.url), "utf8");
+
+  it("the non-prod api mounts IDENTITY_HEADERS AND the shared key's NAME — never the value", () => {
+    // The flag + the Secret-Manager NAME travel together on non-prod; the program-minted value
+    // never rides a plaintext env (the `secretVersion(...)` NAME convention every api secret uses).
+    expect(SRC).toContain('{ name: "IDENTITY_HEADERS", value: "true" }');
+    expect(SRC).toContain('name: "IDENTITY_HEADERS_SECRET_NAME"');
+    expect(SRC).toContain("secretVersion(secrets.byId[\"identity-headers-key\"])");
+    // the pair is gated on the non-prod kind AND the container — prod can never emit it.
+    expect(SRC).toContain('cfg.kind !== "prod" && secrets.byId["identity-headers-key"]');
+  });
+
+  it("the container + version are non-prod program outputs; prod's surface is untouched", () => {
+    expect(INDEX_SRC).toContain('"identity-headers-key"');
+    expect(INDEX_SRC).toContain("rhema-${stack}-identity-headers-key-v1");
+    // the value is program-minted random material — never operator-seeded, never committed.
+    expect(INDEX_SRC).toContain('new random.RandomPassword("rhema-identity-headers-key"');
+    // a generated non-prod id, not an ALL_SECRET_IDS member (the system-database-url precedent).
+    expect(STAGES_SRC).toContain('"identity-headers-key"');
+    const ids = STAGES_SRC.slice(
+      STAGES_SRC.indexOf("export const ALL_SECRET_IDS"),
+      STAGES_SRC.indexOf("] as const"),
+    );
+    expect(ids).not.toContain("identity-headers-key");
+  });
+
+  it("the api SA — and only the api — reads the key container", () => {
+    expect(IAM_SRC).toContain(
+      'grantSecret("api-reads-identity-headers-key", secrets.byId["identity-headers-key"], serviceAccounts["api"])',
+    );
+    expect(IAM_SRC.match(/identity-headers-key/g)).toHaveLength(3); // the gate + grant id + grant target
   });
 });
 

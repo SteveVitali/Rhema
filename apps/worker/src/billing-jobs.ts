@@ -22,6 +22,7 @@ import {
   assertBalances,
   RUN_DELIVER_JOB,
   runBillingPeriodTick,
+  sweepStrandedStripeEvents,
   sweepExpiredTrials,
   sweepTrialSpend,
   sweepAutoReload,
@@ -67,6 +68,12 @@ export type AlertSink = (a: ReconcileAlert) => void | Promise<void>;
 export interface WorkerBillingDeps extends WorkerLedgerDeps {
   readonly reportSource?: ProviderReportSource;
   readonly alert?: AlertSink;
+  /**
+   * RH-7 (268_R6BILL.1) — the `livemode` `stripe.event`s must carry before they may write state.
+   * main.ts derives it from the bound Stripe key's mode prefix (`sk_live_*`/`rk_live_*` ⇒ `true`,
+   * `*_test_*` ⇒ `false`); unconfigured ⇒ `undefined` and events process unchecked.
+   */
+  readonly expectLivemode?: boolean;
   /** the estimator recalibration fold (bound to @rhema/protocols' recordInstrumentedFold at deploy). */
   readonly recalibrate?: (m: ReconcileMeasurement) => void | Promise<void>;
   /** a workspace-bound content store for the delivery re-drive (the api's `contentStoreFor` shape). */
@@ -91,6 +98,7 @@ export function handleStripeEvent(
       runTx: (workspaceId, fn) => deps.txRunner.run(workspaceId, fn),
       eventWriter: deps.eventWriter,
       queue: deps.queue,
+      ...(deps.expectLivemode !== undefined ? { expectLivemode: deps.expectLivemode } : {}),
       // P1.16 — billing emails ride the notify queue (`trial_payment` carries a free reason string).
       // BILL.3 — a `tag` (e.g. `checkout:<sessionId>`) keys the pending-checkout mail exactly-once.
       notify: async (p) => {
@@ -285,7 +293,12 @@ export interface WorkerFullBillingDeps extends WorkerBillingDeps {
 export async function handleBillingPeriodTick(
   deps: WorkerFullBillingDeps,
 ): Promise<
-  PeriodTickResult & { expiredTrials: number; trialSpend: { day: string; paused: boolean } }
+  PeriodTickResult & {
+    expiredTrials: number;
+    trialSpend: { day: string; paused: boolean };
+    /** RH-11 — the stranded `stripe_events` watchdog riding this hourly tick. */
+    strandedStripeEvents: { scanned: number; requeued: number };
+  }
 > {
   const now = deps.clock.now();
   const subDeps: SubDeps = {
@@ -305,6 +318,10 @@ export async function handleBillingPeriodTick(
     },
   };
   const tick = await runBillingPeriodTick(deps.systemExec, subDeps, now);
+  // RH-11 (272_R6BILL.3) — the webhook stranding watchdog: a `stripe_events` row parked past the
+  // grace window with no live `stripe.event` job is re-enqueued here (the intake re-sends on
+  // Stripe's replay; this covers the retry that never comes). Processing is idempotent end to end.
+  const stranded = await sweepStrandedStripeEvents(deps.systemExec, deps.queue, { now });
   const trials = await sweepExpiredTrials(deps.systemExec, subDeps, now);
   // ACT.1 — the reconciled daily trial-COGS tally rides this system-pool sweep (REQ-SPEC-30: the
   // aggregate read never serves a user request). On a `$50/day` trip the kill switch pauses new
@@ -327,6 +344,7 @@ export async function handleBillingPeriodTick(
     ...tick,
     expiredTrials: trials.expired,
     trialSpend: { day: trialSpend.day, paused: trialSpend.paused },
+    strandedStripeEvents: { scanned: stranded.scanned, requeued: stranded.requeued.length },
   };
 }
 

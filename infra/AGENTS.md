@@ -64,9 +64,11 @@ pnpm exec vitest run infra scripts/live/preview-stack.test.mjs
    `rhema:owner=ops-preview`; it cannot adopt somebody else's stack.
 2. **Keep the session-capable preview recipe intact.** `init` → image/provenance `config` →
    `resend-pull` → `up` → the stack's migrate Job → `seed-invite` → journeys with `--invite-code`.
-   `resend-pull` pipes the operator-seeded `rhema-nonprod-resend-api-key` into secret
-   `rhema:resendApiKey` configuration on stdin, never logs it. The deterministic invite
-   `prv-<n>-test` is non-secret and admits the designated test identities.
+   `resend-pull` (RH-29 shape) pins the newest ENABLED version of the operator-seeded
+   `rhema-nonprod-resend-api-key` into plain `rhema:nonprodResendVersion` config — the program
+   mounts `projects/…/versions/<n>` on the worker by reference, so the key value never enters
+   stack state; it also sets the nonprod-only sender `previews@rhema.tools`. The deterministic
+   invite `prv-<n>-test` is non-secret and admits the designated test identities.
 3. **Teardown has three acts.** `destroy` → verify zero orphan resources → `rm`.
    Never combine them as `destroy --remove` or remove state before orphan verification.
 4. **A preview cannot borrow production secrets.** Extra posture stages still use the guarded

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createOrchestratorTestDb, seedProject, makeDeps, type OrchestratorTestDb, type TestDeps } from "@rhema/orchestrator/testing";
-import { processStripeEvent, signStripePayload, SqlHoldLedger, STRIPE_EVENT_JOB, StripeRequestError, StubStripePort, type CheckoutSessionRequest } from "@rhema/ledger";
+import { processStripeEvent, signStripePayload, insertStripeEvent, SqlHoldLedger, STRIPE_EVENT_JOB, StripeRequestError, StubStripePort, type CheckoutSessionRequest } from "@rhema/ledger";
 import { PRICING, priceCents, planCoverageLine, type PurchaseMode } from "@rhema/contracts";
 import { surfacePricer } from "@rhema/run-sheet";
 import { createBillingRoutes } from "./billing-routes.js";
@@ -96,10 +96,33 @@ describe("POST /stripe/webhook — §14.6 discipline (AC2)", () => {
     const body = JSON.stringify(CHECKOUT);
     const header = signStripePayload({ secret: SECRET, rawBody: body, timestampSec: Math.floor(NOW.getTime() / 1000) });
     await postWebhook(body, header);
+    // the parked row PROCESSED — its original enqueue did the work; a later redelivery is a pure no-op.
+    await processStripeEvent(db.client, {
+      ids: deps.ids, clock: deps.clock, ledger: new SqlHoldLedger(deps),
+      runTx: (w, fn) => db.txRunner.run(w, fn), eventWriter: deps.eventWriter, queue: deps.queue,
+    }, "evt_checkout_http");
     const res = await postWebhook(body, header); // the replay
     expect(res.status).toBe(200);
     expect(deps.queue.ofName(STRIPE_EVENT_JOB)).toHaveLength(1); // the original enqueue covers it
     expect((await db.client.query("select count(*)::int n from stripe_events")).rows[0]).toEqual({ n: 1 });
+  });
+
+  it("RH-11: a replayed id whose stored row is still UNPROCESSED re-enqueues — the send-failure repair", async () => {
+    // The stranding shape: intake committed the row but `queue.send` threw → Stripe's retry finds the
+    // row parked, and the intake must send the job it never sent (pre-fix: inserted=false → 200 →
+    // the event stranded until an operator ran `stripe-redrive` by hand).
+    await insertStripeEvent(db.client, {
+      id: "evt_checkout_http",
+      type: "checkout.session.completed",
+      payload: CHECKOUT,
+      receivedAt: NOW,
+    });
+    const body = JSON.stringify(CHECKOUT);
+    const header = signStripePayload({ secret: SECRET, rawBody: body, timestampSec: Math.floor(NOW.getTime() / 1000) });
+    const res = await postWebhook(body, header);
+    expect(res.status).toBe(200);
+    expect(deps.queue.ofName(STRIPE_EVENT_JOB)).toHaveLength(1);
+    expect(deps.queue.ofName(STRIPE_EVENT_JOB)[0]!.payload).toEqual({ eventId: "evt_checkout_http" });
   });
 
   it("a bad signature is a 400 BEFORE any row exists; no secret → 404", async () => {
@@ -365,7 +388,6 @@ describe("the purchase switch (BILL.3; REQ-BILL-16)", () => {
     const stripe = new StubStripePort();
     // `purchaseMode` deliberately absent — the dep is fail-closed, exactly like a missing PURCHASE_MODE.
     const closed = app({ stripe, appBaseUrl: "https://app.test", purchaseMode: undefined });
-    await db.pg.query("update billing_accounts set stripe_customer_id = 'cus_closed' where id = $1", [BA]);
 
     expect((await post(closed, { kind: "subscribe", plan: "writer" })).status).toBe(403);
     const topup = await post(closed, { kind: "topup", packId: "topup_10" });
@@ -374,6 +396,8 @@ describe("the purchase switch (BILL.3; REQ-BILL-16)", () => {
     const autoReload = await post(closed, { kind: "auto_reload_setup", packId: "topup_10" });
     expect(autoReload.status).toBe(403);
     expect(await autoReload.json()).toEqual({ error: "purchase_closed" });
+    // RH-13 — the closed switch gates PURCHASE only. An account with no Stripe customer has nothing
+    // to manage → purchase_closed still; the carve-out test below covers the paying-customer arm.
     const portal = await closed.request("/billing/portal", { method: "POST" });
     expect(portal.status).toBe(403);
     expect(await portal.json()).toEqual({ error: "purchase_closed" });
@@ -434,6 +458,22 @@ describe("the purchase switch (BILL.3; REQ-BILL-16)", () => {
     expect(balanceBody).toMatchObject({ purchase: "open", paymentLinkUrl: "https://buy.stripe.com/test_beta" });
   });
 
+  it("RH-13: purchase_closed gates purchase only — a Stripe-customer account still reaches the Portal", async () => {
+    const stripe = new StubStripePort();
+    const closed = app({ stripe, appBaseUrl: "https://app.test", purchaseMode: "closed" });
+    // a paying customer (stripe_customer_id proves the Stripe relationship) must keep card-update +
+    // cancel self-service while the purchase switch is closed.
+    await db.pg.query("update billing_accounts set stripe_customer_id = 'cus_paid' where id = $1", [BA]);
+    const res = await closed.request("/billing/portal", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ returnTo: "/settings/billing" }),
+    });
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { url: string }).url).toContain("billing.stripe.test");
+    expect(stripe.calls.map((x) => x.method)).toEqual(["createPortalSession"]);
+    // …but a purchase arm stays refused for the same account — the carve-out is Portal-only.
+    expect((await post(closed, { kind: "topup", packId: "topup_10" })).status).toBe(403);
+  });
+
   it("the allowlist crosses only the switch — a Free test tenant still gets topups_require_plan", async () => {
     const stripe = new StubStripePort();
     await db.pg.query("update workspaces set is_test = true where id = $1", [WS]);
@@ -443,6 +483,29 @@ describe("the purchase switch (BILL.3; REQ-BILL-16)", () => {
     expect(res.status).toBe(402);
     expect(await res.json()).toEqual({ error: "topups_require_plan" });
     expect(stripe.calls).toHaveLength(0);
+  });
+});
+
+describe("RH-16 — Checkout's customer_email is the verified account email, never the request body's", () => {
+  it("subscribe + topup pass the user's verified email; a body's `email` field is ignored", async () => {
+    const stripe = new StubStripePort();
+    const a = app({ stripe, appBaseUrl: "https://app.test" }); // purchaseMode open
+    const verified = `${USER}@example.test`; // the seeded `"user".email`
+    const res = await a.request("/billing/checkout", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ kind: "subscribe", plan: "writer", email: "forged@attacker.test" }),
+    });
+    expect(res.status).toBe(200);
+    let req = stripe.calls.at(-1)!.args as CheckoutSessionRequest;
+    expect(req.customerEmail).toBe(verified);
+
+    const res2 = await a.request("/billing/checkout", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ kind: "topup", packId: "topup_10", email: "forged@attacker.test" }),
+    });
+    expect(res2.status).toBe(200);
+    req = stripe.calls.at(-1)!.args as CheckoutSessionRequest;
+    expect(req.customerEmail).toBe(verified);
   });
 });
 

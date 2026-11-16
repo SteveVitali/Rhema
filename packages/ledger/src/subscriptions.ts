@@ -393,6 +393,8 @@ export interface PeriodTickResult {
   readonly pastDueLapsed: number;
   readonly warningsSent: number;
   readonly dailyGrants: number;
+  /** RH-12 — cancel-scheduled subscriptions that reached their paid-through end this tick. */
+  readonly cancelsCompleted: number;
 }
 
 /**
@@ -405,6 +407,7 @@ export async function runBillingPeriodTick(exec: SqlClient, deps: SubDeps, now: 
   const subs = (
     await exec.query(
       `select s.id, s.billing_account_id, s.tier, s.scheduled_tier, s.status, s.period_start, s.period_end,
+              s.cancel_at_period_end,
               s.renewal_failed_at, s.downgrade_warned_at, s.billing_cycle, w.id as workspace_id, wm.user_id
          from subscriptions s
          join workspaces w on w.billing_account_id = s.billing_account_id
@@ -423,6 +426,7 @@ export async function runBillingPeriodTick(exec: SqlClient, deps: SubDeps, now: 
     status: string;
     period_start: string;
     period_end: string;
+    cancel_at_period_end: boolean;
     renewal_failed_at: string | null;
     downgrade_warned_at: string | null;
     billing_cycle: string | null;
@@ -434,6 +438,7 @@ export async function runBillingPeriodTick(exec: SqlClient, deps: SubDeps, now: 
   let downgradesApplied = 0;
   let pastDueLapsed = 0;
   let warningsSent = 0;
+  let cancelsCompleted = 0;
 
   for (const s of subs) {
     await deps.runTx(s.workspace_id, async (tx) => {
@@ -471,6 +476,17 @@ export async function runBillingPeriodTick(exec: SqlClient, deps: SubDeps, now: 
 
       // --- period boundary: apply a scheduled downgrade, then grant the new period's included -----------
       if (now.getTime() >= periodEnd.getTime()) {
+        // RH-12 (272_R6BILL.3) — a cancel-scheduled subscription reaching its paid-through end does
+        // NOT renew: Stripe terminates it at period end (its `customer.subscription.deleted` event
+        // is the system-of-record confirmation; `endSubscription` converges idempotently when it
+        // lands). Before this arm the tick rolled the period forward, cleared the flag, and granted
+        // the next period's included credits — an unpaid month plus a UI saying "Renews". End the
+        // row in place: no period roll, no grant, flag stays `true` as the recorded truth.
+        if (s.cancel_at_period_end) {
+          await tx.query("update subscriptions set status='ended', updated_at=$2 where id=$1", [s.id, now]);
+          cancelsCompleted += 1;
+          return;
+        }
         const newStart = periodEnd;
         const newEnd = addMonths(periodEnd, s.billing_cycle === "annual" ? 12 : 1);
         const effectiveTier = s.scheduled_tier ?? tier;
@@ -545,7 +561,7 @@ export async function runBillingPeriodTick(exec: SqlClient, deps: SubDeps, now: 
     });
   }
 
-  return { includedGrants, downgradesApplied, pastDueLapsed, warningsSent, dailyGrants };
+  return { includedGrants, downgradesApplied, pastDueLapsed, warningsSent, dailyGrants, cancelsCompleted };
 }
 
 /**

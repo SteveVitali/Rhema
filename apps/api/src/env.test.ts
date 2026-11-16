@@ -108,6 +108,24 @@ describe("readApiEnv — PRB.16 auth binding (D-P0.01-3)", () => {
     process.env.IDENTITY_HEADERS = "true";
     expect(readApiEnv().identityHeaders).toBe(true);
   });
+
+  it("RH-10 — the shim's key carriers read independently; the flag alone is not a key", () => {
+    expect(readApiEnv().identityHeadersSecretName).toBeUndefined();
+    expect(readApiEnv().identityHeadersKey).toBeUndefined();
+    process.env.IDENTITY_HEADERS_SECRET_NAME =
+      "projects/p/secrets/rhema-dev-identity-headers-key/versions/latest";
+    process.env.IDENTITY_HEADERS_KEY = "local-dev-key";
+    const env = readApiEnv();
+    expect(env.identityHeadersSecretName).toBe(
+      "projects/p/secrets/rhema-dev-identity-headers-key/versions/latest",
+    );
+    expect(env.identityHeadersKey).toBe("local-dev-key");
+    // the opt-in flag stays independent — true with no key resolves to a shim that stays OFF.
+    process.env.IDENTITY_HEADERS = "true";
+    const env2 = readApiEnv();
+    expect(env2.identityHeaders).toBe(true);
+    expect(env2.identityHeadersKey).toBe("local-dev-key");
+  });
 });
 
 describe("readApiEnv — ECON.2/R5ECON.2 COGS lever envs", () => {

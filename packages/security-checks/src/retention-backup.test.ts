@@ -80,14 +80,28 @@ describe("the deployed retention/backup posture — read off infra/pulumi/data.t
 });
 
 describe("the worker retention jobs — scheduled classes have consumers (REQ-ARCH-28)", () => {
-  const worker = read("apps/worker/src/index.ts");
+  // R6LOW.1 / N-A6 #7 — assert the live `boss.work` bindings in main.ts, not the index.ts
+  // WORKER_QUEUES manifest: a name in a constant list is not a consumer, and that list had drifted
+  // (20 names vs ~32 live registrations), so the old check could pass with no consumer at all.
+  const main = read("apps/worker/src/main.ts");
 
-  it.each(["run_events.retention", "project.purge", "voice.purge", "account.hard-delete"])(
-    "registers the %s job",
-    (job) => {
-      expect(worker).toContain(`"${job}"`);
-    },
-  );
+  const registrations = [
+    ["run_events.retention", "RUN_EVENT_JOBS.retention", "apps/worker/src/run-events-jobs.ts", "retention"],
+    ["project.purge", "PROJECT_PURGE_JOB", null, null],
+    ["voice.purge", "INGEST_JOB_NAMES.voicePurge", "apps/worker/src/ingest-jobs.ts", "voicePurge"],
+    ["account.hard-delete", "ACCOUNT_HARD_DELETE_JOB", null, null],
+  ] as const;
+
+  it.each(registrations)("registers a boss.work consumer for %s", (name, binding, bindingFile, bindingKey) => {
+    // The binding resolves to the expected queue name …
+    if (bindingFile && bindingKey) {
+      expect(read(bindingFile)).toContain(`${bindingKey}: "${name}"`);
+    } else {
+      expect(main).toMatch(new RegExp(`${binding}\\s*=\\s*"${name}"`));
+    }
+    // … and main.ts passes THAT binding to boss.work — a registered consumer, not a mention.
+    expect(main).toMatch(new RegExp(`boss\\.work[<\\w>]*\\(\\s*${binding.replace(".", "\\.")}\\b`));
+  });
 });
 
 describe("the deletion paths — project purge + account hard-delete (REQ-ARCH-28; REQ-ACCT-4)", () => {

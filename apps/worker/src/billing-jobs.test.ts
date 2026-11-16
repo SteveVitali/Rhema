@@ -8,7 +8,7 @@ import {
   type TestDeps,
 } from "@rhema/orchestrator/testing";
 import { testEntryDeps } from "@rhema/ledger/testing";
-import { SqlHoldLedger, insertStripeEvent, applyLedgerEntry } from "@rhema/ledger";
+import { SqlHoldLedger, insertStripeEvent, applyLedgerEntry, STRIPE_EVENT_JOB } from "@rhema/ledger";
 import {
   InMemoryContentStore,
   normalizeUrl,
@@ -20,6 +20,7 @@ import {
   handleStripeEvent,
   handleUsageReconcile,
   handleRunDeliver,
+  handleBillingPeriodTick,
   type WorkerBillingDeps,
 } from "./billing-jobs.js";
 import { ProviderReportFetchError } from "./provider-report.js";
@@ -80,6 +81,47 @@ describe("handleStripeEvent (stripe.event consumer — §14.6)", () => {
       )
     ).rows[0] as { a: number } | undefined;
     expect(bal?.a).toBe(2500);
+  });
+
+  it("threads expectLivemode → a livemode:false event is skipped with zero writes (RH-7; 268_R6BILL.1)", async () => {
+    const payload = {
+      id: "evt_w_lm",
+      type: "checkout.session.completed",
+      livemode: false, // a test-mode event must never write live state
+      data: {
+        object: {
+          id: "cs_lm",
+          amount_total: 2500,
+          payment_intent: "pi_lm",
+          client_reference_id: BA,
+          metadata: { workspace_id: WS },
+        },
+      },
+    };
+    await insertStripeEvent(db.client, {
+      id: "evt_w_lm",
+      type: "checkout.session.completed",
+      receivedAt: NOW,
+      payload,
+    });
+    const out = await handleStripeEvent(deps({ expectLivemode: true }), { eventId: "evt_w_lm" });
+    expect(out.kind).toBe("skipped");
+    const bal = (
+      await db.client.query(
+        "select available::int as a from credit_balances where billing_account_id = $1 and bucket = 'topup'",
+        [BA],
+      )
+    ).rows[0] as { a: number } | undefined;
+    expect(bal?.a ?? 0).toBe(0);
+    // the matching livemode:true payload still processes — the check gates mode, not the event class.
+    await insertStripeEvent(db.client, {
+      id: "evt_w_lm2",
+      type: "checkout.session.completed",
+      receivedAt: NOW,
+      payload: { ...payload, id: "evt_w_lm2", livemode: true },
+    });
+    const live = await handleStripeEvent(deps({ expectLivemode: true }), { eventId: "evt_w_lm2" });
+    expect(live.kind).toBe("topup_granted");
   });
 });
 
@@ -378,5 +420,40 @@ describe("handleRunDeliver (run.deliver — the withheld-delivery re-drive)", ()
     expect(fin.state).toBe("completed");
     expect(fin.pending_delivery).toBeNull();
     expect(fin.delivery_withheld_at).toBeNull();
+  });
+});
+
+// ---- RH-11 — the stranded stripe event watchdog rides the hourly period tick (272_R6BILL.3) ---------
+// The webhook intake commits `stripe_events` before `queue.send`; a send failure (or a consumed job
+// that died unresolved) leaves a parked row Stripe's retry can't always repair. The hourly tick's
+// sweep re-enqueues `stripe.event` for every `processed_at is null` row past the grace window with no
+// live job — the watchdog half beside the intake's re-send-on-replay and `admin stripe-redrive`.
+
+describe("handleBillingPeriodTick — stranded stripe event sweep (RH-11)", () => {
+  beforeEach(async () => {
+    await db.pg.query("create schema if not exists pgboss");
+    await db.pg.query(
+      "create table if not exists pgboss.job(name text, singleton_key text, state text, data jsonb)",
+    );
+  });
+
+  it("re-enqueues a parked unprocessed event past the grace window; a fresh row is left alone", async () => {
+    await insertStripeEvent(db.client, {
+      id: "evt_stranded",
+      type: "ping",
+      payload: { id: "evt_stranded", type: "ping" },
+      receivedAt: new Date(NOW.getTime() - 3600_000),
+    });
+    await insertStripeEvent(db.client, {
+      id: "evt_fresh",
+      type: "ping",
+      payload: { id: "evt_fresh", type: "ping" },
+      receivedAt: NOW,
+    });
+    const res = await handleBillingPeriodTick(deps());
+    expect(res.strandedStripeEvents).toEqual({ scanned: 1, requeued: 1 });
+    const jobs = base.queue.ofName(STRIPE_EVENT_JOB);
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0]!.payload).toEqual({ eventId: "evt_stranded" });
   });
 });
