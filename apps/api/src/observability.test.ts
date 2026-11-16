@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { Hono } from "hono";
 import { apiOnError, instrumentReads, instrumentStoreFactory, requestContext } from "./observability.js";
 
-function makeApp(gcpProject?: string) {
+function makeApp(gcpProject?: string, serviceVersion?: string) {
   const store = instrumentReads(
     {
       async get(_sha: string): Promise<Uint8Array | null> {
@@ -12,7 +12,7 @@ function makeApp(gcpProject?: string) {
     ["get"],
   );
   const app = new Hono();
-  app.use("*", requestContext(gcpProject));
+  app.use("*", requestContext(gcpProject, serviceVersion));
   app.onError(apiOnError);
   app.get("/runs/:id/events", (c) => c.json({ ok: true }));
   app.get("/p/:slug/throw", () => {
@@ -83,6 +83,17 @@ describe("api request-context middleware + onError (OBS.1)", () => {
       expect(line.stack).not.toContain("hunter2-secret");
       expect(JSON.stringify(line)).not.toContain("alice-secret-slug");
       expect(JSON.stringify(line)).not.toContain("hunter2-secret");
+    } finally {
+      spy.mockRestore();
+    }
+  });
+  it("stamps serviceContext.version on the error line when a release is threaded (RH-21 residual)", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const res = await makeApp(undefined, "d24dbed8").request("/p/x/throw");
+      expect(res.status).toBe(500);
+      const line = JSON.parse(String(spy.mock.calls[0]![0])) as Record<string, unknown>;
+      expect(line.serviceContext).toEqual({ service: "api", version: "d24dbed8" });
     } finally {
       spy.mockRestore();
     }

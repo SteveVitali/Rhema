@@ -66,9 +66,14 @@ class NonErrorThrowError extends Error {
  * Resolve + echo the request identity on every browser request. The LB's trace headers win; absent
  * them a fresh id is minted — the inbound `x-rhema-request-id` is deliberately NOT read (a browser
  * can set it; only the api honors it, from the web's forward). `gcpProject` builds the
- * `logging.googleapis.com/trace` join field (env `GOOGLE_CLOUD_PROJECT`).
+ * `logging.googleapis.com/trace` join field (env `GOOGLE_CLOUD_PROJECT`). `serviceVersion`
+ * (the image-baked `RHEMA_BUILD_GIT_SHA`) stamps `serviceContext.version` on every emitted
+ * line so Error Reporting attributes the group to a release (RH-21 residual).
  */
-export function requestContext(gcpProject: string | undefined): MiddlewareHandler {
+export function requestContext(
+  gcpProject: string | undefined,
+  serviceVersion?: string | null,
+): MiddlewareHandler {
   return async (c, next) => {
     const { requestId, traceId } = resolveRequestId(
       (n) => (n === REQUEST_ID_HEADER ? undefined : c.req.header(n)),
@@ -77,6 +82,7 @@ export function requestContext(gcpProject: string | undefined): MiddlewareHandle
     const ctx: RequestLogContext = {
       requestId,
       trace: cloudLoggingTraceField(gcpProject, traceId),
+      ...(serviceVersion ? { serviceVersion } : {}),
     };
     c.set(REQUEST_LOG_KEY, ctx);
     c.header(REQUEST_ID_RESPONSE_HEADER, requestId);
