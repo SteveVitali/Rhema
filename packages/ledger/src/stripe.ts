@@ -18,7 +18,7 @@
 
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { RUN_JOBS, type SqlClient, type Queue } from "@rhema/orchestrator";
-import { topUpPack, PLAN_TIERS, type PlanTier, type BillingCycle } from "@rhema/contracts";
+import { topUpPack, PLAN_TIERS, priceCents, type PlanTier, type BillingCycle } from "@rhema/contracts";
 import { applyLedgerEntry } from "./entries.js";
 import { applyChargeback, applyDisputeWon, type ChargebackDeps } from "./chargeback.js";
 import { recordAnalyticsEvent } from "./analytics.js";
@@ -201,16 +201,27 @@ interface SubscriptionObject {
   current_period_start?: number; // unix seconds
   current_period_end?: number;
   metadata?: { billing_account_id?: string; plan?: string; cycle?: string };
-  items?: { data?: { plan?: { interval?: string } }[] };
+  items?: {
+    data?: {
+      /** pre-basil name for the item's price object (deprecated alias since basil). */
+      plan?: { interval?: string; amount?: number };
+      /** basil+ canonical price object — `recurring.interval` + `unit_amount` map back to the plan. */
+      price?: { unit_amount?: number; recurring?: { interval?: string } };
+    }[];
+  };
 }
 interface InvoiceObject {
   id?: string;
   subscription?: string;
   customer?: string;
   billing_reason?: string;
+  /** RH-15 — the invoice's own collection window, NOT the billed service period (see processInvoicePaid). */
   period_start?: number;
   period_end?: number;
   metadata?: { billing_account_id?: string };
+  /** the subscription line carries the billed service period — the same window the subscription
+   *  item's `current_period_*` holds (the RH-15 canonical source on an invoice event). */
+  lines?: { data?: { period?: { start?: number; end?: number } }[] };
 }
 interface DisputeObject {
   id?: string;
@@ -323,6 +334,27 @@ function unixToDate(s: number | undefined, fallback: Date): Date {
 
 function planFrom(v: string | undefined): PlanTier | null {
   return v && (PLAN_TIERS as readonly string[]).includes(v) ? (v as PlanTier) : null;
+}
+
+/**
+ * RH-2 residual arm (272_R6BILL.3; D-R6FIX.5-1's interim half) — the plan a subscription ACTUALLY
+ * bills, read off its item's price, never the `metadata.plan` Checkout stamped at creation (a Portal
+ * price switch leaves metadata untouched — it would veto every sync forever). The amount + interval
+ * invert `priceCents` over the paid ladder — the shared config IS the map until the real
+ * plan×cycle → `price_` registry lands (the row stays OPEN for it). `price` is the basil+ shape,
+ * `plan.amount` the pre-basil alias; an unmapped amount returns null → the caller's metadata
+ * fallback preserves the pre-fix posture.
+ */
+function tierFromSubscriptionItem(sub: SubscriptionObject): PlanTier | null {
+  const item = sub.items?.data?.[0];
+  const amount = item?.price?.unit_amount ?? item?.plan?.amount;
+  const interval = item?.price?.recurring?.interval ?? item?.plan?.interval;
+  if (amount == null || (interval !== "month" && interval !== "year")) return null;
+  const cycle: BillingCycle = interval === "year" ? "annual" : "monthly";
+  for (const tier of ["writer", "studio", "studio_max"] as const) {
+    if (priceCents(tier, cycle) === amount) return tier;
+  }
+  return null;
 }
 
 /** A workspace for account-scoped writes (the account's first workspace carries account-level effects). */
@@ -580,8 +612,35 @@ async function processInvoicePaid(
   if (!billingAccountId) return { kind: "unresolved", reason: "invoice has no resolvable billing account" };
   const workspaceId = await homeWorkspace(exec, billingAccountId);
   if (!workspaceId) return { kind: "unresolved", reason: `no workspace for ${billingAccountId}` };
-  const start = unixToDate(invoice.period_start, deps.clock.now());
-  const end = unixToDate(invoice.period_end, new Date(start.getTime() + 31 * 24 * 60 * 60 * 1000));
+  // RH-15 — the stored period must be the billed SERVICE period, which lives on the invoice's
+  // subscription LINE (`lines.data[].period` — the window Stripe bills for, identical to the
+  // subscription item's `current_period_*`), never the invoice's own `period_start`/`period_end`:
+  // those bound the invoice's collection window (when its items were added — earlier under
+  // proration). The forward (latest-ending) line wins when several lines share the invoice.
+  const lineEnd = (invoice.lines?.data ?? [])
+    .map((l) => l.period)
+    .filter((p): p is { start: number; end: number } => p?.start != null && p?.end != null)
+    .sort((a, b) => b.end - a.end)[0];
+  let start: Date;
+  let end: Date;
+  if (lineEnd) {
+    start = new Date(lineEnd.start * 1000);
+    end = new Date(lineEnd.end * 1000);
+  } else {
+    // No line period on the event — fall back to the subscription's own recorded bounds rolled one
+    // cycle forward (the stored row is the last system-of-record sync; an unmapped invoice without
+    // a stored row can't renew at all).
+    const stored = (
+      await exec.query(
+        "select period_end, billing_cycle from subscriptions where stripe_subscription_id = $1",
+        [invoice.subscription],
+      )
+    ).rows[0] as { period_end: string; billing_cycle: string | null } | undefined;
+    if (!stored) return { kind: "ignored" };
+    start = new Date(stored.period_end);
+    end = new Date(stored.period_end);
+    end.setUTCMonth(end.getUTCMonth() + (stored.billing_cycle === "annual" ? 12 : 1));
+  }
   let applied = false;
   await deps.runTx(workspaceId, async (tx) => {
     applied = (
@@ -627,8 +686,8 @@ async function processSubscriptionSync(
   if (!billingAccountId) return { kind: "unresolved", reason: "subscription has no resolvable account" };
   const workspaceId = await homeWorkspace(exec, billingAccountId);
   if (!workspaceId) return { kind: "unresolved", reason: `no workspace for ${billingAccountId}` };
-  const tier = planFrom(sub.metadata?.plan);
-  const interval = sub.items?.data?.[0]?.plan?.interval;
+  const tier = tierFromSubscriptionItem(sub) ?? planFrom(sub.metadata?.plan);
+  const interval = sub.items?.data?.[0]?.price?.recurring?.interval ?? sub.items?.data?.[0]?.plan?.interval;
   const status = sub.status === "active" || sub.status === "past_due" ? sub.status : undefined;
   let synced = false;
   await deps.runTx(workspaceId, async (tx) => {
@@ -685,13 +744,18 @@ async function processSubscriptionDeleted(
   sub: SubscriptionObject,
 ): Promise<StripeEventOutcome> {
   if (!sub.id) return { kind: "unresolved", reason: "subscription object has no id" };
+  // RH-14 (272_R6BILL.3) — an unresolvable account/workspace must NOT be marked processed: the plan
+  // would never end locally and nothing would surface it. `unresolved` keeps the row unprocessed so
+  // the stranded-event sweep + `stripe-redrive` stay live — the same posture the invoice/sync arms
+  // already take. A resolvable account whose sub row we never recorded is terminal (nothing to end),
+  // so `subscription_ended` with `applied:false` is still the honest processed verdict there.
   const billingAccountId = await accountFor(exec, sub);
-  const workspaceId = billingAccountId ? await homeWorkspace(exec, billingAccountId) : null;
-  if (workspaceId) {
-    await deps.runTx(workspaceId, async (tx) => {
-      await endSubscription(tx, deps, { stripeSubscriptionId: sub.id! });
-    });
-  }
+  if (!billingAccountId) return { kind: "unresolved", reason: "subscription has no resolvable account" };
+  const workspaceId = await homeWorkspace(exec, billingAccountId);
+  if (!workspaceId) return { kind: "unresolved", reason: `no workspace for ${billingAccountId}` };
+  await deps.runTx(workspaceId, async (tx) => {
+    await endSubscription(tx, deps, { stripeSubscriptionId: sub.id! });
+  });
   return { kind: "subscription_ended", billingAccountId };
 }
 
@@ -782,4 +846,62 @@ async function resolveDisputeAccount(exec: SqlClient, dispute: DisputeObject): P
     if (row) return row.billing_account_id;
   }
   return null;
+}
+
+// ------------------------------------------------------------------------------------------------------
+// RH-11 (272_R6BILL.3) — the webhook stranding watchdog
+// ------------------------------------------------------------------------------------------------------
+
+/** Default grace: a row younger than this may still be in its first enqueue/process window. */
+export const STRANDED_EVENT_GRACE_MS = 10 * 60 * 1000;
+
+/**
+ * Sweep `stripe_events` for parked rows that never got (or lost) their `stripe.event` job — the
+ * watchdog half of the intake's mark-then-send seam. The webhook commits the row BEFORE `queue.send`
+ * (§14.6): a send failure leaves `processed_at is null` forever — Stripe's retry finds the row
+ * already parked, gets a 200, and enqueues nothing (the intake now re-sends on that replay too; this
+ * sweep covers the retry that never comes — a consumed job that died `failed`, a dropped send). A
+ * row past `graceMs` with NO live (`created`/`retry`/`active`) `stripe.event` job is re-enqueued with
+ * the intake's own `stripe:<id>` singleton key; every processing arm is idempotent, so a re-send is
+ * always safe. A send failure never fails the sweep — the row simply stays stranded for the next
+ * tick. Rides the hourly `billing.period-tick`; `admin stripe-redrive` stays the manual same path.
+ *
+ * Honest boundary: an event that can never resolve (RH-14's unresolvable `subscription.deleted`, a
+ * `checkout.session.completed` with no account) is re-driven each tick and fails `unresolved` loudly
+ * — that noise IS the surfaced signal, never a silent drop.
+ */
+export async function sweepStrandedStripeEvents(
+  exec: SqlClient,
+  queue: Queue,
+  args: { now: Date; graceMs?: number; limit?: number },
+): Promise<{ scanned: number; requeued: readonly string[] }> {
+  const graceMs = args.graceMs ?? STRANDED_EVENT_GRACE_MS;
+  const cutoff = new Date(args.now.getTime() - graceMs);
+  const rows = (
+    await exec.query(
+      `select e.id from stripe_events e
+        where e.processed_at is null
+          and e.received_at < $1
+          and not exists (
+            select 1 from pgboss.job j
+             where j.name = 'stripe.event'
+               and j.data->>'eventId' = e.id
+               and j.state in ('created','retry','active')
+          )
+        order by e.received_at
+        limit $2`,
+      [cutoff, args.limit ?? 200],
+    )
+  ).rows as { id: string }[];
+  const requeued: string[] = [];
+  for (const row of rows) {
+    try {
+      await queue.send(STRIPE_EVENT_JOB, { eventId: row.id }, { singletonKey: `stripe:${row.id}` });
+      requeued.push(row.id);
+    } catch {
+      // a send failure never fails the sweep — the row stays stranded for the next tick (the
+      // `stripe-redrive` admin verb is the same path by hand).
+    }
+  }
+  return { scanned: rows.length, requeued };
 }
