@@ -43,7 +43,6 @@ autonomy:        checkpoint
 mergePolicy:     OPERATOR
 round:           7                  # post-round maintenance per GD-MAINT.R6
 updatedAt:       2026-11-16T07:0xZ  # R-0 repair ×3 — the #339 squash + #338 merge re-stacked CURRENT STATE (13→26 copies) and duplicated 2 rows; block restored to the single block of 89a458cc (#342), stacked copy archived to reports/2026-11-15_state-collapse/CURRENT-STATE-main-784a2e54-stacked.txt; union-merging CURRENT STATE is FORBIDDEN (GD-OPS-RULES.R6)
-harness:         devin-desktop/swe-2-high/subagent   # BM-HARNESS-01 — round-7 planning/decomposition ran in claude-code/claude-opus-5.5; the drive resumes on devin-desktop/swe-2-high at the pre-209 boundary (the legal switch point)
 ```
 
 ## OPEN FINDINGS
