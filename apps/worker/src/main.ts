@@ -460,6 +460,15 @@ export async function startWorker(): Promise<void> {
           stripe: env.stripeApiBaseUrl
             ? new FetchStripePort(stripeKey, env.stripeApiBaseUrl)
             : new FetchStripePort(stripeKey),
+          // RH-7 (268_R6BILL.1) — the livemode check on `stripe.event` processing: the bound key's
+          // mode prefix IS this deployment's expected mode (prod sk_live_ ⇒ live events only; a
+          // test-mode key ⇒ test events only; an unrecognized shape ⇒ no check, never a guess).
+          // Only the key's prefix is read — the secret value never reaches a log.
+          ...(stripeKey.startsWith("sk_live_") || stripeKey.startsWith("rk_live_")
+            ? { expectLivemode: true }
+            : stripeKey.startsWith("sk_test_") || stripeKey.startsWith("rk_test_")
+              ? { expectLivemode: false }
+              : {}),
         }
       : {}),
     ...(alertSink ? { alert: alertSink } : {}),
