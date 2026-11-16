@@ -146,6 +146,13 @@ export async function insertStripeEvent(
 
 export interface StripeEventDeps extends ChargebackDeps {
   readonly queue: Queue;
+  /**
+   * RH-7 (268_R6BILL.1) — the livemode this deployment's Stripe key operates in (`true` on a
+   * `sk_live_*`/`rk_live_*` binding, `false` on `*_test_*`, unset when no key is configured). An
+   * event whose `livemode` doesn't match writes nothing and is acknowledged `skipped` — a test-mode
+   * event must never mutate live state (or vice versa). Unset ⇒ no check (unconfigured stages).
+   */
+  readonly expectLivemode?: boolean;
   /** billing emails through the notify queue (P1.16 — the renewal-failure banner etc.).
    *  BILL.3: `tag` keys the delivery claim (`checkout:<sessionId>` ⇒ exactly-once per session);
    *  `openPath` overrides the mail's in-app href/open URL (an in-app path, never external). */
@@ -172,6 +179,7 @@ export type StripeEventOutcome =
   | { readonly kind: "dispute_won"; readonly billingAccountId: string; readonly restored: number; readonly redeliver: readonly string[] }
   | { readonly kind: "auto_reload_reconciled"; readonly billingAccountId: string }
   | { readonly kind: "ignored" }
+  | { readonly kind: "skipped"; readonly reason: string }
   | { readonly kind: "unresolved"; readonly reason: string };
 
 /** The Stripe event-object shapes this processor reads (structural — no SDK). */
@@ -204,19 +212,35 @@ interface SubscriptionObject {
   // FLAG still `false` — mirroring the flag alone leaves our DB saying "Renews" while Stripe
   // ends the plan. Both shapes mean "scheduled cancellation" → `cancel_at_period_end` in ours.
   cancel_at?: number | null;
-  current_period_start?: number; // unix seconds
+  current_period_start?: number; // unix seconds — pre-basil top-level only
   current_period_end?: number;
   metadata?: { billing_account_id?: string; plan?: string; cycle?: string };
-  items?: { data?: { plan?: { interval?: string } }[] };
+  items?: {
+    data?: {
+      /** pre-basil name for the item's price object (deprecated alias since basil). */
+      plan?: { interval?: string };
+      /** basil+ canonical interval field. */
+      price?: { recurring?: { interval?: string } };
+      /** basil+ : current_period_* moved off the subscription onto its items. */
+      current_period_start?: number;
+      current_period_end?: number;
+    }[];
+  };
 }
 interface InvoiceObject {
   id?: string;
+  /** pre-basil shape — removed in 2025-03-31.basil (see `parent`). */
   subscription?: string;
   customer?: string;
   billing_reason?: string;
   period_start?: number;
   period_end?: number;
   metadata?: { billing_account_id?: string };
+  /** basil+ : the subscription pointer lives here (verify `parent.type === "subscription_details"`). */
+  parent?: {
+    type?: string;
+    subscription_details?: { subscription?: string };
+  };
 }
 interface DisputeObject {
   id?: string;
@@ -238,9 +262,98 @@ interface PaymentIntentObject {
 }
 
 /**
+ * The invoice's Stripe-subscription pointer — RH-9 (268_R6BILL.1): `2025-03-31.basil` moved it to
+ * `parent.subscription_details.subscription` (read only when `parent.type === "subscription_details"`);
+ * pre-basil events still carry the top-level `subscription`. Both shapes accepted because webhook
+ * payloads follow the endpoint's `api_version` / account default, not our request pin.
+ */
+function subscriptionIdFromInvoice(invoice: InvoiceObject): string | null {
+  if (invoice.parent?.type === "subscription_details") {
+    const id = invoice.parent.subscription_details?.subscription;
+    if (id) return id;
+  }
+  return invoice.subscription ?? null;
+}
+
+/**
+ * The subscription's current-period bounds — basil+ reads them off the item (`items.data[0]`, our
+ * Checkout mints single-item subscriptions); pre-basil events carry them top-level.
+ */
+function subscriptionPeriodBounds(sub: SubscriptionObject): { start?: number; end?: number } {
+  const item = sub.items?.data?.[0];
+  return {
+    start: item?.current_period_start ?? sub.current_period_start,
+    end: item?.current_period_end ?? sub.current_period_end,
+  };
+}
+
+/**
+ * The recurring interval — `price.recurring.interval` is the basil+ canonical field; `plan.interval`
+ * is the deprecated alias pre-basil payloads (and basil's compat surface) carry.
+ */
+function subscriptionInterval(sub: SubscriptionObject): string | undefined {
+  const item = sub.items?.data?.[0];
+  return item?.price?.recurring?.interval ?? item?.plan?.interval;
+}
+
+/**
+ * RH-7 (268_R6BILL.1) — the arms that WRITE state from the event's object snapshot. Redelivery is
+ * unordered: an older event processed after a newer one must not roll state back, so these types
+ * take the `created`-ordering guard. `checkout.session.completed` is deliberately NOT here — its
+ * arm is an action gated by our own `checkout_sessions` state machine (state ≠ open ⇒ ignored), and
+ * its `created` routinely trails the `customer.subscription.created` Stripe emits beside it; guarding
+ * it would strand open sessions and pending-checkout mail.
+ */
+const SUBSCRIPTION_STATE_TYPES: ReadonlySet<string> = new Set([
+  "invoice.paid",
+  "invoice.payment_failed",
+  "customer.subscription.created",
+  "customer.subscription.updated",
+  "customer.subscription.deleted",
+]);
+
+/** The Stripe subscription id an event mutates: the object id on `customer.subscription.*`, the
+ *  invoice's subscription pointer on `invoice.*` (either payload shape). */
+function subscriptionAnchorFor(type: string, object: SubscriptionObject & InvoiceObject): string | null {
+  if (type.startsWith("customer.subscription.")) return object.id ?? null;
+  if (type === "invoice.paid" || type === "invoice.payment_failed") return subscriptionIdFromInvoice(object);
+  return null;
+}
+
+/**
+ * True when an already-PROCESSED event on the same subscription anchor carries a newer `created` —
+ * this event's snapshot predates state already written, so it must not overwrite it. The comparison
+ * set spans every subscription-state type PLUS `checkout.session.completed` (its activation arm also
+ * writes the row). An event without `created` can't be ordered — it processes unguarded (every real
+ * Stripe event carries it).
+ */
+async function supersededByNewerEvent(exec: SqlClient, eventId: string, created: number, anchor: string): Promise<string | null> {
+  const row = (
+    await exec.query(
+      `select id from stripe_events
+         where processed_at is not null
+           and id <> $1
+           and coalesce((payload->>'created')::double precision, -1) > $2
+           and type <> 'charge.dispute.created' and type <> 'charge.dispute.closed'
+           and (
+                payload->'data'->'object'->>'id' = $3
+             or payload->'data'->'object'->>'subscription' = $3
+             or payload->'data'->'object'->'parent'->'subscription_details'->>'subscription' = $3
+           )
+         order by (payload->>'created')::double precision desc
+         limit 1`,
+      [eventId, created, anchor],
+    )
+  ).rows[0] as { id: string } | undefined;
+  return row?.id ?? null;
+}
+
+/**
  * Process one stored `stripe_events` row. Reads the row by id (the webhook already inserted it), dispatches
  * on `type`, marks `processed_at` on success. Unhandled types are acknowledged (`ignored`) — the intake is
- * the dedupe boundary, so reprocessing a stored row is always safe.
+ * the dedupe boundary, so reprocessing a stored row is always safe. RH-7 guards run BEFORE the dispatch:
+ * a `livemode` mismatch and a `created`-stale subscription event are acknowledged `skipped` (processed_at
+ * still stamps — they were evaluated to a terminal verdict, never stranded for the unprocessed sweep).
  */
 export async function processStripeEvent(
   exec: SqlClient,
@@ -252,6 +365,8 @@ export async function processStripeEvent(
   ).rows[0] as { id: string; type: string; payload: unknown; processed_at: string | null } | undefined;
   if (!row) return { kind: "unresolved", reason: `unknown event ${eventId}` };
   const payload = (typeof row.payload === "string" ? JSON.parse(row.payload) : row.payload) as {
+    created?: unknown;
+    livemode?: unknown;
     data?: { object?: unknown };
   };
   const object = (payload.data?.object ?? {}) as CheckoutSession &
@@ -261,7 +376,40 @@ export async function processStripeEvent(
     PaymentIntentObject;
 
   let outcome: StripeEventOutcome;
-  switch (row.type) {
+
+  // RH-7 livemode check — when the deployment knows its mode, a mismatched (or mode-less) event is
+  // acknowledged without touching state. Real Stripe events always carry `livemode`; a missing field
+  // is not a match (fail-closed).
+  if (deps.expectLivemode !== undefined && payload.livemode !== deps.expectLivemode) {
+    outcome = {
+      kind: "skipped",
+      reason: `livemode ${String(payload.livemode)} ≠ expected ${deps.expectLivemode}`,
+    };
+  } else if (SUBSCRIPTION_STATE_TYPES.has(row.type)) {
+    // RH-7 `created` ordering guard — an older redelivery must not overwrite newer state.
+    const created = typeof payload.created === "number" && Number.isFinite(payload.created) ? payload.created : null;
+    const anchor = subscriptionAnchorFor(row.type, object);
+    const newer = anchor && created != null ? await supersededByNewerEvent(exec, eventId, created, anchor) : null;
+    outcome = newer ? { kind: "skipped", reason: `stale event — ${newer} (newer created) already wrote ${anchor}` } : await dispatch(exec, deps, row.type, object, eventId);
+  } else {
+    outcome = await dispatch(exec, deps, row.type, object, eventId);
+  }
+
+  if (outcome.kind !== "unresolved") {
+    await exec.query("update stripe_events set processed_at = $2 where id = $1", [eventId, deps.clock.now()]);
+  }
+  return outcome;
+}
+
+async function dispatch(
+  exec: SqlClient,
+  deps: StripeEventDeps,
+  type: string,
+  object: CheckoutSession & DisputeObject & SubscriptionObject & InvoiceObject,
+  eventId: string,
+): Promise<StripeEventOutcome> {
+  let outcome: StripeEventOutcome;
+  switch (type) {
     case "checkout.session.completed":
       outcome = await processCheckoutCompleted(exec, deps, object);
       break;
@@ -331,10 +479,6 @@ export async function processStripeEvent(
       break;
     default:
       outcome = { kind: "ignored" };
-  }
-
-  if (outcome.kind !== "unresolved") {
-    await exec.query("update stripe_events set processed_at = $2 where id = $1", [eventId, deps.clock.now()]);
   }
   return outcome;
 }
@@ -599,7 +743,8 @@ async function processInvoicePaid(
   deps: StripeEventDeps,
   invoice: InvoiceObject,
 ): Promise<StripeEventOutcome> {
-  if (!invoice.subscription) return { kind: "ignored" };
+  const subscriptionId = subscriptionIdFromInvoice(invoice);
+  if (!subscriptionId) return { kind: "ignored" };
   const billingAccountId = await accountFor(exec, invoice);
   if (!billingAccountId) return { kind: "unresolved", reason: "invoice has no resolvable billing account" };
   const workspaceId = await homeWorkspace(exec, billingAccountId);
@@ -610,7 +755,7 @@ async function processInvoicePaid(
   await deps.runTx(workspaceId, async (tx) => {
     applied = (
       await applyRenewalPaid(tx, deps, {
-        stripeSubscriptionId: invoice.subscription!,
+        stripeSubscriptionId: subscriptionId,
         workspaceId,
         periodStart: start,
         periodEnd: end,
@@ -626,14 +771,15 @@ async function processInvoiceFailed(
   deps: StripeEventDeps,
   invoice: InvoiceObject,
 ): Promise<StripeEventOutcome> {
-  if (!invoice.subscription) return { kind: "ignored" };
+  const subscriptionId = subscriptionIdFromInvoice(invoice);
+  if (!subscriptionId) return { kind: "ignored" };
   const billingAccountId = await accountFor(exec, invoice);
   if (!billingAccountId) return { kind: "unresolved", reason: "invoice has no resolvable billing account" };
   const workspaceId = await homeWorkspace(exec, billingAccountId);
   if (!workspaceId) return { kind: "unresolved", reason: `no workspace for ${billingAccountId}` };
   await deps.runTx(workspaceId, async (tx) => {
     await applyRenewalFailed(tx, deps, {
-      stripeSubscriptionId: invoice.subscription!,
+      stripeSubscriptionId: subscriptionId,
       workspaceId,
     });
   });
@@ -652,7 +798,8 @@ async function processSubscriptionSync(
   const workspaceId = await homeWorkspace(exec, billingAccountId);
   if (!workspaceId) return { kind: "unresolved", reason: `no workspace for ${billingAccountId}` };
   const tier = planFrom(sub.metadata?.plan);
-  const interval = sub.items?.data?.[0]?.plan?.interval;
+  const interval = subscriptionInterval(sub);
+  const period = subscriptionPeriodBounds(sub);
   const status = sub.status === "active" || sub.status === "past_due" ? sub.status : undefined;
   let synced = false;
   await deps.runTx(workspaceId, async (tx) => {
@@ -661,9 +808,9 @@ async function processSubscriptionSync(
       await tx.query("select id from subscriptions where stripe_subscription_id = $1", [sub.id])
     ).rows[0];
     if (!known && tier && status === "active") {
-      const periodStart = unixToDate(sub.current_period_start, deps.clock.now());
+      const periodStart = unixToDate(period.start, deps.clock.now());
       const periodEnd = unixToDate(
-        sub.current_period_end,
+        period.end,
         new Date(periodStart.getTime() + (interval === "year" ? 366 : 31) * 24 * 60 * 60 * 1000),
       );
       await activateSubscription(tx, deps, {
@@ -694,8 +841,8 @@ async function processSubscriptionSync(
         ...(sub.cancel_at_period_end !== undefined || sub.cancel_at !== undefined
           ? { cancelAtPeriodEnd: pendingCancel }
           : {}),
-        ...(sub.current_period_start ? { periodStart: unixToDate(sub.current_period_start, deps.clock.now()) } : {}),
-        ...(sub.current_period_end ? { periodEnd: unixToDate(sub.current_period_end, deps.clock.now()) } : {}),
+        ...(period.start ? { periodStart: unixToDate(period.start, deps.clock.now()) } : {}),
+        ...(period.end ? { periodEnd: unixToDate(period.end, deps.clock.now()) } : {}),
       })
     ).applied;
   });
