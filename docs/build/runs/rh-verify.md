@@ -1,6 +1,6 @@
 # rh-verify — the handoff findings' read-only verdict pass (2026-11-15)
 
-**Reconstructed 2026-11-16 (276_R6DOC.3).** The verify pass ran read-only at chain tip on
+**Harness:** devin-desktop/swe-2-high/subagent · **Reconstructed 2026-11-16 (276_R6DOC.3).** The verify pass ran read-only at chain tip on
 2026-11-15 against the operator handoff's findings note
 (`rhema-boilerplate-findings-handoff/findings-note.md`, outside the repo; audited repo state
 `39684e12`, wave-1 `ed7aef1d`/`40c3980a`). The pass's totals were recorded in the insert PR's
