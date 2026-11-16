@@ -16,7 +16,8 @@ import {
   PREVIEW_STACK_RE,
   NONPROD_RESEND_SECRET,
   NONPROD_STRIPE_SECRET,
-  RESEND_FROM,
+  PREVIEW_RESEND_FROM,
+  newestEnabledVersion,
   previewInviteCode,
   latestExecutionFacts,
   migrateJobName,
@@ -182,85 +183,28 @@ describe("guard — the new verbs inherit the full refusal contract", () => {
   });
 });
 
-describe("resend-pull — the shared secret pipes into --secret config via stdin", () => {
-  const ownedExec = () => {
-    const calls = [];
-    const exec = (args) => {
-      calls.push(args);
-      if (args[0] === "stack" && args[1] === "tag" && args[2] === "get")
-        return { status: 0, stdout: `${OWNER_TAG_VALUE}\n` };
-      if (args[0] === "config" && args[1] === "get") return { status: 1, stdout: "" };
-      return { status: 0, stdout: "" };
-    };
-    return { calls, exec };
-  };
-  const FAKE_KEY = "re_test_FAKE_KEY_DO_NOT_LOG";
-
-  it("reads rhema-nonprod-resend-api-key and feeds pulumi config set --secret via STDIN", () => {
-    const { calls, exec } = ownedExec();
-    const gcloudCalls = [];
-    const secretPipes = [];
-    const gcloud = (args) => {
-      gcloudCalls.push(args);
-      return { status: 0, stdout: `${FAKE_KEY}\n` };
-    };
-    const execSecret = (args, value) => {
-      secretPipes.push({ args, value });
-      return { status: 0 };
-    };
-    expect(run("pr-131", "resend-pull", [], { exec, gcloud, execSecret })).toBe(0);
-    // the access call names the shared secret — captured (stdout never inherits to the console)
-    const access = gcloudCalls[0].join(" ");
-    expect(access).toContain(`secrets versions access latest --secret ${NONPROD_RESEND_SECRET}`);
-    expect(access).toContain("--project rhema-507501"); // default project when stack config unset
-    // the key went to pulumi's stdin — and appears in NO argv anywhere
-    expect(secretPipes).toHaveLength(1);
-    expect(secretPipes[0].args.join(" ")).toContain("config set --secret --stack pr-131 rhema:resendApiKey");
-    expect(secretPipes[0].value).toBe(FAKE_KEY + "\n");
-    for (const args of [...calls, ...gcloudCalls, ...secretPipes.map((p) => p.args)]) {
-      expect(args.join(" ")).not.toContain(FAKE_KEY);
-    }
-    // the verified From address rides plain config (same value prod carries)
-    expect(calls.map((c) => c.join(" "))).toContain(
-      `config set --stack pr-131 rhema:emailFrom ${RESEND_FROM}`,
-    );
+describe("newestEnabledVersion — the pinned-version parser (RH-29)", () => {
+  it("picks the greatest trailing digits across resource-name lines", () => {
+    const text = "projects/p/secrets/rhema-nonprod-resend-api-key/versions/1\n" +
+      "projects/p/secrets/rhema-nonprod-resend-api-key/versions/7\n" +
+      "projects/p/secrets/rhema-nonprod-resend-api-key/versions/3\n";
+    expect(newestEnabledVersion(text)).toBe("7");
   });
-
-  it("absent operator secret ⇒ nonzero exit, the prerequisite message, and NO pulumi write", () => {
-    const { calls, exec } = ownedExec();
-    const gcloud = () => ({ status: 1, stdout: "" });
-    const secretPipes = [];
-    const execSecret = (args, value) => {
-      secretPipes.push({ args, value });
-      return { status: 0 };
-    };
-    expect(run("pr-131", "resend-pull", [], { exec, gcloud, execSecret })).toBe(1);
-    expect(secretPipes).toHaveLength(0);
-    // only the ownership probe + the gcp:project read ran — nothing mutated the stack
-    expect(calls.every((c) => c[0] === "stack" || (c[0] === "config" && c[1] === "get"))).toBe(true);
+  it("bare-number output parses too (gcloud NAME column shape)", () => {
+    expect(newestEnabledVersion("1\n12\n")).toBe("12");
   });
-
-  it("an empty secret body is treated as absent (never writes an empty version)", () => {
-    const { exec } = ownedExec();
-    const secretPipes = [];
-    expect(
-      run("pr-131", "resend-pull", [], {
-        exec,
-        gcloud: () => ({ status: 0, stdout: "  \n" }),
-        execSecret: (args, value) => {
-          secretPipes.push({ args, value });
-          return { status: 0 };
-        },
-      }),
-    ).toBe(1);
-    expect(secretPipes).toHaveLength(0);
+  it("empty/unparseable output ⇒ null (the absent-secret arm)", () => {
+    expect(newestEnabledVersion("")).toBeNull();
+    expect(newestEnabledVersion("  \n\n")).toBeNull();
+    expect(newestEnabledVersion(undefined)).toBeNull();
+    expect(newestEnabledVersion("versions/\nabc\n")).toBeNull();
   });
 });
 
-// R6POST.2 (REQ-POST-6) — the Stripe test-mode pull: the same gcloud→stdin contract, the
-// shared NONPROD container only (a prod secret id never appears), and the absent-secret
-// short-circuit the N9 withhold rides on.
-describe("stripe-pull — the shared nonprod sk_test pipes into --secret config via stdin", () => {
+// RH-29 (271_R6SEC.3) — the pull binds the shared secret BY REFERENCE: it lists ENABLED
+// versions (metadata, never `versions access`), pins the newest into a PLAIN config, and the
+// Resend sender is the nonprod-only identity — no key value transits stack state, argv, or logs.
+describe("resend-pull — pins the shared secret's version into plain config", () => {
   const ownedExec = () => {
     const calls = [];
     const exec = (args) => {
@@ -272,68 +216,76 @@ describe("stripe-pull — the shared nonprod sk_test pipes into --secret config 
     };
     return { calls, exec };
   };
-  const FAKE_KEY = "sk_test_FAKE_KEY_DO_NOT_LOG";
+  const LIST_OUT = "projects/p/secrets/rhema-nonprod-resend-api-key/versions/2\n" +
+    "projects/p/secrets/rhema-nonprod-resend-api-key/versions/5\n";
 
-  it("reads rhema-nonprod-stripe-secret and feeds pulumi config set --secret via STDIN", () => {
+  it("lists ENABLED versions, pins the newest via `config set`, sets the nonprod sender", () => {
     const { calls, exec } = ownedExec();
     const gcloudCalls = [];
-    const secretPipes = [];
     const gcloud = (args) => {
       gcloudCalls.push(args);
-      return { status: 0, stdout: `${FAKE_KEY}\n` };
+      return { status: 0, stdout: LIST_OUT };
     };
-    const execSecret = (args, value) => {
-      secretPipes.push({ args, value });
-      return { status: 0 };
-    };
-    expect(run("pr-213", "stripe-pull", [], { exec, gcloud, execSecret })).toBe(0);
-    const access = gcloudCalls[0].join(" ");
-    expect(access).toContain(`secrets versions access latest --secret ${NONPROD_STRIPE_SECRET}`);
-    // The ONLY stripe container this path may ever name is the shared nonprod one — the prod
-    // secret ids are the REQ-ARCH-38 forbidden names, not the substring "prod".
-    expect(access).not.toContain("rhema-prod-stripe-secret");
-    expect(access).not.toContain("rhema-prod-");
-    expect(secretPipes).toHaveLength(1);
-    expect(secretPipes[0].args.join(" ")).toContain(
-      "config set --secret --stack pr-213 rhema:stripeSecret",
+    expect(run("pr-131", "resend-pull", [], { exec, gcloud })).toBe(0);
+    const list = gcloudCalls[0].join(" ");
+    expect(list).toContain(`secrets versions list ${NONPROD_RESEND_SECRET}`);
+    expect(list).toContain("--project rhema-507501"); // default project when stack config unset
+    expect(list).not.toContain("versions access"); // metadata only — never the payload
+    expect(calls.map((c) => c.join(" "))).toContain(
+      "config set --stack pr-131 rhema:nonprodResendVersion 5",
     );
-    expect(secretPipes[0].value).toBe(FAKE_KEY + "\n");
-    for (const args of [...calls, ...gcloudCalls, ...secretPipes.map((p) => p.args)]) {
-      expect(args.join(" ")).not.toContain(FAKE_KEY);
+    expect(calls.map((c) => c.join(" "))).toContain(
+      `config set --stack pr-131 rhema:emailFrom ${PREVIEW_RESEND_FROM}`,
+    );
+    // no --secret config write happens anywhere on this path
+    expect(calls.every((c) => !(c[0] === "config" && c[1] === "set" && c.includes("--secret")))).toBe(true);
+  });
+
+  it("absent/empty version list ⇒ nonzero exit + NO pulumi write", () => {
+    for (const out of [{ status: 1, stdout: "" }, { status: 0, stdout: " \n" }]) {
+      const { calls, exec } = ownedExec();
+      expect(run("pr-131", "resend-pull", [], { exec, gcloud: () => out })).toBe(1);
+      expect(calls.every((c) => c[0] === "stack" || (c[0] === "config" && c[1] === "get"))).toBe(true);
     }
   });
+});
 
-  it("absent operator secret ⇒ nonzero exit + NO pulumi write (the N9 withhold arm)", () => {
+describe("stripe-pull — pins the shared nonprod sk_test version into plain config", () => {
+  const ownedExec = () => {
+    const calls = [];
+    const exec = (args) => {
+      calls.push(args);
+      if (args[0] === "stack" && args[1] === "tag" && args[2] === "get")
+        return { status: 0, stdout: `${OWNER_TAG_VALUE}\n` };
+      if (args[0] === "config" && args[1] === "get") return { status: 1, stdout: "" };
+      return { status: 0, stdout: "" };
+    };
+    return { calls, exec };
+  };
+
+  it("lists ENABLED versions of the shared nonprod secret and pins the newest", () => {
     const { calls, exec } = ownedExec();
-    const secretPipes = [];
-    expect(
-      run("pr-213", "stripe-pull", [], {
-        exec,
-        gcloud: () => ({ status: 1, stdout: "" }),
-        execSecret: (args, value) => {
-          secretPipes.push({ args, value });
-          return { status: 0 };
-        },
-      }),
-    ).toBe(1);
-    expect(secretPipes).toHaveLength(0);
-    expect(calls.every((c) => c[0] === "stack" || (c[0] === "config" && c[1] === "get"))).toBe(true);
+    const gcloudCalls = [];
+    const gcloud = (args) => {
+      gcloudCalls.push(args);
+      return { status: 0, stdout: "projects/p/secrets/rhema-nonprod-stripe-secret/versions/3\n" };
+    };
+    expect(run("pr-213", "stripe-pull", [], { exec, gcloud })).toBe(0);
+    const list = gcloudCalls[0].join(" ");
+    expect(list).toContain(`secrets versions list ${NONPROD_STRIPE_SECRET}`);
+    expect(list).not.toContain("versions access");
+    // The ONLY stripe container this path may ever name is the shared nonprod one.
+    expect(list).not.toContain("rhema-prod-");
+    expect(calls.map((c) => c.join(" "))).toContain(
+      "config set --stack pr-213 rhema:nonprodStripeVersion 3",
+    );
+    expect(calls.every((c) => !(c[0] === "config" && c[1] === "set" && c.includes("--secret")))).toBe(true);
   });
 
-  it("an empty secret body is treated as absent (never writes an empty version)", () => {
-    const { exec } = ownedExec();
-    const secretPipes = [];
-    expect(
-      run("pr-213", "stripe-pull", [], {
-        exec,
-        gcloud: () => ({ status: 0, stdout: " \n" }),
-        execSecret: (args, value) => {
-          secretPipes.push({ args, value });
-          return { status: 0 };
-        },
-      }),
-    ).toBe(1);
-    expect(secretPipes).toHaveLength(0);
+  it("absent version list ⇒ nonzero exit + NO pulumi write (the N9 withhold arm)", () => {
+    const { calls, exec } = ownedExec();
+    expect(run("pr-213", "stripe-pull", [], { exec, gcloud: () => ({ status: 1, stdout: "" }) })).toBe(1);
+    expect(calls.every((c) => c[0] === "stack" || (c[0] === "config" && c[1] === "get"))).toBe(true);
   });
 });
 

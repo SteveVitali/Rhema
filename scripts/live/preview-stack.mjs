@@ -36,8 +36,14 @@
 //                    (a pre-created `gcloud compute addresses` global IPv4 — the stack ADOPTS
 //                    it so the wildcard-DNS names can embed the known IP before `up`)
 //   stripe stage:    …config rhema:extraRequiredSecrets stripe-secret → stripe-pull
-//                    (pipes the shared `rhema-nonprod-stripe-secret` sk_test into
-//                    `rhema:stripeSecret` SECRET config — stdin, never argv/logs)
+//                    (pins the shared `rhema-nonprod-stripe-secret` ENABLED version into
+//                    `rhema:nonprodStripeVersion` PLAIN config — the version NUMBER only)
+//
+// RH-29 (271_R6SEC.3) — the pulls no longer copy secret VALUES into stack state: they pin the
+// shared nonprod secret's enabled VERSION into plain config (`rhema:nonprodResendVersion` /
+// `rhema:nonprodStripeVersion`), and the program mounts that pinned version on the consumers by
+// reference (`projects/…/versions/<n>`). The value stays in Secret Manager, never in
+// Pulumi state, argv, logs, or the repo.
 //
 // Every pulumi call runs `-C infra/pulumi` (the program dir) and never touches another
 // stack. The guard is deliberately thin: the refusal logic is pure and unit-tested; the
@@ -144,20 +150,6 @@ function gcloudExec(args, { capture = false } = {}) {
   return { status: r.status ?? 1, stdout: r.stdout ?? "" };
 }
 
-/**
- * `pulumi config set` with the value on STDIN — MAINT.6's `resend-pull` moves the Resend key
- * process-to-process (gcloud stdout → this script's memory → pulumi stdin) so it NEVER lands in
- * an argv list, a log line, or the repo. `config set` reads stdin when the value arg is absent.
- */
-function pulumiSecretStdin(args, value) {
-  const r = spawnSync("pulumi", ["-C", PROGRAM_DIR, ...args], {
-    input: value,
-    stdio: ["pipe", "inherit", "inherit"],
-    encoding: "utf8",
-  });
-  return { status: r.status ?? 1 };
-}
-
 /** `rhema:<key>` config value on the stack, or undefined when unset/unreadable. */
 function stackConfigValue(exec, stack, key) {
   const r = exec(["config", "get", key, "--stack", stack], { capture: true });
@@ -176,10 +168,31 @@ export const NONPROD_RESEND_SECRET = "rhema-nonprod-resend-api-key";
  * is absent — the N9 leg then withholds with a dated re-owe rather than fabricate green.
  */
 export const NONPROD_STRIPE_SECRET = "rhema-nonprod-stripe-secret";
-/** The Resend From address — the verified sender on the shared (prod-account) key, plain config. */
-export const RESEND_FROM = "hello@rhema.tools";
+/**
+ * RH-29 (271_R6SEC.3) — the preview Resend From address: a NONPROD-ONLY sender identity on the
+ * verified domain. Previews must never impersonate prod's `hello@rhema.tools` (the program
+ * refuses it on non-prod stages) — mail from `previews@` is visibly a non-prod send.
+ */
+export const PREVIEW_RESEND_FROM = "previews@rhema.tools";
 const DEFAULT_PROJECT = "rhema-507501";
 const DEFAULT_REGION = "us-central1";
+
+/**
+ * RH-29 — parse `gcloud secrets versions list --format='value(name)'` output into the newest
+ * ENABLED version NUMBER. Lines arrive as full resource names
+ * (`projects/<p>/secrets/<s>/versions/<n>`); the trailing digits are the pin. Pure — unit-tested;
+ * returns null when nothing parses (an absent/empty list means the operator prerequisite is unmet).
+ */
+export function newestEnabledVersion(text) {
+  let newest = null;
+  for (const line of (text ?? "").split("\n")) {
+    const m = line.trim().match(/(\d+)\s*$/);
+    if (!m) continue;
+    const n = Number(m[1]);
+    if (Number.isSafeInteger(n) && n > 0 && (newest === null || n > newest)) newest = n;
+  }
+  return newest === null ? null : String(newest);
+}
 
 /** The deterministic, non-secret invite code a preview carries — `prv-<n>-test`. */
 export function previewInviteCode(stack) {
@@ -232,7 +245,7 @@ export function latestExecutionFacts(jsonText) {
  * Dispatch `verb` for `stack`. `exec` is injectable so tests never shell out.
  * `rest` carries verb-local args (config: key/value; output: name/--json).
  */
-export function run(stack, verb, rest = [], { exec = pulumiExec, gcloud = gcloudExec, execSecret = pulumiSecretStdin } = {}) {
+export function run(stack, verb, rest = [], { exec = pulumiExec, gcloud = gcloudExec } = {}) {
   const category = classifyVerb(stack, verb);
   if (verb === "init") {
     // Refuse adoption when the name already resolves to a stack (tagged or not).
@@ -268,60 +281,67 @@ export function run(stack, verb, rest = [], { exec = pulumiExec, gcloud = gcloud
       return exec(["config", "set", "--stack", stack, ...(secret ? ["--secret"] : []), key, value]).status;
     }
     case "resend-pull": {
-      // MAINT.6 — pull the shared non-prod Resend key into `rhema:resendApiKey` SECRET config so
-      // the stack's `resend-api-key` placeholder is replaced by the real send-only key at `up`
-      // (index.ts resendVersionPlan; prod stacks are refused at classifyVerb before any of this).
+      // MAINT.6 + RH-29 — bind the shared non-prod Resend key BY REFERENCE: pin its newest
+      // ENABLED version into PLAIN `rhema:nonprodResendVersion` config (a version number is not
+      // secret). The program mounts `projects/…/versions/<n>` on the worker (the value never
+      // transits stack state — RH-29; prod stacks are refused at classifyVerb before any of this).
       const project = stackConfigValue(exec, stack, "gcp:project") ?? DEFAULT_PROJECT;
-      const access = gcloud(
-        ["secrets", "versions", "access", "latest", "--secret", NONPROD_RESEND_SECRET, "--project", project],
+      const list = gcloud(
+        ["secrets", "versions", "list", NONPROD_RESEND_SECRET,
+          "--project", project, "--filter", "state=ENABLED", "--format", "value(name)"],
         { capture: true },
       );
-      if (access.status !== 0 || (access.stdout ?? "").trim() === "") {
+      const version = list.status === 0 ? newestEnabledVersion(list.stdout) : null;
+      if (version === null) {
         // OPERATOR PREREQUISITE (ticket 149): the operator seeds the shared secret out of band.
         console.error(
-          `preview-stack: resend-pull could not read '${NONPROD_RESEND_SECRET}' in project '${project}' — ` +
-            "the operator prerequisite is unmet (a send-only Resend key on the prod account, so " +
-            "rhema.tools stays a verified sender). Nothing was changed.",
+          `preview-stack: resend-pull found no ENABLED version of '${NONPROD_RESEND_SECRET}' in project '${project}' — ` +
+            "the operator prerequisite is unmet (a send-only Resend key on the nonprod secret, " +
+            "seeded out of band). Nothing was changed.",
         );
         return 1;
       }
-      const set = execSecret(["config", "set", "--secret", "--stack", stack, "rhema:resendApiKey"], access.stdout);
+      const set = exec(["config", "set", "--stack", stack, "rhema:nonprodResendVersion", version]);
       if (set.status !== 0) return set.status;
-      // The worker's mailer also needs EMAIL_FROM — the verified sender on the shared account
-      // (plain, non-secret deploy config; same value prod carries in Pulumi.prod.yaml).
-      const from = exec(["config", "set", "--stack", stack, "rhema:emailFrom", RESEND_FROM]);
+      // The worker's mailer also needs EMAIL_FROM — the NONPROD-ONLY sender (RH-29): previews
+      // never impersonate prod's hello@rhema.tools (the program refuses that address non-prod).
+      const from = exec(["config", "set", "--stack", stack, "rhema:emailFrom", PREVIEW_RESEND_FROM]);
       if (from.status !== 0) return from.status;
       console.log(
-        `preview-stack: resend-pull set rhema:resendApiKey (--secret, stdin — never printed) ` +
-          `+ rhema:emailFrom=${RESEND_FROM} on '${stack}'`,
+        `preview-stack: resend-pull pinned ${NONPROD_RESEND_SECRET}@${version} ` +
+          `(rhema:nonprodResendVersion, plain — the value stays in Secret Manager) ` +
+          `+ rhema:emailFrom=${PREVIEW_RESEND_FROM} on '${stack}'`,
       );
       return 0;
     }
     case "stripe-pull": {
-      // R6POST.2 — pull the shared non-prod sk_test into `rhema:stripeSecret` SECRET config so
-      // the ruled stack's `stripe-secret` placeholder is replaced by the real test-mode key at
-      // `up` (index.ts's stripePlan — same resendVersionPlan semantics; prod is refused at
-      // classifyVerb before any of this). The gcloud→pulumi stdin pipe keeps the value out of
-      // argv/logs/the repo — the same shape resend-pull proved.
+      // R6POST.2 + RH-29 — bind the shared non-prod sk_test BY REFERENCE the same way: pin its
+      // newest ENABLED version into PLAIN `rhema:nonprodStripeVersion` config; the program mounts
+      // the pinned version on api + worker (the value never transits stack state). The ruled
+      // stage still carries `rhema:extraRequiredSecrets: stripe-secret` — the flag that mounts
+      // STRIPE_SECRET_KEY_NAME at all (prod is refused at classifyVerb before any of this).
       const project = stackConfigValue(exec, stack, "gcp:project") ?? DEFAULT_PROJECT;
-      const access = gcloud(
-        ["secrets", "versions", "access", "latest", "--secret", NONPROD_STRIPE_SECRET, "--project", project],
+      const list = gcloud(
+        ["secrets", "versions", "list", NONPROD_STRIPE_SECRET,
+          "--project", project, "--filter", "state=ENABLED", "--format", "value(name)"],
         { capture: true },
       );
-      if (access.status !== 0 || (access.stdout ?? "").trim() === "") {
+      const version = list.status === 0 ? newestEnabledVersion(list.stdout) : null;
+      if (version === null) {
         // OPERATOR PREREQUISITE (H10 / ticket 190): the operator seeds `sk_test` here out of
         // band. Absent ⇒ the N9 leg withholds with a dated re-owe — never a fabricated green.
         console.error(
-          `preview-stack: stripe-pull could not read '${NONPROD_STRIPE_SECRET}' in project '${project}' — ` +
+          `preview-stack: stripe-pull found no ENABLED version of '${NONPROD_STRIPE_SECRET}' in project '${project}' — ` +
             "the operator prerequisite is unmet (a TEST-MODE Stripe key seeded in nonprod Secret " +
             "Manager; the H10 'provided: yes' attestation names this container). Nothing was changed.",
         );
         return 1;
       }
-      const set = execSecret(["config", "set", "--secret", "--stack", stack, "rhema:stripeSecret"], access.stdout);
+      const set = exec(["config", "set", "--stack", stack, "rhema:nonprodStripeVersion", version]);
       if (set.status !== 0) return set.status;
       console.log(
-        `preview-stack: stripe-pull set rhema:stripeSecret (--secret, stdin — never printed) on '${stack}'`,
+        `preview-stack: stripe-pull pinned ${NONPROD_STRIPE_SECRET}@${version} ` +
+          `(rhema:nonprodStripeVersion, plain — the value stays in Secret Manager) on '${stack}'`,
       );
       return 0;
     }

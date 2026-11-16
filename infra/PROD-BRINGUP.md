@@ -159,12 +159,14 @@ runbook is exactly how `collabDatabaseUrl` drifted):
   previews whose serving host differs from the deployed origin — set via
   `preview-stack.mjs config pr-<n> rhema:uploadCorsOrigins "https://host1,https://host2"`; unset is
   the normal case.
-- `rhema:resendApiKey` — MAINT.6's NON-PROD-only secret config (Pulumi secret). On a preview/dev
-  stack it carries the REAL Resend key — `preview-stack.mjs resend-pull` pipes the operator-seeded
-  shared SM `rhema-nonprod-resend-api-key` into it — so that stack's `resend-api-key` SM version
-  carries the real key instead of the placeholder and signed-in preview journeys can send mail.
-  Setting it on prod is refused fail-closed by the program: prod's `resend-api-key` version stays
-  operator-seeded out-of-band.
+- `rhema:nonprodResendVersion` — RH-29's NON-PROD-only reference config (PLAIN, a version
+  number — never a secret). `preview-stack.mjs resend-pull` resolves the newest ENABLED version
+  of the shared SM `rhema-nonprod-resend-api-key` and pins it here; the program mounts
+  `projects/…/versions/<n>` on the worker (`RESEND_API_KEY_SECRET`) so the key VALUE never
+  transits stack state, and grants the worker SA `secretAccessor` on the shared container.
+  The pull also sets `rhema:emailFrom` to the nonprod-only `previews@rhema.tools` (the program
+  refuses prod's `hello@rhema.tools` on non-prod). The retired `rhema:resendApiKey` VALUE config
+  is refused on every stage; prod's `resend-api-key` version stays operator-seeded out-of-band.
 - `rhema:appBaseUrl` / `rhema:apiPublicUrl` — VERIF.2's NON-PROD public-origin config (plain,
   not secret): on stages without `domains` the api/web derive their public origins from these
   keys instead of `https://<stack>.rhema.dev` placeholders, which is what mounts the auth
@@ -188,13 +190,14 @@ runbook is exactly how `collabDatabaseUrl` drifted):
   stack should require (validated fail-closed against the known id set): the Stripe posture
   stage's `stripe-secret` opt-in so `requires("stripe-secret")` wires `STRIPE_SECRET_KEY_NAME`
   on api + worker only on stacks that ask. Prod refuses it.
-- `rhema:stripeSecret` — R6POST.2's NON-PROD-only secret config (Pulumi secret), the
-  resend-pull shape: `preview-stack.mjs stripe-pull` pipes the operator-seeded shared SM
-  `rhema-nonprod-stripe-secret` (a test-mode `sk_test` — never a prod key, REQ-ARCH-38) into it
-  so the stack's `stripe-secret` SM version carries the real test key instead of the OPS.1
-  placeholder and the Stripe-hosted hand-off legs can run on previews. Setting it on prod is
-  refused fail-closed by the program: prod's `stripe-secret` version stays operator-seeded
-  out-of-band.
+- `rhema:nonprodStripeVersion` — R6POST.2's NON-PROD reference config under the RH-29 shape
+  (PLAIN, a version number): `preview-stack.mjs stripe-pull` pins the newest ENABLED version of
+  the shared SM `rhema-nonprod-stripe-secret` (a test-mode `sk_test` — never a prod key,
+  REQ-ARCH-38); the program mounts that pinned version on api + worker (`STRIPE_SECRET_KEY_NAME`)
+  and grants both SAs accessor on the shared container — no key value in stack state. The stack
+  still needs `rhema:extraRequiredSecrets: stripe-secret` (the flag that mounts the env at all).
+  The retired `rhema:stripeSecret` VALUE config is refused on every stage; prod's `stripe-secret`
+  version stays operator-seeded out-of-band.
 
 ## 2b. Build + push the production image set (before `up` so services boot real images)
 
@@ -630,8 +633,8 @@ Every `pr-<n>` preview leg is blocked on one human act: seeding a real send-only
 shared Secret Manager secret `rhema-nonprod-resend-api-key` in project `rhema-507501` (probed
 `NOT_FOUND` on every pass through SPA.25 — the value has never existed and must never appear in
 the repo, a ledger, a log line, or a PR). Once seeded, `preview-stack.mjs resend-pull pr-<n>`
-pipes it into that stack's `rhema:resendApiKey` (§2, the NON-PROD-only key; prod refuses it
-fail-closed). It gates: MAINT.6's live session-mint proof (D-MAINT.6-1), every surface ticket's
+pins its newest ENABLED version into that stack's `rhema:nonprodResendVersion` (§2, the RH-29
+reference config; prod refuses it fail-closed). It gates: MAINT.6's live session-mint proof (D-MAINT.6-1), every surface ticket's
 `D-SPA.*-1/-2` preview legs/drills, and D-OPS.1-1's signed-in preview suite. **Prod legs do not
 need it** — prod sessions mint through the live `rhema.tools` mailbox. Never fabricate a preview
 result: if the secret is absent, the leg reports owed, not green.
