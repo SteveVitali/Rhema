@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Button } from "./primitives/button.js";
 import { TextArea } from "./primitives/fields.js";
+import { NonceScript } from "./nonce-script.js";
 
 // The Page — the schema-first editor surface (P1.02; §5.4; REQ-SPEC-19, REQ-DATA-28/29 amended,
 // REQ-POS-8/9, REQ-PROD-14). SSR renders the full chrome + a STATIC typeset render of the document
@@ -377,19 +378,19 @@ export function PageEditor(props: PageEditorProps): ReactNode {
               silently never mounts (the N8 prod walk caught this — [data-page-root] rendered,
               [data-page-view] never appeared). The < → < substitution stays: it is the
               </script> breakout guard. */}
-          <script
+          <NonceScript
             type="application/json"
             data-page-doc="1"
             dangerouslySetInnerHTML={{ __html: JSON.stringify(props.docJson).replace(/</g, "\\u003c") }}
           />
           {/* the stored provenance map (blockId → kind) — the island seeds the plugin + overlay from it */}
-          <script
+          <NonceScript
             type="application/json"
             data-page-prov="1"
             dangerouslySetInnerHTML={{ __html: JSON.stringify(props.provenance ?? {}).replace(/</g, "\\u003c") }}
           />
           {/* the projected findings' anchors — the island re-resolves span decorations on every edit */}
-          <script
+          <NonceScript
             type="application/json"
             data-page-findings="1"
             dangerouslySetInnerHTML={{
@@ -448,7 +449,7 @@ export function PageEditor(props: PageEditorProps): ReactNode {
 
       {/* the island — mounts the ProseMirror view over data-page-doc (deferred; no-JS keeps the
           preview). `embeds={false}` (SPA mode) omits it: the leaf's PageMount owns the mount. */}
-      {(props.embeds ?? true) ? <script src="/assets/page.js" defer /> : null}
+      {(props.embeds ?? true) ? <NonceScript src="/assets/page.js" defer /> : null}
     </div>
   );
 }
