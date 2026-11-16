@@ -7,7 +7,7 @@
 // JS (the file input's label links to /signup; landing.js adds the client-side hold).
 
 import type { ReactNode } from "react";
-import { Shell, PageTitle, SectionTitle, DossierView, type DossierLabels } from "@rhema/ui";
+import { Shell, PageTitle, SectionTitle, DossierView, NonceScript, type DossierLabels } from "@rhema/ui";
 import { buildPricingPageData, rangeLabel, PUBLIC_CLAIM_COPY, publicClaimEnabled, MODEL_TIERS, MODEL_TIER_DISPLAY, HERO_RECORDING } from "@rhema/contracts";
 import { surfacePricer } from "@rhema/run-sheet";
 import { COPY } from "./copy.js";
@@ -345,7 +345,7 @@ export function LandingPage(): ReactNode {
         </p>
       </section>
       {/* the drop-zone hold + landing.viewed beacon (progressive — absent bundle ⇒ no-JS links still work) */}
-      <script src="/assets/landing.js" defer />
+      <NonceScript src="/assets/landing.js" defer />
     </MarketingShell>
   );
 }

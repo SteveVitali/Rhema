@@ -288,3 +288,7 @@ export type {
   FileRowView,
   FileSectionView,
 } from "./files-pane.js";
+
+// 275_R6WEB.1 (RH-30) — the author-side CSP nonce channel: components emitting a `<script>` use
+// `NonceScript`; `renderDocument` (apps/web) is the provider.
+export { NonceScript, CspNonceContext } from "./nonce-script.js";

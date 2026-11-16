@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { createHash, createHmac } from "node:crypto";
 import { createOrchestratorTestDb, makeDeps, seedProject, type OrchestratorTestDb, type TestDeps } from "@rhema/orchestrator/testing";
 import { createIpEmailThrottle } from "@rhema/contracts";
 import { InMemoryContentStore } from "@rhema/mirror";
@@ -245,7 +246,7 @@ describe("the §3.5 acquisition channels", () => {
   });
 
   it("POST /analytics/landing is the PRE-AUTH channel — whitelisted names only, coarse props only", async () => {
-    const unauth = createApp({ ...deps, principal: () => null, db: db.client, systemExec: db.client });
+    const unauth = createApp({ ...deps, principal: () => null, db: db.client, systemExec: db.client, ipHashKey: "test-pepper" });
     const ok = await unauth.request("/analytics/landing", {
       method: "POST",
       headers: { "content-type": "application/json", "x-forwarded-for": "203.0.113.99" },
@@ -262,8 +263,37 @@ describe("the §3.5 acquisition channels", () => {
     expect(row.event).toBe("landing.dropzone_used");
     // PII stays out — only the whitelisted coarse keys + the hold token persist.
     expect(row.props).toEqual({ kind: "docx", src: "hero", token: "hold_abc123" });
+    // RH-32 — the keyed daily digest: truthy under the test pepper, never the raw IP, and NOT the
+    // retired unsalted sha256 of the first XFF hop.
     expect(row.ip_hash).toBeTruthy();
     expect(row.ip_hash).not.toContain("203.0.113");
+    const day = deps.clock.now().toISOString().slice(0, 10);
+    expect(row.ip_hash).toBe(
+      createHmac("sha256", "test-pepper")
+        .update(`${day}|203.0.113.99`)
+        .digest("hex")
+        .slice(0, 24),
+    );
+    expect(row.ip_hash).not.toBe(
+      createHash("sha256").update("203.0.113.99").digest("hex").slice(0, 24),
+    );
+
+    // RH-32 — the keyed hop is the LB-appended (penultimate) value, never the forgeable first hop:
+    // a spoofed leading XFF entry cannot key the digest.
+    await unauth.request("/analytics/landing", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-forwarded-for": "198.51.100.77, 203.0.113.99",
+      },
+      body: JSON.stringify({ event: "landing.viewed" }),
+    });
+    const spoof = (
+      await db.client.query(
+        `select ip_hash from acquisition_events order by created_at desc limit 1`,
+      )
+    ).rows[0] as { ip_hash: string };
+    expect(spoof.ip_hash).toBe(row.ip_hash); // still keyed on 203.0.113.99, not the forged hop
 
     const bad = await unauth.request("/analytics/landing", {
       method: "POST",

@@ -2,11 +2,12 @@ import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { StaticRouter } from "react-router";
 import { themeCss, ideCss, FONT_FACES } from "@rhema/tokens";
-import { uiCss, uiTailCss } from "@rhema/ui";
+import { uiCss, uiTailCss, CspNonceContext } from "@rhema/ui";
 import { themeBootScript, resolveAppTheme } from "@rhema/ide";
 import { spaRouteFor } from "@rhema/contracts";
 import { PageDataContext, type PageData } from "./page-data.js";
 import { docMetaFor, SITE } from "./doc-meta.js";
+import { currentCspNonce } from "./csp.js";
 
 // SSR: render a page element (inside the React Router static context + the per-request data provider) into a
 // full HTML document carrying the §5.9 theme stylesheet. The shell is Dark by default; P1.01 adds the
@@ -48,10 +49,15 @@ const FONT_PRELOADS = FONT_FACES.filter(
  * measures only the dossier/editor/settings surfaces; the interview + paste-back loop is the recovery plan
  * for the half the heartbeat cannot see.
  */
-function dwellBeacon(surface: string): string {
+/** RH-30 — the nonce attribute fragment for a script string this module authors ("" un-nonced). */
+function nonceAttr(nonce: string | null): string {
+  return nonce ? ` nonce="${nonce}"` : "";
+}
+
+function dwellBeacon(surface: string, nonce: string | null): string {
   const s = JSON.stringify(surface);
   return (
-    `<script>(function(){var s=${s},t0=Date.now();` +
+    `<script${nonceAttr(nonce)}>(function(){var s=${s},t0=Date.now();` +
     `function beat(){var ms=Date.now()-t0;if(ms<4000)return;t0=Date.now();` +
     `var b=JSON.stringify({surface:s,ms:ms});` +
     `if(navigator.sendBeacon){navigator.sendBeacon("/a/dwell",new Blob([b],{type:"application/json"}));}` +
@@ -65,12 +71,18 @@ export function renderDocument(
   url: string,
   element: ReactNode,
   data: PageData = {},
-  meta?: { origin?: string },
+  meta?: { origin?: string; nonce?: string },
 ): string {
+  // RH-30 — the nonce is the request's ALS value by default (the document middleware's mint); a
+  // caller may pass an explicit one in `meta.nonce` (tests rendering outside a request). The
+  // builders stamp it into the script strings below AND provide it to `NonceScript` emitters.
+  const nonce = meta?.nonce ?? currentCspNonce();
   const body = renderToStaticMarkup(
-    <PageDataContext.Provider value={data}>
-      <StaticRouter location={url}>{element}</StaticRouter>
-    </PageDataContext.Provider>,
+    <CspNonceContext.Provider value={nonce}>
+      <PageDataContext.Provider value={data}>
+        <StaticRouter location={url}>{element}</StaticRouter>
+      </PageDataContext.Provider>
+    </CspNonceContext.Provider>,
   );
   // PRB.21 — a pending page carries a meta-refresh so it re-polls itself on a timer (the import
   // preview's converting state); the URL is app-generated (the quarantine-key poll path), not user input.
@@ -113,7 +125,7 @@ export function renderDocument(
   // can never ship again; a route that forgets `ide` renders styled-but-inert and the route
   // enumeration test (ide-surfaces.test.ts) still flags the missing data block.
   const isIde = data.ide != null || body.includes('data-ide="1"');
-  const island = isIde ? `<script src="/assets/ide.js" defer></script>` : "";
+  const island = isIde ? `<script${nonceAttr(nonce)} src="/assets/ide.js" defer></script>` : "";
   // UX.1 — route-aware head: distinct title everywhere; description + OG + Twitter only on routes
   // that carry a description (the public set); favicon on every page. Every interpolated value is
   // attribute-escaped (`escapeHtml`) — titles/descriptions come from COPY or bounded DTO strings.
@@ -140,9 +152,9 @@ export function renderDocument(
     `<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">` +
     `<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon.ico" sizes="any">` +
     `${refresh}<title>${escapeHtml(doc.title)}</title>${social}${FONT_PRELOADS}` +
-    `<script>${BOOT}</script>` +
+    `<script${nonceAttr(nonce)}>${BOOT}</script>` +
     `<style>${THEME_CSS}</style>${isIde ? `<style>${IDE_CSS}</style>` : ""}<style>${UI_CSS}</style><style>${UI_TAIL_CSS}</style></head>` +
-    `<body>${body}${island}${data.dwellSurface ? dwellBeacon(data.dwellSurface) : ""}</body></html>`
+    `<body>${body}${island}${data.dwellSurface ? dwellBeacon(data.dwellSurface, nonce) : ""}</body></html>`
   );
 }
 
