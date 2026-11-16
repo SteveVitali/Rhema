@@ -75,9 +75,14 @@ test-cookie placeholders (`Cookie: <session>` masked literals), `PROXY_PLACEHOLD
 
 - [x] gitleaks with narrowed config green on HEAD history: **0 leaks / 1,753 commits**
 - [x] none of the four `.gz` / three unredacted reports / two token values at HEAD
-- [ ] CI green (runs on the PR head)
-- [ ] `check-append-only --base origin/main` (deletions are ruling-named — expected)
-- [ ] `ci-boundary.sh --pr`
+- [x] `check-append-only --base origin/main` — **OK** (deletions ruling-named, expected)
+- [x] `ci-boundary.sh --pr 342` — **pass #342@22acc89** (run 43780638869 — all seven
+  legs + `ci-pass` anchor: fast-path · typecheck/lint/unit · contracts · integration ·
+  images · public-safe [gitleaks/markers/licence] · anchor)
+- [x] `check-current-state` — OK · `check-build-memory` — 42 violations all inherited
+  classes (insert-ticket filename grammar incl. 265's own, DEFERRALS 'R' statuses/dup
+  ids, legacy index/gate cells); the only new `~` warnings are the maintenance-mode
+  `nextTicket` note — honest per GD-MAINT.R6
 
 ## Deferrals / backlog
 
