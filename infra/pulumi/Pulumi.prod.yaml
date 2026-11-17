@@ -405,7 +405,7 @@ config:
   # F-15/BL-105) + 261_R6FIX.11's handleProjectPurge leaf-first ordering + self-FK
   # sever (the PROD-LOADED worker delta, D-R6FIX.11-1 / BL-113 / BL-112). No
   # migrations in the payload. Every image's provenance is one commit.
-  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:5079a266749a70282300c93f62e18f8b3eb5c0ffa633fe02e4870503eb2543f5","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:72ee5c822a6d73a5b7e351f2c477b3b4b9d3873a39b4a04b8e62c44db8508562","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:5b4d30c3a04e869d7374e2ff1359f6c924075db81ca7642e1677dbb8c2e0befb","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:3317b3a34d0072155af7e97076b81a3e4307ea2a5d364107760d74ea6ffbab50","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:b74cf44482490932457628758260ad38c35f81dfb1fd19002d51ba794b80afe6","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:6ea3f76f08e13ecfb854d3415493e3f716fbf0230d2ba01ae3a5bcdde6ae5c89","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:63fa00453cb810553e4ddefdadbf8fc39fb19966661ddb06844133cd8dd5dc5e","turbo-cache":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/turbo-cache@sha256:6b1c8b95e52c7dc1fb3842295fcd3cef37661b81e90e79b622a0c6606f2c5141"}'
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:5b38c6c76ea979d3f39cdf118f46f335a8513c6b9a063eeb0dbb52d097c4ae2e","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:38ecad77521a457ffc09bb3d55db2ca383d4614dbddb3772234c35bfcee6aa91","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:7565d6d872198304cb0a8be94288ce933bf13babfc407bbfe19150fa69dc847b","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:6f6bb95241c9d7a83de4fd2a8e3004607b62efa7271e1fb8c573fc5cc356863b","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:6e1869fa0192e440566344cbcd349da157203ba5434c3313d29ab3df1e1dfda6","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:6c1ea38ec339545cf9a78f7b08f7e09ac5fcdc166a560ee8c48c7465c1c4d7ee","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:9a9487dba9fdaf0c011b299c9e9527079e5609ff138c8b45c89bff37885402ea","turbo-cache":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/turbo-cache@sha256:928b51fe6b823467a7767129aeb1083a2cb72a2f8aca8b65705a037222331260"}'
   # SEC.3 (build sec3-73718cd, Cloud Build 90a36278, 2026-10-03, SHA 73718cd): the distroless
   # run-task image — no shell/pkg manager, static setpriv/unshare/mount/dumb-init, pure-argv
   # ENTRYPOINT (dumb-init → setpriv ambient caps → node harness-main), TS scoped-runner. Third
@@ -446,7 +446,7 @@ config:
   # 2026-11-16 — r6fix12-deploy: run-task re-pinned to the 040e36a9 tip build
   # (9acde02a, _ALLOW_PLACEHOLDER_SDK=0 — the vendored-SDK context assert + in-build
   # contents assert passed).
-  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:93194707a38d50b748ac032a582a4689118245730873fe26b040d04c916b15eb
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:7455b5ae2af747af58e33eb630222dddbc803f4340423c698d2a540ee8f89076
   # SEC.3 — the run-task pod's appArmorProfile: Localhost + the `rhema-run-task` profile (loaded on
   # every sandbox node by the apparmor-loader DaemonSet). Rollback = flip the type back to the prior
   # posture + re-pin the prior digest — config only, no code revert.
@@ -471,7 +471,7 @@ config:
   # 2026-11-09 — r7deploy-composed: egress-proxy re-pinned to the ee40639d tip build (4e7ae7f5).
   # 2026-11-15 — r7deploy-main: egress-proxy re-pinned to the ebfd33f2 tip build (ddc437fa).
   # 2026-11-16 — r6fix12-deploy: egress-proxy re-pinned to the 040e36a9 tip build (9acde02a).
-  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:d9bed3afe58401e778aa707238fe8eae559d4cceb8234cb04d14d2660854dcb6
+  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:a7fd1caebb050a261457c20b4087058e87df6c510b56b2a8c67f14947a0ff7ed
   # 2026-10-24 — R6INF.2 (ADR-122) up B: repoint consumers to the ILB VIP (proxyVipAddress output);
   # the direct 10.8.16.4 path stays live for in-flight pods until the post-soak cleanup update.
   rhema:proxyBaseUrl: http://10.8.16.7:8443
@@ -481,3 +481,4 @@ config:
     secure: AAABAJ1t1HjBSbMzJCZnCQPpD4e0hd6T8+8fIfLvvGjIMoBG/Kxm+aorm0D0aAmdMQBuh8rk5L4a7kzhwXwNI4ABPmiXHJiOd0aT71z2be2GoJPc/uPLC3BYeSS7vBJ8ITkokx86TlS4DOU46n/wkvQ4AuMTUW7+RU8B
   rhema:opsAlertWebhookUrl:
     secure: AAABAMmONveVm5n8rBbtmg50NY9ZfH6gTA9Wi9ZRPma6tjw51OY5KP2dFD7au+QSL+cUQkEDpU3mCPDAhHezzS/uRENXjPdHdRNLyKCBbqOyniAmuB0SC9LdqUYro4CGrqEewA==
+  rhema:gitSha: 739023816efae96fdadb885a4c171f0be097eebc
