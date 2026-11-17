@@ -10,9 +10,9 @@
 //                               account) — honored ONLY alongside PROBE_IDENTITY_KEY post-RH-10
 //   PROBE_IDENTITY_KEY          (non-prod shim stages) the stage's shared key, sent as
 //                               `x-rhema-identity-key`. Post-267_R6SEC.2 the api ignores the
-//                               identity headers without it — fetch it from Secret Manager:
-//                               `gcloud secrets versions access latest \
-//                                 --secret=rhema-<stage>-identity-headers-key`
+//                               identity headers without it — fetch it from Secret Manager via
+//                               `node scripts/live/identity-key.mjs <dev|pr-<n>>` (stdout for
+//                               `PROBE_IDENTITY_KEY="$(…)"`, never argv/log/repo).
 //   PROBE_PROJECT_ID            the project holding the planted-error excerpt draft
 //   PROBE_SESSION_COOKIE        (optional) "<name>=<token>" session cookie — REQUIRED on prod, where
 //                               the IDENTITY_HEADERS shim is never armed

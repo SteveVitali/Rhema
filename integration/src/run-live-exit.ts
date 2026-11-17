@@ -12,7 +12,10 @@
 //   RHEMA_USER_ID / RHEMA_WORKSPACE_ID / RHEMA_BILLING_ACCOUNT_ID   identity (default the seed ids)
 //   RHEMA_IDENTITY_KEY             the stage's shared `x-rhema-identity-key` — REQUIRED on non-prod
 //                                  shim stages post-267_R6SEC.2 (RH-10); fetch from Secret Manager
-//                                  (`rhema-<stage>-identity-headers-key`).
+//                                  (`rhema-<stage>-identity-headers-key`) via
+//                                  `node scripts/live/identity-key.mjs <dev|pr-<n>>` — the value
+//                                  comes back on stdout for `RHEMA_IDENTITY_KEY="$(…)"` substitution,
+//                                  never argv/log/repo.
 //
 // The pilot six-arm wave is NOT wired here (that is the separate benchmark-runner driver), so `ready` reflects the
 // reviews + start-latency + estimator legs only; the readout's pilot line reads "not run".

@@ -1288,3 +1288,4 @@ HEAD
 | 294 | `294_R6NOTE.3__bl-closures.md` | post-handoff | **run-time insert** — records hygiene: dated closures for BL-91/92/103/107 (carrier-discharged); 291_R6NOTE.2 records backfill owed | — |
 | 295 | `295_R6NOTE.4__bl-closures.md` | post-handoff | **run-time insert** — post-merge backlog hygiene: 13 closures + 5 deploy-bound notes + CSV HEAD-debris removal + 291 records backfill | — |
 | 296 | `296_R6FIX.29__invite-race.md` | post-handoff | **run-time insert** — BL-116 (summary row): invite consume capacity guard onto the UPDATE (EPQ serializes concurrent claimants); BL-119/120-sum closed (landed `69c62e39`) | — |
+| 297 | `297_R6FIX.30__identity-key.md` | post-handoff | **run-time insert** — BL-115 (summary row): `scripts/live/identity-key.mjs` — gcloud identity-key fetch, prod refused, stdout/env only | — |
