@@ -76,6 +76,9 @@ export interface ChatApiDeps extends OrchestratorDeps {
   /** the project-tree blob store (assistant session/pins/brief/source-note bytes) — `contentStore` in
    *  ApiDeps terms. */
   readonly contentStore?: ContentStore;
+  /** the workspace-bound readable store (same seam as the export/dossier routes) — the unbound
+   *  `contentStore` is write-only and its `get` throws, so reads must resolve through the workspace. */
+  contentStoreFor?(workspaceId: string): Promise<ContentStore | null>;
   /** the convert service seam (quarantine key → canonical markdown; PRB.02) — `importConverter` in
    *  ApiDeps terms. */
   readonly converter?: Converter;
@@ -86,13 +89,18 @@ const MESSAGE_MAX_CHARS = 16_000;
 // -----------------------------------------------------------------------------------------------
 // file + sql helpers
 
-/** Read a project-tree file's head bytes (utf8) — null when absent or no store is bound. */
+/** Read a project-tree file's head bytes (utf8) — null when absent or no readable store binds.
+ *  Reads go through `contentStoreFor(workspaceId)`: the shared `contentStore` dep is the unbound
+ *  write-side store and its `get` throws (the deployed chat/outline read 500s). */
 async function readTextFile(
   deps: ChatApiDeps,
   projectId: string,
+  workspaceId: string,
   path: string,
 ): Promise<string | null> {
-  if (!deps.contentStore) return null;
+  const store =
+    (deps.contentStoreFor ? await deps.contentStoreFor(workspaceId) : deps.contentStore) ?? null;
+  if (!store) return null;
   const row = (
     await deps.db.query(
       `select av.content_sha256 from artifacts a
@@ -102,7 +110,7 @@ async function readTextFile(
     )
   ).rows[0] as { content_sha256: string } | undefined;
   if (!row) return null;
-  const bytes = await deps.contentStore.get(row.content_sha256);
+  const bytes = await store.get(row.content_sha256);
   return bytes ? new TextDecoder().decode(bytes) : null;
 }
 
@@ -171,8 +179,8 @@ async function writeTextFile(
 }
 
 /** The research index (`agents/assistant/research/index.json`), read-modify-write. */
-async function readIndex(deps: ChatApiDeps, projectId: string): Promise<ResearchIndex> {
-  return parseIndex(await readTextFile(deps, projectId, "agents/assistant/research/index.json"));
+async function readIndex(deps: ChatApiDeps, projectId: string, workspaceId: string): Promise<ResearchIndex> {
+  return parseIndex(await readTextFile(deps, projectId, workspaceId, "agents/assistant/research/index.json"));
 }
 
 async function writeIndex(deps: ChatApiDeps, principal: Principal, projectId: string, index: ResearchIndex) {
@@ -261,9 +269,11 @@ interface TurnReply {
   readonly refs?: readonly string[];
 }
 
-async function turnReplies(deps: ChatApiDeps, runIds: readonly string[]): Promise<Map<string, TurnReply>> {
+async function turnReplies(deps: ChatApiDeps, workspaceId: string, runIds: readonly string[]): Promise<Map<string, TurnReply>> {
   const out = new Map<string, TurnReply>();
-  if (runIds.length === 0 || !deps.contentStore) return out;
+  const store =
+    (deps.contentStoreFor ? await deps.contentStoreFor(workspaceId) : deps.contentStore) ?? null;
+  if (runIds.length === 0 || !store) return out;
   const rows = (
     await deps.db.query(
       `select s.run_id, av.content_sha256 from steps s
@@ -278,7 +288,7 @@ async function turnReplies(deps: ChatApiDeps, runIds: readonly string[]): Promis
   for (const row of rows.slice(0, 40)) {
     if (seen.has(row.run_id)) continue;
     seen.add(row.run_id);
-    const bytes = await deps.contentStore.get(row.content_sha256).catch(() => null);
+    const bytes = await store.get(row.content_sha256).catch(() => null);
     if (!bytes) continue;
     try {
       const sidecar = JSON.parse(new TextDecoder().decode(bytes)) as {
@@ -303,10 +313,13 @@ async function turnReplies(deps: ChatApiDeps, runIds: readonly string[]): Promis
 async function turnUserTexts(
   deps: ChatApiDeps,
   projectId: string,
+  workspaceId: string,
   messagePaths: ReadonlyMap<string, string>,
 ): Promise<Map<string, string>> {
   const out = new Map<string, string>();
-  if (!deps.contentStore) return out;
+  const store =
+    (deps.contentStoreFor ? await deps.contentStoreFor(workspaceId) : deps.contentStore) ?? null;
+  if (!store) return out;
   for (const [runId, path] of [...messagePaths].slice(0, 20)) {
     const row = (
       await deps.db.query(
@@ -317,7 +330,7 @@ async function turnUserTexts(
       )
     ).rows[0] as { content_sha256: string } | undefined;
     if (!row) continue;
-    const bytes = await deps.contentStore.get(row.content_sha256).catch(() => null);
+    const bytes = await store.get(row.content_sha256).catch(() => null);
     if (!bytes) continue;
     const text = new TextDecoder()
       .decode(bytes)
@@ -423,8 +436,8 @@ export function createChatRoutes(deps: ChatApiDeps): Hono {
     }
     const [debited, replies, userTexts] = await Promise.all([
       turnDebited(deps, turnIds),
-      turnReplies(deps, turnIds),
-      turnUserTexts(deps, projectId, messagePaths),
+      turnReplies(deps, principal.workspaceId, turnIds),
+      turnUserTexts(deps, projectId, principal.workspaceId, messagePaths),
     ]);
     const enrichedTurns = turns.map((t) => {
       const reply = replies.get(t.id);
@@ -454,9 +467,9 @@ export function createChatRoutes(deps: ChatApiDeps): Hono {
     ).rows as { mirror_path: string; created_at: string; word_count: number | null }[];
 
     const pinsFile = parsePins(
-      await readTextFile(deps, projectId, threadPaths(active.id).pins),
+      await readTextFile(deps, projectId, principal.workspaceId, threadPaths(active.id).pins),
     );
-    const index = await readIndex(deps, projectId);
+    const index = await readIndex(deps, projectId, principal.workspaceId);
     const hasDraft =
       (((
         await deps.db.query(`select 1 from drafts where project_id = $1 limit 1`, [projectId])
@@ -849,7 +862,7 @@ export function createChatRoutes(deps: ChatApiDeps): Hono {
     const projectId = c.req.param("id");
     const threadId = c.req.param("tid");
     if (!(await loadThread(deps, projectId, threadId))) return c.json({ error: "not_found" }, 404);
-    const file = parsePins(await readTextFile(deps, projectId, threadPaths(threadId).pins));
+    const file = parsePins(await readTextFile(deps, projectId, principal.workspaceId, threadPaths(threadId).pins));
     return c.json({ pins: file.pins, footprint: pinsFootprint(file), cap: PINS_MAX_PER_THREAD });
   });
 
@@ -869,7 +882,7 @@ export function createChatRoutes(deps: ChatApiDeps): Hono {
     const summary = typeof body?.summary === "string" ? body.summary.trim() : "";
     if (!summary) return c.json({ error: "summary required" }, 422);
     const kind = body?.kind === "ref" || body?.kind === "source" ? body.kind : "fact";
-    const file = parsePins(await readTextFile(deps, projectId, threadPaths(threadId).pins));
+    const file = parsePins(await readTextFile(deps, projectId, principal.workspaceId, threadPaths(threadId).pins));
     const res = addPin(
       file,
       {
@@ -905,7 +918,7 @@ export function createChatRoutes(deps: ChatApiDeps): Hono {
     const threadId = c.req.param("tid");
     if (!(await loadThread(deps, projectId, threadId))) return c.json({ error: "not_found" }, 404);
     if (!deps.contentStore) return c.json({ error: "chat_not_wired" }, 503);
-    const file = parsePins(await readTextFile(deps, projectId, threadPaths(threadId).pins));
+    const file = parsePins(await readTextFile(deps, projectId, principal.workspaceId, threadPaths(threadId).pins));
     const next = removePin(file, c.req.param("pinId"));
     await writeTextFile(deps, {
       workspaceId: principal.workspaceId,
@@ -928,8 +941,8 @@ export function createChatRoutes(deps: ChatApiDeps): Hono {
     const projectId = c.req.param("id");
     const threadId = c.req.param("tid");
     if (!(await loadThread(deps, projectId, threadId))) return c.json({ error: "not_found" }, 404);
-    const brief = await readTextFile(deps, projectId, threadPaths(threadId).brief);
-    const pins = parsePins(await readTextFile(deps, projectId, threadPaths(threadId).pins));
+    const brief = await readTextFile(deps, projectId, principal.workspaceId, threadPaths(threadId).brief);
+    const pins = parsePins(await readTextFile(deps, projectId, principal.workspaceId, threadPaths(threadId).pins));
     return c.json({ ...remembersView(brief, pins), footprint: pinsFootprint(pins) });
   });
 
@@ -1002,7 +1015,7 @@ export function createChatRoutes(deps: ChatApiDeps): Hono {
       markdown: n.markdown,
       actor: { kind: "user", userId: principal.userId },
     });
-    const index = upsertIndexEntry(await readIndex(deps, projectId), n.entry);
+    const index = upsertIndexEntry(await readIndex(deps, projectId, principal.workspaceId), n.entry);
     await writeIndex(deps, principal, projectId, index);
     return c.json({ ok: true, note: { path: n.path, entry: n.entry } }, 201);
   });
@@ -1014,7 +1027,7 @@ export function createChatRoutes(deps: ChatApiDeps): Hono {
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
     const projectId = c.req.param("id");
     if (!(await loadProject(deps, projectId, principal.workspaceId))) return c.json({ error: "not_found" }, 404);
-    const index = await readIndex(deps, projectId);
+    const index = await readIndex(deps, projectId, principal.workspaceId);
     return c.json({ sources: sourceCards(index) });
   });
 
@@ -1077,7 +1090,7 @@ export function createChatRoutes(deps: ChatApiDeps): Hono {
     if (!text.trim()) return c.json({ error: "text required" }, 422);
     const spec = pasteNotesWrite({ text });
     // append into the existing notes file when one exists (a second paste extends, never destroys)
-    const existing = await readTextFile(deps, projectId, spec.path);
+    const existing = await readTextFile(deps, projectId, principal.workspaceId, spec.path);
     const content = existing ? `${existing.trimEnd()}\n\n${spec.content.trimStart()}` : spec.content;
     await writeTextFile(deps, {
       workspaceId: principal.workspaceId,
