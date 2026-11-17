@@ -1,0 +1,44 @@
+{
+  "mode": "DRY-RUN",
+  "at": "2026-11-17T12:47:06.107Z",
+  "items": [
+    {
+      "key": "run:01M3EAAZG2AQ289B6ZFEP5XYN2",
+      "name": "refund 56cr + relabel 'unverified' on 01M3EAAZG2AQ289B6ZFEP5XYN2",
+      "status": "blocked",
+      "guards": [
+        {
+          "name": "state",
+          "ok": true,
+          "detail": "state=completed"
+        },
+        {
+          "name": "workflow",
+          "ok": true,
+          "detail": "workflow=review"
+        },
+        {
+          "name": "delivery-null",
+          "ok": false,
+          "detail": "delivery={\"label\":\"unverified\",\"alerted\":false,\"coveredClaims\":0,\"checkableClaims\":5,\"refundedCredits\":56,\"platformFaultSettledAt\":\"2026-10-21T21:59:27.736Z\"}"
+        },
+        {
+          "name": "tenant",
+          "ok": true,
+          "detail": "is_test=false"
+        }
+      ]
+    },
+    {
+      "key": "run:01M3SK62YZST272B35CG12K6TW",
+      "name": "refund 340cr + relabel 'unverified' on 01M3SK62YZST272B35CG12K6TW",
+      "status": "absent",
+      "guards": []
+    }
+  ],
+  "observations": [
+    "test-tenant probe 01M3VT9R1MAVVKM3Q7RXCRY5RD absent from prod",
+    "test-tenant probe 01M3VYSGV9XZ9RCWNP0CGDXQHD absent from prod"
+  ],
+  "scopeExact": false
+}
