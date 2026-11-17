@@ -24,8 +24,8 @@
 ## CURRENT STATE
 ```
 projectStatus:   IN_PROGRESS
-nextTicket:        (maintenance mode)  # 295_R6NOTE.4 done — post-merge hygiene; 4 new reachable items identified (BL-115/116/119/120 summary rows) + BL-115 delayed-arms (M, design ruling)
-lastCompleted:   295_R6NOTE.4     # post-merge closures ×13 + deploy-bound notes ×5 + CSV HEAD-debris removal + 291 records backfill — PR this run, unmerged
+nextTicket:        (maintenance mode)  # 296_R6FIX.29 done — BL-116 invite race fixed; remaining reachable: BL-115-sum identity-key helper (S) + BL-115 delayed-arms (M, design ruling)
+lastCompleted:   296_R6FIX.29     # BL-116 — invite consume capacity guard onto the UPDATE (EPQ); BL-119/120-sum closed — PR this run, unmerged
 blockedOn:       (none)
 pauseRequested:  false
 returnPass:      (none)
@@ -36,12 +36,12 @@ dispatchTarget:  subagent
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main              # flat mode — inserts branch off origin/main
 pinnedBaseSha:   a34eb51           # round-7 fork point (unchanged)
-chainTip:        stevevitali/r6note-4-bl-closures
+chainTip:        stevevitali/r6fix-29-invite-race
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
 round:           7                  # post-round maintenance per GD-MAINT.R6
-updatedAt:       2026-11-16T20:5xZ  # 295_R6NOTE.4 branch cut off main @26ba5bae — #366-#375 merged by operator; #376-#378 open
+updatedAt:       2026-11-16T21:0xZ  # 296_R6FIX.29 branch cut off main @26ba5bae — #366-#375 merged; #376-#380 open
 ```
 
 ## OPEN FINDINGS

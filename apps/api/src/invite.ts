@@ -77,39 +77,46 @@ export function createInviteGate(db: SqlClient, opts: InviteGateOptions = {}): I
     check,
     async consume(code: string, userId: string, email?: string): Promise<InviteCheck> {
       if (!code || !code.trim()) return { ok: false, reason: "unknown" };
-      // One atomic statement claims the seat and records the redemption together, so the same-user and
-      // last-use races are both closed by the unique index + the `used_count < max_uses` guard:
-      //  - `ins` inserts the redemption ONLY if the invite is currently valid; `on conflict (code,user_id)`
-      //    makes a same-user re-consume (or a concurrent duplicate) a no-op — exactly one insert wins.
-      //  - `upd` increments used_count ONLY for a code that `ins` actually inserted, so a seat is claimed iff
-      //    a NEW redemption was recorded (never double-counted for the same user).
+      // One atomic statement claims the seat and records the redemption together. The capacity guard MUST
+      // live on the UPDATE, not a SELECT feeding it: data-modifying statements serialize on the invites row
+      // lock and re-evaluate their WHERE against the newest committed version (EPQ), so two concurrent
+      // consumes of different users cannot both observe `used_count < max_uses` — a snapshot-read guard in
+      // the INSERT's source would let both insert (the (code,user_id) unique index cannot fire across
+      // users) and over-redeem past max_uses (BL-116).
+      //  - `upd` takes the row lock and increments ONLY for a currently-valid invite that this user has not
+      //    already redeemed (`not exists` keeps an idempotent re-consume seat-free).
+      //  - `ins` records the redemption ONLY for a claim `upd` actually won; `on conflict` stays as the
+      //    belt for the narrow concurrent same-user edge (used_count may over-count by one there — fails
+      //    closed, never over-grants).
       //  - `already` is the PRE-statement redemption state (data-modifying CTEs are invisible to sibling
       //    reads), so we can tell an idempotent re-consume (already=true) from a genuine rejection.
       const res = await db.query(
-        `with cand as (
-           select code, email, max_uses, used_count, expires_at, revoked_at
-             from invites where lower(code) = lower($1)
+        `with upd as (
+           update invites set used_count = used_count + 1
+             where lower(code) = lower($1)
+               and revoked_at is null
+               and (expires_at is null or expires_at > $2)
+               and used_count < max_uses
+               and (email is null or lower(email) = lower($5))
+               and not exists (
+                 select 1 from invite_redemptions r
+                  where r.code = invites.code and r.user_id = $3
+               )
+             returning code
          ),
          ins as (
            insert into invite_redemptions (id, code, user_id)
-             select $4, code, $3 from cand
-              where revoked_at is null
-                and (expires_at is null or expires_at > $2)
-                and used_count < max_uses
-                and (email is null or lower(email) = lower($5))
+             select $4, code, $3 from upd
            on conflict (code, user_id) do nothing
            returning code
-         ),
-         upd as (
-           update invites set used_count = used_count + 1 where code in (select code from ins) returning code
          )
          select
-           (select count(*)::int from ins) as inserted,
+           (select count(*)::int from upd) as claimed,
            exists(select 1 from invite_redemptions where lower(code) = lower($1) and user_id = $3) as already`,
         [code.trim(), now(), userId, newId(), email?.trim() ?? null],
       );
-      const row = res.rows[0] as { inserted: number; already: boolean } | undefined;
-      if (row && (row.inserted > 0 || row.already)) return { ok: true };
+      const row = res.rows[0] as { claimed: number; already: boolean } | undefined;
+      if (row && (row.claimed > 0 || row.already)) return { ok: true };
       const reason = reasonFor(await load(code), now(), email) ?? "exhausted";
       return { ok: false, reason };
     },
