@@ -24,8 +24,8 @@
 ## CURRENT STATE
 ```
 projectStatus:   IN_PROGRESS
-nextTicket:        (maintenance mode)  # 298_R6FIX.31 done — BL-115 delayed arms on the durable outbox; backlog's autonomous-reachable items cleared (rest are operator/human/funded-gated)
-lastCompleted:   298_R6FIX.31     # BL-115 — outbox pattern: marker+intent in one tenant tx on the three delayed arms; worker outbox.drain cron replays to pg-boss — PR this run, unmerged
+nextTicket:        (maintenance mode)  # 299_R6NOTE.5 done — #380/#381 closures landed; BL-115-det closure rides #382's merge, then fully operator/human/funded-gated
+lastCompleted:   299_R6NOTE.5     # post-merge hygiene — BL-116-sum + BL-115-sum closed (#380/#381 landed); BL-115-det open pending #382 — PR this run, unmerged
 blockedOn:       (none)
 pauseRequested:  false
 returnPass:      (none)
@@ -36,12 +36,12 @@ dispatchTarget:  subagent
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main              # flat mode — inserts branch off origin/main
 pinnedBaseSha:   a34eb51           # round-7 fork point (unchanged)
-chainTip:        stevevitali/r6fix-31-outbox
+chainTip:        stevevitali/r6note-5-bl-closures
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
 round:           7                  # post-round maintenance per GD-MAINT.R6
-updatedAt:       2026-11-17T00:4xZ  # 298_R6FIX.31 branch re-swept onto main @2a15223a — #366-#379 merged; #380-#382 open
+updatedAt:       2026-11-17T01:3xZ  # 299_R6NOTE.5 branch cut off main @4c8bcbb3 — #366-#381 merged; #382 open + this PR
 ```
 
 ## OPEN FINDINGS
