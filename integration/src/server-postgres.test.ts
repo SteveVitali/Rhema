@@ -1,6 +1,7 @@
 import { afterAll, describe, expect, it } from "vitest";
 import pg from "pg";
 import { applyMigrationsPinned, seedRealProjects, USER_SERVING_ROLE, withTenant, type MigrationDb } from "@rhema/db";
+import { createInviteGate } from "@rhema/api";
 
 // Closes D-P0.02-1: run the forward-only migrations + the real-project seed against a SERVER Postgres (the CI
 // `postgres:16` service via DATABASE_URL), not only in-process PGlite. Proves the authoritative SQL DDL applies on a
@@ -84,6 +85,35 @@ describe.skipIf(!DATABASE_URL)("migrations + real-project seed against a server 
     } finally {
       await user.end();
       await pool!.query(`alter role rhema_app_login nologin`);
+    }
+  });
+
+  // BL-116 — the invite capacity guard must ride the UPDATE's row lock (EPQ re-check), not a SELECT
+  // feeding the redemption insert: two concurrent consumes by DIFFERENT users of a single-use code
+  // must end with used_count=1 and one redemption, never two. PGlite cannot expose the snapshot-read
+  // race (single connection serializes); this leg needs real Postgres connections.
+  it("concurrent invite consumes by different users claim exactly one seat", async () => {
+    await applyMigrationsPinned(pool!);
+    await pool!.query(
+      `insert into "user" (id, email) values ('race-u1','r1@x.com'),('race-u2','r2@x.com')
+         on conflict (id) do nothing`,
+    );
+    const gate = createInviteGate({ query: (sql, p) => pool!.query(sql, p as unknown[]) });
+    for (let round = 0; round < 10; round++) {
+      const code = `RACE-${round}`;
+      await pool!.query(`insert into invites (code, max_uses) values ($1, 1)`, [code]);
+      const [a, b] = await Promise.all([
+        gate.consume(code, "race-u1"),
+        gate.consume(code, "race-u2"),
+      ]);
+      expect([a.ok, b.ok].filter(Boolean).length).toBe(1);
+      const used = (await pool!.query(`select used_count n from invites where code = $1`, [code]))
+        .rows[0] as { n: number };
+      const reds = (
+        await pool!.query(`select count(*)::int n from invite_redemptions where code = $1`, [code])
+      ).rows[0] as { n: number };
+      expect(used.n).toBe(1);
+      expect(reds.n).toBe(1);
     }
   });
 });
