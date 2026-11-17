@@ -67,8 +67,10 @@ import {
   type RunJobPayload,
 } from "./run-jobs.js";
 import {
+  handleAdminActionsRetention,
   handleRunEventsRetention,
   handleRunEventsPartition,
+  RETENTION_JOBS,
   RUN_EVENT_JOBS,
 } from "./run-events-jobs.js";
 import { handleParkedSweep, reDebitOnResume, type WorkerLedgerDeps } from "./ledger-jobs.js";
@@ -565,6 +567,7 @@ export async function startWorker(): Promise<void> {
   for (const name of [
     ...Object.values(RUN_JOBS),
     ...Object.values(RUN_EVENT_JOBS),
+    ...Object.values(RETENTION_JOBS),
     GATE_EXPIRY_QUEUE, // PRB.16b F25 — one queue for every gate's expiry job (the gate id rides the payload).
     LEDGER_JOBS.sweepParked,
     STRIPE_EVENT_JOB,
@@ -865,6 +868,10 @@ export async function startWorker(): Promise<void> {
     await handleRunEventsRetention({ db: systemExec, clock });
   });
   await boss.schedule(RUN_EVENT_JOBS.retention, "30 3 * * *");
+  await boss.work(RETENTION_JOBS.adminActions, async () => {
+    await handleAdminActionsRetention({ db: systemExec, clock });
+  });
+  await boss.schedule(RETENTION_JOBS.adminActions, "35 3 * * *"); // daily, offset from run_events.retention
   await boss.work(RUN_EVENT_JOBS.partition, async () => {
     await handleRunEventsPartition({ db: systemExec, clock });
   });

@@ -44,7 +44,7 @@ The guard and [`index.ts`](index.ts) enforce separate preview credentials. Never
 
 ## Secrets and migrations
 
-For nonproduction stages, Pulumi generates PostgreSQL passwords, the restricted app/collab DSNs, the system DSN, authentication secrets, and the run-token key pair. Cloud Run mounts the generated DSNs from Secret Manager. External provider, mail, and optional Stripe credentials still need the operator's nonproduction inputs.
+For nonproduction stages, Pulumi generates PostgreSQL passwords, the restricted app/collab DSNs, the system DSN, authentication secrets, the run-token key pair, and the `identity-headers-key` shared secret the api's keyed identity-header shim requires (prod never provisions it). Cloud Run mounts the generated DSNs from Secret Manager. External provider, mail, and optional Stripe credentials still need the operator's nonproduction inputs.
 
 The nonproduction migrate Job creates the database, applies migrations, enables the scoped login roles with the generated passwords, and seeds code rows. Dev also seeds the real-project fixtures; preview stages refuse that fixture seed. If `rhema:gitSha` and `rhema:protocolsVersion` are configured, the Job records deployment provenance.
 

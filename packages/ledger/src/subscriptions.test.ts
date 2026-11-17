@@ -183,6 +183,30 @@ describe("renewals (§14.6)", () => {
     expect(await inTx((tx) => effectivePlanTier(tx, BA))).toBe("free");
     expect(sent.some((m) => m.reason.includes("on Free now"))).toBe(true);
   });
+
+  it("BL-120 — a second workspace on the account does not re-warn or re-lapse (one row per subscription)", async () => {
+    await activate();
+    // The pre-fix `join workspaces` produced a row PER WORKSPACE — the stale downgrade_warned_at
+    // snapshot re-sent the notice (to a different workspace's owner) and re-ran every arm.
+    await db.pg.query(
+      "insert into workspaces(id, kind, name, billing_account_id) values ('ws_second','personal','Second',$1)",
+      [BA],
+    );
+    await inTx((tx) =>
+      applyRenewalFailed(tx, subDeps(), { stripeSubscriptionId: "sub_stripe_1", workspaceId: WS }),
+    );
+    const sent: { reason: string }[] = [];
+    const warn = await runBillingPeriodTick(db.client, subDeps(sent), new Date(NOW.getTime() + 8 * DAY));
+    expect(warn.warningsSent).toBe(1);           // ONE notice per billing_account, not per workspace
+    expect(sent).toHaveLength(1);
+    const lapse = await runBillingPeriodTick(
+      db.client,
+      subDeps(sent),
+      new Date(NOW.getTime() + RENEWAL_GRACE_MS + DAY),
+    );
+    expect(lapse.pastDueLapsed).toBe(1);
+    expect(sent.filter((m) => m.reason.includes("on Free now"))).toHaveLength(1);
+  });
 });
 
 describe("changePlan (§14.6)", () => {
