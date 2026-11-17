@@ -41,7 +41,7 @@ benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
 round:           7                  # post-round maintenance per GD-MAINT.R6
-updatedAt:       2026-11-16T18:6xZ  # 292_R6FIX.27 (BL-114) branch cut off main @e6aa12b9 (#365 merged) — CURRENT STATE collapsed to this PR's own transition per GD-OPS-RULES.R6
+updatedAt:       2026-11-16T19:0xZ  # 293_R6FIX.28 (BL-100) branch cut off main @e6aa12b9 — #366-#376 open (#364/#365 merged)
 ```
 
 ## OPEN FINDINGS

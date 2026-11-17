@@ -26,6 +26,24 @@ export interface DraftLedgerSection {
 /** Statuses that count as "the section was drafted" (past `planned`, not terminal-cut). */
 export const DRAFTED_STATUSES: ReadonlySet<string> = new Set(["drafted", "seams-read", "verified"]);
 
+// BL-100 / REQ-CONV-17 (D-R7DEM.2c-1): real ledgers ordinal the `#` column in Roman numerals
+// (`I`…`XVIII`) — a `Number()`-only read silently kept 1 of 17–18 rows. The cell accepts either
+// form and always yields the integer plan-order index.
+const ROMAN_RE = /^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$/;
+const ROMAN_VAL: Record<string, number> = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
+
+/** Parse a `#` cell: integer literal or strict Roman numeral → its integer ordinal. */
+function parseOrdinalCell(cell: string): number | undefined {
+  if (/^\d+$/.test(cell)) return Number(cell);
+  if (!ROMAN_RE.test(cell)) return undefined;
+  let total = 0;
+  for (let i = 0; i < cell.length; i++) {
+    const cur = ROMAN_VAL[cell[i]!]!;
+    total += i + 1 < cell.length && ROMAN_VAL[cell[i + 1]!]! > cur ? -cur : cur;
+  }
+  return total;
+}
+
 /**
  * Parse the `## Sections` table out of a `04-draft-ledger.md` body. Rows arrive in table order —
  * the ledger writes them in plan order (`#` ascending), which is the emission order the Page's
@@ -48,9 +66,9 @@ export function parseDraftLedgerSections(markdown: string): DraftLedgerSection[]
     if (!line.startsWith("|")) continue; // the "Status vocabulary:" note line, etc.
     tableStarted = true;
     const cells = line.split("|").slice(1, -1).map((c) => c.trim());
-    // header (`| # | Section | …`) and the `|---|` rule carry no numeric first cell — skip them.
-    const ordinal = Number(cells[0]);
-    if (!Number.isInteger(ordinal)) continue;
+    // header (`| # | Section | …`) and the `|---|` rule carry no ordinal cell — skip them.
+    const ordinal = parseOrdinalCell(cells[0] ?? "");
+    if (ordinal === undefined) continue;
     const num = (v: string | undefined): number | undefined => {
       const n = Number((v ?? "").replace(/,/g, ""));
       return Number.isFinite(n) && (v ?? "") !== "" && (v ?? "") !== "—" ? n : undefined;
