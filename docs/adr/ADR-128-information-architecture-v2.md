@@ -1,7 +1,7 @@
 # ADR-128: Information architecture v2 — persistent left sidebar, flat list, project-opens-to-Page, no new modals
 
-- **Status:** Proposed
-- **Date:** 2026-11-03
+- **Status:** Accepted
+- **Date:** 2026-11-03; accepted **2026-11-17** by operator ruling (301_R6DEP.1)
 - **Ticket:** R7OPEN.1 (shell); filled and accepted by **211 R7RO.1** (the REQ-ED-12/Showcase
   item) and the R7b owners per spec §10 as split (manifest `### Round 7`; Notes § Split rows):
   226 R7SHELL.1a (REQ-IDE-2 rail → sidebar; REQ-IDE-8/DS §5.1 regions), 234 R7HOME.1
