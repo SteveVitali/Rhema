@@ -14,7 +14,7 @@ The check reads the installed npm dependency graph and applies:
 
 - [`licenses.allowlist.json`](licenses.allowlist.json): accepted license identifiers and expressions.
 - [`licenses.exceptions.json`](licenses.exceptions.json): named exceptions with recorded rationales.
-- [`scripts/lib/license-policy.mjs`](scripts/lib/license-policy.mjs): the evaluation rules. A named exception is considered before the package's declared license; otherwise the declared expression must satisfy the allowlist.
+- [`scripts/lib/license-policy.mjs`](scripts/lib/license-policy.mjs): the evaluation rules. A named exception is considered before the package's declared license and records the licence it was granted for — a relicense fails closed pending re-review; otherwise the declared expression must satisfy the allowlist.
 
 SSPL, BUSL, and AGPL are not on the current allowlist. Changes to exceptions require review. A passing npm check does not audit system binaries, font packaging, SDK redistribution rights, or compliance of a release image.
 

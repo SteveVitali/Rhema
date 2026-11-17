@@ -1281,3 +1281,4 @@ HEAD
 | 287 | `287_R6FIX.24__hsts-deployed.md` | post-handoff | **run-time insert** — BL-135: HSTS unconditional on deployed images (baked-SHA discriminator; off-image TLS gate kept) | — |
 | 288 | `288_R6NOTE.1__bl-closures.md` | post-handoff | **run-time insert** — records hygiene: dated closures for BL-125/129/130/132/133 (all landed in `69c62e39`/#357); open: BL-123 retention enforcer (M), BL-128 docs-drift sweep | — |
 | 289 | `289_R6FIX.25__retention-enforcer.md` | post-handoff | **run-time insert** — BL-123: retention enforcer binding — dead GCS prefix rules dropped + `admin_actions.retention` 90d job + honest binding/docs | — |
+| 290 | `290_R6FIX.26__docs-drift-sweep.md` | post-handoff | **run-time insert** — BL-128: systematic docs-drift sweep (refresh-repo-docs) — 4 verified gaps fixed | — |

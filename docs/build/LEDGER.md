@@ -24,8 +24,8 @@
 ## CURRENT STATE
 ```
 projectStatus:   IN_PROGRESS
-nextTicket:        (maintenance mode)  # 289_R6FIX.25 done — rh-low cluster cleared except BL-128 (docs-drift systematic sweep, process item)
-lastCompleted:   289_R6FIX.25     # BL-123 — retention enforcer binding: dead GCS prefix rules dropped + admin_actions.retention 90d prune job + honest binding/docs (operator ruling) — PR this run, unmerged
+nextTicket:        (maintenance mode)  # 290_R6FIX.26 done — BL-128 swept; rh-low cluster fully cleared (all fixes + closures pending operator merges)
+lastCompleted:   290_R6FIX.26     # BL-128 — systematic docs-drift sweep (refresh-repo-docs): 1,719 docs audited, 4 verified gaps fixed — PR this run, unmerged
 blockedOn:       (none)
 pauseRequested:  false
 returnPass:      (none)
@@ -36,12 +36,12 @@ dispatchTarget:  subagent
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main              # flat mode — inserts branch off origin/main
 pinnedBaseSha:   a34eb51           # round-7 fork point (unchanged)
-chainTip:        stevevitali/r6fix-25-retention-enforcer
+chainTip:        stevevitali/r6fix-26-docs-sweep
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
 round:           7                  # post-round maintenance per GD-MAINT.R6
-updatedAt:       2026-11-16T17:6xZ  # 289_R6FIX.25 run-time insert (BL-123) on main @50a4f9d3 — #364-#372 still open; this PR's own transition per GD-OPS-RULES.R6
+updatedAt:       2026-11-16T18:4xZ  # 290_R6FIX.26 (BL-128) branch cut off main @6ed759e8 — #365-#373 open (#364 merged)
 ```
 
 ## OPEN FINDINGS
