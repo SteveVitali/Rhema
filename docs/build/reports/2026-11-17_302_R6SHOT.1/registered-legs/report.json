@@ -1,0 +1,187 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "b51f2a604ba6",
+  "startedAt": "2026-11-17T20:45:21.409Z",
+  "finishedAt": "2026-11-17T20:51:26.748Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "739023816efae96fdadb885a4c171f0be097eebc",
+    "observed": {
+      "web": "739023816efae96fdadb885a4c171f0be097eebc",
+      "api": "739023816efae96fdadb885a4c171f0be097eebc"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "D1.hub",
+      "journey": "new-visitor",
+      "owner": "R7DEM.5b",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 1833,
+      "screenshot": "D1.hub.png"
+    },
+    {
+      "id": "D2.tour",
+      "journey": "new-visitor",
+      "owner": "R7DEM.6a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 22782,
+      "screenshot": "D2.tour.png"
+    },
+    {
+      "id": "D3.readonly",
+      "journey": "both",
+      "owner": "R7DEM.5",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 245098,
+      "screenshot": "D3.readonly.png"
+    },
+    {
+      "id": "P1.demo",
+      "journey": "phone",
+      "owner": "R7DEM.4b",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 1830
+    },
+    {
+      "id": "R11.demo",
+      "journey": "returning",
+      "owner": "R7DEM.4b",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 35166,
+      "screenshot": "R11.demo.png"
+    },
+    {
+      "id": "U1.shell",
+      "journey": "returning",
+      "owner": "R7SHELL.1a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 10043,
+      "screenshot": "U1.shell.png"
+    },
+    {
+      "id": "U2.noreload",
+      "journey": "returning",
+      "owner": "R7RELOAD.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET https://rhema.tools/p/jrn-bl78-mooted/r/01M7NMDDD1J34QTATTJ6RZC92M/events net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-bl78-mooted/r/01M7NMDDD1J34QTATTJ6RZC92M/events?after=2 net::ERR_ABORTED"
+      ],
+      "durationMs": 4970,
+      "error": "failed requests on visited pages: GET https://rhema.tools/p/jrn-bl78-mooted/r/01M7NMDDD1J34QTATTJ6RZC92M/events net::ERR_ABORTED | GET https://rhema.tools/p/jrn-bl78-mooted/r/01M7NMDDD1J34QTATTJ6RZC92M/events?after=2 net::ERR_ABORTED",
+      "screenshot": "U2.noreload.png"
+    },
+    {
+      "id": "U3.occlusion",
+      "journey": "returning",
+      "owner": "R7PANE.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 8456,
+      "screenshot": "U3.occlusion.png"
+    },
+    {
+      "id": "U4.controls",
+      "journey": "returning",
+      "owner": "R7KIT.3e",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 7036,
+      "error": "U4.controls — 1 surface failure(s):\nexport (/p/jrn-bl78-mooted/export): U4.controls — 1 native-styled control(s) on export:\n  <select name=profile type=-> radius=8px appearance=auto bg=rgb(245, 242, 234) color=rgb(29, 28, 26) — <select name=\"profile\" data-md-profile=\"true\" aria-label=\"Markdown flavour\"><option value=\"\" selected=\"\">Canonical (byte-faithful)</option><option value=\"substa",
+      "screenshot": "U4.controls.png"
+    },
+    {
+      "id": "U5.write",
+      "journey": "returning",
+      "owner": "R7WRITE.1b",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 9943,
+      "screenshot": "U5.write.png"
+    },
+    {
+      "id": "U6.chat",
+      "journey": "returning",
+      "owner": "R7TALK.1a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 3660,
+      "screenshot": "U6.chat.png"
+    },
+    {
+      "id": "U7.import",
+      "journey": "returning",
+      "owner": "R7HOME.2a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 11178,
+      "screenshot": "U7.import.png"
+    },
+    {
+      "id": "R8.showcase.spa",
+      "journey": "returning",
+      "owner": "R7RO.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2755,
+      "screenshot": "R8.showcase.spa.png"
+    }
+  ],
+  "passed": false
+}
