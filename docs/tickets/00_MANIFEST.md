@@ -1282,5 +1282,6 @@ HEAD
 | 288 | `288_R6NOTE.1__bl-closures.md` | post-handoff | **run-time insert** — records hygiene: dated closures for BL-125/129/130/132/133 (all landed in `69c62e39`/#357); open: BL-123 retention enforcer (M), BL-128 docs-drift sweep | — |
 | 289 | `289_R6FIX.25__retention-enforcer.md` | post-handoff | **run-time insert** — BL-123: retention enforcer binding — dead GCS prefix rules dropped + `admin_actions.retention` 90d job + honest binding/docs | — |
 | 290 | `290_R6FIX.26__docs-drift-sweep.md` | post-handoff | **run-time insert** — BL-128: systematic docs-drift sweep (refresh-repo-docs) — 4 verified gaps fixed | — |
+| 292 | `292_R6FIX.27__dep-audit-gate.md` | post-handoff | **run-time insert** — BL-114: dependency-advisory CI gate (pnpm audit --prod + committed baseline) | — |
 | 291 | `291_R6NOTE.2__bl-closures.md` | post-handoff | **run-time insert (backfilled under 295)** — records hygiene: BL-111 dup + BL-113 ×2 dated closures (PR #375 merged BACKLOG-only) | — |
 | 295 | `295_R6NOTE.4__bl-closures.md` | post-handoff | **run-time insert** — post-merge backlog hygiene: 13 closures + 5 deploy-bound notes + CSV HEAD-debris removal + 291 records backfill | — |
