@@ -4,6 +4,7 @@ import type { ContentStore } from "@rhema/mirror";
 import { sha256Hex } from "@rhema/mirror";
 import type { Queue, SqlClient, TxRunner } from "@rhema/orchestrator";
 import type { Principal } from "./run-routes.js";
+import { insertOutbox } from "./outbox.js";
 
 // Account export/import routes (P1.18; REQ-ACCT-3; §13.4). "Export everything" inserts an
 // account_exports row and enqueues `account.export` — the worker builds the zip through
@@ -140,28 +141,23 @@ export function createAccountExportRoutes(deps: AccountExportApiDeps): Hono {
       );
     }
     const id = deps.ids("aexp");
-    await deps.db.query(
-      `insert into account_exports (id, workspace_id, user_id, kind, status) values ($1,$2,$3,'account_zip','building')`,
-      [id, principal.workspaceId, principal.userId],
-    );
-    // singletonKey dedupes a double-click racing the insert read above. RH-19 — a send that THROWS
-    // used to leave the row `building` forever (wedging every later POST behind the dedupe). Fail
-    // the row honestly so the next request isn't deduped against a job that never existed, and
-    // answer 503 like the other unavailable-transport arms.
-    try {
-      await deps.queue.send(
-        ACCOUNT_EXPORT_QUEUE,
-        { exportId: id, workspaceId: principal.workspaceId, userId: principal.userId },
-        { singletonKey: `${ACCOUNT_EXPORT_QUEUE}:${id}` },
+    // BL-115 (298_R6FIX.31) — the 'building' row + outbox intent commit in ONE tenant tx: the row
+    // can never sit `building` without its build job durable (the pg-boss send moved to the
+    // worker's `outbox.drain` cron; the export-id singleton key travels with the intent). The
+    // `building`-row expiry check above stays the honest repair for a never-delivered job.
+    await deps.txRunner.run(principal.workspaceId, async (tx) => {
+      await tx.query(
+        `insert into account_exports (id, workspace_id, user_id, kind, status) values ($1,$2,$3,'account_zip','building')`,
+        [id, principal.workspaceId, principal.userId],
       );
-    } catch (err) {
-      await deps.db.query(
-        `update account_exports set status = 'failed', error = $2 where id = $1`,
-        [id, "enqueue_failed — the build could not be queued; retry the request"],
-      );
-      console.error(`[api] account.export enqueue FAILED for export ${id}:`, err);
-      return c.json({ error: "enqueue_failed" }, 503);
-    }
+      await insertOutbox(tx, {
+        id: deps.ids("obx"),
+        workspaceId: principal.workspaceId,
+        queue: ACCOUNT_EXPORT_QUEUE,
+        payload: { exportId: id, workspaceId: principal.workspaceId, userId: principal.userId },
+        options: { singletonKey: `${ACCOUNT_EXPORT_QUEUE}:${id}` },
+      });
+    });
     const row = (
       await deps.db.query(
         `select id, status, sha256, bytes, s3_key, error, created_at, ready_at, expires_at, downloaded_at

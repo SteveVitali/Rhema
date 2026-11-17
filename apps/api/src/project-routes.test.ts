@@ -335,13 +335,9 @@ describe("row actions (§5.2)", () => {
     ).toBe(404);
   });
 
-  it("STB.2 / D-P1.04-2 — delete enqueues project.purge at the +30d grace end, keyed on the project", async () => {
-    const sent: { name: string; payload: Record<string, unknown>; opts?: { startAfterMs?: number; singletonKey?: string } }[] = [];
-    const queue = {
-      async send(name: string, payload: Record<string, unknown>, opts?: { startAfterMs?: number; singletonKey?: string }) {
-        sent.push({ name, payload, opts });
-      },
-    };
+  it("STB.2 / D-P1.04-2 — delete persists the project.purge intent at the +30d grace end, keyed on the project", async () => {
+    // BL-115 — the tombstone and its outbox intent commit in ONE tenant tx; the worker's
+    // `outbox.drain` cron replays the row onto pg-boss with the options stored here verbatim.
     const appWithQueue = createProjectRoutes({
       principal: () => principal(),
       db: sql,
@@ -349,25 +345,25 @@ describe("row actions (§5.2)", () => {
       ids,
       clock: { now: () => new Date("2026-09-25T12:00:00Z") },
       contentStore: store,
-      queue,
+      queue: { async send() {} },
     });
     const res = await appWithQueue.request(`/projects/${seed.projectId}/delete`, post({}));
     expect(res.status).toBe(200);
-    expect(sent).toHaveLength(1);
-    expect(sent[0].name).toBe("project.purge");
-    expect(sent[0].payload.tenantId).toBe(seed.workspaceId);
-    expect(sent[0].payload.projectId).toBe(seed.projectId);
-    expect(sent[0].payload.tombstonedAt).toBe("2026-09-25T12:00:00.000Z");
-    expect(sent[0].opts?.startAfterMs).toBe(30 * 24 * 60 * 60 * 1000);
-    expect(sent[0].opts?.singletonKey).toBe(`project.purge:${seed.projectId}`);
+    const rows = (await db.pg.query(`select queue, payload, send_options from outbox`)).rows as {
+      queue: string;
+      payload: Record<string, unknown>;
+      send_options: { startAfterMs?: number; singletonKey?: string };
+    }[];
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.queue).toBe("project.purge");
+    expect(rows[0]!.payload.tenantId).toBe(seed.workspaceId);
+    expect(rows[0]!.payload.projectId).toBe(seed.projectId);
+    expect(rows[0]!.payload.tombstonedAt).toBe("2026-09-25T12:00:00.000Z");
+    expect(rows[0]!.send_options.startAfterMs).toBe(30 * 24 * 60 * 60 * 1000);
+    expect(rows[0]!.send_options.singletonKey).toBe(`project.purge:${seed.projectId}`);
   });
 
-  it("STB.2 — a delete still lands the tombstone when the queue send fails", async () => {
-    const queue = {
-      async send() {
-        throw new Error("boss down");
-      },
-    };
+  it("STB.2 / BL-115 — a dead queue can no longer strand the tombstone (the intent is durable)", async () => {
     const appWithQueue = createProjectRoutes({
       principal: () => principal(),
       db: sql,
@@ -375,12 +371,19 @@ describe("row actions (§5.2)", () => {
       ids,
       clock: { now: () => new Date() },
       contentStore: store,
-      queue,
+      queue: {
+        async send() {
+          throw new Error("boss down");
+        },
+      },
     });
     const res = await appWithQueue.request(`/projects/${seed.projectId}/delete`, post({}));
     expect(res.status).toBe(200);
     const rows = await listProjectStates(sql, principal());
     expect(rows.find((r) => r.id === seed.projectId)).toBeUndefined();
+    // tombstone + intent committed together — the drain retries the send with the row's options.
+    const ob = (await db.pg.query(`select queue from outbox`)).rows as { queue: string }[];
+    expect(ob.map((r) => r.queue)).toEqual(["project.purge"]);
   });
 });
 

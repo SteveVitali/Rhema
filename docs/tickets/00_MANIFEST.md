@@ -1289,4 +1289,5 @@ HEAD
 | 295 | `295_R6NOTE.4__bl-closures.md` | post-handoff | **run-time insert** — post-merge backlog hygiene: 13 closures + 5 deploy-bound notes + CSV HEAD-debris removal + 291 records backfill | — |
 | 296 | `296_R6FIX.29__invite-race.md` | post-handoff | **run-time insert** — BL-116 (summary row): invite consume capacity guard onto the UPDATE (EPQ serializes concurrent claimants); BL-119/120-sum closed (landed `69c62e39`) | — |
 | 297 | `297_R6FIX.30__identity-key.md` | post-handoff | **run-time insert** — BL-115 (summary row): `scripts/live/identity-key.mjs` — gcloud identity-key fetch, prod refused, stdout/env only | — |
+| 298 | `298_R6FIX.31__outbox-delayed-arms.md` | post-handoff | **run-time insert** — BL-115 (delayed arms): durable `outbox` transport — marker + intent in one tenant tx; worker `outbox.drain` cron replays to pg-boss (operator ruling: outbox pattern) | — |
 | 299 | `299_R6NOTE.5__bl-closures.md` | post-handoff | **run-time insert** — post-merge backlog hygiene: BL-116-sum + BL-115-sum closed (landed #380/#381); BL-115-det open pending #382 | — |

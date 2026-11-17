@@ -8,6 +8,7 @@ import type { Queue } from "@rhema/orchestrator";
 import type { Principal } from "./run-routes.js";
 import type { SqlClient } from "./invite.js";
 import type { Converter } from "./import.js";
+import { insertOutbox } from "./outbox.js";
 import { createImportedDraft, createOutlineArtifact } from "./import.js";
 import { indexProjectDoc, upsertProjectSearchDoc } from "./search.js";
 import { isShowcaseProject } from "./showcase.js";
@@ -536,30 +537,35 @@ export function createProjectRoutes(deps: ProjectApiDeps): Hono {
       return c.json({ error: "showcase_not_deletable" }, 409);
     }
     const tombstonedAt = deps.clock.now();
-    const res = await deps.db.query(
-      `update projects set deleted_at = $2 where id = $1 and deleted_at is null returning id`,
-      [projectId, tombstonedAt],
-    );
-    if (res.rows.length === 0) return c.json({ error: "not_found" }, 404);
-    if (deps.queue) {
-      // The enqueue never fails the delete (the tombstone is the state); singleton-keyed on the
-      // project so a delete → restore → delete re-drive refreshes the pending job's timing only
-      // through a NEW send once the first has run.
-      await deps.queue
-        .send(
-          PROJECT_PURGE_QUEUE,
-          {
-            tenantId: principal.workspaceId,
-            projectId,
-            tombstonedAt: tombstonedAt.toISOString(),
-          },
-          {
-            startAfterMs: PROJECT_PURGE_AFTER_MS,
-            singletonKey: `project.purge:${projectId}`,
-          },
-        )
-        .catch(() => undefined);
-    }
+    // BL-115 (298_R6FIX.31) — tombstone + outbox row in ONE tenant tx: the soft delete can never
+    // commit without its purge intent persisted (previously a dropped send was `.catch(() => undefined)`
+    // — invisible until the watchdog re-armed). The worker's `outbox.drain` cron replays the row
+    // with the 30-day startAfter + project singleton key verbatim; a delete → restore → delete
+    // re-drive writes a fresh intent whose send refreshes the pending job's timing only once the
+    // first has run (the singleton key's own semantics).
+    const deleted = await deps.txRunner.run(principal.workspaceId, async (tx) => {
+      const res = await tx.query(
+        `update projects set deleted_at = $2 where id = $1 and deleted_at is null returning id`,
+        [projectId, tombstonedAt],
+      );
+      if (res.rows.length === 0) return false;
+      await insertOutbox(tx, {
+        id: deps.ids(),
+        workspaceId: principal.workspaceId,
+        queue: PROJECT_PURGE_QUEUE,
+        payload: {
+          tenantId: principal.workspaceId,
+          projectId,
+          tombstonedAt: tombstonedAt.toISOString(),
+        },
+        options: {
+          startAfterMs: PROJECT_PURGE_AFTER_MS,
+          singletonKey: `project.purge:${projectId}`,
+        },
+      });
+      return true;
+    });
+    if (!deleted) return c.json({ error: "not_found" }, 404);
     return c.json({ ok: true });
   });
 

@@ -47,6 +47,7 @@ import {
 } from "@rhema/contracts";
 import type { Queue, SqlClient } from "@rhema/orchestrator";
 import { sessionTokenFromCookieHeader } from "./auth-context.js";
+import { insertOutbox } from "./outbox.js";
 import {
   renderEmailChangeNoticeEmail,
   renderEmailChangeVerifyEmail,
@@ -720,36 +721,32 @@ export function createSettingsRoutes(deps: SettingsApiDeps): Hono {
     const now = deps.clock.now();
     // keep the FIRST request's clock if one is already running — re-requesting must not extend grace.
     const requestedAt = user.deletion_requested_at ? new Date(user.deletion_requested_at) : now;
-    if (!user.deletion_requested_at) {
-      await deps.db.query(`update "user" set deletion_requested_at = $2, updated_at = now() where id = $1`, [
-        principal.userId,
-        now,
-      ]);
-    }
-    if (deps.queue) {
-      await deps.queue
-        .send(
-          ACCOUNT_HARD_DELETE_QUEUE,
-          {
-            tenantId: principal.workspaceId,
-            userId: principal.userId,
-            deletionRequestedAt: requestedAt.toISOString(),
-          },
-          {
-            startAfterMs: Math.max(0, deletionGraceEndsAt(requestedAt).getTime() - now.getTime()),
-            singletonKey: `account.hard-delete:${principal.userId}`,
-          },
-        )
-        // RH-17 — never a silent `.catch(() => undefined)`: the marker row still lands and the
-        // hourly `handleAccountDeleteSweep` re-arms any missing job, so `ok: true` stays honest —
-        // but a dropped arm must be VISIBLE (the 260 FAILED+id log shape).
-        .catch((err: unknown) =>
-          console.error(
-            `[api] account.hard-delete enqueue FAILED for user ${principal.userId} — the watchdog sweep re-arms within the hour:`,
-            err,
-          ),
-        );
-    }
+    // BL-115 (298_R6FIX.31) — marker + outbox row commit in ONE tenant tx: the arm can never exist
+    // without its delivery intent persisted (the pg-boss send moved to the worker's `outbox.drain`
+    // cron, which replays this row with the delay + singleton key verbatim). The hourly watchdog
+    // stays as the belt for rows drained-before-sent.
+    await deps.txRunner.run(principal.workspaceId, async (tx) => {
+      if (!user.deletion_requested_at) {
+        await tx.query(`update "user" set deletion_requested_at = $2, updated_at = now() where id = $1`, [
+          principal.userId,
+          now,
+        ]);
+      }
+      await insertOutbox(tx, {
+        id: deps.ids("obx"),
+        workspaceId: principal.workspaceId,
+        queue: ACCOUNT_HARD_DELETE_QUEUE,
+        payload: {
+          tenantId: principal.workspaceId,
+          userId: principal.userId,
+          deletionRequestedAt: requestedAt.toISOString(),
+        },
+        options: {
+          startAfterMs: Math.max(0, deletionGraceEndsAt(requestedAt).getTime() - now.getTime()),
+          singletonKey: `account.hard-delete:${principal.userId}`,
+        },
+      });
+    });
     return c.json({
       ok: true,
       deletion: {

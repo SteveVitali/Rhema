@@ -59,7 +59,7 @@ export const ERROR_CODES: readonly string[] = [
     "draft_not_found", "draft_outline_required", "edit produced no rows", "edits_not_implemented",
     "email actions are not configured", "email required", "email_required", "email_taken",
     "email_unverified", "empty", "empty_body", "empty_draft",
-    "enabled_required", "enqueue_failed", "entitlement_unavailable", "entry must be 'scratch' | 'outline' | 'draft'",
+    "enabled_required", "entitlement_unavailable", "entry must be 'scratch' | 'outline' | 'draft'",
     "estimate_unavailable", "event required",
     "expired_or_consumed", "export_link_expired", "export_not_wired", "external_nav_refused",
     "fetcher_unavailable", "figure.request required", "figure_not_found", "figure_not_ready",

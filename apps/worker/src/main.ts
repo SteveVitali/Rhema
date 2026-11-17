@@ -23,6 +23,7 @@ import {
 } from "@rhema/orchestrator";
 import { USER_SERVING_ROLE } from "@rhema/db";
 import { errorLogValue, errorSummary } from "@rhema/contracts";
+import { drainOutbox, OUTBOX_DRAIN_QUEUE } from "./outbox-drain.js";
 import {
   SqlHoldLedger,
   STRIPE_EVENT_JOB,
@@ -592,6 +593,7 @@ export async function startWorker(): Promise<void> {
     "slo.probe", // P1.22 — the 5-minute §13.5 signal sweep (was setInterval; R6LOW.1)
     "slo.review.weekly", // SLO.1 — the REQ-ARCH-34 weekly review readout (below)
     "cite.completeness.daily", // CITE.1 — the cross-tenant completeness rollup (below)
+    OUTBOX_DRAIN_QUEUE, // BL-115 — the outbox intent drain (298_R6FIX.31)
   ]) {
     // SLO.1 — the run-launch queues carry `notify: true` so job creation wakes the consumer
     // immediately (the dispatch slice of queued→provisioning / gate→queued→launch). Idempotent —
@@ -876,6 +878,17 @@ export async function startWorker(): Promise<void> {
     await handleRunEventsPartition({ db: systemExec, clock });
   });
   await boss.schedule(RUN_EVENT_JOBS.partition, "0 3 * * *");
+
+  // BL-115 (298_R6FIX.31) — the outbox drain: the delayed arms' marker + outbox row now commit in
+  // one request tx (migration 0064); this cron replays each pending row onto pg-boss with the
+  // stored send options verbatim. Every minute is fast enough for the delayed arms (the
+  // startAfter contract lives in send_options, not the drain cadence); a failed send re-arms on
+  // the claim lease, and attempts beyond OUTBOX_MAX_ATTEMPTS stay unsent-and-visible.
+  await boss.work(OUTBOX_DRAIN_QUEUE, async () => {
+    const r = await drainOutbox({ queue: deps.queue }, { system: systemExec });
+    if (r.claimed > 0) console.log(`[worker] outbox.drain → ${JSON.stringify(r)}`);
+  });
+  await boss.schedule(OUTBOX_DRAIN_QUEUE, "*/1 * * * *");
 
   // PRB.09 — the notification consumers: `notify` (domain jobs — re-read state, claim, mint links, enqueue
   // mail) and `mail.send` (the Resend transport leg). Payloads are the NotificationJobPayload shapes.
