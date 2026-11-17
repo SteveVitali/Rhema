@@ -124,6 +124,45 @@ describe("RH-23 — web-host mutations carry an Origin/Sec-Fetch-Site check", ()
     expect(signup).toHaveBeenCalled();
   });
 
+  it("admits a same-origin mutation behind TLS termination (F-R6DEP.5-2)", async () => {
+    // Reproduces the prod shape: the container request URL is http: while the browser's
+    // Origin is https: — the GFE stamps x-forwarded-proto so the guard must honor it or every
+    // browser POST 403s (the 301_R6DEP.5 rollback cause).
+    const signup = vi.fn(async () => ({ ok: false as const, status: 403, error: "invite_required" }));
+    const app = createWebApp(
+      makeDeps({
+        signupMode: "open",
+        dataSource: {
+          checkSession: async () => false,
+          checkInvite: async () => ({ ok: true }),
+          signup,
+        } as unknown as DataSource,
+      }),
+    );
+    const res = await app.request("http://app.test/login", {
+      method: "POST",
+      headers: {
+        ...form({}).headers,
+        origin: "https://app.test",
+        "x-forwarded-proto": "https",
+      },
+      body: new URLSearchParams({ method: "magic_link", email: "a@b.c" }).toString(),
+    });
+    expect(res.status).not.toBe(403);
+    expect(signup).toHaveBeenCalled();
+    // ...and a FOREIGN https origin is still refused behind the same hop.
+    const foreign = await app.request("http://app.test/login", {
+      method: "POST",
+      headers: {
+        ...form({}).headers,
+        origin: "https://evil.example",
+        "x-forwarded-proto": "https",
+      },
+      body: "method=magic_link",
+    });
+    expect(foreign.status).toBe(403);
+  });
+
   it("admits a non-browser mutation (no Origin, no fetch metadata) and all safe methods", async () => {
     const app = createWebApp(makeDeps());
     // server-to-server / curl POSTs carry neither header — CSRF needs a browser.

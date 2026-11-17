@@ -414,7 +414,16 @@ export function createWebApp(deps: WebDeps): Hono {
     if (origin != null) {
       let requestOrigin = "";
       try {
-        requestOrigin = new URL(c.req.url).origin;
+        const u = new URL(c.req.url);
+        // F-R6DEP.5-2 — TLS terminates at the GFE/LB, so the container's request URL is http:
+        // while the browser's unforgeable Origin is https:. `x-forwarded-proto` is the GFE's
+        // signal (the same one the Secure-cookie stamp below trusts); honoring it keeps the
+        // same-origin compare truthful behind TLS termination without weakening the foreign-
+        // origin refusal (an attacker's Origin never equals the request origin either way).
+        if (u.protocol === "http:" && (c.req.header("x-forwarded-proto") ?? "").split(",")[0]?.trim() === "https") {
+          u.protocol = "https:";
+        }
+        requestOrigin = u.origin;
       } catch {
         requestOrigin = "";
       }
