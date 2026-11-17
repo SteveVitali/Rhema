@@ -1,0 +1,130 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "dfff0bbcc688",
+  "startedAt": "2026-11-17T09:17:39.396Z",
+  "finishedAt": "2026-11-17T09:24:17.246Z",
+  "webBaseUrl": "https://rhema-pr-385-web-3a58758-tkbl73n3tq-uc.a.run.app",
+  "apiBaseUrl": "https://rhema-pr-385-api-e90c126-tkbl73n3tq-uc.a.run.app",
+  "provenance": {
+    "expected": "669b586da9d2121fa86da7f8a657d2158ad7fb0d",
+    "observed": {
+      "web": "669b586da9d2121fa86da7f8a657d2158ad7fb0d",
+      "api": "669b586da9d2121fa86da7f8a657d2158ad7fb0d"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "N1",
+      "journey": "new-visitor",
+      "owner": "ONB.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "failedRequests": [],
+      "durationMs": 45804,
+      "error": "page.waitForSelector: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[role=\"status\"]') to be visible\u001b[22m\n",
+      "screenshot": "N1.png"
+    },
+    {
+      "id": "N3",
+      "journey": "new-visitor",
+      "owner": "ONB.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "failedRequests": [],
+      "durationMs": 45533,
+      "error": "page.waitForSelector: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[role=\"status\"]') to be visible\u001b[22m\n",
+      "screenshot": "N3.png"
+    },
+    {
+      "id": "N10",
+      "journey": "new-visitor",
+      "owner": "UX.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 807,
+      "screenshot": "N10.png"
+    },
+    {
+      "id": "R8.showcase",
+      "journey": "returning",
+      "owner": "UX.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "failedRequests": [],
+      "durationMs": 76401,
+      "error": "signup for test+jrn-a@rhema.tools never showed the \"link sent\" status (https://rhema-pr-385-web-3a58758-tkbl73n3tq-uc.a.run.app/signup)",
+      "screenshot": "R8.showcase.png"
+    },
+    {
+      "id": "R8.prefs",
+      "journey": "returning",
+      "owner": "UX.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "failedRequests": [],
+      "durationMs": 76362,
+      "error": "signup for test+jrn-a@rhema.tools never showed the \"link sent\" status (https://rhema-pr-385-web-3a58758-tkbl73n3tq-uc.a.run.app/signup)",
+      "screenshot": "R8.prefs.png"
+    },
+    {
+      "id": "R8.inbox",
+      "journey": "returning",
+      "owner": "UX.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "failedRequests": [],
+      "durationMs": 76374,
+      "error": "signup for test+jrn-a@rhema.tools never showed the \"link sent\" status (https://rhema-pr-385-web-3a58758-tkbl73n3tq-uc.a.run.app/signup)",
+      "screenshot": "R8.inbox.png"
+    },
+    {
+      "id": "R8.showcase.spa",
+      "journey": "returning",
+      "owner": "R7RO.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "failedRequests": [],
+      "durationMs": 76320,
+      "error": "signup for test+jrn-a@rhema.tools never showed the \"link sent\" status (https://rhema-pr-385-web-3a58758-tkbl73n3tq-uc.a.run.app/signup)",
+      "screenshot": "R8.showcase.spa.png"
+    }
+  ],
+  "passed": false
+}

@@ -525,6 +525,10 @@ export function createMonitoring(args: MonitoringArgs): {
           filter: pulumi.interpolate`metric.type="monitoring.googleapis.com/uptime_check/check_passed" AND resource.type="uptime_url" AND metric.labels.check_id="${chk.uptimeCheckId}"`,
           duration: "900s",
           trigger: { count: 1 },
+          // DELTA-kind metrics require an explicit per-series aligner on create (gcloud 400:
+          // "aggregation.perSeriesAligner is required when the metric kind is DELTA") — surfaced
+          // live on pr-385 update 5.
+          aggregations: [{ alignmentPeriod: "300s", perSeriesAligner: "ALIGN_COUNT" }],
         },
       })),
       {
@@ -533,6 +537,7 @@ export function createMonitoring(args: MonitoringArgs): {
           filter: pulumi.interpolate`metric.type="run.googleapis.com/container/billable_instance_time" AND resource.type="cloud_run_revision" AND resource.labels.service_name="${workerServiceName}"`,
           duration: "900s",
           trigger: { count: 1 },
+          aggregations: [{ alignmentPeriod: "300s", perSeriesAligner: "ALIGN_COUNT" }],
         },
       },
     ],

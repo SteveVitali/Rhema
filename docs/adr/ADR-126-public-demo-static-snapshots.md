@@ -1,7 +1,7 @@
 # ADR-126: The public demo serves static snapshots through `demoDataSource` — no session, no tenant, one sanctioned write
 
-- **Status:** Proposed
-- **Date:** 2026-11-03
+- **Status:** Accepted
+- **Date:** 2026-11-03; accepted **2026-11-17** by operator ruling (301_R6DEP.5)
 - **Ticket:** R7OPEN.1 (shell); filled and accepted by **220 R7DEM.4**. The S-1 URL-spike outcome
   (rewrite or 302 fallback) is recorded here by **220a R7DEM.4b**; the REQ-TOUR-9 metrics
   carve-out section is **223 R7DEM.6b**'s.

@@ -1,0 +1,37 @@
+{
+  "mode": "DRY-RUN",
+  "at": "2026-11-17T12:46:30.170Z",
+  "items": [
+    {
+      "key": "tombstone",
+      "name": "arm ONE purge-exempt test tombstone ('r6wrt1-tombstone-probe', deleted_at now()-30d) + its project.purge job",
+      "status": "armable",
+      "guards": [
+        {
+          "name": "pgboss",
+          "ok": true,
+          "detail": "pgboss.job columns=33"
+        },
+        {
+          "name": "workspace",
+          "ok": true,
+          "detail": "existing is_test ws 01M7JGKRX6QX8D8DVSAJVHG50Z (Personal) age=21.0h < 26h — purge-exempt"
+        },
+        {
+          "name": "owner",
+          "ok": true,
+          "detail": "owner user 01M7JGKRX1Q0APD4GEDJNGMWR0 (test+j5cb3d86558a3t7@rhema.tools)"
+        }
+      ],
+      "writes": [],
+      "createWorkspace": null,
+      "existing": null,
+      "projectId": "01M7MRPT646F9GJEQG5E5JHXM2",
+      "needsTombstone": true,
+      "existingJobs": [],
+      "needsJob": true
+    }
+  ],
+  "observations": [],
+  "scopeExact": true
+}

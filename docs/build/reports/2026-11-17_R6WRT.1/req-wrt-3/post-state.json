@@ -1,0 +1,16 @@
+{
+  "project": {
+    "id": "01M7MRPYK1VH37H3AHA8CSZJSJ",
+    "deleted_at": "2026-10-18T11:46:34.685Z",
+    "age_days": 30.041670266203703
+  },
+  "destroyedAlready": false,
+  "jobs": [
+    {
+      "id": "14d98758-c775-4844-bdfe-ecb92b4667d4",
+      "state": "created",
+      "start_after": "2026-11-17T12:45:34.823Z",
+      "completed_on": null
+    }
+  ]
+}

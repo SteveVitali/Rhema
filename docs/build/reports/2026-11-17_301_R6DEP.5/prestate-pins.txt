@@ -1,0 +1,12 @@
+# Pre-state image pins — Pulumi.prod.yaml @ deployed SHA 040e36a9fd676fe2f9e17e44d87219cf97658c1d
+# Captured 2026-11-17T~08:4xZ before any mutation (pins only, never a stack export — P-1)
+api:        api@sha256:5079a266749a70282300c93f62e18f8b3eb5c0ffa633fe02e4870503eb2543f5
+web:        web@sha256:72ee5c822a6d73a5b7e351f2c477b3b4b9d3873a39b4a04b8e62c44db8508562
+worker:     worker@sha256:5b4d30c3a04e869d7374e2ff1359f6c924075db81ca7642e1677dbb8c2e0befb
+fetcher:    fetcher@sha256:3317b3a34d0072155af7e97076b81a3e4307ea2a5d364107760d74ea6ffbab50
+convert:    convert@sha256:b74cf44482490932457628758260ad38c35f81dfb1fd19002d51ba794b80afe6
+export:     export@sha256:6ea3f76f08e13ecfb854d3415493e3f716fbf0230d2ba01ae3a5bcdde6ae5c89
+collab:     collab@sha256:63fa00453cb810553e4ddefdadbf8fc39fb19966661ddb06844133cd8dd5dc5e
+turbo-cache: turbo-cache@sha256:6b1c8b95e52c7dc1fb3842295fcd3cef37661b81e90e79b622a0c6606f2c5141
+run-task:   run-task@sha256:93194707a38d50b748ac032a582a4689118245730873fe26b040d04c916b15eb
+proxy:      egress-proxy@sha256:d9bed3afe58401e778aa707238fe8eae559d4cceb8234cb04d14d2660854dcb6

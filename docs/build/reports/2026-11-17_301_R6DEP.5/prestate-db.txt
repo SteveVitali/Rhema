@@ -1,0 +1,4 @@
+# Pre-state DB reads — system DSN over IAP tunnel, BEGIN READ ONLY + ROLLBACK, 2026-11-17T~08:4xZ
+migration ceiling: 0062_drafts_discard.sql (62 applied)  → payload carries 0063_pgboss_queue_policies + 0064_outbox (both additive per check-additive-migrations)
+pending verifications (expires_at > now()): 0          → better-auth 1.7.7+ storage-invalidation blast radius = 0 rows
+outbox table: ABSENT (42P01)                            → 0064 unapplied, as expected

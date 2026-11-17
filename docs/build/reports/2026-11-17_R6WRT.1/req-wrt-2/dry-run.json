@@ -1,0 +1,15 @@
+{
+  "mode": "DRY-RUN",
+  "at": "2026-11-17T12:46:16.504Z",
+  "items": [
+    {
+      "key": "deployment",
+      "name": "rewrite deployments id prod:d5a74cc → prod:<40-char git_sha>",
+      "status": "absent",
+      "guards": [],
+      "targetId": null
+    }
+  ],
+  "observations": [],
+  "scopeExact": false
+}
