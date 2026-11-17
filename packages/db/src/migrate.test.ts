@@ -170,7 +170,10 @@ describe("migrations (REQ-DATA-3)", () => {
     });
 
     it("a mid-file crash rolls the file AND its record back — re-run applies cleanly", async () => {
-      const db = await createTestDb({ until: "0062_drafts_discard.sql" }); // 0063 pending
+      // Exactly ONE file pending, bounded on both runs: later migrations must not widen the
+      // window (the assertions below are about the crashed file alone, not "whatever is last").
+      const target = "0063_pgboss_queue_policies.sql";
+      const db = await createTestDb({ until: "0062_drafts_discard.sql" }); // `target` pending
       let crashed = false;
       const wrapped: MigrationDb = {
         exec: async (sql) => {
@@ -185,17 +188,20 @@ describe("migrations (REQ-DATA-3)", () => {
         },
         query: (sql, params) => db.query(sql, params),
       };
-      await expect(applyMigrations(wrapped)).rejects.toThrow("injected mid-file crash");
+      await expect(applyMigrations(wrapped, { until: target })).rejects.toThrow(
+        "injected mid-file crash",
+      );
       // the probe DDL rolled back with the file's tx — no applied-but-unrecorded drift.
       const { partial } = await one(db, "select to_regclass('bl119_partial') is not null as partial");
       expect(partial).toBe(false);
       const { rec } = await one(
         db,
-        "select count(*)::int > 0 as rec from _migrations where name = '0063_pgboss_queue_policies.sql'",
+        "select count(*)::int > 0 as rec from _migrations where name = $1",
+        [target],
       );
       expect(rec).toBe(false);
       // and the clean re-run applies it — the failed run left nothing behind.
-      expect(await applyMigrations(db)).toEqual(["0063_pgboss_queue_policies.sql"]);
+      expect(await applyMigrations(db, { until: target })).toEqual([target]);
       await db.close();
     });
 

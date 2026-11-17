@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createOrchestratorTestDb, seedProject, makeDeps, type OrchestratorTestDb, type TestDeps } from "@rhema/orchestrator/testing";
 import { ACCOUNT_DELETION_CONFIRMATION } from "@rhema/contracts";
 import { createSettingsRoutes, ACCOUNT_HARD_DELETE_QUEUE } from "./settings-routes.js";
@@ -237,11 +237,11 @@ describe("RH-5 — email change hardening", () => {
   });
 });
 
-// RH-17 (270_R6OPS.4) — the swallowed hard-delete enqueue: the marker lands, the request stays
-// honest (the sweep repairs), but the failure is LOUD, never `.catch(() => undefined)`.
-describe("RH-17 — account.hard-delete enqueue failure is logged loudly", () => {
-  it("ok:true still returns but console.error carries the FAILED+id line", async () => {
-    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+// RH-17 → BL-115 (298_R6FIX.31) — the mark-then-send hole is closed structurally: the marker and
+// its outbox intent commit in ONE tenant tx, so a queue-side failure can never strand the arm.
+// The request path no longer calls `queue.send` at all — the worker's `outbox.drain` owns it.
+describe("RH-17/BL-115 — marker + outbox intent commit atomically (no request-time send)", () => {
+  it("ok:true returns with a dead queue — the send is the drain's, and the pair lands together", async () => {
     const throwing = {
       send: () => Promise.reject(new Error("pg-boss down")),
     };
@@ -261,16 +261,19 @@ describe("RH-17 — account.hard-delete enqueue failure is logged loudly", () =>
     });
     expect(res.status).toBe(200);
     expect(((await res.json()) as { ok: boolean }).ok).toBe(true);
-    // the marker still landed — the row is the state; the hourly sweep re-arms the missing job.
+    // marker + intent committed in the same tx — the drain replays the row onto pg-boss.
     const u = (await db.pg.query(`select deletion_requested_at from "user" where id = $1`, [USER])).rows[0] as {
       deletion_requested_at: Date | null;
     };
     expect(u.deletion_requested_at).toBeTruthy();
-    expect(spy).toHaveBeenCalledWith(
-      expect.stringContaining(`account.hard-delete enqueue FAILED for user ${USER}`),
-      expect.any(Error),
-    );
-    spy.mockRestore();
+    const ob = (
+      await db.pg.query(`select queue, payload, send_options from outbox where queue = $1`, [
+        ACCOUNT_HARD_DELETE_QUEUE,
+      ])
+    ).rows as { queue: string; payload: { userId: string }; send_options: { singletonKey: string } }[];
+    expect(ob).toHaveLength(1);
+    expect(ob[0]!.payload.userId).toBe(USER);
+    expect(ob[0]!.send_options.singletonKey).toBe(`account.hard-delete:${USER}`);
   });
 });
 
@@ -414,11 +417,17 @@ describe("REQ-ACCT-4 — delete account: typed confirmation → 14-day grace →
     const body = (await res.json()) as { deletion: { requestedAt: string; graceEndsAt: string } };
     expect(body.deletion.requestedAt).toBe(NOW.toISOString());
     expect(new Date(body.deletion.graceEndsAt).getTime() - NOW.getTime()).toBe(14 * 24 * 60 * 60 * 1000);
-    const jobs = deps.queue.ofName(ACCOUNT_HARD_DELETE_QUEUE);
+    // BL-115 — the arm persists as an outbox intent (not a request-time send); the drain replays
+    // it with the delay + singleton key verbatim.
+    const jobs = (
+      await db.pg.query(`select payload, send_options from outbox where queue = $1`, [
+        ACCOUNT_HARD_DELETE_QUEUE,
+      ])
+    ).rows as { payload: { userId: string }; send_options: { singletonKey: string; startAfterMs: number } }[];
     expect(jobs).toHaveLength(1);
     expect(jobs[0]!.payload).toMatchObject({ userId: USER });
-    expect(jobs[0]!.singletonKey).toBe(`${ACCOUNT_HARD_DELETE_QUEUE}:${USER}`);
-    expect(jobs[0]!.startAfterMs).toBe(14 * 24 * 60 * 60 * 1000);
+    expect(jobs[0]!.send_options.singletonKey).toBe(`${ACCOUNT_HARD_DELETE_QUEUE}:${USER}`);
+    expect(jobs[0]!.send_options.startAfterMs).toBe(14 * 24 * 60 * 60 * 1000);
     // the banner state rides the account + data reads.
     expect(
       ((await (await get("/settings/account")).json()) as { deletion: { graceEndsAt: string } | null }).deletion?.graceEndsAt,
