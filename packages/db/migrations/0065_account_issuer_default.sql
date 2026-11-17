@@ -1,4 +1,4 @@
--- 0065_account_issuer_default.sql — better-auth 1.7.25 runtime schema check (301_R6DEP.1).
+-- 0065_account_issuer_default.sql — better-auth 1.7.25 runtime schema check (301_R6DEP.5).
 --
 -- 0025 made `account.issuer` NOT NULL for better-auth 1.7.2, whose account key was {issuer,
 -- account_id}. 1.7.x (≥1.7.3) stopped writing `issuer` entirely — and 1.7.25 added a runtime

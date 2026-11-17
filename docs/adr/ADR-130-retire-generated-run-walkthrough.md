@@ -1,7 +1,7 @@
 # ADR-130: Retire the generated run walkthrough — the run card is composed from the delivered record
 
 - **Status:** Accepted
-- **Date:** 2026-11-03; accepted **2026-11-17** by operator ruling (301_R6DEP.1)
+- **Date:** 2026-11-03; accepted **2026-11-17** by operator ruling (301_R6DEP.5)
 - **Ticket:** R7OPEN.1 (shell); filled and accepted by **213 R7COPY.0**.
 - **Requirement ids:** REQ-IDE-19 (amended), REQ-COPY-4, REQ-SPEC-32/REQ-ECON-* (COGS posture,
   unchanged), DS §5.5 D20 / §5.6 (amended)

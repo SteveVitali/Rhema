@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createTestDb } from "@rhema/db/testing";
 import { createAuth } from "./auth.js";
 
-// 301_R6DEP.1 regression — better-auth 1.7.25 runs a runtime schema check (`ctx.checkSchema`,
+// 301_R6DEP.5 regression — better-auth 1.7.25 runs a runtime schema check (`ctx.checkSchema`,
 // @better-auth/kysely-adapter's pg_catalog introspection vs the adapter's expected shape) on EVERY
 // auth request, and a mismatch is cached and rethrown: the whole auth surface 500s. 1.7.2's
 // `account.issuer` NOT NULL tripped it ("Required columns Better Auth never writes") — reproduced
