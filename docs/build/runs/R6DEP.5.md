@@ -105,14 +105,91 @@ still clears any early-hit instance.)
   after golden. (No improvisation onto a different tenant: the ruled scope is jrn-a.)
 - Evidence: `reports/2026-11-17_R6WRT.1/req-wrt-{1,2,3}/`.
 
+## Deploy execution (2026-11-17, prod `05c1e8dd` then `73902381`)
+
+- #385 merged 13:23Z → tip `05c1e8dd` → all-10 build `8b2f2098` SUCCESS; `pr-385` re-walked
+  (migrate-first applied `0065`, auth green — real `invite_required` 403 + `get-session` 200);
+  prod `prod-migrate-seed` applied `0063/0064/0065` migrate-first (additive gate clean).
+- `pulumi preview --diff` classified: +8 (redirect trio + monitoring), ~15 (AR policy, bucket
+  lifecycles, `sslMode→ENCRYPTED_ONLY`, 9 image bumps, proxy MIG), 1 stateless template replace.
+- **Update 179** partially landed → api revision `00109-65m` crash-looped: `pg_hba … no encryption`.
+
+### F-R6DEP.5-1 — ENCRYPTED_ONLY precondition was false (deploy-blocking, parked)
+
+- RH-35's premise — "every client DSN already carries `sslmode=require`" — was false on prod:
+  the composed DSNs write as `SecretVersion.secretData` (write-only + `ignoreChanges`), so the
+  stored versions still hold the original plaintext strings; node-postgres defaults to plaintext.
+- **Update 180** reverted `sslMode → ALLOW_UNENCRYPTED_AND_ENCRYPTED` (verified on the instance);
+  old api revision kept serving; `dep5`-suffix revision forced the `05c1e8dd` api live.
+- Parked posture committed on **#387** (operator-merged → `73902381`). Re-land follow-up:
+  re-seed stored DSN versions with `sslmode=require`, roll all consumers (incl. operator-seeded
+  worker/system DSNs), verify encrypted, then re-flip — dated note appended on `D-R6SEC.3-1`.
+
+### F-R6DEP.5-2 — origin guard 403'd every browser POST (write-path outage, fixed `73902381`)
+
+- RH-23's same-origin mutation guard compared `Origin` to `c.req.url`'s origin — `http:` inside
+  the container (TLS ends at the GFE) vs browsers' `https:` → ~13 min write-path outage.
+- Web rolled back to prior digest (`72ee5c82`) → POSTs restored. **Residual:** the new api wraps
+  verify links into `/auth/magic-link` (RH-32 interstitial, new-web-only) — magic-link sign-in
+  was broken in the interim state (interstitial 404; api verify itself worked — direct verify
+  minted jrn-a's session for the golden leg).
+- Fix on **#386** (operator-merged): guard honors `x-forwarded-proto: https` (same signal the
+  `Secure`-cookie stamp already trusts); regression test covers the exact prod shape — 16/16
+  hardening + 121/121 server tests.
+
+### Final deploy (`73902381`, update 182–183)
+
+- all-10 build `9bb7468c` SUCCESS (first attempt `a2113755` failed on an operator `_AR`
+  substitution typo — no infra impact); prod yaml re-pinned to the `73902381` digests.
+- Update 182: 9 updates + 1 replace landed; api revision `00112-tcb` failed startup on a
+  **transient** Secret Manager `accessSecretVersion` gRPC `CANCELLED` (~74 s retry → exit(1);
+  `vpc-access-egress=private-ranges-only` means SM traffic does not transit the VPC/proxy).
+  Forced fresh revision `dep5b` at the same digest → healthy, 100%. Targeted `pulumi refresh`
+  (update 183) synced api state; residual stack diff is cosmetic (revision-name normalization +
+  replaced-template delete-original) — converges on the next routine `up`.
+- **Provenance PASS** both origins @ `73902381`; deployments row `prod:73902381…` written
+  (rate_table `2026-11-17`); CDN invalidation `/bff/p/demo~*` **DONE**
+  (`operation-1794940065478` @ 18:27:45Z on `rhema-prod-urlmap-6f2b86e`; dry-run + operation
+  record in `reports/2026-11-17_301_R6DEP.5/cdn-invalidation/`).
+- **Sign-in verified end-to-end live:** real magic link → interstitial 200 → confirm click →
+  `/app` signed in; cookie `__Host-rhema.session_token` Secure/HttpOnly/host-only — the
+  interstitial outage is resolved and the cookie contract holds.
+
+### F-R6DEP.5-3 — journey legs don't know the interstitial confirm (harness gap, not a defect)
+
+- Prod smoke at `73902381`: **N10 PASS $0**; N1/N3 reach the interstitial but `waitForURL`
+  times out — the legs don't perform the RH-32 confirm click (anti-prefetch by design).
+  Product flow verified manually (above). Owed: a journeys step update for the confirm gate —
+  carried as backlog, not a product finding.
+- T8 mint `--fresh` executed → leg **PASS $0**; BL-78 seeds executed — `mooted` dossier +
+  `entitlement` arm live on jrn-a's re-provisioned workspace.
+
+### Golden re-run (`r6dep5-a`) — COMPLETE, gate green
+
+- 4/4 legs `completed` on prod `73902381`, jrn-a's `is_test` workspace (audited 10000-cr house
+  grant): essay $9.91 (1756 cr), academic $10.05 (1869 cr), op-ed $6.56 (1205 cr),
+  memo $5.19 (974 cr) — **$31.71 measured vs the $100 cap** (est. $46.94).
+- Every floor green per leg: `schemaValid`, `citedFetched`, `attestationViolations=0`, and
+  severity counts inside `GOLDEN_LIVE_FLOORS` (blocking ≤4, major ≤12, minor ≤14, note ≤18).
+  Measured doc: `reports/2026-11-17_301_R6DEP.5/golden-scores.json` (driver-verbatim queries;
+  the driver's DB watch had dropped ECONNRESET mid-MIG-roll, so measurement ran by the same
+  queries on memo completion — re-dispatch would have minted fresh idempotency keys → double
+  spend).
+- `--execute --scores` leg: manifest written (`evals/fixtures/nightly-manifest.json`, 4
+  fixtures) → `gateFixtures` **PASS ×4 (7 floor checks each), "Promotion OK"**.
+- Memo carried one transient `ERR 42703` in-flight — **dispositioned 2026-11-17 (second look):
+  a probe artifact, not a product or harness error.** Zero error-type rows in `run_events` /
+  `run_events_internal` for the run; zero 42703 hits in api/web/worker/run-task logs across the
+  window. The 42703 was emitted by the ad-hoc event-summary probe itself (it selected a column
+  the current schema lacks). Run completed clean, review within floors — nothing owed.
+
 ## Pending (as of this write)
 
-1. #385 merge (operator) → all-10 rebuild at merge-tip SHA.
-2. Preview re-walk: re-pin digests → migrate (0065) → auth green → session-capable legs →
-   teardown (destroy → orphan check → rm).
-3. Prod: `prod-migrate-seed` (migrate-first) → `pulumi preview --diff` classified → `pulumi up`
-   → provenance both surfaces → record-deployment → smoke legs.
-4. CDN invalidation (dry-run + actual, committed).
-5. Golden re-run — four fixtures, ≤$100, `GOLDEN_BUDGET_RULING` one-shot, measured `--scores`.
-6. jrn-a-dependent REQ-WRT residuals (T8 mint, BL-78 seeds) post-golden.
-7. Records: this ledger + readouts + index/manifest/LEDGER + BACKLOG deploy-bound note updates.
+1. The committed-vs-applied re-pin commit for `Pulumi.prod.yaml` — **PR #388 open**, awaiting
+   operator merge (mergePolicy: OPERATOR).
+2. Final records commit (this ledger + LEDGER/index + reports + DEFERRALS dated notes) —
+   gitleaks + append-only green; the repo-wide build-memory structural check reports only
+   pre-existing violations (none introduced by this change set).
+3. Watch sweep continues: worker clean post-roll; all 15 alert policies enabled post-deploy;
+   alert *states* (SLO-burn/no-data-silence/edge-health etc.) are standing-watch information
+   for the named owners, not new findings from this deploy.

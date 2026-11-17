@@ -1,0 +1,9 @@
+{
+  "name": "operation-1794940065478-6607d0cfef878-809b5692-58179cc2",
+  "operationType": "invalidateCache",
+  "status": "DONE",
+  "startTime": "2026-11-17T10:27:45.541-08:00",
+  "endTime": "2026-11-17T10:27:45.701-08:00",
+  "description": "rhema.tools/bff/p/demo~*",
+  "targetLink": "https://www.googleapis.com/compute/v1/projects/rhema-507501/global/urlMaps/rhema-prod-urlmap-6f2b86e"
+}
