@@ -1,0 +1,53 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "c6f915b3b3dd",
+  "startedAt": "2026-11-17T21:46:36.331Z",
+  "finishedAt": "2026-11-17T21:48:14.088Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "739023816efae96fdadb885a4c171f0be097eebc",
+    "observed": {
+      "web": "739023816efae96fdadb885a4c171f0be097eebc",
+      "api": "739023816efae96fdadb885a4c171f0be097eebc"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "T12F",
+      "journey": "both",
+      "owner": "SPA.21",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 49155,
+      "error": "locator.getAttribute: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-findings-list] [data-finding]').first()\u001b[22m\n",
+      "screenshot": "T12F.png"
+    },
+    {
+      "id": "T13F",
+      "journey": "both",
+      "owner": "SPA.21",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 48328,
+      "error": "the Apply control: not visible",
+      "screenshot": "T13F.png"
+    }
+  ],
+  "passed": false
+}
