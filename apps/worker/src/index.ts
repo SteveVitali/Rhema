@@ -47,6 +47,7 @@ export const WORKER_QUEUES = [
   // Run-event store maintenance (§12.5, P0.08b):
   "run_events.retention", // daily: expire internal rows at 30 days (user rows survive)
   "run_events.partition", // daily: pre-create the upcoming daily run_events partitions
+  "admin_actions.retention", // BL-123 — daily: the audit class's declared 90-day expiry
   // Deletion / retention pipeline (REQ-ARCH-28/29):
   "project.purge", // tombstone -> 30-day purge -> lifecycle delete
   "account.export", // P1.18 — the whole-account zip build + emailed link (REQ-ACCT-3)

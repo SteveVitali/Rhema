@@ -77,6 +77,7 @@ that integration. In the API's [live wiring](../apps/api/src/server.ts):
 | Import preview               | `USER_CONTENT_BUCKET` and `CONVERT_JOB` bind the import-preview path; `CONVERT_SERVICE_URL` adds the warm conversion service.                                                                                     |
 | Remote ingestion             | `FETCHER_SERVICE_URL` binds the guarded fetch service.                                                                                                                                                            |
 | Notification mail            | The worker's `RESEND_API_KEY_SECRET`, sender and application origins, plus shared `EMAIL_ACTION_SECRET_NAME` for signed email actions.                                                                            |
+| Identity-header shim         | Non-production stages only: `IDENTITY_HEADERS=true` plus the stage's shared key — mounted as `IDENTITY_HEADERS_SECRET_NAME` (a Secret Manager reference) on deployed stages, or set directly as `IDENTITY_HEADERS_KEY` for local runs. The flag alone leaves the shim OFF; without the key, `x-rhema-*` identity headers are ignored. Nothing wires it on prod. |
 
 The API environment parser uses these defaults for missing or unknown values:
 

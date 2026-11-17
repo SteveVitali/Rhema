@@ -63,12 +63,12 @@ describe("the deployed retention/backup posture — read off infra/pulumi/data.t
   it("every bucket is IAM-only + public-access-prevented, with per-class lifecycle deletes", () => {
     expect(data).toContain('publicAccessPrevention: "enforced"');
     expect(data).toContain("uniformBucketLevelAccess: true");
-    // The lifecycle rules are generated from the SAME schedule the audit reads — every day-bearing class
-    // gets a prefix-scoped Delete rule.
-    const lifecycle = data.match(/const lifecycleRules = Object\.values\(RETENTION_SCHEDULE\)([\s\S]*?)\}\)\);/)?.[0];
-    expect(lifecycle).toBeTruthy();
-    expect(lifecycle).toContain('type: "Delete"');
-    expect(lifecycle).toContain("matchesPrefixes");
+    // BL-123 (operator ruling 2026-11-16) — the per-class `matchesPrefixes: [<class>/]` rules were
+    // DEAD: no write path used class-prefixed keys, so they claimed coverage that did not exist. The
+    // program must not regenerate them; expiry is honestly owned by the DB prune jobs asserted below.
+    expect(data).not.toContain("matchesPrefixes");
+    // The one REAL object-level rule — the access-logs bucket's unscoped 90-day delete — stays.
+    expect(data).toContain("access-logs");
     // Prod buckets survive `pulumi destroy`; previews/dev must tear down cleanly.
     expect(data).toContain('forceDestroy: cfg.kind !== "prod"');
   });
@@ -90,6 +90,7 @@ describe("the worker retention jobs — scheduled classes have consumers (REQ-AR
     ["project.purge", "PROJECT_PURGE_JOB", null, null],
     ["voice.purge", "INGEST_JOB_NAMES.voicePurge", "apps/worker/src/ingest-jobs.ts", "voicePurge"],
     ["account.hard-delete", "ACCOUNT_HARD_DELETE_JOB", null, null],
+    ["admin_actions.retention", "RETENTION_JOBS.adminActions", "apps/worker/src/run-events-jobs.ts", "adminActions"],
   ] as const;
 
   it.each(registrations)("registers a boss.work consumer for %s", (name, binding, bindingFile, bindingKey) => {
