@@ -1294,3 +1294,4 @@ HEAD
 | 300 | `300_R6NOTE.6__bl-closures.md` | post-handoff | **run-time insert** — post-merge backlog hygiene: BL-114 closed (gate verified firing on post-merge CI); BL-115-det deploy-bound note pending worker deploy | — |
 | 302 | `302_R6SHOT.1__r7-bespoke-captures.md` | post-handoff | **run-time insert** — BL-104 burn-down: read-only $0 deployed-tip capture walk at `73902381` (demo + jrn-a signed-in tranches; state-dependent + operator arms stay on BL-104/105) | — |
 | 304 | `304_R6FIX.33__u4-export-exemption.md` | post-handoff | **run-time insert** — F-R6SHOT.1-1: U4 probe export surface mirrors the named `data-md-profile`/`data-csl-style` GUARD-1 carriers; `U4.controls` PASS live @ `73902381` | — |
+| 305 | `305_R6FIX.34__subscribe-second-sub-guard.md` | post-handoff | **run-time insert** — BL-114: subscribe arm refuses a second Checkout for a live subscription (409 `subscription_active` + portal notice; §14.6 matrix row) | — |

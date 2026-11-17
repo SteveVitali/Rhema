@@ -1442,6 +1442,10 @@ export const COPY = {
     firstMonthCapNote:
       "New accounts can add up to $100 of credits in their first month — the cap lifts after.",
     planWaitlistedNote: "That plan isn't open yet — join its waitlist on the card above.",
+    // BL-114 (305_R6FIX.34) — a live subscription refuses the second Checkout; the honest path
+    // back is the Stripe portal while in-app switching stays fenced (D-R6FIX.5-1).
+    subscriptionActiveNote:
+      "You already have an active plan — manage it from the billing portal below.",
     noStripeCustomerNote: "There's no card on file yet — choose a plan or buy a top-up first.",
     stripeRejectedNote:
       "Stripe refused that checkout — nothing was charged. The detail is logged; try again in a moment.",

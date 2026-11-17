@@ -24,6 +24,8 @@ export function billingNoticeFor(code: string | undefined): string {
       return COPY.billing.firstMonthCapNote;
     case "plan_waitlisted":
       return COPY.billing.planWaitlistedNote;
+    case "subscription_active":
+      return COPY.billing.subscriptionActiveNote;
     case "no_stripe_customer":
       return COPY.billing.noStripeCustomerNote;
     case "stripe_rejected":
