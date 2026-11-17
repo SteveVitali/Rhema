@@ -35,4 +35,13 @@ describe("D-R6SECR.1-2 — Strict-Transport-Security on the api", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("strict-transport-security")).toBeNull();
   });
+
+  it("BL-135 — a deployed image stamps unconditionally: the stamp no longer waits on x-forwarded-proto", async () => {
+    const app = createApp({ buildGitSha: "abcdef1" });
+    const res = await app.request("/healthz"); // plain http hop — deployed image stamps anyway
+    expect(res.status).toBe(200);
+    expect(res.headers.get("strict-transport-security")).toBe(
+      "max-age=31536000; includeSubDomains",
+    );
+  });
 });

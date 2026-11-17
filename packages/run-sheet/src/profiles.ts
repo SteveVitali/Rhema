@@ -244,6 +244,11 @@ export const WORKFLOW_SHEET_PROFILES: Partial<Record<WorkflowKey, WorkflowSheetP
 /** Resolve a workflow's sheet profile; throws for a workflow the beta sheet does not launch. */
 export function sheetProfile(workflow: WorkflowKey): WorkflowSheetProfile {
   const p = WORKFLOW_SHEET_PROFILES[workflow];
-  if (!p) throw new Error(`run sheet: workflow "${workflow}" is not launchable in the beta (REQ-WF-3)`);
+  // BL-124: `workflow` is a cast upstream (body.workflow as WorkflowKey) — arbitrary request text
+  // reaches this throw, so the interpolation is bounded + single-line, not the raw value.
+  if (!p)
+    throw new Error(
+      `run sheet: workflow "${String(workflow).replace(/\s+/g, " ").slice(0, 64)}" is not launchable in the beta (REQ-WF-3)`,
+    );
   return p;
 }
