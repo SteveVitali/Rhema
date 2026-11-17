@@ -24,7 +24,6 @@
 ## CURRENT STATE
 ```
 projectStatus:   IN_PROGRESS
-HEAD
 nextTicket:        (maintenance mode)  # 287_R6FIX.24 done — per GD-MAINT.R6 (open: BL-123 retention enforcer, BL-128..BL-133 rh-low cluster)
 lastCompleted:   287_R6FIX.24     # BL-135 — HSTS unconditional on deployed images (baked-SHA discriminator) on api+web; off-image TLS gate kept — PR this run, unmerged
 blockedOn:       (none)
@@ -37,16 +36,12 @@ dispatchTarget:  subagent
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main              # flat mode — inserts branch off origin/main
 pinnedBaseSha:   a34eb51           # round-7 fork point (unchanged)
-HEAD
 chainTip:        stevevitali/r6fix-24-hsts-deployed
-chainTip:        stevevitali/r6fix-18-set-tenant-lint
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
 round:           7                  # post-round maintenance per GD-MAINT.R6
-HEAD
 updatedAt:       2026-11-16T17:4xZ  # 287_R6FIX.24 run-time insert (BL-135) on main @50a4f9d3 — #364-#370 still open; this PR's own transition per GD-OPS-RULES.R6
-updatedAt:       2026-11-16T17:2xZ  # merge main @50a4f9d3 (#363 landed) — CURRENT STATE collapsed to this PR's own 281_R6FIX.18 transition per GD-OPS-RULES.R6
 ```
 
 ## OPEN FINDINGS

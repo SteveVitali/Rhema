@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createTestDb } from "./testing/pglite.js";
-import { applyMigrations, readMigrations } from "./migrate.js";
+import { applyMigrations, applyMigrationsPinned, readMigrations, type MigrationDb } from "./migrate.js";
 
 // AC2: migrations apply cleanly against the seed; the backlog_items → source='agenda' obligations migration
 // passes (REQ-OBJ-7). Deterministic.
@@ -141,5 +141,91 @@ describe("migrations (REQ-DATA-3)", () => {
       }
     }
     await db.close();
+  });
+
+  // BL-119 (RH-A1-10) — the run rides ONE pinned connection: a session advisory lock serializes
+  // concurrent migrators, and each file + its _migrations row commit atomically in one tx.
+  describe("BL-119 — single-conn + advisory lock + per-file atomicity", () => {
+    it("the advisory lock wraps the whole run and each file rides begin→exec→record→commit", async () => {
+      const db = await createTestDb({ until: "0003_invariants.sql" }); // 0004+ pending
+      const seen: string[] = [];
+      const wrapped: MigrationDb = {
+        exec: (sql) => db.exec(sql),
+        query: async (sql, params) => {
+          seen.push(sql);
+          return db.query(sql, params);
+        },
+      };
+      const applied = await applyMigrations(wrapped, { until: "0004_rls.sql" });
+      expect(applied).toEqual(["0004_rls.sql"]);
+      expect(seen[0]).toContain("pg_advisory_lock");           // lock first
+      expect(seen.at(-1)).toContain("pg_advisory_unlock");     // unlock last
+      const begin = seen.findIndex((q) => /^\s*begin\b/i.test(q));
+      const record = seen.findIndex((q) => q.includes("insert into _migrations"));
+      const commit = seen.findIndex((q) => /^\s*commit\b/i.test(q));
+      expect(begin).toBeGreaterThan(0);                        // inside the lock
+      expect(record).toBeGreaterThan(begin);                   // record rides the file's tx
+      expect(commit).toBeGreaterThan(record);                  // commit closes it
+      await db.close();
+    });
+
+    it("a mid-file crash rolls the file AND its record back — re-run applies cleanly", async () => {
+      const db = await createTestDb({ until: "0062_drafts_discard.sql" }); // 0063 pending
+      let crashed = false;
+      const wrapped: MigrationDb = {
+        exec: async (sql) => {
+          // exec #1 creates _migrations; exec #2 IS the pending file — simulate a mid-file crash
+          // INSIDE its tx: apply probe DDL on the same connection, then die.
+          if (!crashed && !sql.includes("_migrations")) {
+            crashed = true;
+            await db.exec("create table bl119_partial (id int)");
+            throw new Error("injected mid-file crash");
+          }
+          return db.exec(sql);
+        },
+        query: (sql, params) => db.query(sql, params),
+      };
+      await expect(applyMigrations(wrapped)).rejects.toThrow("injected mid-file crash");
+      // the probe DDL rolled back with the file's tx — no applied-but-unrecorded drift.
+      const { partial } = await one(db, "select to_regclass('bl119_partial') is not null as partial");
+      expect(partial).toBe(false);
+      const { rec } = await one(
+        db,
+        "select count(*)::int > 0 as rec from _migrations where name = '0063_pgboss_queue_policies.sql'",
+      );
+      expect(rec).toBe(false);
+      // and the clean re-run applies it — the failed run left nothing behind.
+      expect(await applyMigrations(db)).toEqual(["0063_pgboss_queue_policies.sql"]);
+      await db.close();
+    });
+
+    it("applyMigrationsPinned checks out ONE connection for the whole run and releases it", async () => {
+      const db = await createTestDb({ until: "0003_invariants.sql" });
+      const onConn: string[] = [];
+      let released = false;
+      const conn = {
+        query: async (sql: string, params?: unknown[]) => {
+          onConn.push(sql);
+          // PGlite: parameterized calls ride .query; multi-statement strings ride .exec
+          // (what a pg PoolClient's .query handles natively via the simple protocol).
+          if (params && params.length) return db.query(sql, params);
+          // PGlite .exec returns one result per statement — a PoolClient.query returns {rows}
+          // for the last statement; mirror that shape.
+          const r = (await db.pg.exec(sql)) as { rows: unknown[] }[];
+          return { rows: r.at(-1)?.rows ?? [] };
+        },
+        release: () => {
+          released = true;
+        },
+      };
+      const applied = await applyMigrationsPinned({ connect: async () => conn }, { until: "0004_rls.sql" });
+      expect(applied).toEqual(["0004_rls.sql"]);
+      expect(released).toBe(true);
+      // lock + begin + file + record + commit + unlock — ALL on the pinned connection.
+      expect(onConn[0]).toContain("pg_advisory_lock");
+      expect(onConn.at(-1)).toContain("pg_advisory_unlock");
+      expect(onConn.some((q) => /^\s*begin\b/i.test(q))).toBe(true);
+      await db.close();
+    });
   });
 });
