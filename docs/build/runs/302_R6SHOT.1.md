@@ -99,3 +99,29 @@ showcase captures folded into D-R7RO.2-1 residual).
 - BACKLOG BL-104: dated progress note (rows discharged + residual list).
 - LEDGER: F-R6SHOT.1-1 under OPEN FINDINGS; phase-log entry.
 - BUILD_INDEX: row 302.
+
+## Continued walk (same ticket, second tranche — 2026-11-17 late)
+
+Additional $0 evidence after the first commit, same target/tenant:
+
+- **`D-R7DEM.4-1` → DONE** — residual arms (c) terminal-404 census, (e) figure-PNG asset
+  `image/png` + `immutable` 113651 B, (f) boot `demo.build` ≡ `/healthz` `gitSha`, (g) `?b=<sha>`
+  client-appended CDN key + build-keyed twin ETag — all verified live (`dem4-residual-arms.txt`).
+- **`demo-side-effects.js` re-run at prod** — `demo-side-effects/` committed. Contract HOLDS:
+  zero non-GET except `POST /a/demo` ×20, zero EventSource/WebSocket, zero mutation forms.
+  139 violations classified: 100 link-discovery coverage misses on deep routes (enumerated-leg
+  coverage green via `D3.readonly`), ~36 fixture-essay by-design 404s, 3 correctly-refused
+  `/visualize` 404s. Residual corpus-link question recorded on the row.
+- **Second signed-in walk** — `B-review-surface`, `B-run-report`, `B-compare-diff`,
+  `B-visualize`, `B-missing-version-picker` (`/v/999` → real rail w/ `· discarded` gaps),
+  `B-timeline-tab` (38 ms settle), `B-dossier-{1280,1920}`, `B-source-mode`, `B-keymap-sheet`,
+  `B-showcase-signedin`, `B-dossier-phone390` (real iPhone UA).
+- **Insufficient-funds arm** — `B-jrn-bl78-mooted-run` renders the insufficient marker on the
+  seeded BL-78 substrate.
+- **Landing/PUB.1** — `P-landing-hero`, `P-pricing`, `P-cta`, `P-pricing-page`; hero media
+  verified live (780 708 B / 13.76 s / muted / loop / lazy, `/demo` entry link).
+
+**Updated dispositions:** 4 additional rows → DONE (`D-R7DEM.4-1`, ``D-R7WRITE.2-1``,
+`D-R7COPY.1c-1`, `D-R7PUB.1-1`) — **26 DONE total**; 7 partials narrowed to named residuals
+(gate card, refund-CTA/withheld-tooltip/dispositions radios, doc-load timing, phone gate arms,
+markdown bubble, F-blocked probe arms, corpus-link coverage question).
