@@ -47,11 +47,15 @@ export function createJourneys(args: JourneysArgs): void {
     { service: "gmail.googleapis.com", disableOnDestroy: false },
     { retainOnDelete: true },
   );
-  new gcp.serviceaccount.IAMMember("ci-journeys-token-creator", {
-    serviceAccountId: journeysSa.name,
-    role: "roles/iam.serviceAccountTokenCreator",
-    member: pulumi.interpolate`principalSet://iam.googleapis.com/projects/${proj.number}/locations/global/workloadIdentityPools/github-pool/attribute.repository/${args.ciRepository}`,
-  }, { retainOnDelete: true });
+  new gcp.serviceaccount.IAMMember(
+    "ci-journeys-token-creator",
+    {
+      serviceAccountId: journeysSa.name,
+      role: "roles/iam.serviceAccountTokenCreator",
+      member: pulumi.interpolate`principalSet://iam.googleapis.com/projects/${proj.number}/locations/global/workloadIdentityPools/github-pool/attribute.repository/${args.ciRepository}`,
+    },
+    { retainOnDelete: true },
+  );
 
   // R6DEP.4 — the env-gap legs' DB read pool. `secrets.JOURNEY_DATABASE_URL` binds a prod DSN
   // whose host is the VPC-PRIVATE Cloud SQL IP (10.46.0.3) — unreachable from a GitHub-hosted
@@ -61,23 +65,61 @@ export function createJourneys(args: JourneysArgs): void {
   // under the federated WIF credentials, which needs `iap.tunnelResourceAccessor` (IAP TCP) and
   // `compute.instances.list/get` (rolling MIG name discovery). The `journeys-ci` account is a
   // metadata ssh-keys entry on the proxy template — no OS Login, no key install at runtime.
-  new gcp.projects.IAMMember("ci-journeys-iap-tunnel", {
-    project: args.project,
-    role: "roles/iap.tunnelResourceAccessor",
-    member: pulumi.interpolate`principalSet://iam.googleapis.com/projects/${proj.number}/locations/global/workloadIdentityPools/github-pool/attribute.repository/${args.ciRepository}`,
-  }, { retainOnDelete: true });
-  new gcp.projects.IAMMember("ci-journeys-compute-viewer", {
-    project: args.project,
-    role: "roles/compute.viewer",
-    member: pulumi.interpolate`principalSet://iam.googleapis.com/projects/${proj.number}/locations/global/workloadIdentityPools/github-pool/attribute.repository/${args.ciRepository}`,
-  }, { retainOnDelete: true });
+  new gcp.projects.IAMMember(
+    "ci-journeys-iap-tunnel",
+    {
+      project: args.project,
+      role: "roles/iap.tunnelResourceAccessor",
+      member: pulumi.interpolate`principalSet://iam.googleapis.com/projects/${proj.number}/locations/global/workloadIdentityPools/github-pool/attribute.repository/${args.ciRepository}`,
+    },
+    { retainOnDelete: true },
+  );
+  new gcp.projects.IAMMember(
+    "ci-journeys-compute-viewer",
+    {
+      project: args.project,
+      role: "roles/compute.viewer",
+      member: pulumi.interpolate`principalSet://iam.googleapis.com/projects/${proj.number}/locations/global/workloadIdentityPools/github-pool/attribute.repository/${args.ciRepository}`,
+    },
+    { retainOnDelete: true },
+  );
+
+  // Preview-cost hygiene (2026-11-17 finding — the merged pr-385 preview sat ~$400+/mo of
+  // GKE/AlloyDB/LB/NAT until teardown ran late): the nightly preview-orphan-sweep workflow lists
+  // every resource class a leaked `pr-<n>` stack leaves behind, so the CI principal needs a
+  // read binding per class (compute.viewer above already covers instances/networks/addresses/
+  // forwarding rules/routers). Read-only list grants — no object/secret read, no mutation.
+  const sweepViewerRoles = [
+    "roles/container.viewer", // GKE clusters list
+    "roles/cloudsql.viewer", // Cloud SQL instances list
+    "roles/alloydb.viewer", // AlloyDB clusters list
+    "roles/redis.viewer", // Memorystore instances list
+    "roles/run.viewer", // Cloud Run services + jobs list
+    "roles/storage.objectViewer", // storage.buckets.list — the least role carrying it
+    "roles/artifactregistry.reader", // repositories list
+  ];
+  for (const role of sweepViewerRoles) {
+    new gcp.projects.IAMMember(
+      `ci-preview-sweep-${role.replace(/^roles\//, "").replace(/\./g, "-")}`,
+      {
+        project: args.project,
+        role,
+        member: pulumi.interpolate`principalSet://iam.googleapis.com/projects/${proj.number}/locations/global/workloadIdentityPools/github-pool/attribute.repository/${args.ciRepository}`,
+      },
+      { retainOnDelete: true },
+    );
+  }
 
   // The operator who drives local Stage-B legs with `gcloud auth application-default` needs the same
   // grant (the hand binding exists already — declared here so state and reality agree; the member
   // string matches the stored form exactly so adoption does not drift).
-  new gcp.serviceaccount.IAMMember("operator-journeys-token-creator", {
-    serviceAccountId: journeysSa.name,
-    role: "roles/iam.serviceAccountTokenCreator",
-    member: "user:14SteveVitali@gmail.com",
-  }, { retainOnDelete: true });
+  new gcp.serviceaccount.IAMMember(
+    "operator-journeys-token-creator",
+    {
+      serviceAccountId: journeysSa.name,
+      role: "roles/iam.serviceAccountTokenCreator",
+      member: "user:14SteveVitali@gmail.com",
+    },
+    { retainOnDelete: true },
+  );
 }

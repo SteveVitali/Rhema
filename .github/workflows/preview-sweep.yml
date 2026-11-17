@@ -1,0 +1,52 @@
+name: preview-sweep
+
+# Preview-cost hygiene — the nightly orphan sweep for leaked `pr-<n>` resources (the
+# 2026-11-17 finding: a merged PR's preview stack sat ~$400+/mo of GKE/AlloyDB/LB/NAT
+# until the operator tore it down by hand; the teardown runbook already ends in an
+# orphan check, this is the standing backstop for stacks that never reach it).
+#
+# scripts/live/preview-orphan-sweep.mjs lists every resource class a preview stack leaves
+# behind and exits 1 when a live `pr-<n>` resource exists — a red run IS the alert.
+# `--allow pr-<n>` exempts an intentionally-live preview; keep the allow list empty by
+# default so a forgotten stack always goes red (a mid-walk preview can dispatch with
+# `allow` set).
+#
+# Reads only: the CI principal's viewer grants are authored in infra/pulumi/journeys.ts
+# (the `ci-preview-sweep-*` members — compute.viewer predates them via ci-journeys-compute-viewer).
+
+on:
+  schedule:
+    - cron: "25 6 * * *" # nightly, staggered off the journeys suite (5 6 * * *)
+  workflow_dispatch:
+    inputs:
+      allow:
+        description: "comma-separated pr-<n> stacks to exempt (e.g. pr-401,pr-402)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  id-token: write # WIF — same github-pool principalSet the journeys suite uses
+
+jobs:
+  sweep:
+    name: preview-orphan-sweep
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - id: auth
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2.1.13
+        with:
+          workload_identity_provider: ${{ vars.JOURNEY_WIF_PROVIDER }}
+          create_credentials_file: true
+      - name: Run the orphan sweep
+        run: |
+          set -euo pipefail
+          gcloud config set project rhema-507501 --quiet
+          ALLOW_ARGS=()
+          if [ -n "${{ inputs.allow }}" ]; then
+            IFS=',' read -ra STACKS <<< "${{ inputs.allow }}"
+            for s in "${STACKS[@]}"; do ALLOW_ARGS+=(--allow "$s"); done
+          fi
+          node scripts/live/preview-orphan-sweep.mjs "${ALLOW_ARGS[@]}"
