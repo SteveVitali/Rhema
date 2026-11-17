@@ -97,10 +97,14 @@ describe("the journey step registry", () => {
         // U3.stopgap + R8.showcase.spa flipped red→green 2026-11-05 — R7FIX.2 on pr-259
         // @18a0df79 (the desk-head/statusbar stacking fix + the same-location commit; PASS →
         // ready-to-flip, screenshots reports/2026-11-05_R7FIX.2/, provenance match, $0).
-        "U3.stopgap", "R8.showcase.spa",
+        // U3.stopgap flipped BACK to red 2026-11-17 (309_R6FIX.38): GATE-ACCEPT.R7 signed the
+        // U3.occlusion supersession — the row stays as retained history; its ~11-06 nightly
+        // red is retired-contract drift (the bare `f` focus chord), not a product regression.
+        "R8.showcase.spa",
         // U1–U7 flipped red→green 2026-11-08 — 250_R7DEP.2 T1 `e578a767`: the all-16 preview
         // board @`d0a77d0` + the prod Stage-B deployed-SHA pass (reports/2026-11-08_R7DEP.2/
         // prod-stageb/, provenance all-PASS, $0). The round-7 red census is empty.
+        // (Amended 2026-11-17: U3.stopgap re-entered red as superseded history — 309_R6FIX.38.)
         "U1.shell", "U2.noreload", "U3.occlusion", "U4.controls", "U5.write", "U6.chat", "U7.import",
         // B16 flipped green 2026-10-06 (funded window B continuation): the pinned phase-4,
         // sidecar-absent review committed exactly the craft phase + phase-result then stopped —

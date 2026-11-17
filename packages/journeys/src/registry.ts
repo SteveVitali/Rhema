@@ -838,12 +838,18 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     // Sub-assertion: the R7a stopgap probe — REQ-PANE-0 needs R7a browser evidence while U3's
     // owner is R7b. GREEN 2026-11-05 on pr-259 @ 18a0df79 (R7FIX.2 — the desk-head/statusbar
     // stacking fix); proof docs/build/reports/2026-11-05_R7FIX.2/ (all four widths).
+    //
+    // FLIPPED green→red 2026-11-17 (309_R6FIX.38): GATE-ACCEPT.R7 signed the supersession —
+    // `U3.occlusion` is the standing REQ-PANE arm; this row is retained history, not the
+    // contract. Its nightly red since ~11-06 is retired-contract drift (the R7b keymap moved
+    // focus view to the bare `f` chord — the leg still presses Control+Shift+f), not a product
+    // regression: the bare-chord focus-view arm is covered by p1-pill.local.test.ts.
     id: "U3.stopgap",
     journey: "returning",
     asserts:
       "the stopgap geometry: the 1024–1279 overlay and the <1024 sheet carry a scrim + Esc/outside-click dismiss, are closed by default and never persisted from overlay mode, the page column reflows at ≥1280 with Files open, and the Desk head is never occluded by the status bar (REQ-PANE-0)",
     owner: "R7FIX.1",
-    expected: "green",
+    expected: "red",
     paid: false,
   },
   {
