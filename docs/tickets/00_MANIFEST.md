@@ -1272,4 +1272,14 @@ sequence (BM-COMPAT-05 — historical filenames are not renamed).
 | 279 | `279_R6FIX.16__email-action-interstitial.md` | post-handoff | **run-time insert** — BL-116: `GET /api/action/:token` + `/action/:token` consume the signed email action on GET (scanner burns the token; `hold` pauses the gate) — RH-31-class no-consume interstitial | — |
 | 280 | `280_R6FIX.17__provision-tx.md` | post-handoff | **run-time insert** — BL-115: `provisionPersonalAccount` check-then-write race — concurrent provisions double-insert billing/workspace/member rows and fork the session→principal join; one-tx + `pg_advisory_xact_lock` repair | — |
 | 281 | `281_R6FIX.18__set-tenant-lint.md` | post-handoff | **run-time insert** — BL-118: `no-raw-set-tenant` missed `set_config('app.tenant_id', …)`; ~11 hand-rolled sites bypassed the withTenant invariant — rule arm + substrate migration + justified allowlist | — |
+| 282 | `282_R6FIX.19__migrate-tx.md` | post-handoff | **run-time insert** — BL-119: migration runner non-atomic over `pg.Pool`, no advisory lock — pinned single conn + `pg_advisory_lock` + per-file tx + `-- no-migration-tx` hatch | — |
+| 283 | `283_R6FIX.20__dunning-dedupe.md` | post-handoff | **run-time insert** — BL-120: `runBillingPeriodTick` fanned out per workspace — RH-3 lateral home-workspace pick (one warn/lapse per billing_account) | — |
+HEAD
+| 284 | `284_R6FIX.21__lb-http-redirect.md` | post-handoff | **run-time insert** — BL-121: external LB :80 silence — redirect URLMap + TargetHttpProxy + :80 forwarding rule (deploy-bound) | — |
+| 285 | `285_R6FIX.22__ar-cleanup.md` | post-handoff | **run-time insert** — BL-122: AR cleanup policy — keep-tagged + keep-30 + delete-untagged->30d behind cleanupPolicyDryRun (deploy-bound) | — |
+| 286 | `286_R6FIX.23__bound-throw-text.md` | post-handoff | **run-time insert** — BL-124: bound thrown-message text (ingest body slices + sheetProfile workflow cast) — single-line + capped, keep-message not codes-only | — |
+| 287 | `287_R6FIX.24__hsts-deployed.md` | post-handoff | **run-time insert** — BL-135: HSTS unconditional on deployed images (baked-SHA discriminator; off-image TLS gate kept) | — |
+| 288 | `288_R6NOTE.1__bl-closures.md` | post-handoff | **run-time insert** — records hygiene: dated closures for BL-125/129/130/132/133 (all landed in `69c62e39`/#357); open: BL-123 retention enforcer (M), BL-128 docs-drift sweep | — |
+| 289 | `289_R6FIX.25__retention-enforcer.md` | post-handoff | **run-time insert** — BL-123: retention enforcer binding — dead GCS prefix rules dropped + `admin_actions.retention` 90d job + honest binding/docs | — |
+| 290 | `290_R6FIX.26__docs-drift-sweep.md` | post-handoff | **run-time insert** — BL-128: systematic docs-drift sweep (refresh-repo-docs) — 4 verified gaps fixed | — |
 | 293 | `293_R6FIX.28__roman-ledger.md` | post-handoff | **run-time insert** — BL-100 / REQ-CONV-17: Roman-numeral draft-ledger `#` ordinals parse (D-R7DEM.2c-1 discharged) | — |

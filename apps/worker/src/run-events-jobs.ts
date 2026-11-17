@@ -3,6 +3,7 @@
 // wired at deploy. Both are SYSTEM-scoped (not tenant-scoped): retention sweeps `run_events_internal` across
 // all runs (that table is deliberately not under RLS); partition maintenance is DDL on the `run_events` parent.
 
+import { RETENTION_SCHEDULE } from "@rhema/infra";
 import {
   deleteExpiredInternalEvents,
   ensureRunEventsPartition,
@@ -20,6 +21,13 @@ export const RUN_EVENT_JOBS = {
   partition: "run_events.partition",
 } as const;
 export type RunEventJobName = (typeof RUN_EVENT_JOBS)[keyof typeof RUN_EVENT_JOBS];
+
+// BL-123 — the §13.3 retention classes' DB-side enforcers beyond the event store. The dead GCS
+// `<class>/` lifecycle rules never covered any of these stores (dropped in infra/pulumi/data.ts).
+export const RETENTION_JOBS = {
+  /** daily: the `audit` class's declared 90-day expiry on `admin_actions` (RETENTION_SCHEDULE). */
+  adminActions: "admin_actions.retention",
+} as const;
 
 /** A system db connection + clock (no tenant scope — these jobs act across all runs). */
 export interface RunEventsJobDeps {
@@ -43,6 +51,24 @@ export async function handleRunEventsRetention(
     .then((r) => ({ rows: r.rows }))
     .catch(() => ({ rows: [] as unknown[] }));
   return { deleted, sloSamplesDeleted: slo.rows.length };
+}
+
+/**
+ * `admin_actions.retention` (BL-123) — the `audit` class's enforcer: delete `admin_actions` rows
+ * older than RETENTION_SCHEDULE.audit.days (90). The table is the operator-CLI audit trail
+ * (house-credit grants/voids, suspends, wtp records); it is account-level, not under RLS, so the
+ * sweep is SYSTEM-scoped like the event retention above. Rows a legal hold must keep live
+ * out-of-band of this table (the schedule, not the job, owns the horizon).
+ */
+export async function handleAdminActionsRetention(
+  deps: RunEventsJobDeps,
+): Promise<{ deleted: number }> {
+  const days = RETENTION_SCHEDULE.audit.days ?? 90;
+  const cutoff = new Date(deps.clock.now().getTime() - days * 24 * 60 * 60 * 1000);
+  const res = await deps.db.query("delete from admin_actions where at < $1", [cutoff]);
+  // node-postgres exposes rowCount; PGlite exposes affectedRows — read whichever is present.
+  const r = res as unknown as { rowCount?: number; affectedRows?: number };
+  return { deleted: r.rowCount ?? r.affectedRows ?? 0 };
 }
 
 /**

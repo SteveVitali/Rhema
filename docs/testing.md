@@ -96,7 +96,10 @@ pnpm check:protocol-markers
 pnpm check:no-cookies
 pnpm check:spa-budget
 pnpm check:spa-env
+pnpm check:spa-entry-graph
 pnpm check:dom-contract
+pnpm check:demo-corpus
+pnpm check:conflict-markers
 ```
 
 | Check                    | What it establishes                                                                       |
@@ -108,6 +111,9 @@ pnpm check:dom-contract
 | `check:spa-budget`       | Built SPA assets satisfy the committed gzip size ceilings.                                |
 | `check:spa-env`          | Browser source/artifacts do not contain the banned server environment or secret patterns. |
 | `check:dom-contract`     | Journey/test selectors agree with the declared, emitted and asserted DOM vocabulary.      |
+| `check:spa-entry-graph`  | The SPA entry chunk graph stays free of the lazy-only palette/cmdk dependencies.          |
+| `check:demo-corpus`      | The committed demo corpus satisfies its sanitizer denylist and provenance rules.          |
+| `check:conflict-markers` | Tracked yaml/ts/tsx/md files carry no unresolved git conflict markers.                    |
 
 Build the web package before running artifact scans and size checks. For a web-only build:
 
