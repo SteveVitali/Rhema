@@ -24,7 +24,6 @@
 ## CURRENT STATE
 ```
 projectStatus:   IN_PROGRESS
-HEAD
 nextTicket:        (maintenance mode)  # 288_R6NOTE.1 done — per GD-MAINT.R6 (open: BL-123/BL-131 retention enforcer (M), BL-128 docs-drift sweep)
 lastCompleted:   288_R6NOTE.1     # records hygiene — dated closures for five BL rows already landed in 69c62e39/#357 (BL-125/129/130/132/133); remaining: BL-123 enforcer (M), BL-128 docs sweep — PR this run, unmerged
 blockedOn:       (none)
@@ -37,16 +36,12 @@ dispatchTarget:  subagent
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main              # flat mode — inserts branch off origin/main
 pinnedBaseSha:   a34eb51           # round-7 fork point (unchanged)
-HEAD
 chainTip:        stevevitali/r6note-1-bl-closures
-chainTip:        stevevitali/r6fix-18-set-tenant-lint
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
 round:           7                  # post-round maintenance per GD-MAINT.R6
-HEAD
 updatedAt:       2026-11-16T17:5xZ  # 288_R6NOTE.1 records hygiene on main @50a4f9d3 — #364-#371 still open; this PR's own transition per GD-OPS-RULES.R6
-updatedAt:       2026-11-16T17:2xZ  # merge main @50a4f9d3 (#363 landed) — CURRENT STATE collapsed to this PR's own 281_R6FIX.18 transition per GD-OPS-RULES.R6
 ```
 
 ## OPEN FINDINGS
