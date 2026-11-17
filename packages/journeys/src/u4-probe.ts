@@ -60,7 +60,10 @@ export const U4_SURFACES: readonly U4Surface[] = [
   // batch b — the run sheet's whole form is the named no-JS fallback (RunSheet/RunButton/AskButton);
   // a Radix control is inert without client JS on the document GET.
   { id: "run-sheet", path: "/p/:p/run", exempt: ["form[data-run-sheet]"] },
-  { id: "export", path: "/p/:p/export" },
+  // the export dialog is a native document POST (REQ-BFF-17) — `profile`/`cslStyle` are the
+  // named KIT-1-styled native carriers (250g_R7FIX.7 F-13; the lint exemption names
+  // ExportSurface). F-R6SHOT.1-1: the census missed this row and the leg went red.
+  { id: "export", path: "/p/:p/export", exempt: ["select[data-md-profile]", "select[data-csl-style]"] },
   // batch c2 — outline + figures ride the same sheet family; figures' rows keep the migrated kit.
   { id: "outline-figures", path: "/p/:p/outline" },
   // batch d — the dossier: the findings live in the right panel's Findings tab; the bulk preview's
