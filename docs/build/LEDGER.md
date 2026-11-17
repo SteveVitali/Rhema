@@ -24,8 +24,8 @@
 ## CURRENT STATE
 ```
 projectStatus:   IN_PROGRESS
-nextTicket:        (maintenance mode)  # 293_R6FIX.28 done — BL-100 Roman-ledger fix; remaining open rows are operator/human/funded-gated or watch items
-lastCompleted:   293_R6FIX.28     # BL-100 — parseDraftLedgerSections Roman-numeral `#` cells parse (parseOrdinalCell); D-R7DEM.2c-1 discharged — PR this run, unmerged
+nextTicket:        (maintenance mode)  # 294_R6NOTE.3 done — carrier-discharged closures; remaining open rows are operator/human/funded-gated or watch items
+lastCompleted:   294_R6NOTE.3     # records hygiene — BL-91/92/103/107 dated closures; 291_R6NOTE.2 records backfill owed — PR this run, unmerged
 blockedOn:       (none)
 pauseRequested:  false
 returnPass:      (none)
@@ -36,12 +36,12 @@ dispatchTarget:  subagent
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main              # flat mode — inserts branch off origin/main
 pinnedBaseSha:   a34eb51           # round-7 fork point (unchanged)
-chainTip:        stevevitali/r6fix-28-roman-ledger
+chainTip:        stevevitali/r6note-3-bl-closures
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
 round:           7                  # post-round maintenance per GD-MAINT.R6
-updatedAt:       2026-11-16T19:0xZ  # 293_R6FIX.28 (BL-100) branch cut off main @e6aa12b9 — #366-#376 open (#364/#365 merged)
+updatedAt:       2026-11-16T20:0xZ  # 294_R6NOTE.3 branch re-swept onto main @26ba5bae — #366-#375 merged; #376-#378 open
 ```
 
 ## OPEN FINDINGS
