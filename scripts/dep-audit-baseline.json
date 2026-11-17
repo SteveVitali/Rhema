@@ -1,0 +1,218 @@
+{
+  "meta": {
+    "purpose": "BL-114 dependency-advisory baseline \u2014 pnpm audit --prod findings present when the gate was armed (2026-11-16). A \u2265high advisory NOT listed here fails check:dep-audit (a new GHSA on a shipped dep lands as a failing leg).",
+    "statusVocabulary": {
+      "pending-triage": "pre-existing finding; disposition owed \u2014 accepted entries require an operator security ruling, never a silent baseline edit",
+      "accepted": "operator-ruled acceptance; the note MUST cite the ruling"
+    }
+  },
+  "advisories": [
+    {
+      "id": 1241332,
+      "module": "shell-quote",
+      "severity": "critical",
+      "title": "shell-quote: `quote()` command injection via a line terminator in a token after a `{ comment }` token",
+      "url": "https://github.com/advisories/GHSA-pqg4-j6r4-53mv",
+      "status": "pending-triage",
+      "note": "pre-existing at gate arm \u2014 see paths in `pnpm audit --prod --json`"
+    },
+    {
+      "id": 1241260,
+      "module": "tinypool",
+      "severity": "critical",
+      "title": "Tinypool: Prototype Pollution gadget in worker options leads to Remote Code Execution",
+      "url": "https://github.com/advisories/GHSA-5gmw-xhrv-c9v3",
+      "status": "pending-triage",
+      "note": "pre-existing at gate arm \u2014 see paths in `pnpm audit --prod --json`"
+    },
+    {
+      "id": 1241261,
+      "module": "tinypool",
+      "severity": "critical",
+      "title": "Tinypool: Prototype Pollution Gadget to RCE in run() options",
+      "url": "https://github.com/advisories/GHSA-85c8-ppgw-ccpr",
+      "status": "pending-triage",
+      "note": "pre-existing at gate arm \u2014 see paths in `pnpm audit --prod --json`"
+    },
+    {
+      "id": 1139528,
+      "module": "vitest",
+      "severity": "critical",
+      "title": "When Vitest UI server is listening, arbitrary file can be read and executed",
+      "url": "https://github.com/advisories/GHSA-5xrq-8626-4rwp",
+      "status": "pending-triage",
+      "note": "pre-existing at gate arm \u2014 see paths in `pnpm audit --prod --json`"
+    },
+    {
+      "id": 1240622,
+      "module": "@grpc/grpc-js",
+      "severity": "high",
+      "title": "@grpc/grpc-js: In certain configurations, getAuthContext can return unauthorized certificates as though they were authorized",
+      "url": "https://github.com/advisories/GHSA-m9gg-hp2v-232j",
+      "status": "pending-triage",
+      "note": "pre-existing at gate arm \u2014 see paths in `pnpm audit --prod --json`"
+    },
+    {
+      "id": 1243084,
+      "module": "happy-dom",
+      "severity": "high",
+      "title": "Happy DOM: Incomplete fix for CVE-2026-33943: unsanitized import alias leads to host code execution",
+      "url": "https://github.com/advisories/GHSA-834v-8h66-3h79",
+      "status": "pending-triage",
+      "note": "pre-existing at gate arm \u2014 see paths in `pnpm audit --prod --json`"
+    },
+    {
+      "id": 1243623,
+      "module": "happy-dom",
+      "severity": "high",
+      "title": "Happy DOM: SSRF via iframe and link stylesheet when parsing untrusted HTML",
+      "url": "https://github.com/advisories/GHSA-c8p4-j97h-3vg8",
+      "status": "pending-triage",
+      "note": "pre-existing at gate arm \u2014 see paths in `pnpm audit --prod --json`"
+    },
+    {
+      "id": 1241209,
+      "module": "source-map-js",
+      "severity": "high",
+      "title": "source-map-js allows event-loop denial of service through indexed source-map section offsets",
+      "url": "https://github.com/advisories/GHSA-68fv-2mgg-jv7q",
+      "status": "pending-triage",
+      "note": "pre-existing at gate arm \u2014 see paths in `pnpm audit --prod --json`"
+    },
+    {
+      "id": 1240040,
+      "module": "undici",
+      "severity": "high",
+      "title": "undici vulnerable to Denial of Service via unrequested WebSocket subprotocol",
+      "url": "https://github.com/advisories/GHSA-rfgv-xxqx-mfg5",
+      "status": "pending-triage",
+      "note": "pre-existing at gate arm \u2014 see paths in `pnpm audit --prod --json`"
+    },
+    {
+      "id": 1240041,
+      "module": "undici",
+      "severity": "high",
+      "title": "undici vulnerable to Denial of Service via unrequested WebSocket subprotocol",
+      "url": "https://github.com/advisories/GHSA-rfgv-xxqx-mfg5",
+      "status": "pending-triage",
+      "note": "pre-existing at gate arm \u2014 see paths in `pnpm audit --prod --json`"
+    },
+    {
+      "id": 1240049,
+      "module": "undici",
+      "severity": "high",
+      "title": "undici vulnerable to TLS certificate validation bypass via dropped connect options in BalancedPool",
+      "url": "https://github.com/advisories/GHSA-w293-vg96-wgc3",
+      "status": "pending-triage",
+      "note": "pre-existing at gate arm \u2014 see paths in `pnpm audit --prod --json`"
+    },
+    {
+      "id": 1240050,
+      "module": "undici",
+      "severity": "high",
+      "title": "undici vulnerable to TLS certificate validation bypass via dropped connect options in BalancedPool",
+      "url": "https://github.com/advisories/GHSA-w293-vg96-wgc3",
+      "status": "pending-triage",
+      "note": "pre-existing at gate arm \u2014 see paths in `pnpm audit --prod --json`"
+    },
+    {
+      "id": 1240053,
+      "module": "undici",
+      "severity": "high",
+      "title": "undici vulnerable to cross-origin cache poisoning via missing origin isolation in interceptors",
+      "url": "https://github.com/advisories/GHSA-vp8m-p9jh-q5pm",
+      "status": "pending-triage",
+      "note": "pre-existing at gate arm \u2014 see paths in `pnpm audit --prod --json`"
+    },
+    {
+      "id": 1243112,
+      "module": "undici",
+      "severity": "high",
+      "title": "undici vulnerable to Denial of Service via unhandled error on excessive content-encodings",
+      "url": "https://github.com/advisories/GHSA-xjj6-f33q-929c",
+      "status": "pending-triage",
+      "note": "pre-existing at gate arm \u2014 see paths in `pnpm audit --prod --json`"
+    },
+    {
+      "id": 1243113,
+      "module": "undici",
+      "severity": "high",
+      "title": "undici vulnerable to Denial of Service via unhandled error on excessive content-encodings",
+      "url": "https://github.com/advisories/GHSA-xjj6-f33q-929c",
+      "status": "pending-triage",
+      "note": "pre-existing at gate arm \u2014 see paths in `pnpm audit --prod --json`"
+    },
+    {
+      "id": 1243472,
+      "module": "undici",
+      "severity": "high",
+      "title": "undici vulnerable to cache poisoning and cross-user disclosure via cross-origin redirects",
+      "url": "https://github.com/advisories/GHSA-4w7w-5xrc-9h26",
+      "status": "pending-triage",
+      "note": "pre-existing at gate arm \u2014 see paths in `pnpm audit --prod --json`"
+    },
+    {
+      "id": 1243473,
+      "module": "undici",
+      "severity": "high",
+      "title": "undici vulnerable to cache poisoning and cross-user disclosure via cross-origin redirects",
+      "url": "https://github.com/advisories/GHSA-4w7w-5xrc-9h26",
+      "status": "pending-triage",
+      "note": "pre-existing at gate arm \u2014 see paths in `pnpm audit --prod --json`"
+    },
+    {
+      "id": 1243474,
+      "module": "undici",
+      "severity": "high",
+      "title": "undici vulnerable to TLS certificate validation bypass via dropped tls options in Agent",
+      "url": "https://github.com/advisories/GHSA-2m5v-pch6-74hx",
+      "status": "pending-triage",
+      "note": "pre-existing at gate arm \u2014 see paths in `pnpm audit --prod --json`"
+    },
+    {
+      "id": 1243475,
+      "module": "undici",
+      "severity": "high",
+      "title": "undici vulnerable to TLS certificate validation bypass via dropped tls options in Agent",
+      "url": "https://github.com/advisories/GHSA-2m5v-pch6-74hx",
+      "status": "pending-triage",
+      "note": "pre-existing at gate arm \u2014 see paths in `pnpm audit --prod --json`"
+    },
+    {
+      "id": 1243477,
+      "module": "undici",
+      "severity": "high",
+      "title": "undici vulnerable to Denial of Service via TLS 1.2 certificate-changing renegotiation",
+      "url": "https://github.com/advisories/GHSA-qrxm-fqhp-jwvm",
+      "status": "pending-triage",
+      "note": "pre-existing at gate arm \u2014 see paths in `pnpm audit --prod --json`"
+    },
+    {
+      "id": 1243478,
+      "module": "undici",
+      "severity": "high",
+      "title": "undici vulnerable to Denial of Service via TLS 1.2 certificate-changing renegotiation",
+      "url": "https://github.com/advisories/GHSA-qrxm-fqhp-jwvm",
+      "status": "pending-triage",
+      "note": "pre-existing at gate arm \u2014 see paths in `pnpm audit --prod --json`"
+    },
+    {
+      "id": 1242658,
+      "module": "vite",
+      "severity": "high",
+      "title": "launch-editor: `fs.existsSync()` existence check can be bypassed on Windows",
+      "url": "https://github.com/advisories/GHSA-587h-7wmj-h5pm",
+      "status": "pending-triage",
+      "note": "pre-existing at gate arm \u2014 see paths in `pnpm audit --prod --json`"
+    },
+    {
+      "id": 1243066,
+      "module": "zod",
+      "severity": "high",
+      "title": "Zod can exhaust memory while validating oversized constrained collections",
+      "url": "https://github.com/advisories/GHSA-mrhx-c7xc-m3w5",
+      "status": "pending-triage",
+      "note": "pre-existing at gate arm \u2014 see paths in `pnpm audit --prod --json`"
+    }
+  ]
+}

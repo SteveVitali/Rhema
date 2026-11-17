@@ -400,6 +400,12 @@ jobs:
       # every head alongside gitleaks.
       - name: demo-corpus denylist gate (REQ-CORPUS-2)
         run: pnpm check:demo-corpus
+      # BL-114 always-run guard (292_R6FIX.27): `pnpm audit --prod` re-queries the advisory DB on
+      # every head, so a newly-published GHSA against a shipped dep lands as a failing leg on the
+      # next run rather than through an external audit. The committed baseline classifies the
+      # 23 pre-existing >=high findings as pending-triage; only NEW >=high advisories fail.
+      - name: dependency-advisory gate — new >=high GHSA on shipped deps fails (BL-114)
+        run: pnpm check:dep-audit
       # REQ-SAFE-7 (SPA.1): gzip ceilings over public/spa — runs AFTER the SPA build (fail-closed if
       # the manifest is absent) and after the scan gates, per the REQ-SAFE-9 step order.
       - name: SPA bundle budget (REQ-SAFE-7)
