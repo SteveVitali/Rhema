@@ -1276,3 +1276,4 @@ sequence (BM-COMPAT-05 — historical filenames are not renamed).
 | 283 | `283_R6FIX.20__dunning-dedupe.md` | post-handoff | **run-time insert** — BL-120: `runBillingPeriodTick` fanned out per workspace — RH-3 lateral home-workspace pick (one warn/lapse per billing_account) | — |
 HEAD
 | 284 | `284_R6FIX.21__lb-http-redirect.md` | post-handoff | **run-time insert** — BL-121: external LB :80 silence — redirect URLMap + TargetHttpProxy + :80 forwarding rule (deploy-bound) | — |
+| 285 | `285_R6FIX.22__ar-cleanup.md` | post-handoff | **run-time insert** — BL-122: AR cleanup policy — keep-tagged + keep-30 + delete-untagged->30d behind cleanupPolicyDryRun (deploy-bound) | — |
