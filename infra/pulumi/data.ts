@@ -137,13 +137,18 @@ export function createData(args: DataArgs): Data {
         ipConfiguration: {
           ipv4Enabled: false, // private-IP only — no public endpoint (REQ-ARCH-6 posture)
           privateNetwork: network.network.id, // same VPC + PSA peering as AlloyDB
-          // RH-35 (271_R6SEC.3): the instance's default sslMode (the permissive allow-both
-          // posture) accepted plaintext connections on the VPC path — every client DSN already carries
-          // `sslmode=require&uselibpqcompat=true` (the AlloyDB-era encrypt-no-pin posture), so
-          // server-side ENCRYPTED_ONLY is a posture match, not a client break. `verify-ca`
-          // (server-identity pinning against the instance CA) is the remaining hardening —
-          // it needs CA material plumbed to every consumer, tracked as D-R6SEC.3-1.
-          sslMode: "ENCRYPTED_ONLY",
+          // RH-35 (271_R6SEC.3) — REVERTED at the 301_R6DEP.5 deploy (F-R6DEP.5-1): the flip's
+          // premise — "every client DSN already carries `sslmode=require`" — was false on prod.
+          // The composed DSNs are written as SecretVersion `secretData`, which pulumi cannot read
+          // back and ignores on update, so the stored versions still carry the original plaintext
+          // strings (verified: no `sslmode` on app/collab/proxy DSNs; node-postgres defaults to
+          // plaintext). The first new revision's pg-boss system pool was refused by pg_hba
+          // ("no encryption") and crash-looped. The flip stays parked at allow-both until the
+          // stored DSN versions are re-seeded with `sslmode=require` and every consumer rolled;
+          // re-landing is tracked as the F-R6DEP.5-1 follow-up. `verify-ca` (server-identity
+          // pinning against the instance CA) remains the deeper hardening — it needs CA material
+          // plumbed to every consumer, tracked as D-R6SEC.3-1.
+          sslMode: "ALLOW_UNENCRYPTED_AND_ENCRYPTED",
         },
         backupConfiguration: {
           enabled: true,

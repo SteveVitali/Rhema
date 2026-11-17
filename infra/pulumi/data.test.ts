@@ -72,13 +72,16 @@ describe("R6INF.1 — Cloud SQL availabilityType is a stage fact (REQ-DEP-3; GD-
 });
 
 describe("RH-35 (271_R6SEC.3) — Cloud SQL refuses unencrypted connections", () => {
-  it("the instance pins sslMode ENCRYPTED_ONLY inside ipConfiguration", () => {
+  it("the sslMode flip is parked at allow-both pending DSN re-seed (F-R6DEP.5-1)", () => {
+    // Reverted at the 301_R6DEP.5 deploy: ENCRYPTED_ONLY crash-looped the new api revision —
+    // the stored SecretVersion DSNs never received the composed `sslmode=require` (write-only,
+    // ignored on update), so every prod client connected plaintext. Re-land ENCRYPTED_ONLY only
+    // after the stored DSN versions carry `sslmode=require` and every consumer has rolled.
     const ipBlock = SRC.slice(
       SRC.indexOf("ipConfiguration: {"),
       SRC.indexOf("backupConfiguration: {"),
     );
-    expect(ipBlock).toContain('sslMode: "ENCRYPTED_ONLY"');
-    expect(ipBlock).not.toContain("ALLOW_UNENCRYPTED_AND_ENCRYPTED");
+    expect(ipBlock).toContain('sslMode: "ALLOW_UNENCRYPTED_AND_ENCRYPTED"');
   });
   it("the generated DSNs already demand TLS client-side (sslmode=require)", () => {
     // index.ts composes every DSN with `sslmode=require&uselibpqcompat=true` — the client half
