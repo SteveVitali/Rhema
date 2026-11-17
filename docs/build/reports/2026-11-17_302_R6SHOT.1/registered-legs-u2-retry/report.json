@@ -1,0 +1,40 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "13c8bf7d8b9d",
+  "startedAt": "2026-11-17T20:52:18.447Z",
+  "finishedAt": "2026-11-17T20:52:50.913Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "739023816efae96fdadb885a4c171f0be097eebc",
+    "observed": {
+      "web": "739023816efae96fdadb885a4c171f0be097eebc",
+      "api": "739023816efae96fdadb885a4c171f0be097eebc"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "U2.noreload",
+      "journey": "returning",
+      "owner": "R7RELOAD.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 32435,
+      "error": "locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('a[href^=\"/p/untitled-3/review/\"]').first()\u001b[22m\n",
+      "screenshot": "U2.noreload.png"
+    }
+  ],
+  "passed": false
+}
