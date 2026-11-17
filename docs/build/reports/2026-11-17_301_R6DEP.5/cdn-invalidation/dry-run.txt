@@ -1,0 +1,1 @@
+[cdn-invalidate-demo] DRY-RUN — would execute: gcloud compute url-maps invalidate-cdn-cache rhema-prod-urlmap-6f2b86e --path /bff/p/demo~* --project rhema-507501 --host rhema.tools

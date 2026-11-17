@@ -1,0 +1,194 @@
+{
+  "generated_at": "2026-11-17T18:48:26.192Z",
+  "cohort": "minimal",
+  "provenance": {
+    "apiBase": "https://api.rhema.tools",
+    "gitSha": "739023816efae96fdadb885a4c171f0be097eebc",
+    "expectSha": "739023816efae96fdadb885a4c171f0be097eebc",
+    "workspaceId": "01M7N3N8NTAC1873ZZQWFQWAG6",
+    "dispatchTag": "r6dep5-a"
+  },
+  "spend": {
+    "totalUsdList": 31.71,
+    "capUsd": 100,
+    "legs": 4
+  },
+  "fixtures": [
+    {
+      "fixtureId": "golden-essay",
+      "floors": {
+        "schemaValid": true,
+        "citedFetched": true,
+        "attestationViolationsMax": 0,
+        "findingCountsBySeverity": {
+          "blocking": {
+            "min": 0,
+            "max": 4
+          },
+          "major": {
+            "min": 0,
+            "max": 12
+          },
+          "minor": {
+            "min": 0,
+            "max": 14
+          },
+          "note": {
+            "min": 0,
+            "max": 18
+          }
+        }
+      },
+      "scores": {
+        "schemaValid": true,
+        "citedFetched": true,
+        "attestationViolations": 0,
+        "findingCountsBySeverity": {
+          "blocking": 0,
+          "major": 7,
+          "minor": 4,
+          "note": 3
+        }
+      },
+      "runId": "01M7N6621AW72TC9ERT4YFPVHT",
+      "projectId": "01M7N6619AY4H2C54A5B683ZYA",
+      "state": "completed",
+      "deliveredReview": "01M7N83NCZ7PEHG1GJTEMBM3Q2",
+      "protocolStamp": "essay@1",
+      "usd": 9.91,
+      "credits": 1756
+    },
+    {
+      "fixtureId": "golden-academic",
+      "floors": {
+        "schemaValid": true,
+        "citedFetched": true,
+        "attestationViolationsMax": 0,
+        "findingCountsBySeverity": {
+          "blocking": {
+            "min": 0,
+            "max": 4
+          },
+          "major": {
+            "min": 0,
+            "max": 12
+          },
+          "minor": {
+            "min": 0,
+            "max": 14
+          },
+          "note": {
+            "min": 0,
+            "max": 18
+          }
+        }
+      },
+      "scores": {
+        "schemaValid": true,
+        "citedFetched": true,
+        "attestationViolations": 0,
+        "findingCountsBySeverity": {
+          "blocking": 0,
+          "major": 7,
+          "minor": 3,
+          "note": 5
+        }
+      },
+      "runId": "01M7N83X2YHGN4XZXPM3M9H0GP",
+      "projectId": "01M7N83WN2CHH21HFMRQAD8PZM",
+      "state": "completed",
+      "deliveredReview": "01M7NA19SBXB6Z420ZD2NFAZJD",
+      "protocolStamp": "academic@1",
+      "usd": 10.05,
+      "credits": 1869
+    },
+    {
+      "fixtureId": "golden-op-ed",
+      "floors": {
+        "schemaValid": true,
+        "citedFetched": true,
+        "attestationViolationsMax": 0,
+        "findingCountsBySeverity": {
+          "blocking": {
+            "min": 0,
+            "max": 4
+          },
+          "major": {
+            "min": 0,
+            "max": 12
+          },
+          "minor": {
+            "min": 0,
+            "max": 14
+          },
+          "note": {
+            "min": 0,
+            "max": 18
+          }
+        }
+      },
+      "scores": {
+        "schemaValid": true,
+        "citedFetched": true,
+        "attestationViolations": 0,
+        "findingCountsBySeverity": {
+          "blocking": 1,
+          "major": 4,
+          "minor": 4,
+          "note": 6
+        }
+      },
+      "runId": "01M7NA1RD2GBX5ACZAJXCAZM1J",
+      "projectId": "01M7NA1QWSZBA4VDPG4PRWQ4P6",
+      "state": "completed",
+      "deliveredReview": "01M7NBSWAPDM4XXFJESXT666VB",
+      "protocolStamp": "op-ed@1",
+      "usd": 6.56,
+      "credits": 1205
+    },
+    {
+      "fixtureId": "golden-memo",
+      "floors": {
+        "schemaValid": true,
+        "citedFetched": true,
+        "attestationViolationsMax": 0,
+        "findingCountsBySeverity": {
+          "blocking": {
+            "min": 0,
+            "max": 4
+          },
+          "major": {
+            "min": 0,
+            "max": 12
+          },
+          "minor": {
+            "min": 0,
+            "max": 14
+          },
+          "note": {
+            "min": 0,
+            "max": 18
+          }
+        }
+      },
+      "scores": {
+        "schemaValid": true,
+        "citedFetched": true,
+        "attestationViolations": 0,
+        "findingCountsBySeverity": {
+          "blocking": 1,
+          "major": 5,
+          "minor": 4,
+          "note": 4
+        }
+      },
+      "runId": "01M7NBT1HH64Z6594V99EHZQHT",
+      "projectId": "01M7NBT13FJ6S2G79D214GCDF4",
+      "state": "completed",
+      "deliveredReview": "01M7NDCJFGTG38N0D54KNHTQQF",
+      "protocolStamp": "memo@1",
+      "usd": 5.19,
+      "credits": 974
+    }
+  ]
+}
