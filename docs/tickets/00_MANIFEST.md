@@ -1284,4 +1284,5 @@ HEAD
 | 290 | `290_R6FIX.26__docs-drift-sweep.md` | post-handoff | **run-time insert** — BL-128: systematic docs-drift sweep (refresh-repo-docs) — 4 verified gaps fixed | — |
 | 292 | `292_R6FIX.27__dep-audit-gate.md` | post-handoff | **run-time insert** — BL-114: dependency-advisory CI gate (pnpm audit --prod + committed baseline) | — |
 | 293 | `293_R6FIX.28__roman-ledger.md` | post-handoff | **run-time insert** — BL-100 / REQ-CONV-17: Roman-numeral draft-ledger `#` ordinals parse (D-R7DEM.2c-1 discharged) | — |
+| 294 | `294_R6NOTE.3__bl-closures.md` | post-handoff | **run-time insert** — records hygiene: dated closures for BL-91/92/103/107 (carrier-discharged); 291_R6NOTE.2 records backfill owed | — |
 | 298 | `298_R6FIX.31__outbox-delayed-arms.md` | post-handoff | **run-time insert** — BL-115 (delayed arms): durable `outbox` transport — marker + intent in one tenant tx; worker `outbox.drain` cron replays to pg-boss (operator ruling: outbox pattern) | — |
