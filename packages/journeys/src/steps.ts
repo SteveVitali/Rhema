@@ -577,7 +577,9 @@ async function n8TypeForkSave(
   slug: string,
   openPath: string,
   label: string,
+  opts?: { expectFork?: boolean },
 ): Promise<void> {
+  const expectFork = opts?.expectFork ?? true;
   const markerText = ctx.marker(`n8-${label}`).toLowerCase().replace(/[^a-z0-9]/g, "-");
 
   await gotoOk(page, `${ctx.webBaseUrl}${openPath}`);
@@ -610,20 +612,23 @@ async function n8TypeForkSave(
   await page.keyboard.type(` ${markerText}`);
   await noConfirm();
 
-  // §5.4's banner: "Editing vN · findings from vM follow your text" (the fork/rebind flipped it)
-  await page
-    .waitForFunction(
-      () => /Editing v\d+/.test(
-        document.querySelector('[data-page-banner="version"] span')?.textContent ?? "",
-      ),
-      undefined,
-      { timeout: 90_000 },
-    )
-    .catch(() => {
-      throw new Error(
-        `${label}: the fork banner never flipped to "Editing vN" (the fork/rebind loop did not land)`,
-      );
-    });
+  // §5.4's banner: "Editing vN · findings from vM follow your text" (the fork/rebind flipped it) —
+  // only on a LOCKED version: a working head edits in place and correctly never forks.
+  if (expectFork) {
+    await page
+      .waitForFunction(
+        () => /Editing v\d+/.test(
+          document.querySelector('[data-page-banner="version"] span')?.textContent ?? "",
+        ),
+        undefined,
+        { timeout: 90_000 },
+      )
+      .catch(() => {
+        throw new Error(
+          `${label}: the fork banner never flipped to "Editing vN" (the fork/rebind loop did not land)`,
+        );
+      });
+  }
   // the ONE pill truthfully reaches synced ✓
   try {
     await page.waitForSelector('[data-sync-pill][data-sync-state="synced"]', { timeout: 90_000 });
@@ -663,9 +668,11 @@ async function n8TypeForkSave(
 
 /** N8 (EDIT.1) — editing a locked version forks to v(N+1) without a confirm and SAVES (sync pill):
  *
- *  leg A — the fresh import: a new visitor's paste-imported draft (frozen human_upload v1 — the
- *  shape PR-J4 caught 404ing at /v/working). The Edit source opens /v/working (200 + mounted
- *  Page), typing forks v2 with the §5.4 banner, the pill reaches synced ✓, reload shows the edit.
+ *  leg A — the fresh import: a new visitor's paste-imported draft. R7HOME.2a (REQ-HOME-4) made
+ *  imports editable working heads — typing edits in place and persists (no frozen head exists
+ *  until a run-level trigger fires), so leg A asserts the editable-import arm: Versions opens
+ *  /v/working (200 + mounted Page — the shape PR-J4 caught 404ing), the pill reaches synced ✓,
+ *  reload shows the edit.
  *
  *  leg B — a reviewed version on the returning tenant (jrn-a): a project whose rail carries a
  *  reviewed-frozen chip gets the same flow (when its lineage already has a working head the edit
@@ -685,8 +692,13 @@ const N8: StepFn = async (ctx) => {
   if ((await edit.count()) === 0) throw new Error("the project page has no Versions affordance");
   await edit.click();
   await page.waitForURL(/\/v\/working/, { timeout: 15_000 });
-  // a 404 here renders no [data-page-root] — n8TypeForkSave's selector wait is the assertion
-  await n8TypeForkSave(ctx, page, slug, `/p/${slug}/v/working`, "import");
+  // R7HOME.2a (REQ-HOME-4) — imports now land as the WORKING head, so typing edits in place and
+  // never forks. Every freeze trigger costs a run (run_read/dossier_ref/promote) or needs a
+  // promoted version first (export), so a fresh import carries no locked version — the leg
+  // asserts the editable-import arm: type → synced → persist. The lock→fork→save arm lives on
+  // leg B's frozen substrate (a 404 here renders no [data-page-root] — the selector wait is the
+  // assertion).
+  await n8TypeForkSave(ctx, page, slug, `/p/${slug}/v/working`, "import", { expectFork: false });
 
   // ---------- leg B — a reviewed (or frozen-lineage) locked version on jrn-a ----------
   const { page: ret } = await ctx.returningUser("a");
