@@ -24,8 +24,8 @@
 ## CURRENT STATE
 ```
 projectStatus:   IN_PROGRESS
-nextTicket:        (maintenance mode)  # 290_R6FIX.26 done — BL-128 swept; rh-low cluster fully cleared (all fixes + closures pending operator merges)
-lastCompleted:   290_R6FIX.26     # BL-128 — systematic docs-drift sweep (refresh-repo-docs): 1,719 docs audited, 4 verified gaps fixed — PR this run, unmerged
+nextTicket:        (maintenance mode)  # 292_R6FIX.27 done — BL-114 dep-audit gate armed; backlog's autonomous-reachable items cleared (rest are operator/human/funded-gated)
+lastCompleted:   292_R6FIX.27     # BL-114 — dependency-advisory CI gate: check:dep-audit fails on new >=high vs pending-triage baseline; always-run public-safe step — PR this run, unmerged
 blockedOn:       (none)
 pauseRequested:  false
 returnPass:      (none)
@@ -36,12 +36,12 @@ dispatchTarget:  subagent
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main              # flat mode — inserts branch off origin/main
 pinnedBaseSha:   a34eb51           # round-7 fork point (unchanged)
-chainTip:        stevevitali/r6fix-26-docs-sweep
+chainTip:        stevevitali/r6fix-27-dep-audit
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
 round:           7                  # post-round maintenance per GD-MAINT.R6
-updatedAt:       2026-11-16T18:4xZ  # 290_R6FIX.26 (BL-128) branch cut off main @6ed759e8 — #365-#373 open (#364 merged)
+updatedAt:       2026-11-16T18:6xZ  # 292_R6FIX.27 (BL-114) branch cut off main @e6aa12b9 (#365 merged) — CURRENT STATE collapsed to this PR's own transition per GD-OPS-RULES.R6
 ```
 
 ## OPEN FINDINGS

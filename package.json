@@ -2,13 +2,13 @@
   "name": "rhema",
   "version": "0.0.0",
   "private": true,
-  "description": "Rhema monorepo — pnpm + Turborepo, TypeScript end-to-end (Q-3).",
+  "description": "Rhema monorepo \u2014 pnpm + Turborepo, TypeScript end-to-end (Q-3).",
   "license": "MIT",
   "type": "module",
   "packageManager": "pnpm@10.32.1",
   "engines": {
     "node": ">=20.19",
-    "//": ">=20.19 — Vite 8 (Rolldown) requires ^20.19.0 || >=22.12.0 (SPA.1, REQ-TL-10); the SPA build is part of @rhema/web's `build`, so the floor binds the whole repo."
+    "//": ">=20.19 \u2014 Vite 8 (Rolldown) requires ^20.19.0 || >=22.12.0 (SPA.1, REQ-TL-10); the SPA build is part of @rhema/web's `build`, so the floor binds the whole repo."
   },
   "scripts": {
     "preinstall": "node scripts/resolve-protocols.mjs",
@@ -18,6 +18,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check:conflict-markers": "node scripts/check-conflict-markers.mjs",
+    "check:dep-audit": "node scripts/check-dep-audit.mjs",
     "check:licenses": "node scripts/check-licenses.mjs",
     "check:protocol-markers": "node scripts/check-protocol-markers.mjs",
     "check:no-cookies": "node scripts/check-no-cookies.mjs",
