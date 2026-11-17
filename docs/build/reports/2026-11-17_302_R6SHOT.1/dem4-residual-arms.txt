@@ -1,0 +1,33 @@
+=== (e) /bff/demo/asset figure PNG ===
+HTTP/2 404 
+content-type: application/json
+
+=== (f) boot demo.build vs image SHA ===
+{"ok":true,"service":"web","build":{"gitSha":"739023816efae96fdadb885a4c171f0be097eebc"}}
+=== (g) ?b=<sha> twin stale-safety ===
+HTTP/2 200 
+etag: "demo-739023816efae96fdadb885a4c171f0be097eebc-418a1a2f4b2c601608eb054d"
+cache-control: public,max-age=300,s-maxage=3600
+=== (e) /bff/demo/asset figure PNG (nested path) ===
+HTTP/2 200 
+content-length: 113651
+content-type: image/png
+cache-control: public,max-age=3600,immutable
+
+=== (f) boot demo.build vs healthz ===
+"demo":{"essay":"structure-of-political-difference","slug":"demo~structure-of-political-difference","signedIn":false,"build":"739023816efae96fdadb885a4c171f0be097eebc"}
+{"ok":true,"service":"web","build":{"gitSha":"739023816efae96fdadb885a4c171f0be097eebc"}}
+=== (g) ?b=<sha> legs ===
+-- stale (old sha) twin fetch:
+HTTP/2 200 
+etag: "demo-739023816efae96fdadb885a4c171f0be097eebc-418a1a2f4b2c601608eb054d"
+cache-control: public,max-age=300,s-maxage=3600
+-- boot ?b= on twin URLs inside demo doc:
+=== (c) non-allowlisted + demo~zzz ===
+-- /demo/structure-of-political-difference/admin (non-allowlisted):
+404 
+-- /p/demo~zzz:
+404 Not found
+
+-- /bff/p/demo~zzz twin:
+404 
