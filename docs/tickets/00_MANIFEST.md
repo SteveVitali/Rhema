@@ -1275,3 +1275,4 @@ sequence (BM-COMPAT-05 — historical filenames are not renamed).
 | 282 | `282_R6FIX.19__migrate-tx.md` | post-handoff | **run-time insert** — BL-119: migration runner non-atomic over `pg.Pool`, no advisory lock — pinned single conn + `pg_advisory_lock` + per-file tx + `-- no-migration-tx` hatch | — |
 | 283 | `283_R6FIX.20__dunning-dedupe.md` | post-handoff | **run-time insert** — BL-120: `runBillingPeriodTick` fanned out per workspace — RH-3 lateral home-workspace pick (one warn/lapse per billing_account) | — |
 HEAD
+| 284 | `284_R6FIX.21__lb-http-redirect.md` | post-handoff | **run-time insert** — BL-121: external LB :80 silence — redirect URLMap + TargetHttpProxy + :80 forwarding rule (deploy-bound) | — |
