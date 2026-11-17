@@ -177,9 +177,11 @@ still clears any early-hit instance.)
   spend).
 - `--execute --scores` leg: manifest written (`evals/fixtures/nightly-manifest.json`, 4
   fixtures) → `gateFixtures` **PASS ×4 (7 floor checks each), "Promotion OK"**.
-- Memo carried one transient harness-side `run_events` ERR 42703 early in the run (a viewer
-  query expected a column the current schema lacks); the run completed clean, the review
-  delivered within floors — same harness-gap class as F-R6DEP.5-3, no product defect.
+- Memo carried one transient `ERR 42703` in-flight — **dispositioned 2026-11-17 (second look):
+  a probe artifact, not a product or harness error.** Zero error-type rows in `run_events` /
+  `run_events_internal` for the run; zero 42703 hits in api/web/worker/run-task logs across the
+  window. The 42703 was emitted by the ad-hoc event-summary probe itself (it selected a column
+  the current schema lacks). Run completed clean, review within floors — nothing owed.
 
 ## Pending (as of this write)
 
