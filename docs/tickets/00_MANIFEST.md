@@ -1291,3 +1291,4 @@ HEAD
 | 297 | `297_R6FIX.30__identity-key.md` | post-handoff | **run-time insert** — BL-115 (summary row): `scripts/live/identity-key.mjs` — gcloud identity-key fetch, prod refused, stdout/env only | — |
 | 298 | `298_R6FIX.31__outbox-delayed-arms.md` | post-handoff | **run-time insert** — BL-115 (delayed arms): durable `outbox` transport — marker + intent in one tenant tx; worker `outbox.drain` cron replays to pg-boss (operator ruling: outbox pattern) | — |
 | 299 | `299_R6NOTE.5__bl-closures.md` | post-handoff | **run-time insert** — post-merge backlog hygiene: BL-116-sum + BL-115-sum closed (landed #380/#381); BL-115-det open pending #382 | — |
+| 300 | `300_R6NOTE.6__bl-closures.md` | post-handoff | **run-time insert** — post-merge backlog hygiene: BL-114 closed (gate verified firing on post-merge CI); BL-115-det deploy-bound note pending worker deploy | — |

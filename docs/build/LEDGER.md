@@ -24,8 +24,8 @@
 ## CURRENT STATE
 ```
 projectStatus:   IN_PROGRESS
-nextTicket:        (maintenance mode)  # 299_R6NOTE.5 done — #380/#381 closures landed; BL-115-det closure rides #382's merge, then fully operator/human/funded-gated
-lastCompleted:   299_R6NOTE.5     # post-merge hygiene — BL-116-sum + BL-115-sum closed (#380/#381 landed); BL-115-det open pending #382 — PR this run, unmerged
+nextTicket:        (maintenance mode)  # 300_R6NOTE.6 done — all reachable backlog rows dispositioned; remaining are deploy-bound/human/funded-gated
+lastCompleted:   300_R6NOTE.6     # post-merge hygiene — BL-114 closed on CI evidence; BL-115-det deploy-bound note pending worker deploy — PR this run, unmerged
 blockedOn:       (none)
 pauseRequested:  false
 returnPass:      (none)
@@ -36,12 +36,12 @@ dispatchTarget:  subagent
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main              # flat mode — inserts branch off origin/main
 pinnedBaseSha:   a34eb51           # round-7 fork point (unchanged)
-chainTip:        stevevitali/r6note-5-bl-closures
+chainTip:        stevevitali/r6note-6-bl-closures
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
 round:           7                  # post-round maintenance per GD-MAINT.R6
-updatedAt:       2026-11-17T01:3xZ  # 299_R6NOTE.5 branch cut off main @4c8bcbb3 — #366-#381 merged; #382 open + this PR
+updatedAt:       2026-11-17T02:0xZ  # 300_R6NOTE.6 branch cut off main @583d5aa7 — #366-#383 merged; this PR open
 ```
 
 ## OPEN FINDINGS
