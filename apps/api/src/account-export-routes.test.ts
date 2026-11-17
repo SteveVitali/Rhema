@@ -10,6 +10,7 @@ import { InMemoryQueue } from "@rhema/orchestrator";
 import { InMemoryContentStore, sha256Hex } from "@rhema/mirror";
 import { buildAccountZip } from "@rhema/archive";
 import { createApp, type Principal } from "./index.js";
+import { ACCOUNT_EXPORT_QUEUE } from "./account-export-routes.js";
 import type { SqlClient } from "./invite.js";
 
 // P1.18 — the account-export/import routes on PGlite (REQ-ACCT-3): "Export everything" inserts the
@@ -117,15 +118,19 @@ describe("POST + GET /account/export (REQ-ACCT-3)", () => {
     const dto = (await res.json()) as { export: { id: string; status: string }; deduped: boolean };
     expect(dto.export.status).toBe("building");
     expect(dto.deduped).toBe(false);
-    expect(queue.sent.map((j) => j.name)).toEqual(["account.export"]);
-    expect((queue.sent[0]!.payload as { exportId: string }).exportId).toBe(dto.export.id);
+    // BL-115 — the 'building' row + outbox intent committed in one tx; the drain sends to pg-boss.
+    const intents = (
+      await db.pg.query(`select queue, payload from outbox where queue = $1`, [ACCOUNT_EXPORT_QUEUE])
+    ).rows as { queue: string; payload: { exportId: string } }[];
+    expect(intents.map((j) => j.queue)).toEqual(["account.export"]);
+    expect(intents[0]!.payload.exportId).toBe(dto.export.id);
 
-    // a double-click while the build runs answers the same row — no second job.
+    // a double-click while the build runs answers the same row — no second intent.
     const again = await app().request("/account/export", { method: "POST" });
     const dto2 = (await again.json()) as { export: { id: string }; deduped: boolean };
     expect(dto2.export.id).toBe(dto.export.id);
     expect(dto2.deduped).toBe(true);
-    expect(queue.sent).toHaveLength(1);
+    expect((await db.pg.query(`select id from outbox`)).rows).toHaveLength(1);
 
     // the state read reports the building row.
     const st = await app().request("/account/export");
@@ -316,7 +321,7 @@ describe("RH-19 — export building-row staleness + honest enqueue failure", () 
     expect(again.status).toBe(202);
     expect(dto.deduped).toBe(false);
     expect(dto.export.id).not.toBe(ex.id);
-    expect(queue.sent).toHaveLength(2);
+    expect((await db.pg.query(`select id from outbox`)).rows).toHaveLength(2);
     // the wedged row was marked failed — the state read no longer shows a phantom live build.
     const stale = (await db.pg.query(`select status, error from account_exports where id = $1`, [ex.id]))
       .rows[0] as { status: string; error: string };
@@ -324,37 +329,30 @@ describe("RH-19 — export building-row staleness + honest enqueue failure", () 
     expect(stale.error).toContain("build_expired");
   });
 
-  it("a `queue.send` throw fails the insert row honestly and 503s — the next POST is not deduped", async () => {
-    const spy = (await import("vitest")).vi.spyOn(console, "error").mockImplementation(() => {});
-    const throwing = {
-      sent: [] as { name: string }[],
-      async send(name: string) {
-        this.sent.push({ name });
-        throw new Error("pg-boss down");
+  it("a mid-tx failure commits NEITHER row — no stranded `building` + no phantom intent (BL-115)", async () => {
+    // the mark-then-send hole this test used to exercise is closed structurally: a crashed tx
+    // rolls back both writes, so a fresh POST is never deduped by a phantom `building` row.
+    const failingTx = {
+      async run<T>(_ws: string, _fn: (tx: unknown) => Promise<T>): Promise<T> {
+        throw new Error("connection lost mid-tx");
       },
     };
     const app2 = createApp({
       ...deps,
       principal: () => principal(),
       db: sql,
+      txRunner: failingTx as unknown as TestDeps["txRunner"],
       systemExec: sql,
       contentStore: store,
-      queue: throwing,
+      queue,
       exportPresign: presignGet,
     });
     const res = await app2.request("/account/export", { method: "POST" });
-    expect(res.status).toBe(503);
-    expect(((await res.json()) as { error: string }).error).toBe("enqueue_failed");
-    const row = (
-      await db.pg.query(`select status, error from account_exports where workspace_id = $1`, [
-        seed.workspaceId,
-      ])
-    ).rows[0] as { status: string; error: string };
-    expect(row.status).toBe("failed");
-    expect(row.error).toContain("enqueue_failed");
-    spy.mockRestore();
+    expect(res.status).toBe(500);
+    expect((await db.pg.query(`select id from account_exports`)).rows).toHaveLength(0);
+    expect((await db.pg.query(`select id from outbox`)).rows).toHaveLength(0);
 
-    // a later request on a working queue builds fresh — the failed row never dedupes.
+    // a later request on a working tx builds fresh — no phantom row dedupes it.
     const res2 = await app().request("/account/export", { method: "POST" });
     expect(res2.status).toBe(202);
   });

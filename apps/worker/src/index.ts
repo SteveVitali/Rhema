@@ -52,6 +52,7 @@ export const WORKER_QUEUES = [
   "project.purge", // tombstone -> 30-day purge -> lifecycle delete
   "account.export", // P1.18 — the whole-account zip build + emailed link (REQ-ACCT-3)
   "account.hard-delete", // 14-day grace -> hard delete (retain anonymized ledger + Stripe customer)
+  "outbox.drain", // BL-115 — the delayed arms' durable intent transport (298_R6FIX.31)
 ] as const;
 
 export type WorkerQueue = (typeof WORKER_QUEUES)[number];

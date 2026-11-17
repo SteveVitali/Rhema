@@ -88,6 +88,7 @@ async function fkParents(): Promise<Map<string, Set<string>>> {
 const WS_EXEMPTIONS = new Map<string, string>([
   ["admin_actions", "operator audit — support/admin act cross-tenant by design (0020)"],
   ["pause_signals", "proxy→worker pause transport — system-scoped, never user-served (0041)"],
+  ["outbox", "request→worker job transport — marker+intent in one tx; system-scoped, never user-served (0064)"],
   ["slo_samples", "platform SLO telemetry — api writes inside its tenant tx; worker probes cross-tenant percentiles; 7d retention (0042)"],
   ["run_events_default", "default partition of RLS-forced run_events; no direct app grant (0008)"],
   ["run_events_internal", "system-scoped internal events — never served on a tenant route; 30d retention (0008)"],
@@ -308,6 +309,7 @@ const USER_ROLE_GRANTS: Record<string, string> = {
   proxy_credentials: "-",
   run_events_default: "-",
   pause_signals: "-",
+  outbox: "i", // BL-115 (0064) — the delayed arms' durable intent, written inside the tenant tx
   stripe_events: "-",
   stripe_event_redrives: "-", // R6FIX.5 (0060) — operator-cli audit sink on the system pool; no user grant
   deployments: "-",
