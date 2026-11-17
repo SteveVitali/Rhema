@@ -93,10 +93,12 @@ still clears any early-hit instance.)
   `01M3SK62…` resolved absent (act recorded 2026-10-21). Dry-run correctly MISMATCH-failed closed.
 - **REQ-WRT-2** (bl38-stamp-rewrite): verified **already dispositioned** — `prod:d5a74cc` absent;
   the row now carries the full-sha id `prod:d5a74cc1c23047f471b9d32680ebac55fd8d0c4d`.
-- **REQ-WRT-3** (hand-date-tombstone): **EXECUTED** — `r6wrt1-tombstone-probe` project
+- **REQ-WRT-3** (hand-date-tombstone): **EXECUTED + VERIFIED** — `r6wrt1-tombstone-probe` project
   `01M7MRPYK1VH37H3AHA8CSZJSJ` (draft `01M7MRPYQ4DDGJ3CQ9X7SGSPAQ`) tombstoned `deleted_at`
-  2026-10-18 (~30.04d) + `project.purge` job armed past-due — the next worker tick fires the real
-  destruction leg (REQ-CLK-3 read). Artifacts `reports/2026-11-17_R6WRT.1/req-wrt-3/`.
+  2026-10-18 (~30.04d) + `project.purge` job armed past-due; the worker tick fired it
+  `completed_on 2026-11-17T12:46:36.440Z` (≈2s after arm) — project row gone, draft row gone
+  (real tree delete). D-P1.04-2's destruction half discharged live (REQ-CLK-3 read).
+  Artifacts `reports/2026-11-17_R6WRT.1/req-wrt-3/`.
 - **T8 mint + BL-78 seeds**: **blocked pending jrn-a re-provision** — the ~26h test-tenant purge
   reaped `test+jrn-a@rhema.tools` entirely (no user row on prod). Its next sign-in — which the
   golden re-run's driver performs anyway — re-provisions the flagged workspace; both legs run
