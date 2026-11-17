@@ -2468,6 +2468,7 @@ export const COPY = {
     noBillingAccount: "There's no billing account set up yet.",
     purchasesPaused: "Purchases are paused right now.",
     planChangesOff: "Plan changes are off right now.",
+    planAlreadyActive: "You already have an active plan.",
     planWaitlisted: "That plan has a waitlist — join it from Billing.",
     firstMonthCap: "That exceeds the first-month limit.",
     accountSuspended: "This account is suspended.",

@@ -96,7 +96,8 @@ export const ERROR_CODES: readonly string[] = [
     "session_unavailable", "showcase", "showcase_not_deletable", "showcase_read_only",
     "source_required", "spec_invalid", "spec_missing", "stop",
     "store_unavailable", "stripe intake is not wired", "stripe webhook not configured", "stripe_rejected",
-    "stripe_unavailable", "stripe_unconfigured", "suggestion_too_large", "summary required",
+    "stripe_unavailable", "stripe_unconfigured", "subscription_active", "suggestion_too_large",
+    "summary required",
     "text required", "threadId required", "thread_not_found", "title required",
     "title_required", "token_required", "topups_require_plan", "trial",
     "trial_base_only", "trial_ceiling", "trial_denied", "trial_shape",
@@ -140,6 +141,9 @@ const BY_CODE: Readonly<Record<string, ErrorCopyEntry>> = {
   no_stripe_customer: { sentence: S.noBillingAccount, action: A.openBilling },
   // 263_R6FIX.13 — the fenced change-plan: feature-off, so the action is "nothing to do", never a retry.
   change_plan_unavailable: { sentence: S.planChangesOff, action: A.nothingToDo },
+  // 305_R6FIX.34 (BL-114) — a live subscription refuses a second Checkout; Billing holds the portal
+  // that manages the existing plan, so the action points there, never a retry.
+  subscription_active: { sentence: S.planAlreadyActive, action: A.openBilling },
   stripe_rejected: { sentence: S.billingRefused, action: A.fixAndRetry },
   stripe_unconfigured: { sentence: S.billingDown, action: A.tryAgainSoon },
   stripe_unavailable: { sentence: S.billingDown, action: A.tryAgainSoon },
