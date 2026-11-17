@@ -1273,3 +1273,5 @@ sequence (BM-COMPAT-05 — historical filenames are not renamed).
 | 280 | `280_R6FIX.17__provision-tx.md` | post-handoff | **run-time insert** — BL-115: `provisionPersonalAccount` check-then-write race — concurrent provisions double-insert billing/workspace/member rows and fork the session→principal join; one-tx + `pg_advisory_xact_lock` repair | — |
 | 281 | `281_R6FIX.18__set-tenant-lint.md` | post-handoff | **run-time insert** — BL-118: `no-raw-set-tenant` missed `set_config('app.tenant_id', …)`; ~11 hand-rolled sites bypassed the withTenant invariant — rule arm + substrate migration + justified allowlist | — |
 | 282 | `282_R6FIX.19__migrate-tx.md` | post-handoff | **run-time insert** — BL-119: migration runner non-atomic over `pg.Pool`, no advisory lock — pinned single conn + `pg_advisory_lock` + per-file tx + `-- no-migration-tx` hatch | — |
+| 283 | `283_R6FIX.20__dunning-dedupe.md` | post-handoff | **run-time insert** — BL-120: `runBillingPeriodTick` fanned out per workspace — RH-3 lateral home-workspace pick (one warn/lapse per billing_account) | — |
+HEAD

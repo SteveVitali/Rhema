@@ -410,7 +410,16 @@ export async function runBillingPeriodTick(exec: SqlClient, deps: SubDeps, now: 
               s.cancel_at_period_end,
               s.renewal_failed_at, s.downgrade_warned_at, s.billing_cycle, w.id as workspace_id, wm.user_id
          from subscriptions s
-         join workspaces w on w.billing_account_id = s.billing_account_id
+         join lateral (
+           -- BL-120: ONE row per subscription. The pre-fix join-workspaces multiplied an account
+           -- by its workspaces — every warn/lapse/grant below ran once per workspace (the stale
+           -- downgrade_warned_at snapshot re-sent the notice to a DIFFERENT workspace's owner).
+           -- The lateral picks the account's home workspace (the auto-reload RH-3 convention).
+           select w0.id from workspaces w0
+            where w0.billing_account_id = s.billing_account_id
+            order by w0.created_at, w0.id
+            limit 1
+         ) w on true
          left join lateral (
            select user_id from workspace_members x where x.workspace_id = w.id
            order by case x.role when 'owner' then 0 else 1 end, x.user_id limit 1
@@ -535,7 +544,12 @@ export async function runBillingPeriodTick(exec: SqlClient, deps: SubDeps, now: 
     await exec.query(
       `select b.id as billing_account_id, w.id as workspace_id
          from billing_accounts b
-         join workspaces w on w.billing_account_id = b.id
+         join lateral (
+           select w0.id from workspaces w0
+            where w0.billing_account_id = b.id
+            order by w0.created_at, w0.id
+            limit 1
+         ) w on true
         where not exists (
           select 1 from subscriptions s
            where s.billing_account_id = b.id and s.status in ('active','past_due'))
