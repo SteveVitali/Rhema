@@ -24,8 +24,8 @@
 ## CURRENT STATE
 ```
 projectStatus:   IN_PROGRESS
-nextTicket:        (maintenance mode)  # 297_R6FIX.30 done — BL-115-sum helper landed; remaining reachable: BL-115 delayed-arms (M, needs design ruling) then fully operator/human/funded-gated
-lastCompleted:   297_R6FIX.30     # BL-115-sum — scripts/live/identity-key.mjs (prod refused, stdout/env only, never argv/log/repo) — PR this run, unmerged
+nextTicket:        (maintenance mode)  # 299_R6NOTE.5 done — #380/#381 closures landed; BL-115-det closure rides #382's merge, then fully operator/human/funded-gated
+lastCompleted:   299_R6NOTE.5     # post-merge hygiene — BL-116-sum + BL-115-sum closed (#380/#381 landed); BL-115-det open pending #382 — PR this run, unmerged
 blockedOn:       (none)
 pauseRequested:  false
 returnPass:      (none)
@@ -36,12 +36,12 @@ dispatchTarget:  subagent
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main              # flat mode — inserts branch off origin/main
 pinnedBaseSha:   a34eb51           # round-7 fork point (unchanged)
-chainTip:        stevevitali/r6fix-30-identity-key
+chainTip:        stevevitali/r6note-5-bl-closures
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
 round:           7                  # post-round maintenance per GD-MAINT.R6
-updatedAt:       2026-11-17T00:3xZ  # 297_R6FIX.30 branch re-swept onto main @2a15223a — #366-#379 merged; #380-#382 open
+updatedAt:       2026-11-17T01:3xZ  # 299_R6NOTE.5 branch cut off main @4c8bcbb3 — #366-#381 merged; #382 open + this PR
 ```
 
 ## OPEN FINDINGS
