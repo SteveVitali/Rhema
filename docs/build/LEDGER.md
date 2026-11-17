@@ -24,7 +24,6 @@
 ## CURRENT STATE
 ```
 projectStatus:   IN_PROGRESS
-HEAD
 nextTicket:        (maintenance mode)  # 285_R6FIX.22 done — per GD-MAINT.R6 (open: BL-123..BL-135 rh-low cluster)
 lastCompleted:   285_R6FIX.22     # BL-122 — AR cleanup policies (keep-tagged + keep-30 + delete-untagged->30d) behind cleanupPolicyDryRun per operator ruling — PR this run, unmerged
 blockedOn:       (none)
@@ -37,16 +36,12 @@ dispatchTarget:  subagent
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main              # flat mode — inserts branch off origin/main
 pinnedBaseSha:   a34eb51           # round-7 fork point (unchanged)
-HEAD
 chainTip:        stevevitali/r6fix-22-ar-cleanup
-chainTip:        stevevitali/r6fix-18-set-tenant-lint
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
 round:           7                  # post-round maintenance per GD-MAINT.R6
-HEAD
 updatedAt:       2026-11-16T17:2xZ  # 285_R6FIX.22 run-time insert (BL-122) on main @50a4f9d3 — #364-#368 still open; this PR's own transition per GD-OPS-RULES.R6
-updatedAt:       2026-11-16T17:2xZ  # merge main @50a4f9d3 (#363 landed) — CURRENT STATE collapsed to this PR's own 281_R6FIX.18 transition per GD-OPS-RULES.R6
 ```
 
 ## OPEN FINDINGS

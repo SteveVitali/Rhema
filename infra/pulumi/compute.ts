@@ -1438,6 +1438,27 @@ export function createCompute(args: ComputeArgs): Compute {
     portRange: "443",
     loadBalancingScheme: "EXTERNAL_MANAGED",
   });
+  // BL-121 — :80 previously had no forwarding rule at all: http:// requests to the prod hosts got
+  // silence, not a redirect. The GCP-idiomatic answer is a dedicated URL map whose only action is a
+  // 301 to https:// (stripQuery=false preserves ?next= deep links through the upgrade), fronted by a
+  // TargetHttpProxy + its own :80 forwarding rule on the same anycast address. Same posture on every
+  // stage — a preview's http URL should redirect, not hang.
+  const httpRedirectMap = new gcp.compute.URLMap(name("http-redirect-map"), {
+    defaultUrlRedirect: {
+      httpsRedirect: true,
+      stripQuery: false,
+      redirectResponseCode: "MOVED_PERMANENTLY_DEFAULT",
+    },
+  });
+  const httpProxy = new gcp.compute.TargetHttpProxy(name("http-proxy"), {
+    urlMap: httpRedirectMap.id,
+  });
+  new gcp.compute.GlobalForwardingRule(name("http-fr"), {
+    ...(lbAddress ? { ipAddress: lbAddress.address } : {}),
+    target: httpProxy.id,
+    portRange: "80",
+    loadBalancingScheme: "EXTERNAL_MANAGED",
+  });
 
   // The DNS records the operator applies at their DNS provider before the managed cert can authorize
   // (every prod host → the reserved LB IPv4). Emitted as a stack output so the runbook's post-up step

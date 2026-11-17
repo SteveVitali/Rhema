@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, it } from "vitest";
 import pg from "pg";
-import { applyMigrations, seedRealProjects, USER_SERVING_ROLE, withTenant, type MigrationDb } from "@rhema/db";
+import { applyMigrationsPinned, seedRealProjects, USER_SERVING_ROLE, withTenant, type MigrationDb } from "@rhema/db";
 
 // Closes D-P0.02-1: run the forward-only migrations + the real-project seed against a SERVER Postgres (the CI
 // `postgres:16` service via DATABASE_URL), not only in-process PGlite. Proves the authoritative SQL DDL applies on a
@@ -18,7 +18,8 @@ describe.skipIf(!DATABASE_URL)("migrations + real-project seed against a server 
   };
 
   it("applies every migration and seeds the three real projects", async () => {
-    const applied = await applyMigrations(db);
+    // BL-119 — pinned single connection for the migrate leg.
+    const applied = await applyMigrationsPinned(pool!);
     // a fresh CI database applies the full history (0001…0015); an idempotent re-run applies none.
     expect(applied.length).toBeGreaterThanOrEqual(0);
 
@@ -37,7 +38,7 @@ describe.skipIf(!DATABASE_URL)("migrations + real-project seed against a server 
   // then connect AS `rhema_app_login` and prove (a) it is not superuser/BYPASSRLS, (b) tenant txns
   // filter to the tenant, and (c) the system-table grant boundary holds.
   it("rhema_app_login on postgres:16 — NOBYPASSRLS, tenant-scoped, denied the system tables", async () => {
-    await applyMigrations(db);
+    await applyMigrationsPinned(pool!);
     await pool!.query(`alter role rhema_app_login login password 'sec1-ci-probe'`);
     const user = new pg.Pool({
       connectionString: DATABASE_URL!.replace("postgres:postgres@", "rhema_app_login:sec1-ci-probe@"),
