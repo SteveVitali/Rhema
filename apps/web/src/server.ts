@@ -488,7 +488,11 @@ export function createWebApp(deps: WebDeps): Hono {
   // Headers carry the stamp through verbatim.
   app.use("*", async (c, next) => {
     await next();
-    if (c.req.header("x-forwarded-proto") === "https" || c.req.url.startsWith("https://")) {
+    // BL-135 — same deployed-unconditional arm as the api: a baked build SHA means the response
+    // only ever reaches a client over TLS (the LB terminates it), so the stamp no longer depends
+    // on the forwarded header. Off-image the TLS signal still gates.
+    const deployed = deps.buildGitSha ?? process.env.RHEMA_BUILD_GIT_SHA;
+    if (deployed || c.req.header("x-forwarded-proto") === "https" || c.req.url.startsWith("https://")) {
       c.res.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
     }
   });

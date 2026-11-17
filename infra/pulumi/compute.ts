@@ -445,6 +445,29 @@ export function createCompute(args: ComputeArgs): Compute {
     repositoryId: `rhema-${stack}`,
     location: region,
     format: "DOCKER",
+    // BL-122 — unbounded image growth vs. a blanket cleanup eating a digest-pinned rollback target.
+    // Operator ruling 2026-11-16: dry-run first — policies evaluate/report and delete nothing until a
+    // later apply flips this off. Shape: tagged versions never prune (release/deploy tags are always
+    // rollback-reachable); the 30 most recent digests per image are pinned (≈a month of daily deploys
+    // of rollback depth); untagged versions older than 30 days prune.
+    cleanupPolicyDryRun: true,
+    cleanupPolicies: [
+      {
+        id: "keep-tagged",
+        action: "KEEP",
+        condition: { tagState: "TAGGED" },
+      },
+      {
+        id: "keep-recent-30",
+        action: "KEEP",
+        mostRecentVersions: { keepCount: 30 },
+      },
+      {
+        id: "delete-untagged-30d",
+        action: "DELETE",
+        condition: { tagState: "UNTAGGED", olderThan: "2592000s" },
+      },
+    ],
   });
   const runTaskImageRepo = pulumi.interpolate`${region}-docker.pkg.dev/${project}/${imageRepo.repositoryId}/run-task`;
 
@@ -1413,6 +1436,27 @@ export function createCompute(args: ComputeArgs): Compute {
     ...(lbAddress ? { ipAddress: lbAddress.address } : {}),
     target: httpsProxy.id,
     portRange: "443",
+    loadBalancingScheme: "EXTERNAL_MANAGED",
+  });
+  // BL-121 — :80 previously had no forwarding rule at all: http:// requests to the prod hosts got
+  // silence, not a redirect. The GCP-idiomatic answer is a dedicated URL map whose only action is a
+  // 301 to https:// (stripQuery=false preserves ?next= deep links through the upgrade), fronted by a
+  // TargetHttpProxy + its own :80 forwarding rule on the same anycast address. Same posture on every
+  // stage — a preview's http URL should redirect, not hang.
+  const httpRedirectMap = new gcp.compute.URLMap(name("http-redirect-map"), {
+    defaultUrlRedirect: {
+      httpsRedirect: true,
+      stripQuery: false,
+      redirectResponseCode: "MOVED_PERMANENTLY_DEFAULT",
+    },
+  });
+  const httpProxy = new gcp.compute.TargetHttpProxy(name("http-proxy"), {
+    urlMap: httpRedirectMap.id,
+  });
+  new gcp.compute.GlobalForwardingRule(name("http-fr"), {
+    ...(lbAddress ? { ipAddress: lbAddress.address } : {}),
+    target: httpProxy.id,
+    portRange: "80",
     loadBalancingScheme: "EXTERNAL_MANAGED",
   });
 
