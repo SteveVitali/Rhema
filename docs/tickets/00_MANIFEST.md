@@ -1279,3 +1279,4 @@ HEAD
 | 285 | `285_R6FIX.22__ar-cleanup.md` | post-handoff | **run-time insert** — BL-122: AR cleanup policy — keep-tagged + keep-30 + delete-untagged->30d behind cleanupPolicyDryRun (deploy-bound) | — |
 | 286 | `286_R6FIX.23__bound-throw-text.md` | post-handoff | **run-time insert** — BL-124: bound thrown-message text (ingest body slices + sheetProfile workflow cast) — single-line + capped, keep-message not codes-only | — |
 | 287 | `287_R6FIX.24__hsts-deployed.md` | post-handoff | **run-time insert** — BL-135: HSTS unconditional on deployed images (baked-SHA discriminator; off-image TLS gate kept) | — |
+| 288 | `288_R6NOTE.1__bl-closures.md` | post-handoff | **run-time insert** — records hygiene: dated closures for BL-125/129/130/132/133 (all landed in `69c62e39`/#357); open: BL-123 retention enforcer (M), BL-128 docs-drift sweep | — |
