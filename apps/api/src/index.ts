@@ -393,7 +393,11 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
     // D-R6SECR.1-2 — the deferral names both origins: HSTS (1y + includeSubDomains, no preload)
     // only when the request arrived over TLS — `x-forwarded-proto` is the GFE's signal behind the
     // LB (the container socket is plaintext); the `https://` URL arm covers direct serving/tests.
-    if (c.req.header("x-forwarded-proto") === "https" || c.req.url.startsWith("https://")) {
+    // BL-135 — on a deployed image (baked buildGitSha) the stamp is unconditional: the LB terminates
+    // TLS so every client hop is secure, and depending on the forwarded header was the flagged
+    // fragility. Off-image (dev/tests, no SHA) the TLS signal still gates — no bogus http policy.
+    const deployed = deps?.buildGitSha ?? process.env.RHEMA_BUILD_GIT_SHA;
+    if (deployed || c.req.header("x-forwarded-proto") === "https" || c.req.url.startsWith("https://")) {
       c.res.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
     }
   });
