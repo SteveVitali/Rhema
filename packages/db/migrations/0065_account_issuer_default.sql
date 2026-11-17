@@ -1,0 +1,18 @@
+-- 0065_account_issuer_default.sql — better-auth 1.7.25 runtime schema check (301_R6DEP.1).
+--
+-- 0025 made `account.issuer` NOT NULL for better-auth 1.7.2, whose account key was {issuer,
+-- account_id}. 1.7.x (≥1.7.3) stopped writing `issuer` entirely — and 1.7.25 added a runtime
+-- schema check (`ctx.checkSchema`, run on every auth request) that diffs the live schema against
+-- the adapter's expected shape. A column the library never writes that is NOT NULL without a
+-- default is flagged "Required columns Better Auth never writes" — SchemaMismatchError — and
+-- account INSERTs would fail at runtime regardless. Verified live: the preview api 500'd every
+-- /api/auth/* endpoint, and the same check reproduced against the prod schema (read-only
+-- introspection as rhema_app_login).
+--
+-- Remediation per the library's own guidance ("make the listed columns nullable, give them
+-- defaults, or remove them"): a constant DEFAULT — chosen over DROP NOT NULL because the
+-- additive-migration gate (check-additive-migrations.mjs, HOT.1) flags ANY `drop` token, and
+-- the column's nullability is dead metadata anyway: nothing reads `issuer`, inserts that omit
+-- it now take the marker value, and the backfilled rows + account_issuer_account_idx are
+-- untouched.
+alter table public.account alter column issuer set default 'local:oauth:unused';
