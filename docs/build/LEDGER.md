@@ -24,7 +24,6 @@
 ## CURRENT STATE
 ```
 projectStatus:   IN_PROGRESS
-HEAD
 nextTicket:        (maintenance mode)  # 284_R6FIX.21 done — per GD-MAINT.R6 (open: BL-122 AR cleanup, BL-123..BL-135 rh-low cluster)
 lastCompleted:   284_R6FIX.21     # BL-121 — external LB :80 -> HTTPS redirect map + TargetHttpProxy + forwarding rule on the shared anycast address (deploy-bound, authored) — PR this run, unmerged
 blockedOn:       (none)
@@ -37,16 +36,12 @@ dispatchTarget:  subagent
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main              # flat mode — inserts branch off origin/main
 pinnedBaseSha:   a34eb51           # round-7 fork point (unchanged)
-HEAD
 chainTip:        stevevitali/r6fix-21-lb-http-redirect
-chainTip:        stevevitali/r6fix-18-set-tenant-lint
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
 round:           7                  # post-round maintenance per GD-MAINT.R6
-HEAD
 updatedAt:       2026-11-16T17:1xZ  # 284_R6FIX.21 run-time insert (BL-121) on main @50a4f9d3 — #364-#367 still open; this PR's own transition per GD-OPS-RULES.R6
-updatedAt:       2026-11-16T17:2xZ  # merge main @50a4f9d3 (#363 landed) — CURRENT STATE collapsed to this PR's own 281_R6FIX.18 transition per GD-OPS-RULES.R6
 ```
 
 ## OPEN FINDINGS

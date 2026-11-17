@@ -14,9 +14,11 @@ export {
 } from "./session.js";
 export {
   applyMigrations,
+  applyMigrationsPinned,
   readMigrations,
   type Migration,
   type MigrationDb,
+  type MigrationPool,
   type ApplyOptions,
 } from "./migrate.js";
 export { agentTypesSeed, protocolsSeed } from "./seed/code-seed.js";
