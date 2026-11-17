@@ -24,8 +24,8 @@
 ## CURRENT STATE
 ```
 projectStatus:   IN_PROGRESS
-nextTicket:        (maintenance mode)  # 292_R6FIX.27 done — BL-114 dep-audit gate armed; backlog's autonomous-reachable items cleared (rest are operator/human/funded-gated)
-lastCompleted:   292_R6FIX.27     # BL-114 — dependency-advisory CI gate: check:dep-audit fails on new >=high vs pending-triage baseline; always-run public-safe step — PR this run, unmerged
+nextTicket:        (maintenance mode)  # 297_R6FIX.30 done — BL-115-sum helper landed; remaining reachable: BL-115 delayed-arms (M, needs design ruling) then fully operator/human/funded-gated
+lastCompleted:   297_R6FIX.30     # BL-115-sum — scripts/live/identity-key.mjs (prod refused, stdout/env only, never argv/log/repo) — PR this run, unmerged
 blockedOn:       (none)
 pauseRequested:  false
 returnPass:      (none)
@@ -36,12 +36,12 @@ dispatchTarget:  subagent
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main              # flat mode — inserts branch off origin/main
 pinnedBaseSha:   a34eb51           # round-7 fork point (unchanged)
-chainTip:        stevevitali/r6fix-27-dep-audit
+chainTip:        stevevitali/r6fix-30-identity-key
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
 round:           7                  # post-round maintenance per GD-MAINT.R6
-updatedAt:       2026-11-16T18:6xZ  # 292_R6FIX.27 (BL-114) branch cut off main @e6aa12b9 (#365 merged) — CURRENT STATE collapsed to this PR's own transition per GD-OPS-RULES.R6
+updatedAt:       2026-11-16T21:4xZ  # 297_R6FIX.30 branch cut off main @7bd38f47 — #366-#376 merged; #377-#380 open
 ```
 
 ## OPEN FINDINGS

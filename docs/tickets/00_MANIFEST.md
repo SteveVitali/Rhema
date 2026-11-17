@@ -1283,3 +1283,4 @@ HEAD
 | 289 | `289_R6FIX.25__retention-enforcer.md` | post-handoff | **run-time insert** — BL-123: retention enforcer binding — dead GCS prefix rules dropped + `admin_actions.retention` 90d job + honest binding/docs | — |
 | 290 | `290_R6FIX.26__docs-drift-sweep.md` | post-handoff | **run-time insert** — BL-128: systematic docs-drift sweep (refresh-repo-docs) — 4 verified gaps fixed | — |
 | 292 | `292_R6FIX.27__dep-audit-gate.md` | post-handoff | **run-time insert** — BL-114: dependency-advisory CI gate (pnpm audit --prod + committed baseline) | — |
+| 297 | `297_R6FIX.30__identity-key.md` | post-handoff | **run-time insert** — BL-115 (summary row): `scripts/live/identity-key.mjs` — gcloud identity-key fetch, prod refused, stdout/env only | — |
