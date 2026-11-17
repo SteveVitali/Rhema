@@ -61,7 +61,9 @@ export const account = pgTable("account", {
   providerId: text("provider_id").notNull(), // "google" | "credential" | …
   accountId: text("account_id").notNull(),
   // 0025 — better-auth 1.7.2's account key is {issuer, accountId}; `issuer` backfilled 'local:oauth:<provider>'.
-  issuer: text("issuer").notNull(),
+  // 0065 — 1.7.25 never writes `issuer` and its runtime schema check rejects a NOT NULL column it
+  // doesn't write; nullable, retained for backfilled rows (new rows carry NULL).
+  issuer: text("issuer"),
   scope: text("scope"),
   password: text("password"),
   accessToken: text("access_token"),
