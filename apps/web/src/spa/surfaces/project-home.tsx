@@ -172,9 +172,19 @@ function ProjectHomeInner({
 
   // ---- optimistic lifecycle mutations (scoped `["bff","app"]` invalidation, never `["bff"]`) ----
 
+  /** `["bff","app"]` prefix-matches the `["bff","app","inbox"]`/`["bff","app","new"]` siblings —
+   *  only home-shaped twins (rows + deletedRows arrays) are safe to patch or snapshot. */
+  const homeTwinEntries = () => {
+    return queryClient
+      .getQueriesData<BffAppHomeTwin>({ queryKey: ["bff", "app"] })
+      .filter(
+        (e): e is [QueryKey, BffAppHomeTwin] =>
+          e[1] != null && Array.isArray(e[1].rows) && Array.isArray(e[1].deletedRows),
+      );
+  };
+
   const patchTwinRows = (slug: string, patch: (row: ApiProjectRow) => ApiProjectRow | null) => {
-    for (const [key, data] of queryClient.getQueriesData<BffAppHomeTwin>({ queryKey: ["bff", "app"] })) {
-      if (data == null) continue;
+    for (const [key, data] of homeTwinEntries()) {
       queryClient.setQueryData(key as QueryKey, {
         ...data,
         rows: data.rows.map((r) => (r.slug === slug ? patch(r) : r)).filter((r): r is ApiProjectRow => r != null),
@@ -189,7 +199,7 @@ function ProjectHomeInner({
     mutationFn: ({ verb, slug }) =>
       bffFetch(`/p/${slug}/${verb}`, { method: "POST", json: {} }) as Promise<MutationReply>,
     onMutate: (vars) => {
-      const snapshot = new Map(queryClient.getQueriesData<BffAppHomeTwin>({ queryKey: ["bff", "app"] }));
+      const snapshot = new Map(homeTwinEntries());
       const now = new Date().toISOString();
       if (vars.verb === "archive") patchTwinRows(vars.slug, (r) => ({ ...r, archivedAt: now }));
       else if (vars.verb === "unarchive") patchTwinRows(vars.slug, (r) => ({ ...r, archivedAt: null }));
