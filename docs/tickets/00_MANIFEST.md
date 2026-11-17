@@ -1293,3 +1293,4 @@ HEAD
 | 299 | `299_R6NOTE.5__bl-closures.md` | post-handoff | **run-time insert** — post-merge backlog hygiene: BL-116-sum + BL-115-sum closed (landed #380/#381); BL-115-det open pending #382 | — |
 | 300 | `300_R6NOTE.6__bl-closures.md` | post-handoff | **run-time insert** — post-merge backlog hygiene: BL-114 closed (gate verified firing on post-merge CI); BL-115-det deploy-bound note pending worker deploy | — |
 | 302 | `302_R6SHOT.1__r7-bespoke-captures.md` | post-handoff | **run-time insert** — BL-104 burn-down: read-only $0 deployed-tip capture walk at `73902381` (demo + jrn-a signed-in tranches; state-dependent + operator arms stay on BL-104/105) | — |
+| 303 | `303_R6FIX.32__magiclink-interstitial.md` | post-handoff | **run-time insert** — F-R6DEP.5-3: journeys N1/N3 inline magic-link arms perform the RH-32 interstitial confirm click (shared `confirmMagicLinkInterstitial`); discharged live N1+N3 PASS @ `73902381` | — |
