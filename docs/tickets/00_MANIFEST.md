@@ -1278,3 +1278,4 @@ HEAD
 | 284 | `284_R6FIX.21__lb-http-redirect.md` | post-handoff | **run-time insert** — BL-121: external LB :80 silence — redirect URLMap + TargetHttpProxy + :80 forwarding rule (deploy-bound) | — |
 | 285 | `285_R6FIX.22__ar-cleanup.md` | post-handoff | **run-time insert** — BL-122: AR cleanup policy — keep-tagged + keep-30 + delete-untagged->30d behind cleanupPolicyDryRun (deploy-bound) | — |
 | 286 | `286_R6FIX.23__bound-throw-text.md` | post-handoff | **run-time insert** — BL-124: bound thrown-message text (ingest body slices + sheetProfile workflow cast) — single-line + capped, keep-message not codes-only | — |
+| 287 | `287_R6FIX.24__hsts-deployed.md` | post-handoff | **run-time insert** — BL-135: HSTS unconditional on deployed images (baked-SHA discriminator; off-image TLS gate kept) | — |
