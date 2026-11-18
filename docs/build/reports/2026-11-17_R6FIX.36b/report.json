@@ -1,0 +1,40 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "9ecd67e7720a",
+  "startedAt": "2026-11-17T21:53:12.734Z",
+  "finishedAt": "2026-11-17T21:53:27.185Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "739023816efae96fdadb885a4c171f0be097eebc",
+    "observed": {
+      "web": "739023816efae96fdadb885a4c171f0be097eebc",
+      "api": "739023816efae96fdadb885a4c171f0be097eebc"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "T12F",
+      "journey": "both",
+      "owner": "SPA.21",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 14383,
+      "error": "the seeded dossier's deferred finding shows no defer disposition after reload",
+      "screenshot": "T12F.png"
+    }
+  ],
+  "passed": false
+}

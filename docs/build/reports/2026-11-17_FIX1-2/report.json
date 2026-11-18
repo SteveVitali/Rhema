@@ -1,0 +1,101 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "84781b2f352e",
+  "startedAt": "2026-11-17T21:45:43.639Z",
+  "finishedAt": "2026-11-17T21:46:28.207Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "739023816efae96fdadb885a4c171f0be097eebc",
+    "observed": {
+      "web": "739023816efae96fdadb885a4c171f0be097eebc",
+      "api": "739023816efae96fdadb885a4c171f0be097eebc"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "T12F",
+      "journey": "both",
+      "owner": "SPA.21",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 14347,
+      "error": "needs JOURNEY_DATABASE_URL (a read pool bound to the stage Postgres)",
+      "screenshot": "T12F.png"
+    },
+    {
+      "id": "T13F",
+      "journey": "both",
+      "owner": "SPA.21",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 11308,
+      "error": "needs JOURNEY_DATABASE_URL (a read pool bound to the stage Postgres)",
+      "screenshot": "T13F.png"
+    },
+    {
+      "id": "T15",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "red",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "T16",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "red",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "T17",
+      "journey": "both",
+      "owner": "SPA.25",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 15090,
+      "screenshot": "T17.png"
+    },
+    {
+      "id": "P1.dossier",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 3613,
+      "screenshot": "P1.dossier.png"
+    }
+  ],
+  "passed": false
+}

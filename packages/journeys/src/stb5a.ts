@@ -1260,11 +1260,15 @@ const T12F: StepFn = async (ctx) => {
   const { page, email } = await ctx.freshUser("t12f");
   const { slug, runId } = await seededWritableDossier(email, "t12f");
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}`);
-
-  // ---- the disposition round-trip (T12 verbatim, on the seed) ----------------------------
+  // 307_R6FIX.36 — REQ-PANE-5 moved the findings list + disposition forms into the right panel's
+  // Findings tab; the cards stay `[data-findings-list] [data-finding]` but render CSS-hidden until
+  // the island's tab swap. The leg must open the desk before probing (was main-column pre-R7b).
+  if (!(await openFindingsDesk(page))) throw new Error("the seeded dossier's Findings tab never opened");
   const note = `${ctx.marker("NOTE")} — deferred on the seeded leg`;
+  // The Desk's row carries `data-finding="<id>"` directly — the `data-findings-list` ancestor
+  // was the pre-REQ-PANE-5 main-column list and no longer exists on the R7b dossier.
   const listCard = (id?: string) =>
-    page.locator(`[data-findings-list] [data-finding${id ? `="${id}"` : ""}]`);
+    page.locator(`[data-finding${id ? `="${id}"` : ""}]`);
   const card = listCard().first();
   const fid = (await card.getAttribute("data-finding")) ?? "";
   if (!fid) throw new Error("the seeded dossier renders no finding card to dispose");
@@ -1275,8 +1279,11 @@ const T12F: StepFn = async (ctx) => {
   await defer.click();
   await page.waitForURL(/disposed=/, { timeout: 15_000 }).catch(() => settleNav(page, ctx));
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}`);
+  await openFindingsDesk(page);
   const cardAfter = listCard(fid);
-  if ((await cardAfter.locator('[data-disposition="defer"]').count()) === 0) {
+  // The desk's persisted defer state is the verb's `data-selected`, not the retired card's
+  // `data-disposition` line; `input[data-note]` re-seeds defaultValue with the rationale.
+  if ((await cardAfter.locator('button[data-verb="defer"][data-selected="true"]').count()) === 0) {
     throw new Error("the seeded dossier's deferred finding shows no defer disposition after reload");
   }
   const saved = await cardAfter.locator("input[data-note]").inputValue().catch(() => "");
@@ -1442,8 +1449,8 @@ const T13F: StepFn = async (ctx) => {
   const { page, email } = await ctx.freshUser("t13f");
   const { slug, runId } = await seededWritableDossier(email, "t13f");
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}`);
-
-  // ---- Apply (the seed's anchor finding carries a suggestion) -----------------------------
+  // 307_R6FIX.36 — same REQ-PANE-5 desk-open as T12F: Apply + bulk live inside the Findings tab.
+  if (!(await openFindingsDesk(page))) throw new Error("the seeded dossier's Findings tab never opened");
   const apply = page.locator("[data-apply]").first();
   if ((await apply.count()) === 0) {
     throw new Error("the seeded dossier carries no suggestion-bearing finding — the fixture regressed");
@@ -1488,15 +1495,18 @@ const T13F: StepFn = async (ctx) => {
   }
   if (appliedFid) {
     await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}`);
+    await openFindingsDesk(page);
     const again = await page.locator(`[data-finding="${appliedFid}"] [data-apply]`).count();
     if (again > 0) throw new Error("the applied finding still offers Apply on the seeded dossier");
   }
 
   // ---- the bulk preview's per-item checklist → the ?bulkdone= dispatch ---------------------
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}?bulk=defer_minor`);
+  await openFindingsDesk(page);
   let preview = page.locator("[data-bulk-preview]");
   if ((await preview.count()) === 0 || (await preview.locator('input[name="only"]').count()) === 0) {
     await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}?bulk=apply_notes`);
+    await openFindingsDesk(page);
     preview = page.locator("[data-bulk-preview]");
   }
   if ((await preview.count()) === 0) throw new Error("no bulk action produced a preview on the seed");

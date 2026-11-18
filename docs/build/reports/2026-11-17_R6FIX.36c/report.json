@@ -1,0 +1,39 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "345e339ed8cd",
+  "startedAt": "2026-11-17T21:54:21.086Z",
+  "finishedAt": "2026-11-17T21:54:37.834Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "739023816efae96fdadb885a4c171f0be097eebc",
+    "observed": {
+      "web": "739023816efae96fdadb885a4c171f0be097eebc",
+      "api": "739023816efae96fdadb885a4c171f0be097eebc"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "T12F",
+      "journey": "both",
+      "owner": "SPA.21",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 16697,
+      "screenshot": "T12F.png"
+    }
+  ],
+  "passed": true
+}
