@@ -1,0 +1,52 @@
+{
+  "base": "https://rhema.tools",
+  "steps": [
+    {
+      "name": "session",
+      "detail": "signed in as jrn-a (https://rhema.tools/app)"
+    },
+    {
+      "name": "origTheme",
+      "detail": "dark"
+    },
+    {
+      "name": "project",
+      "detail": "showcase"
+    },
+    {
+      "name": "themeFlip",
+      "detail": "200 {\"ok\":true,\"appTheme\":\"dark\"}"
+    },
+    {
+      "name": "themeRestore",
+      "detail": "200 → dark"
+    }
+  ],
+  "probes": {
+    "colorScheme": "dark",
+    "themeAttr": "dark",
+    "shellBg": "#0f1114",
+    "shellRaise": null,
+    "selectFound": true,
+    "select": {
+      "appearance": "auto",
+      "colorScheme": "light",
+      "backgroundColor": "rgb(245, 242, 234)",
+      "borderColor": "rgb(232, 228, 220)",
+      "color": "rgb(29, 28, 26)"
+    },
+    "nativeOptionProbe": "<select name=\"profile\" data-md-profile=\"true\" aria-label=\"Markdown flavour\"><option value=\"\" selected=\"\">Canonical (byte-faithful)</option><option value=\"substack\">Substack</option></select>",
+    "button": {
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(154, 163, 173)",
+      "borderColor": "rgba(0, 0, 0, 0)"
+    },
+    "form": {
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(29, 28, 26)"
+    }
+  },
+  "shots": [
+    "../../docs/build/reports/2026-11-18_R6DEP.6-kit-export-dark/export-dark.png"
+  ]
+}
