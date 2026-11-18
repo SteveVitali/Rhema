@@ -131,6 +131,27 @@
   `assertBalances` (rejected — weakens REQ-SPEC-24.1 and hides fixture-path corruption).
 - **N8 hydration flake watch:** unchanged — one occurrence in the suite, PASS on re-run.
 
+### 2026-11-18 ~18:55Z — operator-authorized repair + secret bind
+
+- **`balance_divergence` residue → REPAIRED (operator-authorized).** Six `hold 3860` `included`
+  ledger rows inserted — `idempotency_key='jrn-report-hold:<runId>'` per account (the exact row
+  the R6FOR.1-fixed seed writes), `source='hold'`, `reason='jrn-report-hold-repair'` marking the
+  backfill. Fold re-run: **0 divergences across 1181 accounts**. End-to-end re-proof: second
+  `usage.reconcile` enqueue `269e5a98-…` → worker log `balances ok` at 18:50:37Z — no
+  `balance_divergence` page; the 03:15Z nightly now fires the `report_fetch_denied` page only
+  (the standing deny-degrade posture until D-ECON.1-1's plan-upgrade ruling).
+- **T8 nightly arm → bound.** `JOURNEY_T8_EXPORT_TOKEN` written to the repo secret via
+  `gh secret set` (never printed; repo-level secret per `journeys.yml:169`). The token plaintext
+  did not survive its binding shell, so the verified pair is a second mint:
+  `t8exp_1b43c134ad8245d58476` on test ws `01M7N3N8NTAC1873ZZQWFQWAG6` — the secret-bound token
+  → live `GET /export/download?token=<bound>` → **410 `{"error":"export_link_expired"}`**
+  (verified same-command). Orphans rolled back per the script's recipe: `t8exp_bb0f0db5cbcb48f3a3d9`
+  and `t8exp_a485a5fd69f14441a9fc` deleted; the leg's own `t8exp_jrn_c9ce823f785d01` self-heal
+  row and the pre-existing `t8exp_aeb0d69d7d0c465a96fe` stand (the leg re-seats the bound hash on
+  jrn-a's current workspace every run — the nightly survives the 26 h purge).
+- **Correction to the earlier tail note:** the first mint's row (`t8exp_bb0f0db5cbcb48f3a3d9`)
+  is deleted, not standing; the rollback recipe printed above applied to it.
+
 ## Spend
 
 - Cloud Build image-set ≈ $0.6 list (est. same class as R6DEP.5) · `pulumi up` ≈ $0 · all journey
