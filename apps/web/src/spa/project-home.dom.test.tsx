@@ -428,6 +428,21 @@ describe("GET /app — REQ-HOME-1's flat list (R7HOME.1)", () => {
     );
   });
 
+  it("a sibling [bff,app,*] twin (the inbox badge read) does not abort the lifecycle POST", async () => {
+    const f = makeFetch();
+    const { queryClient } = await mountAt("/app", BOOT, f);
+    // The shell badge's inbox twin shares the [bff,app] prefix but carries no rows —
+    // the optimistic patch must skip it rather than throw before mutationFn runs.
+    const inbox = { items: [], badge: 0, gateCards: {} };
+    queryClient.setQueryData(["bff", "app", "inbox"], inbox);
+    await openMenu(`[data-row-menu="proj_quiet"]`);
+    await chooseMenuItem('[data-menu-action="delete"]');
+    await vi.waitFor(() =>
+      expect(f.mock.calls.some(([u]) => String(u) === "/p/delta-notes/delete")).toBe(true),
+    );
+    expect(queryClient.getQueryData(["bff", "app", "inbox"])).toEqual(inbox);
+  });
+
   it("paid ⋯ items show the shared estimator's figure and open the run sheet — no run creator here", async () => {
     const f = makeFetch();
     await mountAt("/app", BOOT, f);
