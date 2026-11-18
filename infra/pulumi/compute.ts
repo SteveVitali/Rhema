@@ -447,10 +447,11 @@ export function createCompute(args: ComputeArgs): Compute {
     format: "DOCKER",
     // BL-122 — unbounded image growth vs. a blanket cleanup eating a digest-pinned rollback target.
     // Operator ruling 2026-11-16: dry-run first — policies evaluate/report and delete nothing until a
-    // later apply flips this off. Shape: tagged versions never prune (release/deploy tags are always
-    // rollback-reachable); the 30 most recent digests per image are pinned (≈a month of daily deploys
-    // of rollback depth); untagged versions older than 30 days prune.
-    cleanupPolicyDryRun: true,
+    // later apply flips this off. 2026-11-17 cost review: flipped on — enforcement is live. Shape:
+    // tagged versions never prune (release/deploy tags are always rollback-reachable); the 30 most
+    // recent digests per image are pinned (≈a month of daily deploys of rollback depth); untagged
+    // versions older than 30 days prune.
+    cleanupPolicyDryRun: false,
     cleanupPolicies: [
       {
         id: "keep-tagged",
