@@ -88,6 +88,15 @@
   `-T6T7b/`.
 - **F-16 (BL-105) → discharged** — both halves green at the deployed SHA: N8 via 311_R6FIX.40's
   editable-import repair (PASS @ `73902381`, carried), T6/T7 via the deployed lifecycle fix.
+- **Ad-hoc full free suite @ `279f45d3`** (`reports/2026-11-18_R6DEP.6-suite/`, $0, flagged
+  tenants, `JOURNEY_DATABASE_URL` tunnel-bound): **63 PASS / 1 fail / 2 owed** — every
+  deploy-bound leg green (T6, T7, T12F, T13F, U4, N9, N10, R6F, U5.write, U7.import, T17,
+  P1.*, X1.*, U1–U5, D*). `T8` reports `owed` (its 410 arm needs the operator-bound
+  `JOURNEY_T8_EXPORT_TOKEN`, unbound locally — the 404 arm passed); `U3.stopgap` reports `owed`
+  under the signed supersession. **N8's single fail was a hydration flake** — `[data-page-view]`
+  mounted with the twin's 182-word count but no `<p>` inside 30 s (zero console errors, zero
+  failed requests); a clean re-run PASSED (`reports/2026-11-18_N8-rerun/`). Watch-noted; if it
+  recurs in the nightly it is a real stall to triage, not a contract change.
 
 ## Spend
 
