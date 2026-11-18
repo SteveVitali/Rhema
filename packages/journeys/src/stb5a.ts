@@ -777,7 +777,9 @@ const T6: StepFn = async (ctx) => {
   if ((await deletedRow.count()) === 0) {
     throw new Error(`the deleted row is absent from the restore window ("${title}")`);
   }
-  const restore = deletedRow.locator("[data-restore-form] button");
+  // two committed shapes: the SSR no-JS path wraps a <button> in <form data-restore-form>; the
+  // SPA restore row carries the hook on the Button itself — accept either.
+  const restore = deletedRow.locator("[data-restore-form] button, button[data-restore-form]").first();
   await assertClick(restore, "the deleted row's Restore control");
   // …and the live list no longer carries it.
   await gotoOk(page, `${ctx.webBaseUrl}/app`);
@@ -859,10 +861,11 @@ const T7: StepFn = async (ctx) => {
       throw e;
     }
   };
-  // pg-boss send-it commits the queued row just AFTER the delete response lands (live: the row
-  // appeared ~12 ms after tombstoned_at — a single read races the enqueue). Poll briefly.
+  // BL-115 (298_R6FIX.31) moved the send off the request path: the delete tx persists only the
+  // `outbox` intent and the worker's `outbox.drain` cron (*/1 min) replays it onto pgboss.job —
+  // live, the job row lands ~19–76 s after tombstoned_at. Poll past one full drain interval.
   let rows: unknown[] = [];
-  for (const deadline = Date.now() + 15_000; ; ) {
+  for (const deadline = Date.now() + 90_000; ; ) {
     rows = await probeOnce();
     if (rows.length > 0 || Date.now() >= deadline) break;
     await new Promise((r) => setTimeout(r, 1_000));
