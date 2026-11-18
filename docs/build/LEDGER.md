@@ -25,7 +25,7 @@
 ```
 projectStatus:   IN_PROGRESS
 nextTicket:        (maintenance mode)  # 300_R6NOTE.6 done — all reachable backlog rows dispositioned; remaining are deploy-bound/human/funded-gated
-lastCompleted:   300_R6NOTE.6     # post-merge hygiene — BL-114 closed on CI evidence; BL-115-det deploy-bound note pending worker deploy — PR this run, unmerged
+lastCompleted:   R6DEP.6          # prod deploy 73902381→279f45d3 + all deploy-bound verifies discharged (F-R6FIX.37-1, F-R6FIX.39-1, BL-114 arm; F-16 discharged)
 blockedOn:       (none)
 pauseRequested:  false
 returnPass:      (none)
@@ -36,7 +36,7 @@ dispatchTarget:  subagent
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main              # flat mode — inserts branch off origin/main
 pinnedBaseSha:   a34eb51           # round-7 fork point (unchanged)
-chainTip:        stevevitali/r6note-6-bl-closures
+chainTip:        stevenvitali/r6dep-6-main-deploy
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
@@ -672,7 +672,9 @@ pointers; substance unchanged.)_
   citation-style select absent · F-14 T5 autoInclude checkbox intercepted by its card · F-15
   N1/N3 magic-link verify `ERR_TOO_MANY_REDIRECTS` on the R7b /app boundary (was waitForURL
   timeout at 4bc8cf4a — still-red family, evolved shape) · F-16 N8 fork banner + T6 restore
-  window still-red (pre-existing) · F-17 the one authorized paid R4 dispatch answered 402 — the
+  window still-red (pre-existing) — **DISCHARGED 2026-11-18:** N8 = retired-contract drift
+  repaired by `311_R6FIX.40` (PASS @ `73902381`); T6/T7 = F-R6FIX.39-1's lifecycle defect,
+  PASS @ `279f45d3` (R6DEP.6) · F-17 the one authorized paid R4 dispatch answered 402 — the
   journey identity's wallet had no credits; metered $0.00; paid work paused per GD-UX-PAIDLEG.R7
   (no second run; re-dispatch needs a fresh ruling). Env-bound (not findings): T7/R6F/T12F/T13F
   need JOURNEY_DATABASE_URL; T8 per D-FIX.1-1; U3.stopgap superseded by U3.occlusion (green).
@@ -706,23 +708,25 @@ pointers; substance unchanged.)_
   navigate in the hold-bearing context instead). `confirmMagicLinkInterstitial` extracted and
   called at both inline sites → **`--steps N1,N3` both PASS live at `73902381` ($0)** —
   `reports/2026-11-17_R6FIX.32/`. Product flow was never defective.
-- **F-R6FIX.37-1 — OPEN (2026-11-17, `tickets/308_R6FIX.37`; deployed product defect).** Prod
-  `73902381` logs showed `unhandled_route_error` on `GET /projects/:id/outline` — the api's
-  shared `contentStore` dep is the unbound write-side GCS store whose `get` throws; outline,
-  chat, and project reads bound it directly (export/dossier/editor/figure/triage/version
-  already resolve `contentStoreFor(workspaceId)`). Fixed in source + regression-tested;
-  **live verify owed on the next deploy** (D-R6OPS.5-2 evidence note).
-- **F-R6FIX.39-1 — OPEN (2026-11-17, `tickets/310_R6FIX.39`; deployed product defect — every
-  user's row lifecycle actions dead).** Prod `73902381`: zero `POST /p/:slug/delete` reached
-  web/api in 24h; T6/T7 fixture rows exist untombstoned; live repro (flagged tenant, $0,
-  `reports/2026-11-17_T6-repro/`) shows the enabled delete item firing no request — only the
-  `["bff","app"]`-prefix refetch pair + `toastFailed`. Root cause: `patchTwinRows`'s
-  `getQueriesData({queryKey:["bff","app"]})` prefix-matches `["bff","app","inbox"]` /
-  `["bff","app","new"]` — `BffInboxTwin` has no `rows` → `data.rows.map` TypeError inside
-  `onMutate` aborts the mutation before `bffFetch`. Introduced by `0ad737e3` (R7HOME.1);
-  corrects the earlier sweep note attributing T6/T7's red to `260_R6OPS.3`'s purge fix.
-  Source-fixed + regression-tested; **live verify owed on the next deploy** (T6/T7 green,
-  F-16/BL-105 disposition then).
+- **F-R6FIX.37-1 — RESOLVED (2026-11-18, deployed `279f45d3`).** Prod `73902381` logs had shown
+  `unhandled_route_error` on `GET /projects/:id/outline` — the api's shared `contentStore` dep is
+  the unbound write-side GCS store whose `get` throws; outline, chat, and project reads bound it
+  directly (fixed by `308_R6FIX.37`, deployed in R6DEP.6). **Live verify @ `279f45d3`:**
+  `P1.outline` PASS (`reports/2026-11-18_R6DEP.6-P1outline/`, $0) and zero
+  `unhandled_route_error` in the 45-min post-deploy api log window (the error class the
+  D-R6OPS.5-2 verify had surfaced).
+- **F-R6FIX.39-1 — RESOLVED (2026-11-18, deployed `279f45d3`).** Prod `73902381`: zero
+  `POST /p/:slug/delete` reached web/api in 24h — `patchTwinRows`'s
+  `getQueriesData({queryKey:["bff","app"]})` prefix-matched `["bff","app","inbox"]` /
+  `["bff","app","new"]` whose payloads lack `rows` → `TypeError` inside `onMutate` aborted every
+  row lifecycle mutation before `bffFetch` (introduced by `0ad737e3`/R7HOME.1; fixed by
+  `310_R6FIX.39`, deployed in R6DEP.6). **Live verify @ `279f45d3`:** `T6,T7` PASS
+  (`reports/2026-11-18_R6DEP.6-T6T7c/`, $0) — delete tombstones, the 30-day restore window lists
+  the row with an actionable Restore, restore clears it, and the `project.purge` job queues via
+  the `outbox.drain` cron (outbox row `sent:true` ~19 s; `pgboss.job` `state=created` with the
+  30-day `start_after` + `project.purge:<id>` singleton, verified over the tunnel). **F-16's
+  T6/T7 half discharged** (N8 half discharged by `311_R6FIX.40`); two harness-drift legs found
+  during verification are `312_R6FIX.41`'s repairs.
 - **F-R6SHOT.1-1 — RESOLVED (2026-11-17, `tickets/304_R6FIX.33`).** `U4.controls` was red on
   prod `73902381` AND the same-day nightly: the export surface's `select[data-md-profile]`
   flagged native-styled. Root cause = **census miss** — 250g_R7FIX.7's F-13 restored
@@ -1630,3 +1634,4 @@ decomposition) predate the convention and remain in the prior region verbatim._
 - 2026-11-17 — **309_R6FIX.38 done — U3.stopgap supersession flip (run-time insert; registry disposition, $0; PR on `stevenvitali/r6fix-38-u3-stopgap-superseded`, unmerged; mergePolicy OPERATOR).** The sweep's nightly-red triage: U3.stopgap failed "focus view did not engage" ~12 consecutive runs because REQ-KEYS-1's keymap binds bare `f` (the leg still presses Control+Shift+f) — retired-contract drift on a row GATE-ACCEPT.R7 already superseded by U3.occlusion. `expected` green→red with Stage-B evidence preserved → nightly reports `owed` not `fail`, un-poisoning the bake for the ~45 `D-SPAF.*-4`/`D-SPA.*-2` rows once T6/T7/U4 green. Remaining nightly blockers after this: T6 (F-16/BL-105), T7 (fix shipped @ `73902381`, next nightly is the verdict), U4 (fixed by #394 pending merge+deploy). `tickets/309_R6FIX.38` · BUILD_INDEX 360 · layer: engineered · harness: devin-cli/swe-2-high.
 - 2026-11-17 — **310_R6FIX.39 done — F-R6FIX.39-1 lifecycle prefix-match throw (run-time insert; code + regression test, $0; PR on `stevenvitali/r6fix-39-lifecycle-prefix`, unmerged; mergePolicy OPERATOR).** The T6/T7 red's real root cause (correcting the sweep note's 260_R6OPS.3 attribution): `patchTwinRows` iterated `getQueriesData({queryKey:["bff","app"]})` — a prefix match pulling the `["bff","app","inbox"]`/`["bff","app","new"]` siblings whose twins carry no `rows`/`deletedRows` → `data.rows.map` TypeError inside React Query `onMutate` → the mutation aborts BEFORE `mutationFn`, so `bffFetch` never issues the POST. Deployed evidence at `73902381`: zero `POST /p/:slug/delete` from any user in 24h; live repro (flagged tenant, $0, `reports/2026-11-17_T6-repro/`) shows the enabled delete item producing only the `["bff","app"]` refetch pair + `toastFailed`. Every lifecycle action dead since the R7HOME.1 (`0ad737e3`) deploy wave. Fix: `homeTwinEntries()` scopes the patch loop + rollback snapshot to home-shaped payloads. Regression test seeds the inbox sibling and asserts `POST /p/:slug/delete` issues (fails on pre-fix source). project-home.dom.test 19/19, typecheck/lint/copy-containment green. **Stage B owed post-deploy:** T6/T7 nightly green, real-user lifecycle POSTs resume; F-16/BL-105 disposition then. `tickets/310_R6FIX.39` · BUILD_INDEX 361 · layer: engineered · harness: devin-cli/swe-2-high.
 - 2026-11-17 — **311_R6FIX.40 done — N8 leg A re-points to the editable-import arm (run-time insert; leg repair + live discharge, $0; PR on `stevenvitali/r6fix-40-n8-frozen-arm`, unmerged; mergePolicy OPERATOR).** N8 red since the R7HOME wave (last green 11-05) was retired-contract drift, not a product defect: R7HOME.2a (`5f15430d`, REQ-HOME-4 editable imports) lands the paste-import as the WORKING head — typing edits in place, the §5.4 banner correctly never fires. Freeze-trigger probe: run_read/dossier_ref/promote all cost a run; export 422s `empty_draft` on an un-versioned head (live-verified — the `?error=1` redirect reads as a 200 GET); duplicate copies `state` verbatim. No $0 path mints a locked version on a fresh import → `n8TypeForkSave` gains `expectFork` (leg B + showcase-duplicate fallback unchanged — the real lock→fork→save arm); leg A asserts the editable-import contract (type → synced → persist). **N8 PASS live @ `73902381` $0** — `reports/2026-11-17_R6FIX.40/` (leg B screenshot: "Editing v2 · findings from v1" on the duplicated Showcase). Nightly red set shrinks to T6/T7 (fix pending deploy, #400) + U4 (fixed by #394, pending merge) + U3.stopgap (flipped red by 309, reports `owed`). `tickets/311_R6FIX.40` · BUILD_INDEX 362 · layer: live-executed+engineered · harness: devin-cli/swe-2-high.
+- 2026-11-18 — **R6DEP.6 done — maintenance deploy `73902381`→`279f45d3` + all deploy-bound verifies discharged (operator-directed insert; records+pins, ~$0.6 build; PR on `stevenvitali/r6dep-6-main-deploy`, unmerged; mergePolicy OPERATOR).** Cloud Build `3df2aa7b` SUCCESS 15m20s (all 10 @ `279f45d3`); `preview --diff` 10 updates + 1 stateless proxy-tmpl replace + 0 creates/deletes, 184 unchanged; `pulumi up` update 186 (1m46s); provenance all-PASS both origins; `deployments` row `prod:279f45d3…` `protocols_version=0.4.0+e922c281a6830f49`; CDN invalidate `/bff/p/demo~*`. Golden re-run NOT armed (zero `packages/protocols*` diff). **Post-deploy verifies ($0):** F-R6FIX.39-1 RESOLVED — T6,T7 PASS @ `279f45d3` (delete/restore/purge-queue all live; `reports/2026-11-18_R6DEP.6-T6T7c/`) · F-R6FIX.37-1 RESOLVED — `P1.outline` PASS + zero `unhandled_route_error` in the post-deploy api log window · BL-114 arm VERIFIED — jrn-a fixture `past_due` sub + live subscribe POST → `?notice=subscription_active` (409 guard pre-Stripe, zero external effects) · **F-16 discharged** (N8 via 311 @ `73902381` + T6/T7 here). Live verification surfaced two harness-drift legs (T6 restore-hook shape, T7 drain-poll window) → `312_R6FIX.41`. `runs/R6DEP.6.md` · layer: engineered · harness: devin-cli/swe-2-high.
