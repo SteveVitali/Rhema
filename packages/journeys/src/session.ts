@@ -43,6 +43,21 @@ export function stableIdentity(tag: string): string {
   return `test+jrn-${clean}@rhema.tools`;
 }
 
+/**
+ * 275_R6WEB.1 (RH-31) — the emailed href lands the no-consume interstitial; the confirm click
+ * POSTs and only then does the verify mint the session cookie + 302 to callbackURL. Every leg
+ * that navigates the emailed link must run this arm after the GET lands (an old-format link
+ * landing the verify GET directly skips it harmlessly). F-R6DEP.5-3: the inline N1/N3 arms
+ * missed this click and stalled at `waitForURL` on the interstitial.
+ */
+export async function confirmMagicLinkInterstitial(page: Page): Promise<void> {
+  const confirm = page.locator("[data-magic-link-confirm]");
+  if (await confirm.count()) {
+    await Promise.all([page.waitForLoadState("domcontentloaded"), confirm.first().click()]);
+    await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => undefined);
+  }
+}
+
 export interface SessionDeps {
   readonly browser: Browser;
   readonly mailbox: MailboxClient;
@@ -194,17 +209,7 @@ export class JourneySessions {
     );
     await page.goto(link, { waitUntil: "domcontentloaded" });
     await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => undefined);
-    // 275_R6WEB.1 (RH-31) — the emailed href lands the no-consume interstitial; the confirm
-    // click POSTs and only then does the verify mint the session cookie + 302 to callbackURL.
-    // (An old-format link landing the verify GET directly skips this arm harmlessly.)
-    const confirm = page.locator("[data-magic-link-confirm]");
-    if (await confirm.count()) {
-      await Promise.all([
-        page.waitForLoadState("domcontentloaded"),
-        confirm.first().click(),
-      ]);
-      await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => undefined);
-    }
+    await confirmMagicLinkInterstitial(page);
     // Signed-in assertion: landed inside the app (any non-auth path) AND the session cookie exists.
     const pathNow = new URL(page.url()).pathname;
     if (/\/login|\/signup/.test(pathNow)) {

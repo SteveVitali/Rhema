@@ -24,7 +24,7 @@ import {
 // ONB.1 — N1/N3 must sign in through the real magic link INSIDE the anonymous context that holds
 // the IndexedDB draft (sessions.signIn mints a NEW context — a separate storage partition where
 // the hold does not exist). The identities are still test-mailbox-only.
-import { freshIdentity, assertTestIdentity } from "./session.js";
+import { freshIdentity, assertTestIdentity, confirmMagicLinkInterstitial } from "./session.js";
 import { ensureJrnaPaidFixture } from "./fixture-substrate.js";
 import { cogsLeversFor } from "./registry.js";
 import { newMarkedContext } from "./marked-context.js";
@@ -315,6 +315,7 @@ const N1: StepFn = async (ctx) => {
   // the magic link is the one cross-auth nav — status + the settle markers (REQ-VFY-4), never a
   // bare load-state wait.
   await gotoOk(page, link, ctx);
+  await confirmMagicLinkInterstitial(page);
   // post-auth the intent lands on /app/new?entry=draft&held=1 — R7HOME.2b: the leaf issues the ONE
   // blank create and hands the intent to the new project's import surface (`?held=1`), which
   // hydrates the hold into the file input — the FIRST hydrated load.
@@ -371,6 +372,7 @@ const N3: StepFn = async (ctx) => {
   await page.waitForSelector('[role="status"]', { timeout: 45_000 });
   const link = await ctx.mailbox.awaitMagicLink(email, sentAt, 120_000);
   await gotoOk(page, link, ctx);
+  await confirmMagicLinkInterstitial(page);
   // R7HOME.2b — post-auth the held intent lands on the NEW project's import surface (`?held=1`
   // through the immediate create), which hydrates the hold.
   await page.waitForURL(/\/p\/[^/]+\/import/, { timeout: 30_000 });
