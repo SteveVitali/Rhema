@@ -361,6 +361,19 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
           const test = await isTestWorkspace(tx, principal.workspaceId);
           if (deps.purchaseMode !== "open" && !test) return { error: "purchase_closed" as const };
           if (!deps.stripe || !deps.appBaseUrl) return { error: "stripe_unconfigured" as const };
+          // BL-114 (305_R6FIX.34) — the ladder still renders the subscribe form on a subscribed
+          // account's non-current tiers; without this check that arm mints a SECOND Stripe
+          // subscription on one billing account. In-app switching stays fenced
+          // (change_plan_unavailable) until the D-R6FIX.5-1 price_ registry lands, so any live
+          // subscription refuses outright — the Portal is the manage path meanwhile.
+          const live = (
+            await tx.query(
+              `select id from subscriptions where billing_account_id = $1
+                 and status in ('active','past_due') limit 1`,
+              [principal.billingAccountId],
+            )
+          ).rows[0];
+          if (live) return { error: "subscription_active" as const };
           const acct = (
             await tx.query("select stripe_customer_id from billing_accounts where id = $1", [
               principal.billingAccountId,
@@ -389,7 +402,11 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
           });
         });
         if ("error" in out) {
-          return c.json(out, out.error === "stripe_unconfigured" ? 503 : 403);
+          const status =
+            out.error === "stripe_unconfigured" ? 503
+            : out.error === "subscription_active" ? 409
+            : 403;
+          return c.json(out, status);
         }
         return c.json({ sessionId: out.sessionId, url: out.url });
       } catch (err) {

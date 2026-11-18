@@ -35,6 +35,7 @@ const EXPECTED_STATES = [
   "Stripe unconfigured",
   "Stripe rejects the session",
   "purchase closed",
+  "second subscription refused",
 ] as const;
 
 const MATRIX: readonly MatrixRow[] = [
@@ -177,6 +178,16 @@ const MATRIX: readonly MatrixRow[] = [
       {
         file: "apps/api/src/billing-routes.test.ts",
         test: "defaults closed: subscribe, top-up, auto-reload setup/configure, and portal make no Stripe call and answer purchase_closed",
+      },
+    ],
+  },
+  {
+    state: "second subscription refused",
+    spec: "BL-114 (305_R6FIX.34) — a live subscription refuses a second Checkout: 409 subscription_active, no Stripe call",
+    refs: [
+      {
+        file: "apps/api/src/billing-routes.test.ts",
+        test: "a live subscription refuses a second Checkout — 409 subscription_active, no Stripe call",
       },
     ],
   },

@@ -241,6 +241,39 @@ describe("POST /billing/checkout — subscribe", () => {
       method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
     });
 
+  // BL-114 (305_R6FIX.34) — the seed's active studio_max subscription now refuses subscribe
+  // outright; the free-account checkout path is what these assertions exercise.
+  beforeEach(async () => {
+    await db.pg.query("delete from subscriptions where billing_account_id = $1", [BA]);
+  });
+
+  it("a live subscription refuses a second Checkout — 409 subscription_active, no Stripe call", async () => {
+    // the beforeEach stripped the seed — re-seat the exact BL-114 shape the guard refuses.
+    await db.pg.query(
+      `insert into subscriptions(id, billing_account_id, tier, period_start, period_end, status)
+         values ('sub_live', $1, 'writer', now() - interval '1 day', now() + interval '1 month', 'active')`,
+      [BA],
+    );
+    const stripe = new StubStripePort();
+    const res = await post(app({ stripe, appBaseUrl: "https://app.test" }), {
+      kind: "subscribe", plan: "writer", cycle: "annual",
+    });
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: "subscription_active" });
+    expect(stripe.calls).toHaveLength(0);
+    expect(
+      (await db.client.query("select id from checkout_sessions where kind = 'subscribe'")).rows,
+    ).toHaveLength(0);
+
+    // the refused arm covers past_due too — the read's own live-status set (REQ-BILL-16).
+    await db.pg.query("update subscriptions set status = 'past_due' where billing_account_id = $1", [BA]);
+    const res2 = await post(app({ stripe, appBaseUrl: "https://app.test" }), {
+      kind: "subscribe", plan: "studio",
+    });
+    expect(res2.status).toBe(409);
+    expect(await res2.json()).toEqual({ error: "subscription_active" });
+  });
+
   it("mints a Checkout session, persists the row first, and returns the hosted URL", async () => {
     const stripe = new StubStripePort();
     const res = await post(app({ stripe, appBaseUrl: "https://app.test" }), {
@@ -439,9 +472,19 @@ describe("the purchase switch (BILL.3; REQ-BILL-16)", () => {
 
     await db.pg.query("update workspaces set is_test = true where id = $1", [WS]);
     await db.pg.query("update billing_accounts set stripe_customer_id = 'cus_test' where id = $1", [BA]);
+    // BL-114 — the seeded active subscription would trip the new second-subscription guard, so
+    // subscribe walks the Free path first; the paid arms then get their live plan back.
+    await db.pg.query("delete from subscriptions where billing_account_id = $1", [BA]);
     const closed = app({ stripe, appBaseUrl: "https://app.test", purchaseMode: "closed" });
+    const sub = await post(closed, { kind: "subscribe", plan: "writer" });
+    expect(sub.status).toBe(200);
+    expect(((await sub.json()) as { url: string }).url).toContain("checkout.stripe.test");
+    await db.pg.query(
+      `insert into subscriptions(id, billing_account_id, tier, period_start, period_end, status)
+         values ('sub_allow', $1, 'writer', now() - interval '1 day', now() + interval '1 month', 'active')`,
+      [BA],
+    );
     for (const body of [
-      { kind: "subscribe", plan: "writer" },
       { kind: "topup", packId: "topup_10" },
       { kind: "auto_reload_setup", packId: "topup_10" },
     ]) {
@@ -491,6 +534,7 @@ describe("RH-16 — Checkout's customer_email is the verified account email, nev
     const stripe = new StubStripePort();
     const a = app({ stripe, appBaseUrl: "https://app.test" }); // purchaseMode open
     const verified = `${USER}@example.test`; // the seeded `"user".email`
+    await db.pg.query("delete from subscriptions where billing_account_id = $1", [BA]); // BL-114 — Free path
     const res = await a.request("/billing/checkout", {
       method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({ kind: "subscribe", plan: "writer", email: "forged@attacker.test" }),
@@ -499,6 +543,12 @@ describe("RH-16 — Checkout's customer_email is the verified account email, nev
     let req = stripe.calls.at(-1)!.args as CheckoutSessionRequest;
     expect(req.customerEmail).toBe(verified);
 
+    // the topup arm needs the paid plan back (topups_require_plan is the Free refusal).
+    await db.pg.query(
+      `insert into subscriptions(id, billing_account_id, tier, period_start, period_end, status)
+         values ('sub_rh16', $1, 'writer', now() - interval '1 day', now() + interval '1 month', 'active')`,
+      [BA],
+    );
     const res2 = await a.request("/billing/checkout", {
       method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({ kind: "topup", packId: "topup_10", email: "forged@attacker.test" }),
@@ -643,6 +693,11 @@ describe("POST /billing/subscription/cancel + change-plan (§14.6)", () => {
 });
 
 describe("GET /billing/checkout-sessions/:id — the return-poll read (REQ-BILL-14)", () => {
+  // BL-114 — the seeded active subscription refuses subscribe; these tests mint a session to poll,
+  // so the account starts Free.
+  beforeEach(async () => {
+    await db.pg.query("delete from subscriptions where billing_account_id = $1", [BA]);
+  });
   it("returns the session row the return page polls; unknown id 404s", async () => {
     const stripe = new StubStripePort();
     const a = app({ stripe, appBaseUrl: "https://app.test" });
