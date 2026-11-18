@@ -25,7 +25,7 @@
 ```
 projectStatus:   IN_PROGRESS
 nextTicket:        (maintenance mode)  # 300_R6NOTE.6 done — all reachable backlog rows dispositioned; remaining are deploy-bound/human/funded-gated
-lastCompleted:   300_R6NOTE.6     # post-merge hygiene — BL-114 closed on CI evidence; BL-115-det deploy-bound note pending worker deploy — PR this run, unmerged
+lastCompleted:   R6DEP.6          # prod deploy 73902381→279f45d3 + all deploy-bound verifies discharged (F-R6FIX.37-1, F-R6FIX.39-1, BL-114 arm; F-16 discharged)
 blockedOn:       (none)
 pauseRequested:  false
 returnPass:      (none)
@@ -36,7 +36,7 @@ dispatchTarget:  subagent
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main              # flat mode — inserts branch off origin/main
 pinnedBaseSha:   a34eb51           # round-7 fork point (unchanged)
-chainTip:        stevevitali/r6note-6-bl-closures
+chainTip:        stevenvitali/r6dep-6-main-deploy
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
@@ -189,6 +189,15 @@ pointers; substance unchanged.)_
   is pinned in `showcase.test.ts`; the six prod rows are fixture contamination on test tenants
   (no user funds) and clear on the next reconcile after a corrected deploy — no prod write was
   made. Report: `docs/build/reports/2026-10-21_R6FOR.1/prod-forensics.md`.
+  **2026-11-18 (R6DEP.6) — dated correction to the "clear on the next reconcile" prediction:**
+  the residue does NOT self-clear — R6FOR.1's fix changed what NEW seeds write; the six
+  pre-fix `credit_ledger` row-sets (bare grant+debit, no `hold`) still fold to
+  avail=+3860/held=−3860 vs `credit_balances` 0/0. The first-ever `assertBalances` run under the
+  deployed deny-degrade (`usage.reconcile` `ab320e45…`, operator enqueue at `279f45d3`) paged the
+  same six accounts verbatim — `balance_divergence` will fire every 03:15Z until the residue is
+  repaired. Repair = one `jrn-report-hold:<runId>` row per account (the exact row the fixed seed
+  writes; bounded prod write on six `is_test` accounts — operator authorization owed). Evidence +
+  rejected alternatives (leave-and-page / `is_test` exclusion) in `docs/build/runs/R6DEP.6.md`.
 - **F-R6OPS.1-1 — RESOLVED 2026-10-23 (R6OPS.2, prod stack update 157 — `runs/R6OPS.2.md` +
   `reports/2026-10-23_R6OPS.2/`).** `rhema:opsAlertWebhookUrl` bound on prod (stdin pipe, SM
   `latest` → `secure:` ciphertext only) → `pulumi up` created `webhook_tokenauth` channel
@@ -672,7 +681,9 @@ pointers; substance unchanged.)_
   citation-style select absent · F-14 T5 autoInclude checkbox intercepted by its card · F-15
   N1/N3 magic-link verify `ERR_TOO_MANY_REDIRECTS` on the R7b /app boundary (was waitForURL
   timeout at 4bc8cf4a — still-red family, evolved shape) · F-16 N8 fork banner + T6 restore
-  window still-red (pre-existing) · F-17 the one authorized paid R4 dispatch answered 402 — the
+  window still-red (pre-existing) — **DISCHARGED 2026-11-18:** N8 = retired-contract drift
+  repaired by `311_R6FIX.40` (PASS @ `73902381`); T6/T7 = F-R6FIX.39-1's lifecycle defect,
+  PASS @ `279f45d3` (R6DEP.6) · F-17 the one authorized paid R4 dispatch answered 402 — the
   journey identity's wallet had no credits; metered $0.00; paid work paused per GD-UX-PAIDLEG.R7
   (no second run; re-dispatch needs a fresh ruling). Env-bound (not findings): T7/R6F/T12F/T13F
   need JOURNEY_DATABASE_URL; T8 per D-FIX.1-1; U3.stopgap superseded by U3.occlusion (green).
@@ -706,23 +717,25 @@ pointers; substance unchanged.)_
   navigate in the hold-bearing context instead). `confirmMagicLinkInterstitial` extracted and
   called at both inline sites → **`--steps N1,N3` both PASS live at `73902381` ($0)** —
   `reports/2026-11-17_R6FIX.32/`. Product flow was never defective.
-- **F-R6FIX.37-1 — OPEN (2026-11-17, `tickets/308_R6FIX.37`; deployed product defect).** Prod
-  `73902381` logs showed `unhandled_route_error` on `GET /projects/:id/outline` — the api's
-  shared `contentStore` dep is the unbound write-side GCS store whose `get` throws; outline,
-  chat, and project reads bound it directly (export/dossier/editor/figure/triage/version
-  already resolve `contentStoreFor(workspaceId)`). Fixed in source + regression-tested;
-  **live verify owed on the next deploy** (D-R6OPS.5-2 evidence note).
-- **F-R6FIX.39-1 — OPEN (2026-11-17, `tickets/310_R6FIX.39`; deployed product defect — every
-  user's row lifecycle actions dead).** Prod `73902381`: zero `POST /p/:slug/delete` reached
-  web/api in 24h; T6/T7 fixture rows exist untombstoned; live repro (flagged tenant, $0,
-  `reports/2026-11-17_T6-repro/`) shows the enabled delete item firing no request — only the
-  `["bff","app"]`-prefix refetch pair + `toastFailed`. Root cause: `patchTwinRows`'s
-  `getQueriesData({queryKey:["bff","app"]})` prefix-matches `["bff","app","inbox"]` /
-  `["bff","app","new"]` — `BffInboxTwin` has no `rows` → `data.rows.map` TypeError inside
-  `onMutate` aborts the mutation before `bffFetch`. Introduced by `0ad737e3` (R7HOME.1);
-  corrects the earlier sweep note attributing T6/T7's red to `260_R6OPS.3`'s purge fix.
-  Source-fixed + regression-tested; **live verify owed on the next deploy** (T6/T7 green,
-  F-16/BL-105 disposition then).
+- **F-R6FIX.37-1 — RESOLVED (2026-11-18, deployed `279f45d3`).** Prod `73902381` logs had shown
+  `unhandled_route_error` on `GET /projects/:id/outline` — the api's shared `contentStore` dep is
+  the unbound write-side GCS store whose `get` throws; outline, chat, and project reads bound it
+  directly (fixed by `308_R6FIX.37`, deployed in R6DEP.6). **Live verify @ `279f45d3`:**
+  `P1.outline` PASS (`reports/2026-11-18_R6DEP.6-P1outline/`, $0) and zero
+  `unhandled_route_error` in the 45-min post-deploy api log window (the error class the
+  D-R6OPS.5-2 verify had surfaced).
+- **F-R6FIX.39-1 — RESOLVED (2026-11-18, deployed `279f45d3`).** Prod `73902381`: zero
+  `POST /p/:slug/delete` reached web/api in 24h — `patchTwinRows`'s
+  `getQueriesData({queryKey:["bff","app"]})` prefix-matched `["bff","app","inbox"]` /
+  `["bff","app","new"]` whose payloads lack `rows` → `TypeError` inside `onMutate` aborted every
+  row lifecycle mutation before `bffFetch` (introduced by `0ad737e3`/R7HOME.1; fixed by
+  `310_R6FIX.39`, deployed in R6DEP.6). **Live verify @ `279f45d3`:** `T6,T7` PASS
+  (`reports/2026-11-18_R6DEP.6-T6T7c/`, $0) — delete tombstones, the 30-day restore window lists
+  the row with an actionable Restore, restore clears it, and the `project.purge` job queues via
+  the `outbox.drain` cron (outbox row `sent:true` ~19 s; `pgboss.job` `state=created` with the
+  30-day `start_after` + `project.purge:<id>` singleton, verified over the tunnel). **F-16's
+  T6/T7 half discharged** (N8 half discharged by `311_R6FIX.40`); two harness-drift legs found
+  during verification are `312_R6FIX.41`'s repairs.
 - **F-R6SHOT.1-1 — RESOLVED (2026-11-17, `tickets/304_R6FIX.33`).** `U4.controls` was red on
   prod `73902381` AND the same-day nightly: the export surface's `select[data-md-profile]`
   flagged native-styled. Root cause = **census miss** — 250g_R7FIX.7's F-13 restored
@@ -1630,3 +1643,7 @@ decomposition) predate the convention and remain in the prior region verbatim._
 - 2026-11-17 — **309_R6FIX.38 done — U3.stopgap supersession flip (run-time insert; registry disposition, $0; PR on `stevenvitali/r6fix-38-u3-stopgap-superseded`, unmerged; mergePolicy OPERATOR).** The sweep's nightly-red triage: U3.stopgap failed "focus view did not engage" ~12 consecutive runs because REQ-KEYS-1's keymap binds bare `f` (the leg still presses Control+Shift+f) — retired-contract drift on a row GATE-ACCEPT.R7 already superseded by U3.occlusion. `expected` green→red with Stage-B evidence preserved → nightly reports `owed` not `fail`, un-poisoning the bake for the ~45 `D-SPAF.*-4`/`D-SPA.*-2` rows once T6/T7/U4 green. Remaining nightly blockers after this: T6 (F-16/BL-105), T7 (fix shipped @ `73902381`, next nightly is the verdict), U4 (fixed by #394 pending merge+deploy). `tickets/309_R6FIX.38` · BUILD_INDEX 360 · layer: engineered · harness: devin-cli/swe-2-high.
 - 2026-11-17 — **310_R6FIX.39 done — F-R6FIX.39-1 lifecycle prefix-match throw (run-time insert; code + regression test, $0; PR on `stevenvitali/r6fix-39-lifecycle-prefix`, unmerged; mergePolicy OPERATOR).** The T6/T7 red's real root cause (correcting the sweep note's 260_R6OPS.3 attribution): `patchTwinRows` iterated `getQueriesData({queryKey:["bff","app"]})` — a prefix match pulling the `["bff","app","inbox"]`/`["bff","app","new"]` siblings whose twins carry no `rows`/`deletedRows` → `data.rows.map` TypeError inside React Query `onMutate` → the mutation aborts BEFORE `mutationFn`, so `bffFetch` never issues the POST. Deployed evidence at `73902381`: zero `POST /p/:slug/delete` from any user in 24h; live repro (flagged tenant, $0, `reports/2026-11-17_T6-repro/`) shows the enabled delete item producing only the `["bff","app"]` refetch pair + `toastFailed`. Every lifecycle action dead since the R7HOME.1 (`0ad737e3`) deploy wave. Fix: `homeTwinEntries()` scopes the patch loop + rollback snapshot to home-shaped payloads. Regression test seeds the inbox sibling and asserts `POST /p/:slug/delete` issues (fails on pre-fix source). project-home.dom.test 19/19, typecheck/lint/copy-containment green. **Stage B owed post-deploy:** T6/T7 nightly green, real-user lifecycle POSTs resume; F-16/BL-105 disposition then. `tickets/310_R6FIX.39` · BUILD_INDEX 361 · layer: engineered · harness: devin-cli/swe-2-high.
 - 2026-11-17 — **311_R6FIX.40 done — N8 leg A re-points to the editable-import arm (run-time insert; leg repair + live discharge, $0; PR on `stevenvitali/r6fix-40-n8-frozen-arm`, unmerged; mergePolicy OPERATOR).** N8 red since the R7HOME wave (last green 11-05) was retired-contract drift, not a product defect: R7HOME.2a (`5f15430d`, REQ-HOME-4 editable imports) lands the paste-import as the WORKING head — typing edits in place, the §5.4 banner correctly never fires. Freeze-trigger probe: run_read/dossier_ref/promote all cost a run; export 422s `empty_draft` on an un-versioned head (live-verified — the `?error=1` redirect reads as a 200 GET); duplicate copies `state` verbatim. No $0 path mints a locked version on a fresh import → `n8TypeForkSave` gains `expectFork` (leg B + showcase-duplicate fallback unchanged — the real lock→fork→save arm); leg A asserts the editable-import contract (type → synced → persist). **N8 PASS live @ `73902381` $0** — `reports/2026-11-17_R6FIX.40/` (leg B screenshot: "Editing v2 · findings from v1" on the duplicated Showcase). Nightly red set shrinks to T6/T7 (fix pending deploy, #400) + U4 (fixed by #394, pending merge) + U3.stopgap (flipped red by 309, reports `owed`). `tickets/311_R6FIX.40` · BUILD_INDEX 362 · layer: live-executed+engineered · harness: devin-cli/swe-2-high.
+- 2026-11-18 — **R6DEP.6 done — maintenance deploy `73902381`→`279f45d3` + all deploy-bound verifies discharged (operator-directed insert; records+pins, ~$0.6 build; PR on `stevenvitali/r6dep-6-main-deploy`, unmerged; mergePolicy OPERATOR).** Cloud Build `3df2aa7b` SUCCESS 15m20s (all 10 @ `279f45d3`); `preview --diff` 10 updates + 1 stateless proxy-tmpl replace + 0 creates/deletes, 184 unchanged; `pulumi up` update 186 (1m46s); provenance all-PASS both origins; `deployments` row `prod:279f45d3…` `protocols_version=0.4.0+e922c281a6830f49`; CDN invalidate `/bff/p/demo~*`. Golden re-run NOT armed (zero `packages/protocols*` diff). **Post-deploy verifies ($0):** F-R6FIX.39-1 RESOLVED — T6,T7 PASS @ `279f45d3` (delete/restore/purge-queue all live; `reports/2026-11-18_R6DEP.6-T6T7c/`) · F-R6FIX.37-1 RESOLVED — `P1.outline` PASS + zero `unhandled_route_error` in the post-deploy api log window · BL-114 arm VERIFIED — jrn-a fixture `past_due` sub + live subscribe POST → `?notice=subscription_active` (409 guard pre-Stripe, zero external effects) · **F-16 discharged** (N8 via 311 @ `73902381` + T6/T7 here). Live verification surfaced two harness-drift legs (T6 restore-hook shape, T7 drain-poll window) → `312_R6FIX.41`. `runs/R6DEP.6.md` · layer: engineered · harness: devin-cli/swe-2-high.
+- 2026-11-18 — **R6DEP.6 tail done — ad-hoc free suite @ `279f45d3` + operator-authorized T8 mint + `usage.reconcile` enqueue ($0; records on `stevenvitali/r6dep-6-main-deploy`, unmerged).** Full free suite over the tunnel: **63 PASS / 1 fail / 2 owed** — every deploy-bound leg green (T6, T7, T12F, T13F, U4, N9, N10, R6F, U5.write, U7.import, T17, P1.*, X1.*, U-series, D*); N8's single fail was a one-off hydration flake (`[data-page-view]` mounted, no `<p>` in 30 s, zero console/failed-request signal) — PASS on re-run; T8 `owed` pre-mint + U3.stopgap `owed` by signed supersession. **T8 → PASS** after the operator-authorized `mint-t8-export.mjs --fresh` (row `t8exp_bb0f0db5cbcb48f3a3d9` on test ws `01M7N3N8NTAC1873ZZQWFQWAG6`; transient token env-bound only, never committed — hash-only in DB). **D-R6OPS.1-1 → DONE** — operator-authorized `usage.reconcile` enqueue `ab320e45…` → `completed` ~1.4 s; worker log carries the deny-degrade verbatim (`provider report fetch failed: 403 — report/window arms skipped …; balances still asserted`); ops-alert catcher received BOTH `report_fetch_denied` AND `balance_divergence` at 18:38:44Z — alert transport proven end-to-end. **First-ever `assertBalances` run surfaced the pre-R6FOR.1 residue** — six `is_test` accounts still divergent (bare grant+debit, no `hold`; expectedHeld=−3860) — dated correction appended to the OPEN FINDINGS `balance_divergence` note: residue does not self-clear; `jrn-report-hold:<runId>` repair rows need operator authorization. `runs/R6DEP.6.md` § operator-authorized tail · spend $0 · harness: devin-cli/swe-2-high.
+- 2026-11-18 — **R6DEP.6 tail-2 done — residue repair + T8 secret bind (both operator-authorized; records on `stevenvitali/r6dep-6-main-deploy`, unmerged).** `balance_divergence` residue repaired: six `jrn-report-hold:<runId>` `hold 3860` rows inserted on the `is_test` accounts (`reason='jrn-report-hold-repair'`) → fold re-run **0 divergences / 1181 accounts** → second `usage.reconcile` enqueue `269e5a98-…` → `balances ok` (18:50:37Z), no divergence page. T8 nightly arm bound: `JOURNEY_T8_EXPORT_TOKEN` → repo secret via `gh secret set` (never printed); verified pair `t8exp_1b43c134ad8245d58476` → live `410 export_link_expired`; orphans `t8exp_bb0f0db5cbcb48f3a3d9`/`t8exp_a485a5fd69f14441a9fc` rolled back. `runs/R6DEP.6.md` § repair+secret-bind · spend $0 · harness: devin-cli/swe-2-high.
+- 2026-11-18 — **R6DEP.6 tail-3 done — D-R6SEC.1-1 compromise audit CLEAN + D-R7DEP.2-2/BL-105 closed ($0, read-only; records on `stevenvitali/r6dep-6-main-deploy`, unmerged).** RH-0 audit arms executed per deploy-plan §4.2: 794/796 `magic-link/verify` redemptions pair to a send within 15 min (2 = deliberate `invalidtoken000` probes); **78/78 in-window sessions pair to a real redemption within 30 s, zero orphans**; 4 unverified users all test/probe identities — zero falsely-verified accounts; honest limits recorded (consumed verification rows unrecoverable, POST bodies absent from request logs). All four arms discharged → `D-R6SEC.1-1` DONE (provenance @ `279f45d3` carrying better-auth@1.7.25; N1/N3 + public legs PASS in the suite). **D-R7DEP.2-2 tally DONE** — all 12 named legs green or correctly-dispositioned at `279f45d3` (F-9..F-16, env-bound legs, T8, U3.stopgap-superseded). **BL-105 CLOSED** — every carried item discharged (F-9..F-17, D-R7DEP.2-1/-2, D-R7TOUR.2-1). Evidence `reports/2026-11-18_R6SEC1-audit/compromise-audit.md` · spend $0 · harness: devin-cli/swe-2-high.

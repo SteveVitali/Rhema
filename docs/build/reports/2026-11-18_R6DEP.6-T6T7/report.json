@@ -1,0 +1,53 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "9e89160b5e7c",
+  "startedAt": "2026-11-18T17:47:48.623Z",
+  "finishedAt": "2026-11-18T17:48:46.870Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "279f45d363e270778e5a63995dc575b7010a12b6",
+    "observed": {
+      "web": "279f45d363e270778e5a63995dc575b7010a12b6",
+      "api": "279f45d363e270778e5a63995dc575b7010a12b6"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "T6",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 42689,
+      "error": "the deleted row's Restore control: not in the DOM",
+      "screenshot": "T6.png"
+    },
+    {
+      "id": "T7",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 15439,
+      "error": "needs JOURNEY_DATABASE_URL (a read pool bound to the stage Postgres)",
+      "screenshot": "T7.png"
+    }
+  ],
+  "passed": false
+}
