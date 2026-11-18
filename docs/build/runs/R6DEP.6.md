@@ -98,6 +98,39 @@
   failed requests); a clean re-run PASSED (`reports/2026-11-18_N8-rerun/`). Watch-noted; if it
   recurs in the nightly it is a real stall to triage, not a contract change.
 
+### 2026-11-18 ~18:40Z — operator-authorized tail (T8 mint + `usage.reconcile` enqueue)
+
+- **T8 → PASS at `279f45d3`, $0** (`reports/2026-11-18_T8-minted/`): the operator authorized the
+  mint; `scripts/live/mint-t8-export.mjs --fresh` seated a new expired export row
+  `t8exp_bb0f0db5cbcb48f3a3d9` on test workspace `01M7N3N8NTAC1873ZZQWFQWAG6` and printed a
+  transient token bound only to `JOURNEY_T8_EXPORT_TOKEN` for the run (never committed — the DB
+  stores `sha256Hex(token)` only). Both arms green: unknown token → 404, minted expired token →
+  410. Rollback recipe in the script: `delete from account_exports where id='t8exp_bb0f0db5cbcb48f3a3d9'`.
+- **D-R6OPS.1-1 → VERIFIED (operator enqueue).** `insert into pgboss.job (name='usage.reconcile')`
+  `ab320e45-e6ef-44fa-b04f-7630dbf38baf` → `state=completed` in ~1.4 s, `retry_count=0`. Worker log
+  (`rhema-prod-worker-cbdaf0f` 18:38:43–44Z): `provider report fetch failed: 403 — report/window
+  arms skipped (admin key denied upstream); balances still asserted` then
+  `report=provider report fetch failed: 403, window=…403, balances 6 divergences`. Ops-alert
+  catcher received BOTH pages at 18:38:44Z: `{"kind":"report_fetch_denied","reportKey":"provider-report"}`
+  and `{"kind":"balance_divergence","reportKey":"nightly-assertion","detail":[6 rows]}` — the
+  alert transport itself verified end-to-end. Pre-fix baseline was 12+ consecutive `failed` jobs;
+  the deny-degrade now keeps the job green while the key stays denied.
+- **NEW finding — `balance_divergence` ×6 is pre-R6FOR.1 fixture residue, not money corruption.**
+  `assertBalances` (fold `credit_ledger` via `balanceEffect` vs `credit_balances`) reported six
+  `(account, included)` divergences, identical signature `expected{avail:3860,held:-3860}` vs
+  actual `0/0`. All six billing accounts resolve to `is_test` workspaces. Their `included` ledgers
+  each carry the OLD `journey-report-seed` shape — bare `grant 3860` + `debit 3860` (+ a later
+  `adjustment 4110 absorbed` from the settle path) **with no `hold` row** — seeded 2026-10-14,
+  before R6FOR.1's fix made the seed write the grant→hold→debit chain (the fix comment names this
+  exact residue: "the six seeded accounts prod carried, expectedHeld=−3860"). This is the FIRST
+  assertion run ever — the pre-fix job always died at the 403 — so the residue page will fire
+  every 03:15Z until repaired. Repair = one `hold` row per account (mirrors
+  `jrn-report-hold:<runId>`, the exact row the fixed seed writes; bounded prod write on six
+  `is_test` accounts — needs operator authorization). Alternative dispositions recorded for the
+  operator: leave-and-page (rejected — nightly false-positive page), or exclude `is_test` from
+  `assertBalances` (rejected — weakens REQ-SPEC-24.1 and hides fixture-path corruption).
+- **N8 hydration flake watch:** unchanged — one occurrence in the suite, PASS on re-run.
+
 ## Spend
 
 - Cloud Build image-set ≈ $0.6 list (est. same class as R6DEP.5) · `pulumi up` ≈ $0 · all journey
