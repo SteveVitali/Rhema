@@ -1,0 +1,73 @@
+{
+  "surfaces": [
+    {
+      "path": "/app",
+      "probe": {
+        "colorScheme": "dark",
+        "themeAttr": "dark",
+        "shellBg": "rgb(15, 17, 20)",
+        "control": {
+          "tag": "BUTTON",
+          "bg": "rgba(0, 0, 0, 0)",
+          "border": "rgba(0, 0, 0, 0)",
+          "color": "rgb(154, 163, 173)",
+          "colorScheme": "dark"
+        }
+      },
+      "shot": "kit-dark_app.png"
+    },
+    {
+      "path": "/app/settings",
+      "probe": {
+        "colorScheme": "dark",
+        "themeAttr": "dark",
+        "shellBg": "rgb(15, 17, 20)",
+        "control": {
+          "tag": "BUTTON",
+          "bg": "rgba(0, 0, 0, 0)",
+          "border": "rgba(0, 0, 0, 0)",
+          "color": "rgb(154, 163, 173)",
+          "colorScheme": "dark"
+        }
+      },
+      "shot": "kit-dark_app_settings.png"
+    },
+    {
+      "path": "/app/settings/billing",
+      "probe": {
+        "colorScheme": "dark",
+        "themeAttr": "dark",
+        "shellBg": "rgb(15, 17, 20)",
+        "control": {
+          "tag": "BUTTON",
+          "bg": "rgba(0, 0, 0, 0)",
+          "border": "rgba(0, 0, 0, 0)",
+          "color": "rgb(154, 163, 173)",
+          "colorScheme": "dark"
+        }
+      },
+      "shot": "kit-dark_app_settings_billing.png"
+    },
+    {
+      "path": "/app/new",
+      "probe": {
+        "colorScheme": "dark",
+        "themeAttr": "dark",
+        "shellBg": "rgb(15, 17, 20)",
+        "control": {
+          "tag": "BUTTON",
+          "bg": "rgba(0, 0, 0, 0)",
+          "border": "rgba(0, 0, 0, 0)",
+          "color": "rgb(154, 163, 173)",
+          "colorScheme": "dark"
+        }
+      },
+      "shot": "kit-dark_app_new.png"
+    }
+  ],
+  "lightCheck": {
+    "colorScheme": "light",
+    "themeAttr": "light",
+    "shellBg": "rgb(246, 247, 249)"
+  }
+}
