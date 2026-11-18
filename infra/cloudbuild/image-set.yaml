@@ -69,7 +69,17 @@ steps:
             fi
           fi
           echo "=== build ${svc} -> ${_AR}/${svc}:${_TAG}"
-          docker build -f "apps/${svc}/Dockerfile" ${extra} -t "${_AR}/${svc}:${_TAG}" .
+          # Registry layer cache (2026-11-17 cost trim) — a stable :buildcache tag per service
+          # carries BUILDKIT_INLINE_CACHE metadata so the pnpm-install / turbo layers that dominate
+          # billed minutes survive across ephemeral builders. A missing ref builds uncached (first
+          # run / cold repo), never fails. The extra tag is one manifest per service; untagged
+          # lineage is reaped by the repo cleanup policy.
+          cache_args=""
+          if docker pull "${_AR}/${svc}:buildcache" >/dev/null 2>&1; then
+            cache_args="--cache-from ${_AR}/${svc}:buildcache"
+          fi
+          docker build -f "apps/${svc}/Dockerfile" ${extra} --build-arg BUILDKIT_INLINE_CACHE=1 \
+            ${cache_args} -t "${_AR}/${svc}:${_TAG}" -t "${_AR}/${svc}:buildcache" .
           # F-R6H11-2 image-contents assert — prove the vendored SDK exists + executes for the
           # agent uid inside the BUILT image before it can push. The e04a8c8 provenance gate was
           # green on a broken image; gitSha parity is not image content.
@@ -79,9 +89,12 @@ steps:
               'const fs=require("node:fs");fs.accessSync("/app/node_modules/@anthropic-ai/claude-agent-sdk/sdk.mjs",fs.constants.R_OK);fs.accessSync("/app/vendor/claude-agent-sdk-linux-x64/claude",fs.constants.X_OK);console.log("run-task image assert: vendored agent SDK readable+executable by uid agent=10002")'
           fi
           docker push "${_AR}/${svc}:${_TAG}"
+          docker push "${_AR}/${svc}:buildcache"
         done
 # E2_HIGHCPU_8 + 100GB — the pnpm install + turbo build of the whole repo dominates; default
-# disk/e2-medium is tight. Keep this one build definition (not the gitignored copies) — every
+# disk/e2-medium is tight and the machineType enum offers no cheaper adequate shape (only
+# e2-medium sits below highcpu-8). Billed minutes are trimmed by the :buildcache registry
+# layer cache above instead. Keep this one build definition (not the gitignored copies) — every
 # Stage B rebuilds only the services its diff touches.
 options:
   machineType: E2_HIGHCPU_8
