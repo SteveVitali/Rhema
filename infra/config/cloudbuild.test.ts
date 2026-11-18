@@ -56,4 +56,10 @@ describe("the committed image-set definition (OPS.2; BL-27)", () => {
     expect(yaml).toContain("machineType: E2_HIGHCPU_8");
     expect(yaml).toContain("diskSizeGb: 100");
   });
+
+  it("rebuilds through the :buildcache registry layer cache (billed-minutes trim)", () => {
+    expect(yaml).toContain("BUILDKIT_INLINE_CACHE=1");
+    expect(yaml).toContain("--cache-from ${_AR}/${svc}:buildcache");
+    expect(yaml).toContain('docker push "${_AR}/${svc}:buildcache"');
+  });
 });
