@@ -625,6 +625,7 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
           db,
           ids: deps.ids ?? (() => `id_${randomUUID()}`),
           ...(deps.contentStore ? { contentStore: deps.contentStore } : {}),
+          ...(deps.contentStoreFor ? { contentStoreFor: deps.contentStoreFor } : {}),
           ...(deps.importConverter ? { converter: deps.importConverter } : {}),
         }),
       );
@@ -637,6 +638,7 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
           ...(deps as unknown as OutlineApiDeps),
           db,
           ...(deps.contentStore ? { contentStore: deps.contentStore } : {}),
+          ...(deps.contentStoreFor ? { contentStoreFor: deps.contentStoreFor } : {}),
         }),
       );
       // P1.07 — the findings surface (§5.7): Apply (REQ-SPEC-6), promote, "Add to obligations" (REQ-OBJ-9),
@@ -715,6 +717,7 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
           clock: deps.clock,
           ...(deps.importConverter ? { converter: deps.importConverter } : {}),
           ...(deps.contentStore ? { contentStore: deps.contentStore } : {}),
+          ...(deps.contentStoreFor ? { contentStoreFor: deps.contentStoreFor } : {}),
           ...(deps.queue ? { queue: deps.queue } : {}),
         }),
       );

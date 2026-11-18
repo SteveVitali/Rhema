@@ -32,6 +32,9 @@ export interface ProjectApiDeps {
   /** the convert seam + byte store — required for the upload entries + the apparatus probe. */
   readonly converter?: Converter;
   readonly contentStore?: ContentStore;
+  /** the workspace-bound readable store (same seam as the export/dossier routes) — the unbound
+   *  `contentStore` is write-only and its `get` throws, so reads must resolve through the workspace. */
+  contentStoreFor?(workspaceId: string): Promise<ContentStore | null>;
   /**
    * The pg-boss queue: a soft delete enqueues `project.purge` at the tombstone's grace end
    * (startAfterMs = the 30-day window; the worker handler re-reads `deleted_at` so a restore inside
@@ -187,7 +190,12 @@ export function createProjectRoutes(deps: ProjectApiDeps): Hono {
     // REQ-GENRE-4 — the default rule runs server-side too: Essay for Unfiled; Academic when the linked
     // Voice's structure repertoire records apparatus:full; otherwise the sheet was asked (null stays).
     if (personaId) {
-      const repertoire = await readStructureRepertoire(deps.db, deps.contentStore, personaId);
+      const repertoire = await readStructureRepertoire(
+        deps.db,
+        (deps.contentStoreFor ? await deps.contentStoreFor(principal.workspaceId) : deps.contentStore) ??
+          undefined,
+        personaId,
+      );
       if (protocolId == null) protocolId = defaultProtocolId({ personaId, structureRepertoire: repertoire });
     } else if (protocolId == null) {
       protocolId = "essay";

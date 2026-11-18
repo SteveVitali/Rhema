@@ -48,6 +48,10 @@ export interface OutlineApiDeps extends OrchestratorDeps {
   readonly db: SqlClient;
   /** the workspace-bound blob store the outline + research-note bytes live in. */
   readonly contentStore?: ContentStore;
+  /** the workspace-bound readable store (same seam as the export/dossier/editor routes)
+   *  — the unbound `contentStore` is write-only and its `get` throws, so reads must
+   *  resolve a bound store through the workspace. */
+  contentStoreFor?(workspaceId: string): Promise<ContentStore | null>;
 }
 
 const ASSISTANT_RESEARCH = RESEARCH_ROOT; // "agents/assistant/research/"
@@ -98,13 +102,18 @@ export function outlineSlug(projectSlug: string, requested?: unknown): string {
   return clean(projectSlug) || "outline";
 }
 
-/** Read a project-tree file's head bytes (utf8) — null when absent or no store is bound. */
+/** Read a project-tree file's head bytes (utf8) — null when absent or no readable store binds.
+ *  Reads go through `contentStoreFor(workspaceId)`: the shared `contentStore` dep is the
+ *  unbound write-side store and its `get` throws (the deployed /outline 500s). */
 async function readTextFile(
   deps: OutlineApiDeps,
   projectId: string,
+  workspaceId: string,
   path: string,
 ): Promise<string | null> {
-  if (!deps.contentStore) return null;
+  const store =
+    (deps.contentStoreFor ? await deps.contentStoreFor(workspaceId) : deps.contentStore) ?? null;
+  if (!store) return null;
   const row = (
     await deps.db.query(
       `select av.content_sha256 from artifacts a
@@ -114,7 +123,7 @@ async function readTextFile(
     )
   ).rows[0] as { content_sha256: string } | undefined;
   if (!row) return null;
-  const bytes = await deps.contentStore.get(row.content_sha256);
+  const bytes = await store.get(row.content_sha256);
   return bytes ? new TextDecoder().decode(bytes) : null;
 }
 
@@ -149,13 +158,14 @@ async function loadOutlineArtifact(
 async function promotionFacts(
   deps: OutlineApiDeps,
   projectId: string,
+  workspaceId: string,
   args: { threadId?: string; scope: PromotionScope; turnId?: string; tier: ModelTier; rigor: Rigor; slug: string },
 ): Promise<
   | { ok: true; slug: string; scope: PromotionScope; threadId?: string; turnId?: string; sourceCopies: { src: string; dst: string }[]; urls: string[]; threadTokens: number; urlsRefetched: number; estimateCredits: number; capCredits: number; existing: boolean }
   | { ok: false; reason: "thread_not_found" | "turn_not_found" }
 > {
   // The research index is the source-note roster the scope filters (a missing index = no sources).
-  const index = parseIndex(await readTextFile(deps, projectId, `${ASSISTANT_RESEARCH}index.json`));
+  const index = parseIndex(await readTextFile(deps, projectId, workspaceId, `${ASSISTANT_RESEARCH}index.json`));
 
   let entries: ResearchIndexEntry[] = [];
   let messagePaths: string[] = [];
@@ -340,7 +350,7 @@ export function createOutlineRoutes(deps: OutlineApiDeps): Hono {
       : "base";
     const rigor: Rigor = RIGORS.includes(c.req.query("rigor") as Rigor) ? (c.req.query("rigor") as Rigor) : "standard";
     const slug = outlineSlug(g.slug, c.req.query("slug"));
-    const facts = await promotionFacts(deps, g.projectId, {
+    const facts = await promotionFacts(deps, g.projectId, g.principal.workspaceId, {
       ...(threadId ? { threadId } : {}),
       scope,
       ...(turnId ? { turnId } : {}),
@@ -402,7 +412,7 @@ export function createOutlineRoutes(deps: OutlineApiDeps): Hono {
     const rigor: Rigor = RIGORS.includes(body?.rigor as Rigor) ? (body!.rigor as Rigor) : "standard";
     const slug = outlineSlug(projectSlug, body?.slug);
 
-    const facts = await promotionFacts(deps, projectId, {
+    const facts = await promotionFacts(deps, projectId, principal.workspaceId, {
       ...(threadId ? { threadId } : {}),
       scope,
       ...(turnId ? { turnId } : {}),
@@ -496,9 +506,9 @@ export function createOutlineRoutes(deps: OutlineApiDeps): Hono {
     const slug = c.req.query("slug") ?? undefined;
     const art = await loadOutlineArtifact(deps, g.projectId, slug);
     if (!art) return c.json({ error: "not_found" }, 404);
-    const markdown = (await readTextFile(deps, g.projectId, art.mirror_path)) ?? "";
+    const markdown = (await readTextFile(deps, g.projectId, g.principal.workspaceId, art.mirror_path)) ?? "";
     const jsonPath = art.mirror_path.replace(/\.md$/, ".json");
-    const raw = await readTextFile(deps, g.projectId, jsonPath);
+    const raw = await readTextFile(deps, g.projectId, g.principal.workspaceId, jsonPath);
     let outline: unknown = null;
     if (raw) {
       try {
@@ -551,7 +561,7 @@ export function createOutlineRoutes(deps: OutlineApiDeps): Hono {
     const art = await loadOutlineArtifact(deps, projectId, slug);
     if (!art) return c.json({ error: "not_found" }, 404);
     const jsonPath = art.mirror_path.replace(/\.md$/, ".json");
-    const raw = await readTextFile(deps, projectId, jsonPath);
+    const raw = await readTextFile(deps, projectId, principal.workspaceId, jsonPath);
     let prior: Record<string, unknown> | null = null;
     if (raw) {
       try {
@@ -628,7 +638,7 @@ export function createOutlineRoutes(deps: OutlineApiDeps): Hono {
     const slug = typeof body?.slug === "string" ? body.slug : undefined;
     const art = await loadOutlineArtifact(deps, projectId, slug);
     if (!art) return c.json({ error: "not_found" }, 404);
-    const raw = await readTextFile(deps, projectId, art.mirror_path.replace(/\.md$/, ".json"));
+    const raw = await readTextFile(deps, projectId, principal.workspaceId, art.mirror_path.replace(/\.md$/, ".json"));
     let prior: Record<string, unknown> | null = null;
     if (raw) {
       try {

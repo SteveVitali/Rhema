@@ -300,6 +300,29 @@ describe("GET /projects/:id/outline — the editor DTO", () => {
     expect(dto.markdown).toContain("rhema:outline v1");
     expect(dto.citedBy.runs).toEqual([]);
   });
+
+  it("reads through contentStoreFor — the shared unbound contentStore's get must never be called", async () => {
+    // The deployed regression: the api binds `contentStore` to the UNBOUND GCS store whose `get`
+    // throws ("requires a workspace-bound store"), so every /outline read 500ed. Prod also wires
+    // `contentStoreFor`; reads must resolve the workspace-bound store through it.
+    const unbound = {
+      get: () => Promise.reject(new Error("GcsContentStore.get requires a workspace-bound store")),
+      put: store.put.bind(store),
+    };
+    const boundApp = createApp({
+      ...deps,
+      principal: () => principal(),
+      db: sql,
+      contentStore: unbound,
+      contentStoreFor: async () => store,
+    });
+    await seedOutlineArtifact("the-piece");
+    const res = await boundApp.request(`/projects/${seed.projectId}/outline`);
+    expect(res.status).toBe(200);
+    const dto = (await res.json()) as { markdown: string; outline: OutlineSidecar };
+    expect(dto.markdown).toContain("rhema:outline v1");
+    expect(dto.outline.thesis).toBe(OUTLINE_DOC.thesis);
+  });
 });
 
 describe("REQ-HOME-6 (R7HOME.2b, G5) — one 'outline exists' source", () => {
