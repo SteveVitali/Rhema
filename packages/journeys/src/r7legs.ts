@@ -1172,10 +1172,16 @@ const U2_NORELOAD: StepFn = async (ctx) => {
   // fresher scratch leftover (e.g. an abandoned `untitled` from an earlier leg) carries no
   // `/review/` link at all and the hop can never arm. A union `.first()` is DOM-order — the
   // preference needs an explicit two-locator pick.
+  // 2026-11-17 — the sidebar's ≤8 recents window can crowd the Showcase out entirely on a busy
+  // fixture tenant (scratch `untitled-*` legs outrank it by last-edit); the /app flat list is
+  // uncapped and carries the same guaranteed-dossier row — take it before the bare first row.
   const showcaseRecent = page.locator('[data-shell-recent="showcase"]');
+  const showcaseRow = page.locator('a.ui-prow-title[href="/p/showcase"]');
   const projectLink = (await showcaseRecent.count()) > 0
     ? showcaseRecent.first()
-    : page.locator("[data-shell-project] a, [data-shell-recent]").first();
+    : (await showcaseRow.count()) > 0
+      ? showcaseRow.first()
+      : page.locator("[data-shell-project] a, [data-shell-recent]").first();
   if ((await projectLink.count()) === 0) throw new Error("no project entry in the sidebar");
   const href = (await projectLink.getAttribute("href")) ?? "";
   const slug = /\/p\/([^/]+)/.exec(href)?.[1] ?? "";
@@ -1240,7 +1246,16 @@ const U2_NORELOAD: StepFn = async (ctx) => {
   // tail's surface (its write arms are safely withheld, so the approve/chat segments
   // exercise their skip arms, never a real mutation on a paid:false leg).
   const projectAgain = page.locator(`a[href="/p/${slug}"]`).first();
-  await leg("inbox→project", () => settleClientNav(page, ctx, () => projectAgain.click()));
+  if ((await projectAgain.count()) > 0) {
+    await leg("inbox→project", () => settleClientNav(page, ctx, () => projectAgain.click()));
+  } else {
+    // the ≤8 recents window can crowd the walked project out entirely on a busy fixture
+    // tenant — "All projects" reopens the uncapped list and its row is the same SPA hop.
+    const allProjects = page.locator("[data-shell-all-projects]").first();
+    await leg("inbox→projects", () => settleClientNav(page, ctx, () => allProjects.click()));
+    const row = page.locator(`a.ui-prow-title[href="/p/${slug}"]`).first();
+    await leg("projects→project", () => settleClientNav(page, ctx, () => row.click()));
+  }
 
   // Timeline gate approve: the waiting card's Approve is a pane-body form POST — a JSON
   // mutation through the chrome-host delegated submit, never a document load. Absent a
