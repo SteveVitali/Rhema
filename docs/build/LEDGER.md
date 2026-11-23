@@ -198,6 +198,11 @@ pointers; substance unchanged.)_
   repaired. Repair = one `jrn-report-hold:<runId>` row per account (the exact row the fixed seed
   writes; bounded prod write on six `is_test` accounts — operator authorization owed). Evidence +
   rejected alternatives (leave-and-page / `is_test` exclusion) in `docs/build/runs/R6DEP.6.md`.
+  **RESOLVED 2026-11-18 → bake-verified 2026-11-23:** the six authorized `jrn-report-hold:<runId>`
+  rows landed (18-Nov); every daily `usage.reconcile` firing since reads `balances ok` —
+  5 consecutive clean 03:15Z firings 2026-11-19→2026-11-23 over `rhema-prod-worker-cbdaf0f`
+  logs. The nightly page posture is now `report_fetch_denied` only — the standing correct
+  posture until D-ECON.1-1's admin-key/plan act.
 - **F-R6OPS.1-1 — RESOLVED 2026-10-23 (R6OPS.2, prod stack update 157 — `runs/R6OPS.2.md` +
   `reports/2026-10-23_R6OPS.2/`).** `rhema:opsAlertWebhookUrl` bound on prod (stdin pipe, SM
   `latest` → `secure:` ciphertext only) → `pulumi up` created `webhook_tokenauth` channel
