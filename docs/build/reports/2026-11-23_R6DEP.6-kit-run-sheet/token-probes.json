@@ -1,0 +1,141 @@
+{
+  "app": {
+    "colorScheme": "dark",
+    "shellBg": "rgb(15, 17, 20)",
+    "select": null,
+    "input": {
+      "tag": "INPUT",
+      "bg": "rgb(29, 34, 41)",
+      "border": "rgb(42, 48, 57)",
+      "color": "rgb(230, 232, 235)",
+      "colorScheme": "dark",
+      "appearance": "auto"
+    },
+    "textarea": null,
+    "buttonFilled": null
+  },
+  "settings": {
+    "colorScheme": "dark",
+    "shellBg": "rgb(15, 17, 20)",
+    "select": null,
+    "input": {
+      "tag": "INPUT",
+      "bg": "rgb(29, 34, 41)",
+      "border": "rgb(255, 123, 114)",
+      "color": "rgb(230, 232, 235)",
+      "colorScheme": "dark",
+      "appearance": "auto"
+    },
+    "textarea": null,
+    "buttonFilled": {
+      "tag": "BUTTON",
+      "bg": "rgb(29, 34, 41)",
+      "border": "rgb(42, 48, 57)",
+      "color": "rgb(230, 232, 235)",
+      "colorScheme": "dark",
+      "appearance": "auto"
+    }
+  },
+  "billing": {
+    "colorScheme": "dark",
+    "shellBg": "rgb(15, 17, 20)",
+    "select": {
+      "tag": "SELECT",
+      "bg": "rgb(29, 34, 41)",
+      "border": "rgb(230, 232, 235)",
+      "color": "rgb(230, 232, 235)",
+      "colorScheme": "dark",
+      "appearance": "auto"
+    },
+    "input": {
+      "tag": "INPUT",
+      "bg": "rgb(29, 34, 41)",
+      "border": "rgb(255, 123, 114)",
+      "color": "rgb(230, 232, 235)",
+      "colorScheme": "dark",
+      "appearance": "auto"
+    },
+    "textarea": null,
+    "buttonFilled": {
+      "tag": "BUTTON",
+      "bg": "rgb(29, 34, 41)",
+      "border": "rgb(42, 48, 57)",
+      "color": "rgb(230, 232, 235)",
+      "colorScheme": "dark",
+      "appearance": "auto"
+    }
+  },
+  "appnew": {
+    "colorScheme": "dark",
+    "shellBg": "rgb(15, 17, 20)",
+    "select": null,
+    "input": {
+      "tag": "INPUT",
+      "bg": "rgb(29, 34, 41)",
+      "border": "rgb(42, 48, 57)",
+      "color": "rgb(230, 232, 235)",
+      "colorScheme": "dark",
+      "appearance": "auto"
+    },
+    "textarea": null,
+    "buttonFilled": null
+  },
+  "export_": {
+    "colorScheme": "dark",
+    "shellBg": "rgb(15, 17, 20)",
+    "select": {
+      "tag": "SELECT",
+      "bg": "rgb(245, 242, 234)",
+      "border": "rgb(232, 228, 220)",
+      "color": "rgb(29, 28, 26)",
+      "colorScheme": "light",
+      "appearance": "auto"
+    },
+    "input": {
+      "tag": "INPUT",
+      "bg": "rgba(0, 0, 0, 0)",
+      "border": "rgb(29, 28, 26)",
+      "color": "rgb(29, 28, 26)",
+      "colorScheme": "light",
+      "appearance": "auto"
+    },
+    "textarea": null,
+    "buttonFilled": {
+      "tag": "BUTTON",
+      "bg": "rgb(43, 99, 201)",
+      "border": "rgba(0, 0, 0, 0)",
+      "color": "rgb(255, 253, 248)",
+      "colorScheme": "light",
+      "appearance": "auto"
+    }
+  },
+  "runsheet": {
+    "colorScheme": "dark",
+    "shellBg": "rgb(15, 17, 20)",
+    "select": {
+      "tag": "SELECT",
+      "bg": "rgb(29, 34, 41)",
+      "border": "rgb(230, 232, 235)",
+      "color": "rgb(230, 232, 235)",
+      "colorScheme": "dark",
+      "appearance": "auto"
+    },
+    "input": null,
+    "textarea": {
+      "tag": "TEXTAREA",
+      "bg": "rgb(29, 34, 41)",
+      "border": "rgb(42, 48, 57)",
+      "color": "rgb(230, 232, 235)",
+      "colorScheme": "dark",
+      "appearance": "auto"
+    },
+    "buttonFilled": {
+      "tag": "BUTTON",
+      "bg": "rgb(43, 99, 201)",
+      "border": "rgba(0, 0, 0, 0)",
+      "color": "rgb(255, 253, 248)",
+      "colorScheme": "light",
+      "appearance": "auto"
+    }
+  }
+}

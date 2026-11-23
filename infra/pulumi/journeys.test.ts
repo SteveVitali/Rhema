@@ -16,11 +16,22 @@ describe("preview-orphan sweep — CI principal read grants", () => {
       "roles/alloydb.viewer", // AlloyDB
       "roles/redis.viewer", // Memorystore
       "roles/run.viewer", // Cloud Run services + jobs
-      "roles/storage.objectViewer", // storage.buckets.list
       "roles/artifactregistry.reader", // Artifact Registry repos
     ]) {
       expect(SRC, role).toContain(`"${role}"`);
     }
+  });
+
+  it("grants storage.buckets.list as a one-permission custom role, not a predefined role", () => {
+    // 313_R6FIX.42 — no predefined viewer role carries `storage.buckets.list`
+    // (roles/storage.objectViewer grants object reads, not the project-level list; only
+    // roles/storage.admin carries it and it is far too broad). The sweep's gcs-bucket arm
+    // must ride a dedicated custom role.
+    expect(SRC).toContain("gcp.projects.IAMCustomRole");
+    expect(SRC).toContain('"ciPreviewSweepBucketsList"');
+    expect(SRC).toContain('permissions: ["storage.buckets.list"]');
+    expect(SRC).not.toContain("roles/storage.objectViewer");
+    expect(SRC).not.toContain("roles/storage.admin");
   });
 
   it("binds the same github-pool repo principalSet the journeys suite uses", () => {
