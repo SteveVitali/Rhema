@@ -435,6 +435,21 @@ async function armAutoRun(page: Page): Promise<void> {
   await ctl.first().check();
 }
 
+/** R6FIX.43b — pick a rigor radio on either emitter. The SPA's Radix RadioGroup emits ONE hidden
+ *  BubbleInput keyed to the CURRENT selection, so `input[name="rigor"][value="quick"]` does not
+ *  exist and the old `count()===0` arm skipped SILENTLY — the launch then rode the DEFAULT rigor
+ *  (Standard/frontier ≈5,582cr) instead of the intended cheap cell. Click the `role="radio"`
+ *  control; the SSR native input is the fallback. */
+async function pickRigor(page: Page, value: string): Promise<void> {
+  const role = page.locator(`button[role="radio"][value="${value}"]`);
+  if ((await role.count()) > 0) {
+    if (!(await role.isChecked())) await role.click();
+    return;
+  }
+  const input = page.locator(`input[name="rigor"][value="${value}"]`);
+  if ((await input.count()) > 0 && !(await input.isChecked())) await input.check();
+}
+
 /** The run sheet's estimate-box figure + band for a lever/inputs override (`?words=`/`?claims=`/`?tier=`/`?rigor=`).
  *  MAINT.3 (D-OBS.1-3 N4) — an entitled trial tenant renders the §14.3 `Included` variant: no
  *  `[data-credits-line]`. The sheet's recompute payload (`[data-estimate-matrix]` — the typed JSON
@@ -1017,6 +1032,9 @@ const N5: StepFn = async (ctx) => {
     )
     .first();
   if ((await launch.count()) === 0) throw new Error("no Review launch control on the run sheet");
+  // R6FIX.43b — the sheet is long; the launch control can sit below the 720px fold once the
+  // §5.6 row is armed (elementFromPoint → null off-viewport ⇒ "occluded by (no element at point)").
+  await launch.scrollIntoViewIfNeeded();
   await assertActionable(launch, "Review launch");
   await launch.click();
   // the launch POST's doc nav (SSR) or mutation re-render (SPA) — settle on the markers.
@@ -1186,14 +1204,15 @@ const N6: StepFn = async (ctx) => {
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/run?workflow=review&rigor=quick`);
   // the ticket's cell is Quick/Base — select the rigor radio explicitly (the query arg pre-selects
   // it; checking makes the intent load-bearing rather than ambient).
-  const rigor = page.locator('input[name="rigor"][value="quick"]');
-  if ((await rigor.count()) > 0 && !(await rigor.isChecked())) await rigor.check();
+  await pickRigor(page, "quick");
   // "This run only — run it to completion" (per-run gates_off): the leg is unattended; named
   // approvals would park the review at its gates. The checkbox rides the §5.6 collapsed row
   // (a closed <details>) — open it as a user would before checking; a force-check on an
   // invisible input would be a harness lie, not a walk.
   await armAutoRun(page);
   const runBtn = page.locator('button[data-run-button="true"]').first();
+  // R6FIX.43b — same off-viewport occlusion class as N5's launch; scroll before asserting.
+  await runBtn.scrollIntoViewIfNeeded();
   await assertActionable(runBtn, "Review launch");
   await runBtn.click();
   await settleNav(page, ctx);
@@ -1486,10 +1505,11 @@ const R6: StepFn = async (ctx) => {
   );
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/run?workflow=review&rigor=quick`);
   // Quick/Base unattended (the same launch ceremony as N6 — see its comment for the collapsed row).
-  const rigor = page.locator('input[name="rigor"][value="quick"]');
-  if ((await rigor.count()) > 0 && !(await rigor.isChecked())) await rigor.check();
+  await pickRigor(page, "quick");
   await armAutoRun(page);
   const runBtn = page.locator('button[data-run-button="true"]').first();
+  // R6FIX.43b — same off-viewport occlusion class as N5's launch; scroll before asserting.
+  await runBtn.scrollIntoViewIfNeeded();
   await assertActionable(runBtn, "Review launch");
   await runBtn.click();
   await settleNav(page, ctx);
@@ -2607,10 +2627,11 @@ async function launchQuickReviewToDelivery(
 ): Promise<{ slug: string; runId: string; state: string }> {
   const slug = await createDraftProject(page, ctx.webBaseUrl, ctx.marker(tag), doc);
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/run?workflow=review&rigor=quick`);
-  const rigor = page.locator('input[name="rigor"][value="quick"]');
-  if ((await rigor.count()) > 0 && !(await rigor.isChecked())) await rigor.check();
+  await pickRigor(page, "quick");
   await armAutoRun(page);
   const runBtn = page.locator('button[data-run-button="true"]').first();
+  // R6FIX.43b — same off-viewport occlusion class as N5's launch; scroll before asserting.
+  await runBtn.scrollIntoViewIfNeeded();
   await assertActionable(runBtn, "Review launch");
   await runBtn.click();
   await settleNav(page, ctx);
