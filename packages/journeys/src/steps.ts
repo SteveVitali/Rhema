@@ -417,6 +417,24 @@ function bandOf(text: string): { low: number; high: number } | null {
   return m ? { low: Number(m[1]), high: Number(m[2]) } : null;
 }
 
+/** R6FIX.43 — arm the per-run "this run only" override on either emitter. The SPA renders the
+ *  Radix Checkbox (button[role="checkbox"] + a hidden BubbleInput that carries the `name` but is
+ *  `aria-hidden` and shifted off-position — .check() on it resolves "visible", clicks the shifted
+ *  point, and the `.ide` shell intercepts). The SSR sheet emits the same declared row with a
+ *  native input. Click the ROLE control when present; fall back to the native input. */
+async function armAutoRun(page: Page): Promise<void> {
+  const auto = page.locator('input[name="autoRun"]');
+  if ((await auto.count()) === 0 || (await auto.isChecked())) return;
+  const ctl = page.locator(
+    'label[data-auto-run] button[role="checkbox"], label[data-auto-run] input[name="autoRun"]',
+  );
+  if (!(await ctl.first().isVisible().catch(() => false))) {
+    const summary = page.locator('details:has(label[data-auto-run]) > summary');
+    if ((await summary.count()) > 0) await summary.first().click();
+  }
+  await ctl.first().check();
+}
+
 /** The run sheet's estimate-box figure + band for a lever/inputs override (`?words=`/`?claims=`/`?tier=`/`?rigor=`).
  *  MAINT.3 (D-OBS.1-3 N4) — an entitled trial tenant renders the §14.3 `Included` variant: no
  *  `[data-credits-line]`. The sheet's recompute payload (`[data-estimate-matrix]` — the typed JSON
@@ -991,14 +1009,7 @@ const N5: StepFn = async (ctx) => {
   // "This run only — run it to completion" (per-run gates_off): the leg is unattended; without it the
   // Review parks at approve_scope waiting on a named approver (the 2026-10-02 first green attempt
   // starved its 40-min delivery poll exactly there — run 01M3Z55G8VAQEVRKF2RXEJA1G0).
-  const auto = page.locator('input[name="autoRun"]');
-  if ((await auto.count()) > 0 && !(await auto.isChecked())) {
-    if (!(await auto.isVisible())) {
-      const summary = page.locator('details:has(input[name="autoRun"]) > summary');
-      if ((await summary.count()) > 0) await summary.first().click();
-    }
-    await auto.check();
-  }
+  await armAutoRun(page);
   // launch the Standard/Base Review — the one bounded paid run of the weekly leg.
   const launch = page
     .locator(
@@ -1181,14 +1192,7 @@ const N6: StepFn = async (ctx) => {
   // approvals would park the review at its gates. The checkbox rides the §5.6 collapsed row
   // (a closed <details>) — open it as a user would before checking; a force-check on an
   // invisible input would be a harness lie, not a walk.
-  const auto = page.locator('input[name="autoRun"]');
-  if ((await auto.count()) > 0 && !(await auto.isChecked())) {
-    if (!(await auto.isVisible())) {
-      const summary = page.locator('details:has(input[name="autoRun"]) > summary');
-      if ((await summary.count()) > 0) await summary.first().click();
-    }
-    await auto.check();
-  }
+  await armAutoRun(page);
   const runBtn = page.locator('button[data-run-button="true"]').first();
   await assertActionable(runBtn, "Review launch");
   await runBtn.click();
@@ -1484,14 +1488,7 @@ const R6: StepFn = async (ctx) => {
   // Quick/Base unattended (the same launch ceremony as N6 — see its comment for the collapsed row).
   const rigor = page.locator('input[name="rigor"][value="quick"]');
   if ((await rigor.count()) > 0 && !(await rigor.isChecked())) await rigor.check();
-  const auto = page.locator('input[name="autoRun"]');
-  if ((await auto.count()) > 0 && !(await auto.isChecked())) {
-    if (!(await auto.isVisible())) {
-      const summary = page.locator('details:has(input[name="autoRun"]) > summary');
-      if ((await summary.count()) > 0) await summary.first().click();
-    }
-    await auto.check();
-  }
+  await armAutoRun(page);
   const runBtn = page.locator('button[data-run-button="true"]').first();
   await assertActionable(runBtn, "Review launch");
   await runBtn.click();
@@ -2612,14 +2609,7 @@ async function launchQuickReviewToDelivery(
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/run?workflow=review&rigor=quick`);
   const rigor = page.locator('input[name="rigor"][value="quick"]');
   if ((await rigor.count()) > 0 && !(await rigor.isChecked())) await rigor.check();
-  const auto = page.locator('input[name="autoRun"]');
-  if ((await auto.count()) > 0 && !(await auto.isChecked())) {
-    if (!(await auto.isVisible())) {
-      const summary = page.locator('details:has(input[name="autoRun"]) > summary');
-      if ((await summary.count()) > 0) await summary.first().click();
-    }
-    await auto.check();
-  }
+  await armAutoRun(page);
   const runBtn = page.locator('button[data-run-button="true"]').first();
   await assertActionable(runBtn, "Review launch");
   await runBtn.click();
