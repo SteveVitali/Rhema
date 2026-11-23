@@ -95,7 +95,6 @@ export function createJourneys(args: JourneysArgs): void {
     "roles/alloydb.viewer", // AlloyDB clusters list
     "roles/redis.viewer", // Memorystore instances list
     "roles/run.viewer", // Cloud Run services + jobs list
-    "roles/storage.objectViewer", // storage.buckets.list — the least role carrying it
     "roles/artifactregistry.reader", // repositories list
   ];
   for (const role of sweepViewerRoles) {
@@ -109,6 +108,29 @@ export function createJourneys(args: JourneysArgs): void {
       { retainOnDelete: true },
     );
   }
+
+  // 313_R6FIX.42 — `storage.buckets.list` rides no predefined viewer role (2026-11-23: the
+  // nightly sweep's gcs-bucket arm 403'd — the object-viewer grant gives object reads, not the
+  // project-level list; the admin role carries it and is far too broad), so the grant is a
+  // one-permission custom role.
+  const sweepBucketsList = new gcp.projects.IAMCustomRole("ci-preview-sweep-buckets-list", {
+    project: args.project,
+    roleId: "ciPreviewSweepBucketsList",
+    title: "CI preview-sweep — bucket list",
+    description:
+      "Least-privilege grant for the nightly preview-orphan-sweep gcs-bucket arm " +
+      "(scripts/live/preview-orphan-sweep.mjs): project-level bucket names only — no object access.",
+    permissions: ["storage.buckets.list"],
+  });
+  new gcp.projects.IAMMember(
+    "ci-preview-sweep-buckets-list",
+    {
+      project: args.project,
+      role: sweepBucketsList.name,
+      member: pulumi.interpolate`principalSet://iam.googleapis.com/projects/${proj.number}/locations/global/workloadIdentityPools/github-pool/attribute.repository/${args.ciRepository}`,
+    },
+    { retainOnDelete: true },
+  );
 
   // The operator who drives local Stage-B legs with `gcloud auth application-default` needs the same
   // grant (the hand binding exists already — declared here so state and reality agree; the member
