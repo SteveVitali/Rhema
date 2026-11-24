@@ -1,0 +1,42 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "4fab5fea1b0c",
+  "startedAt": "2026-11-24T16:29:37.470Z",
+  "finishedAt": "2026-11-24T16:36:51.416Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "279f45d363e270778e5a63995dc575b7010a12b6",
+    "observed": {
+      "web": "279f45d363e270778e5a63995dc575b7010a12b6",
+      "api": "279f45d363e270778e5a63995dc575b7010a12b6"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 6.365527,
+    "capUsd": 22,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "N11",
+      "journey": "new-visitor",
+      "owner": "CITE.1",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET https://rhema.tools/p/jrn-e1d48dd118d8-cite1/r/01M874A5Y5F31Z97VKM05MAPSZ/events?after=200 net::ERR_ABORTED"
+      ],
+      "durationMs": 433865,
+      "error": "delivered dossier shows no cited source URLs to chip-check",
+      "screenshot": "N11.png"
+    }
+  ],
+  "passed": false
+}

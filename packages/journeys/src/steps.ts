@@ -2757,6 +2757,9 @@ const R9: StepFn = async (ctx) => {
   await cta.waitFor({ state: "attached", timeout: 15_000 }).catch(() => {
     throw new Error("the delivered report renders no refund control — the flag/affordance is absent");
   });
+  // R6FIX.43b's off-viewport occlusion class — the control sits below the 720px fold on the
+  // run report; hit-test its center after scrolling, not wherever the layout parked it.
+  await cta.scrollIntoViewIfNeeded();
   await assertActionable(cta, "the refund control"); // visible + enabled + unobscured
   const ctaText = ((await cta.textContent()) ?? "").trim();
   const n = /(\d[\d,]*)\s*cr/i.exec(ctaText)?.[1];
@@ -2784,6 +2787,7 @@ const R9: StepFn = async (ctx) => {
   await cta2.waitFor({ state: "attached", timeout: 15_000 }).catch(() => {
     throw new Error("the second run's report renders no refund control — it should still offer review");
   });
+  await cta2.scrollIntoViewIfNeeded();
   await assertActionable(cta2, "the refund control (second request)");
   await cta2.click();
   await settleNav(page, ctx);
@@ -2818,14 +2822,51 @@ const R9: StepFn = async (ctx) => {
  *  the CITE.1 run ledger. */
 const N11: StepFn = async (ctx) => {
   const { page } = await ctx.returningUser("a");
-  const { slug, runId, state } = await launchQuickReviewToDelivery(
-    page,
-    ctx,
-    "CITE1",
-    GOLDEN_OP_ED,
-  );
-  if (state !== "completed" && state !== "completed_partial") {
-    throw new Error(`run ${runId} ended ${state}, not delivered`);
+  // Funded-window ride seam (same class as JOURNEY_DOSSIER_*): when an earlier dispatch's leg
+  // launched the run but the leg process died before delivery, JOURNEY_N11_RIDE="slug,runId"
+  // rides that delivery — the launch ceremony still ran (the run exists because a leg launched
+  // it) and a fresh launch would spend a duplicate run under trial-concurrency=1.
+  const ride = process.env.JOURNEY_N11_RIDE;
+  let slug = "";
+  let runId = "";
+  if (ride) {
+    const [rSlug, rRun] = ride.split(",");
+    if (!rSlug || !rRun) throw new Error('JOURNEY_N11_RIDE wants "<slug>,<runId>"');
+    slug = rSlug;
+    runId = rRun;
+    const deadline = Date.now() + 45 * 60_000;
+    for (let i = 0; Date.now() < deadline; i++) {
+      // the twin is the delivered truth — the document shell 200s every /review/ URL.
+      const twin = await page.request
+        .get(`${ctx.webBaseUrl}/bff/p/${slug}/review/${runId}`)
+        .catch(() => null);
+      if (twin?.status() === 200) break;
+      // early-exit on a terminal run — every ~2min check the run card's state.
+      if (i % 12 === 6) {
+        await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}`, ctx).catch(() => undefined);
+        const rs = await page
+          .locator(`[data-run-card="${runId}"]`)
+          .getAttribute("data-run-state")
+          .catch(() => null);
+        if (rs === "failed" || rs === "cancelled") {
+          throw new Error(`ride run ${runId} ended ${rs}, not delivered`);
+        }
+      }
+      await page.waitForTimeout(10_000);
+    }
+    const twin = await page.request
+      .get(`${ctx.webBaseUrl}/bff/p/${slug}/review/${runId}`)
+      .catch(() => null);
+    if (!twin || twin.status() !== 200) {
+      throw new Error(`ride dossier /p/${slug}/review/${runId} never delivered within 45 min`);
+    }
+  } else {
+    const launched = await launchQuickReviewToDelivery(page, ctx, "CITE1", GOLDEN_OP_ED);
+    slug = launched.slug;
+    runId = launched.runId;
+    if (launched.state !== "completed" && launched.state !== "completed_partial") {
+      throw new Error(`run ${runId} ended ${launched.state}, not delivered`);
+    }
   }
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}`);
 

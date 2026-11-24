@@ -180,3 +180,15 @@ export function deferredVisibleAt(startMinutesUtc: number, endMinutesUtc: number
   const prefs = { quietHours: { startMinutesUtc, endMinutesUtc } } as NotificationPrefs;
   return inQuietHours(prefs, deliveredAt) ? quietHoursEnd(prefs, deliveredAt) : null;
 }
+
+/** The instant the CURRENT window instance started — the most recent crossing of
+ *  `startMinutesUtc` at or before `now` (a wrapping window's post-midnight arm started
+ *  yesterday). `deferredVisibleAt` is a minute-of-day answer; a purge-exempt tenant carries
+ *  inbox rows delivered at in-range times-of-day on earlier days, before this window armed —
+ *  "this window's deliveries" means `created_at >= currentWindowStartUtc`. */
+export function currentWindowStartUtc(startMinutesUtc: number, now: Date): Date {
+  const start = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, startMinutesUtc),
+  );
+  return start.getTime() <= now.getTime() ? start : new Date(start.getTime() - 24 * 60 * 60 * 1000);
+}
