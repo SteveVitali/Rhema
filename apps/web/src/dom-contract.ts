@@ -1273,6 +1273,7 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-rubric-row", "conditional", "ui/rubric.tsx"),
     a("data-trust-chip", "conditional", "ui/chips.tsx"),
     a("data-severity", "conditional", "ui findings/gate-card/margin"),
+    a("data-kind", "conditional", "ui findings/findings-desk/margin/approval-row/files-pane"),
     a("data-informational", "conditional", "ui/gate-card.tsx"),
     a("data-blocking", "conditional", "ui/approval-row + gate-card"),
     a("data-decisions-list", "conditional", "ui/decisions.tsx"),

@@ -1962,9 +1962,14 @@ const T15: StepFn = async (ctx) => {
   if (!href.includes(`gate=${gid}`)) {
     throw new Error("the focused gate card is not the row's gate");
   }
-  // the mounted card carries its decide controls.
+  // the mounted card carries its decide controls; when a triage ledger renders, its rows carry
+  // the per-row disposition state (`data-disposition` — gate-card.tsx's kind/"undecided" stamp).
   const buttons = await focused.locator("button").count();
   if (buttons === 0) throw new Error("the focused gate card renders no decide controls");
+  const triage = focused.locator("[data-triage-ledger]");
+  if ((await triage.count()) > 0 && (await triage.locator("[data-disposition]").count()) === 0) {
+    throw new Error("the focused gate card's triage ledger carries no disposition state");
+  }
   assertBundleParity(ctx);
 };
 
