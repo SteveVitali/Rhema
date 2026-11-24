@@ -2597,8 +2597,11 @@ const R8_INBOX: StepFn = async (ctx) => {
   if (!Number.isNaN(n) && n !== blocked) {
     throw new Error(`Inbox badge says ${n} but renders ${blocked} waiting rows`);
   }
-  // every Inbox row carries a project name (the row's project-meta line or the gate copy's slug).
-  const rows = page.locator("[data-inbox-row]");
+  // every Needs-you row carries a project name (the row's project-meta line or the gate copy's
+  // slug). Scoped to the blocked section: unread/read/voices rows legitimately include
+  // account-level items (grant/billing notices) that carry no project — the product's own
+  // projectMeta emits none for them.
+  const rows = page.locator('[data-inbox-section="blocked"] [data-inbox-row]');
   const rowCount = await rows.count();
   for (let i = 0; i < rowCount; i++) {
     const meta = await rows.nth(i).locator("[data-inbox-project]").count();
@@ -2660,7 +2663,7 @@ async function launchQuickReviewToDelivery(
 
 /** The §14.5 level-1 spendable figure (data-usage-balance) — the refund leg's exact-movement read. */
 async function readSpendable(page: Page, ctx: StepCtx): Promise<number> {
-  await gotoOk(page, `${ctx.webBaseUrl}/app/usage`);
+  await gotoOk(page, `${ctx.webBaseUrl}/usage`);
   const text = (await page.locator("[data-usage-balance]").textContent()) ?? "";
   const m = /(\d[\d,]*)\s*cr/i.exec(text);
   if (m?.[1] == null) throw new Error(`the usage balance is unreadable: "${text}"`);
