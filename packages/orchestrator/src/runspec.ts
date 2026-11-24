@@ -580,7 +580,7 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
     ...(researchPhase
       ? {
           checkpoint_contract:
-            `Checkpoint contract (RES.3): write the phase's ledger/dossier EARLY — a skeleton covering every inventoried claim/topic (rows that are not yet researched carry verdict "unverifiable") — then update each row incrementally as its research lands. Your last written state is what an interrupted attempt resumes from; research you never persisted cannot be resumed.`,
+            `Checkpoint contract (RES.3): write the phase's ledger/dossier EARLY — a skeleton covering every inventoried claim/topic — then update each row incrementally as its research lands. A row that is not yet researched carries verdict "unverifiable" and NOTHING ELSE — no note, url, accessedAt, sourceCheck, or sources: evidence fields belong to rows you have actually researched, and a "research pending" style placeholder note reads as unclosed, not done. A justified "unverifiable" is a real disposition and DOES carry its evidence — the note saying why the claim cannot be checked and whatever trail exists. Your last written state is what an interrupted attempt resumes from; research you never persisted cannot be resumed.`,
           research_budget: `Research budget (RES.3): ${researchBudget!.searchesRemaining} of ${researchBudget!.searchBudget} searches and ${researchBudget!.fetchesRemaining} of ${researchBudget!.fetchBudget} fetches remain for the whole run — spend them only on claims the checkpoint still leaves unverified/unverifiable.`,
           ...(checkpoint
             ? {
