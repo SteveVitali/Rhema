@@ -79,6 +79,24 @@ pointers; substance unchanged.)_
   chip assert, T13's suggestion probe, T14's obligation arm, N11's CITE.1 chip-check — all owed
   until a real-coverage dossier exists. Evidence: `reports/2026-11-24_funded-jrna-14-n11ride` +
   run rows above; owner: run-path (researcher artifact-write).
+- **OPEN 2026-11-24 — F-R6FIX.45-2: SSE client-abort races crash the api instance's response —
+  intermittent 503 bursts + web SSR 500s on live project pages.** Cloud Run log evidence:
+  `TypeError [ERR_INVALID_STATE]: Controller is already closed` at
+  `RunEventStreamer.sink` (sse-routes.ts:110 → event-stream.ts:163) followed immediately by
+  "malformed response / connection error" 503s on `api.rhema.tools/projects` and 500s on
+  `rhema.tools/p/:slug` SSR at 16:14Z + 17:35Z — the same instants. Mechanism:
+  `streamRunEvents`'s subscriber + poll wakeups discard `streamer.pump()` promises
+  (`void streamer.pump()`, event-stream.ts:224/227); when the client disconnects mid-pump the
+  sink's `controller.enqueue` throws synchronously inside the pump, the rejection escapes every
+  catch chain (the OBS.1 `.catch` wraps only the outer `streamRunEvents` promise) → unhandled
+  rejection → the response aborts, Cloud Run reports 503, and concurrent requests on the
+  instance 503 with it; the web host's SSR `listProjects` call then surfaces a user-visible
+  500. Client aborts are constant (every EventSource reconnect/tab nav fires `ERR_ABORTED`),
+  so this is a live reliability defect, not a fixture artifact — it blocked R6's second
+  funded-window attempt (leg reached the console gate; the 500 *was* the defect).
+  Fix sketch (next carrier): guard the sink's `enqueue` behind a closed-controller try/catch
+  (drop undeliverable chunks) and route `pump()`/`ping()` rejections from the wakeup callbacks
+  into the tail promise so a real failure still closes the stream via the OBS.1 path.
 - **G2 DEFERRED (operator decision 2026-09-15) — Phase-B implementation proceeds.** G2 + H2 stay
   a HARD gate before public launch; §16.4 marketing/efficacy claims do NOT ship until LIFT is met
   (REQ-EVAL-16 consequences apply retroactively to UI built meanwhile). See `readouts/GATE-G2.md`.

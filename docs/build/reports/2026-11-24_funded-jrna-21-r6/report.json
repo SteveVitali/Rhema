@@ -1,0 +1,50 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "b4184bb3249d",
+  "startedAt": "2026-11-24T17:28:56.305Z",
+  "finishedAt": "2026-11-24T17:54:07.504Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "279f45d363e270778e5a63995dc575b7010a12b6",
+    "observed": {
+      "web": "279f45d363e270778e5a63995dc575b7010a12b6",
+      "api": "279f45d363e270778e5a63995dc575b7010a12b6"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 11.267417,
+    "capUsd": 22,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "R6",
+      "journey": "returning",
+      "owner": "RPT.1",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 500 ()"
+      ],
+      "failedRequests": [
+        "GET https://rhema.tools/p/jrn-b4184bb3249d-r6excerpt/r/01M879N66W1PM9X7C1DAFPG3H3/events?after=2 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-b4184bb3249d-r6excerpt/r/01M879N66W1PM9X7C1DAFPG3H3/events?after=3 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-b4184bb3249d-r6excerpt/r/01M879N66W1PM9X7C1DAFPG3H3/events?after=6 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-b4184bb3249d-r6excerpt/r/01M879N66W1PM9X7C1DAFPG3H3/events?after=30 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-b4184bb3249d-r6excerpt/r/01M879N66W1PM9X7C1DAFPG3H3/events?after=64 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-b4184bb3249d-r6excerpt/r/01M879N66W1PM9X7C1DAFPG3H3/events?after=106 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-b4184bb3249d-r6excerpt/r/01M879N66W1PM9X7C1DAFPG3H3/events?after=180 net::ERR_ABORTED"
+      ],
+      "durationMs": 1511151,
+      "error": "console errors on visited pages: Failed to load resource: the server responded with a status of 500 ()",
+      "screenshot": "R6.png"
+    }
+  ],
+  "passed": false
+}
