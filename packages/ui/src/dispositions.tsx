@@ -54,9 +54,17 @@ function HiddenField({ name, value }: { name: string; value: string }): ReactNod
 }
 
 /** The reason chip radios post `reason_code` through the native no-JS form (RV-36 — a Radix
- *  carrier would need client JS; the chip styling lives on the wrapping label). */
+ *  carrier would need client JS; the chip styling lives on the wrapping label). `ui-d-radio`
+ *  carries the KIT-1 native treatment (accent token) — an OS-default input is a U4.controls
+ *  finding, not an exemption. */
 function ReasonRadio(props: React.InputHTMLAttributes<HTMLInputElement>): ReactNode {
-  return <input {...props} />;
+  return (
+    <input
+      className="ui-d-radio"
+      style={{ accentColor: "var(--accent)", margin: 0, cursor: "pointer" }}
+      {...props}
+    />
+  );
 }
 
 const chipLabel: CSSProperties = {
