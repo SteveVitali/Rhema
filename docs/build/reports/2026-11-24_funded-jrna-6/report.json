@@ -1,0 +1,174 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "8d2dbe21ee47",
+  "startedAt": "2026-11-24T15:20:10.421Z",
+  "finishedAt": "2026-11-24T15:26:00.872Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "279f45d363e270778e5a63995dc575b7010a12b6",
+    "observed": {
+      "web": "279f45d363e270778e5a63995dc575b7010a12b6",
+      "api": "279f45d363e270778e5a63995dc575b7010a12b6"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 22,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "N6",
+      "journey": "new-visitor",
+      "owner": "RES.1",
+      "expected": "red",
+      "paid": true,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 9612,
+      "error": "dossier shows no fetched-✓ claims",
+      "screenshot": "N6.png"
+    },
+    {
+      "id": "N11",
+      "journey": "new-visitor",
+      "owner": "CITE.1",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 98269,
+      "error": "locator.waitFor: Timeout 90000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-run-card]').first()\u001b[22m\n",
+      "screenshot": "N11.png"
+    },
+    {
+      "id": "R6",
+      "journey": "returning",
+      "owner": "RPT.1",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 98719,
+      "error": "locator.waitFor: Timeout 90000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-run-card]').first()\u001b[22m\n",
+      "screenshot": "R6.png"
+    },
+    {
+      "id": "R9",
+      "journey": "returning",
+      "owner": "DEF.4",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 ()",
+        "Failed to load resource: the server responded with a status of 404 ()",
+        "Failed to load resource: the server responded with a status of 404 ()"
+      ],
+      "failedRequests": [],
+      "durationMs": 18095,
+      "error": "the delivered report renders no refund control — the flag/affordance is absent",
+      "screenshot": "R9.png"
+    },
+    {
+      "id": "T10",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 23740,
+      "error": "no delivered own-tenant Review found (42 project(s), 0 review link(s) probed)",
+      "screenshot": "T10.png"
+    },
+    {
+      "id": "T11",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 24262,
+      "error": "no delivered own-tenant Review found (42 project(s), 0 review link(s) probed)",
+      "screenshot": "T11.png"
+    },
+    {
+      "id": "T12",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 24208,
+      "error": "no delivered own-tenant Review found (42 project(s), 0 review link(s) probed)",
+      "screenshot": "T12.png"
+    },
+    {
+      "id": "T13",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 24186,
+      "error": "no delivered own-tenant Review found (42 project(s), 0 review link(s) probed)",
+      "screenshot": "T13.png"
+    },
+    {
+      "id": "T14",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 23651,
+      "error": "no delivered own-tenant Review found (42 project(s), 0 review link(s) probed)",
+      "screenshot": "T14.png"
+    },
+    {
+      "id": "T15",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "red",
+      "paid": true,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2827,
+      "error": "the gate row's open link: not visible",
+      "screenshot": "T15.png"
+    },
+    {
+      "id": "T16",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "red",
+      "paid": true,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2370,
+      "error": "a stale-voice row landed for a persona with NO profile — staleness computed without a profile",
+      "screenshot": "T16.png"
+    }
+  ],
+  "passed": false
+}

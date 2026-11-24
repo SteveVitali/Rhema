@@ -1,0 +1,66 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "23d3cf11a538",
+  "startedAt": "2026-11-24T16:49:03.456Z",
+  "finishedAt": "2026-11-24T16:49:12.282Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "279f45d363e270778e5a63995dc575b7010a12b6",
+    "observed": {
+      "web": "279f45d363e270778e5a63995dc575b7010a12b6",
+      "api": "279f45d363e270778e5a63995dc575b7010a12b6"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 7.28879,
+    "capUsd": 22,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "R9",
+      "journey": "returning",
+      "owner": "DEF.4",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 3422,
+      "error": "the refund control: occluded at its center point by (no element at point)",
+      "screenshot": "R9.png"
+    },
+    {
+      "id": "T15",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "red",
+      "paid": true,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2743,
+      "error": "the gate row's open link: not visible",
+      "screenshot": "T15.png"
+    },
+    {
+      "id": "T16",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "red",
+      "paid": true,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2528,
+      "error": "a stale-voice row landed for a persona with NO profile — staleness computed without a profile",
+      "screenshot": "T16.png"
+    }
+  ],
+  "passed": false
+}

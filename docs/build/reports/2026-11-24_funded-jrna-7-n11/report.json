@@ -1,0 +1,40 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "393654915631",
+  "startedAt": "2026-11-24T15:42:55.280Z",
+  "finishedAt": "2026-11-24T15:44:33.255Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "279f45d363e270778e5a63995dc575b7010a12b6",
+    "observed": {
+      "web": "279f45d363e270778e5a63995dc575b7010a12b6",
+      "api": "279f45d363e270778e5a63995dc575b7010a12b6"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 2.552085,
+    "capUsd": 22,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "N11",
+      "journey": "new-visitor",
+      "owner": "CITE.1",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 97906,
+      "error": "locator.waitFor: Timeout 90000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-run-card]').first()\u001b[22m\n",
+      "screenshot": "N11.png"
+    }
+  ],
+  "passed": false
+}

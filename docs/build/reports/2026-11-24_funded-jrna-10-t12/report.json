@@ -1,0 +1,43 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "a3126bf93188",
+  "startedAt": "2026-11-24T16:11:04.562Z",
+  "finishedAt": "2026-11-24T16:15:08.433Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "279f45d363e270778e5a63995dc575b7010a12b6",
+    "observed": {
+      "web": "279f45d363e270778e5a63995dc575b7010a12b6",
+      "api": "279f45d363e270778e5a63995dc575b7010a12b6"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 4.730155,
+    "capUsd": 22,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "T12",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 500 ()",
+        "Failed to load resource: the server responded with a status of 404 ()"
+      ],
+      "failedRequests": [],
+      "durationMs": 243828,
+      "error": "the delivered dossier's Findings tab never opened",
+      "screenshot": "T12.png"
+    }
+  ],
+  "passed": false
+}
