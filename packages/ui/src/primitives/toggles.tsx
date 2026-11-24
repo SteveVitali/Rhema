@@ -14,7 +14,7 @@ export type CheckboxProps = ComponentPropsWithRef<typeof CheckboxPrimitive.Root>
 export function Checkbox({ className, ...rest }: CheckboxProps): ReactNode {
   const cls = ["ui-checkbox", className ?? ""].filter(Boolean).join(" ");
   return (
-    <CheckboxPrimitive.Root className={cls} {...rest}>
+    <CheckboxPrimitive.Root className={cls} role="checkbox" {...rest}>
       <CheckboxPrimitive.Indicator className="ui-checkbox-indicator">
         <Check className="ui-icon" aria-hidden />
       </CheckboxPrimitive.Indicator>
@@ -34,7 +34,7 @@ export type RadioGroupItemProps = ComponentPropsWithRef<typeof RadioGroupPrimiti
 export function RadioGroupItem({ className, ...rest }: RadioGroupItemProps): ReactNode {
   const cls = ["ui-radio-item", className ?? ""].filter(Boolean).join(" ");
   return (
-    <RadioGroupPrimitive.Item className={cls} {...rest}>
+    <RadioGroupPrimitive.Item className={cls} role="radio" {...rest}>
       <RadioGroupPrimitive.Indicator className="ui-radio-indicator" />
     </RadioGroupPrimitive.Item>
   );
