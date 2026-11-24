@@ -221,19 +221,37 @@ export async function streamRunEvents(opts: StreamRunEventsOptions): Promise<voi
   await streamer.pump(); // replay
   if (opts.signal.aborted) return;
 
-  const unsubscribe = opts.subscriber?.subscribe(opts.runId, () => void streamer.pump());
-
-  await new Promise<void>((resolve) => {
-    const poll = setInterval(() => void streamer.pump(), pollMs);
-    const ping = setInterval(() => void streamer.ping(), pingMs);
-    const stop = (): void => {
+  // F-R6FIX.45-2 — wakeup callbacks (bus subscribe, poll, ping) must not discard pump
+  // rejections: a throwing sink or failing read used to surface as an unhandled rejection,
+  // aborting the response (prod 503 bursts + SSR 500s). Route them into the tail promise —
+  // a real tail failure rejects here so the caller can error the stream; an abort still
+  // resolves it cleanly. Function declarations are hoisted so a synchronous wakeup during
+  // subscribe() can reach `done` before the interval consts initialize.
+  await new Promise<void>((resolve, reject) => {
+    function done(err?: unknown): void {
       clearInterval(poll);
       clearInterval(ping);
       unsubscribe?.();
-      opts.signal.removeEventListener("abort", stop);
-      resolve();
-    };
-    if (opts.signal.aborted) stop();
-    else opts.signal.addEventListener("abort", stop);
+      opts.signal.removeEventListener("abort", onAbort);
+      if (err === undefined) resolve();
+      else reject(err instanceof Error ? err : new Error(String(err)));
+    }
+    function wake(): void {
+      void streamer.pump().catch(done);
+    }
+    function onAbort(): void {
+      done();
+    }
+    const unsubscribe = opts.subscriber?.subscribe(opts.runId, wake);
+    const poll = setInterval(wake, pollMs);
+    const ping = setInterval(() => {
+      try {
+        void Promise.resolve(streamer.ping()).catch(done);
+      } catch (err) {
+        done(err);
+      }
+    }, pingMs);
+    if (opts.signal.aborted) done();
+    else opts.signal.addEventListener("abort", onAbort);
   });
 }

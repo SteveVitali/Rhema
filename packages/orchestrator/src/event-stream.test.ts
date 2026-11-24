@@ -211,4 +211,61 @@ describe("streamRunEvents — the composed replay-then-tail loop", () => {
     await done;
     expect(seqsOf(a.chunks)).toEqual([1, 2]); // replay (1) + tailed (2), each once
   });
+
+  // F-R6FIX.45-2 — a wakeup pump's sink/read failure used to escape the `void`-ed callback as an
+  // unhandled rejection (prod: ERR_INVALID_STATE on a closed controller → response abort → 503).
+  // The rejection must reach the streamRunEvents promise so the route can error the stream.
+  it("a failing wakeup pump rejects the tail instead of escaping as an unhandled rejection", async () => {
+    await append({ type: "run.started", payload: {} });
+    const a = collectSink();
+    const ac = new AbortController();
+    let broken = false;
+    const sink = (c: string): void => {
+      if (broken) throw new Error("closed controller");
+      a.sink(c);
+    };
+    const failed = streamRunEvents({
+      runId: "run1",
+      afterSeq: 0,
+      read: makeReader(),
+      sink,
+      subscriber: bus,
+      signal: ac.signal,
+      pingIntervalMs: 10_000,
+      pollIntervalMs: 10_000,
+    }).then(
+      () => null,
+      (err: unknown) => err,
+    );
+    await new Promise((r) => setTimeout(r, 20)); // replay settles, tail attaches
+    broken = true;
+    await append({ type: "step.started", payload: { phase: "1", ordinal: 1, of: 1 } }); // wakeup → pump → sink throws
+    const err = await failed;
+    expect(err).toBeInstanceOf(Error);
+    expect((err as Error).message).toBe("closed controller");
+    ac.abort();
+  });
+
+  it("an abort still resolves the tail cleanly while a wakeup pump is in flight", async () => {
+    const ac = new AbortController();
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const sink = (): Promise<void> => gate; // keeps the wakeup pump in flight across the abort
+    const done = streamRunEvents({
+      runId: "run1",
+      afterSeq: 0,
+      read: makeReader(),
+      sink,
+      subscriber: bus,
+      signal: ac.signal,
+      pingIntervalMs: 10_000,
+      pollIntervalMs: 10_000,
+    });
+    await new Promise((r) => setTimeout(r, 20));
+    await append({ type: "run.started", payload: {} }); // wakeup → pump mid-flight when abort lands
+    ac.abort();
+    await done; // resolves — not left hanging, not rejected
+    release();
+    await new Promise((r) => setTimeout(r, 50)); // let the in-flight pump drain before db teardown
+  });
 });

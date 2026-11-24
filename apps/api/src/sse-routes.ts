@@ -109,7 +109,16 @@ export function createSseRoutes(deps: SseApiDeps): Hono {
           runId,
           afterSeq,
           read,
-          sink: (chunk) => controller.enqueue(encoder.encode(chunk)),
+          // F-R6FIX.45-2 — a client disconnect mid-pump closes the controller under an
+          // in-flight sink call; enqueue then throws ERR_INVALID_STATE synchronously inside
+          // the pump. A closed controller means the chunk is undeliverable — drop it.
+          sink: (chunk) => {
+            try {
+              controller.enqueue(encoder.encode(chunk));
+            } catch {
+              /* client disconnected mid-pump */
+            }
+          },
           subscriber: deps.eventSubscriber,
           signal,
           pingIntervalMs: deps.sseOptions?.pingIntervalMs,
