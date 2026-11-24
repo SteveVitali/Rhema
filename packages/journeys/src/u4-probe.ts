@@ -42,8 +42,8 @@ export const U4_SURFACES: readonly U4Surface[] = [
     exempt: ['form[action*="/settings/approvals"]', 'form[action*="/guidance"]'],
   },
   { id: "billing", path: "/app/settings/billing" },
-  { id: "usage", path: "/app/usage" },
-  { id: "voices", path: "/app/voices" },
+  { id: "usage", path: "/usage" },
+  { id: "voices", path: "/voices" },
   { id: "new-project", path: "/app/new" },
   // the IDE Page + the right panel — the gate card's native arm (GateCheck/GateSelect), the
   // findings filter bar (FilterSelect) and the document's task marks are the named natives.

@@ -2663,7 +2663,7 @@ async function launchQuickReviewToDelivery(
 
 /** The §14.5 level-1 spendable figure (data-usage-balance) — the refund leg's exact-movement read. */
 async function readSpendable(page: Page, ctx: StepCtx): Promise<number> {
-  await gotoOk(page, `${ctx.webBaseUrl}/app/usage`);
+  await gotoOk(page, `${ctx.webBaseUrl}/usage`);
   const text = (await page.locator("[data-usage-balance]").textContent()) ?? "";
   const m = /(\d[\d,]*)\s*cr/i.exec(text);
   if (m?.[1] == null) throw new Error(`the usage balance is unreadable: "${text}"`);

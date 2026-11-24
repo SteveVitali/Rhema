@@ -1685,6 +1685,13 @@ const U4_CONTROLS: StepFn = async (ctx) => {
         .locator("[data-spa-root], [data-ide], [data-app-shell]")
         .first()
         .waitFor({ state: "attached", timeout: 30_000 });
+      // R6FIX.44 — a drifted path lands the NotFound leaf INSIDE the shell (markers all present);
+      // the probe would pass an empty page. Fail loudly on the committed not-found heading.
+      const h1 = await page.locator("[data-spa-surface] h1").first().textContent().catch(() => null);
+      if (h1?.trim() === "Not found") {
+        failures.push(`${surface.id} (${path}): landed the NotFound leaf — the surface path drifted`);
+        continue;
+      }
       const findings = await u4ProbePage(page, surface);
       await page.screenshot({
         path: join(ctx.outDir, `u4-controls-${surface.id}.png`),
