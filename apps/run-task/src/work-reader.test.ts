@@ -671,6 +671,24 @@ describe("buildPhaseOutputs — verification claim-ledger facts (F-R6CNT.3-1)", 
     expect(out.facts.claimRowCount).toBe(14);
   });
 
+  it("F-R6FIX.45-1 — an `unverifiable` row whose note only DECLARES it pending is still UNCLOSED", () => {
+    // The funded-window shape: every row carried "Checkpoint skeleton row — research pending this
+    // session." and the note satisfied the trail check → claim_ledger_closed passed a phase that
+    // never researched → delivered skeleton dossiers on checkable text.
+    const claims = [
+      row({ ordinal: 0, verdict: "verified", sources: [{ url: "https://x" }] }),
+      row({ ordinal: 1, verdict: "unverifiable", note: "Checkpoint skeleton row — research pending this session." }),
+      row({ ordinal: 2, verdict: "unverifiable", note: "research pending" }),
+      row({ ordinal: 3, verdict: "unverifiable", note: "not yet researched" }),
+      // …but a placeholder note doesn't bury a real trail: sources still close the row.
+      row({ ordinal: 4, verdict: "unverifiable", note: "pending", sources: [{ url: "https://y" }] }),
+    ];
+    const files = files0();
+    files.set("agents/editor/.rhema/01-claim-ledger.json", enc(ledger(claims, { inventoryCount: 5 })));
+    const out = buildPhaseOutputs(files, makeSpec(verification), "editor");
+    expect(out.facts.unclosedClaimOrdinals).toEqual([1, 2, 3]);
+  });
+
   it("a closed ledger — substantive verdicts + an evidence-bearing `unverifiable` — closes", () => {
     const claims = [
       row({ ordinal: 0, verdict: "verified", sources: [{ url: "https://x" }] }),

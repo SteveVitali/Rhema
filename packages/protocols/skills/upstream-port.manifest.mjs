@@ -172,9 +172,13 @@ optional. \`verdict\` ∈ {\`verified\`, \`substantially_accurate\`, \`misleadin
 \`unverifiable\` is a completed check ONLY when it carries its evidence — a \`note\` saying why it cannot be
 checked, and/or the trail you did try (\`url\`, \`normalizedUrl\`, \`accessedAt\`, \`sourceCheck\`, or non-empty
 \`sources\`). A bare \`unverifiable\` row asserts nothing was checked: the phase's \`claim_ledger_closed\` gate
-refuses it and the phase cannot go \`done\`. If research was genuinely exhausted, keep the rows — but write
-WHY each check failed into \`note\`/\`sourceCheck\`/\`sources\` so the ledger is honest, and flag the residual in
-\`phase-result.json\`/the ledger rather than letting placeholders pass as verdicts.
+refuses it and the phase cannot go \`done\`. A note that merely DECLARES the row pending — "research
+pending", "checkpoint skeleton", "not yet researched" — is a placeholder, not evidence: it asserts the
+check was never run and reads as unclosed the same as a bare row. If a checkpoint skeleton row is still
+unresearched, leave it bare (\`unverifiable\` with no evidence fields) until you research it. If research
+was genuinely exhausted, keep the rows — but write WHY each check failed into \`note\`/\`sourceCheck\`/
+\`sources\` so the ledger is honest, and flag the residual in \`phase-result.json\`/the ledger rather than
+letting placeholders pass as verdicts.
 
 **\`findings.json\`** (Letter, phase \`6\`) — one row per finding:
 

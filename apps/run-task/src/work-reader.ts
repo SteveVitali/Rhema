@@ -242,6 +242,17 @@ function canonVerdict(verdict: unknown): string {
 }
 
 /**
+ * F-R6FIX.45-1 — a note that DECLARES the row pending is not an evidence trail: the RES.3
+ * checkpoint contract has seats write skeleton rows early, and the live failure (funded-window
+ * runs `01M874A5…`/`01M879N6…`, zero-coverage dossiers on checkable text) showed them carrying a
+ * "research pending" note — which satisfied the trail check and let `claim_ledger_closed` pass a
+ * phase that never researched. A placeholder note asserts the ABSENCE of a check outcome; only a
+ * substantive note (why the row couldn't be checked, what was found) is the check's record.
+ */
+const PLACEHOLDER_NOTE =
+  /\b(pending research|research pending|checkpoint skeleton|placeholder|not yet (?:researched|verified|checked)|todo|tbd)\b/i;
+
+/**
  * F-R6CNT.3-1 / R6FIX.4 — ordinals of the ledger rows that assert NO check outcome, i.e. the row is
  * still a placeholder: verdict absent/`unverifiable` (canonicalized) AND no evidence trail
  * (`note` | `url` | `normalizedUrl` | `accessedAt` | `sourceCheck` | non-empty `sources`). A
@@ -256,8 +267,9 @@ function unclosedClaimOrdinals(doc: ClaimLedgerDoc | null): number[] | undefined
     const row_ = (row ?? {}) as Record<string, unknown>;
     const outcome = canonVerdict(row_.verdict);
     const asserted = outcome !== "" && outcome !== "unverifiable";
+    const note = typeof row_.note === "string" ? row_.note.trim() : "";
     const evidence =
-      (typeof row_.note === "string" && row_.note.trim().length > 0) ||
+      (note.length > 0 && !PLACEHOLDER_NOTE.test(note)) ||
       (typeof row_.url === "string" && row_.url.length > 0) ||
       (typeof row_.normalizedUrl === "string" && row_.normalizedUrl.length > 0) ||
       (typeof row_.accessedAt === "string" && row_.accessedAt.length > 0) ||
