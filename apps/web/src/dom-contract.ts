@@ -354,6 +354,16 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     r("note", "spa/read-only.tsx", "the ReadOnlyProject reason notice (R7RO.1)"),
     r("heading", "every document", "asserted via getByRole + implicit <h*>"),
     r("button", "every document", "asserted via getByRole + implicit <button>"),
+    r(
+      "checkbox",
+      "ui/primitives/toggles.tsx Radix Checkbox root",
+      "R6FIX.43 — the role root takes the click; the BubbleInput only carries the name field",
+    ),
+    r(
+      "radio",
+      "ui/primitives/toggles.tsx Radix RadioGroup.Item",
+      "R6FIX.43 — one BubbleInput keyed to the current pick; the role item is the click target",
+    ),
     u("notice", "conditional", "server.ts redirects", "flash-param vocabulary (REQ-VFY-3)"),
     u("view", "conditional", "server.ts /bff/p/:slug + spa/queries.ts", "R7SHELL.2 — ?view=tree, the sidebar project twin"),
     u("saved", "conditional", "server.ts redirects"),

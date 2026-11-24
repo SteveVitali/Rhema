@@ -1,0 +1,172 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "f052340e1f04",
+  "startedAt": "2026-11-23T17:19:00.997Z",
+  "finishedAt": "2026-11-23T17:21:29.768Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "279f45d363e270778e5a63995dc575b7010a12b6",
+    "observed": {
+      "web": "279f45d363e270778e5a63995dc575b7010a12b6",
+      "api": "279f45d363e270778e5a63995dc575b7010a12b6"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 22,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "N6",
+      "journey": "new-visitor",
+      "owner": "RES.1",
+      "expected": "red",
+      "paid": true,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 8514,
+      "error": "dossier shows no fetched-✓ claims",
+      "screenshot": "N6.png"
+    },
+    {
+      "id": "N11",
+      "journey": "new-visitor",
+      "owner": "CITE.1",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 11393,
+      "error": "run 01M84PPJ7KSFJWN8MTBA036364 ended failed, not delivered",
+      "screenshot": "N11.png"
+    },
+    {
+      "id": "R6",
+      "journey": "returning",
+      "owner": "RPT.1",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET https://rhema.tools/p/jrn-f052340e1f04-r6excerpt/r/01M84PPXJ592R5Z2J67WN7Z9J0/events?after=2 net::ERR_ABORTED"
+      ],
+      "durationMs": 12313,
+      "error": "the card's meter never advanced within a single phase (readings {})",
+      "screenshot": "R6.png"
+    },
+    {
+      "id": "R9",
+      "journey": "returning",
+      "owner": "DEF.4",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 31931,
+      "error": "locator.textContent: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-usage-balance]')\u001b[22m\n",
+      "screenshot": "R9.png"
+    },
+    {
+      "id": "T10",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 15859,
+      "error": "no delivered own-tenant Review found (29 project(s), 0 review link(s) probed)",
+      "screenshot": "T10.png"
+    },
+    {
+      "id": "T11",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 15450,
+      "error": "no delivered own-tenant Review found (29 project(s), 0 review link(s) probed)",
+      "screenshot": "T11.png"
+    },
+    {
+      "id": "T12",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 15819,
+      "error": "no delivered own-tenant Review found (29 project(s), 0 review link(s) probed)",
+      "screenshot": "T12.png"
+    },
+    {
+      "id": "T13",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 15847,
+      "error": "no delivered own-tenant Review found (29 project(s), 0 review link(s) probed)",
+      "screenshot": "T13.png"
+    },
+    {
+      "id": "T14",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 16257,
+      "error": "no delivered own-tenant Review found (29 project(s), 0 review link(s) probed)",
+      "screenshot": "T14.png"
+    },
+    {
+      "id": "T15",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "red",
+      "paid": true,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2622,
+      "error": "the gate row's open link: not visible",
+      "screenshot": "T15.png"
+    },
+    {
+      "id": "T16",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "red",
+      "paid": true,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2338,
+      "error": "a stale-voice row landed for a persona with NO profile — staleness computed without a profile",
+      "screenshot": "T16.png"
+    }
+  ],
+  "passed": false
+}
