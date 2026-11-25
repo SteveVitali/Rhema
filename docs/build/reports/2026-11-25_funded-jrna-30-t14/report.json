@@ -1,0 +1,40 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "4e53da1a7261",
+  "startedAt": "2026-11-25T04:11:53.486Z",
+  "finishedAt": "2026-11-25T04:12:00.367Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "bf5650ea718f6b2aee1b4ab2ba390e3445ebf989",
+    "observed": {
+      "web": "bf5650ea718f6b2aee1b4ab2ba390e3445ebf989",
+      "api": "bf5650ea718f6b2aee1b4ab2ba390e3445ebf989"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 53.078377,
+    "capUsd": 22,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "T14",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 6844,
+      "error": "the badge moved 3 → 3 on escalate, expected +1",
+      "screenshot": "T14.png"
+    }
+  ],
+  "passed": false
+}

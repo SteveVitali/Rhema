@@ -1,0 +1,40 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "c57d2e7496b1",
+  "startedAt": "2026-11-25T04:08:55.751Z",
+  "finishedAt": "2026-11-25T04:09:29.960Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "bf5650ea718f6b2aee1b4ab2ba390e3445ebf989",
+    "observed": {
+      "web": "bf5650ea718f6b2aee1b4ab2ba390e3445ebf989",
+      "api": "bf5650ea718f6b2aee1b4ab2ba390e3445ebf989"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 53.078377,
+    "capUsd": 22,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "T14",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 34164,
+      "error": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-decisions-list] [data-decision]:has(button[data-decision-option=\"re-defer\"])').first()\u001b[22m\n",
+      "screenshot": "T14.png"
+    }
+  ],
+  "passed": false
+}

@@ -1665,9 +1665,26 @@ const T14: StepFn = async (ctx) => {
   // first; `data-findings-list` no longer exists and the persisted escalate state is the verb's
   // `data-selected`, so the exclusion targets un-escalated desk rows.
   if (!(await openFindingsDesk(page))) throw new Error("the delivered dossier's Findings tab never opened");
-  const escCard = page
-    .locator('[data-finding]:not(:has(button[data-verb="escalate"][data-selected="true"]))')
-    .last();
+  // the DOM's `data-selected` marks only the finding's LATEST disposition kind — a finding
+  // escalated then re-disposed (or whose card re-rendered after an obligation transition)
+  // renders escalate un-selected, and re-escalating it is an idempotent noop: 200, no new
+  // disposition, no new decision row, badge +0 (live datum 2026-11-25). When bound, exclude
+  // every finding that already has an escalate disposition — escalate is once-per-finding.
+  const priorEscalations = new Set<string>(
+    !process.env.JOURNEY_DATABASE_URL
+      ? []
+      : (
+          (await db().query(`select finding_id from dispositions where kind = 'escalate'`))
+            .rows as { finding_id: string }[]
+        ).map((r) => r.finding_id),
+  );
+  const escCards = (
+    await page
+      .locator('[data-finding]:not(:has(button[data-verb="escalate"][data-selected="true"]))')
+      .evaluateAll((els) => els.map((el) => el.getAttribute("data-finding") ?? "").filter(Boolean))
+  ).filter((id) => !priorEscalations.has(id));
+  if (escCards.length === 0) throw new Error("no un-escalated finding card left to escalate");
+  const escCard = page.locator(`[data-finding="${escCards[escCards.length - 1]}"]`);
   const escForm = escCard.locator("[data-disposition-form]");
   await escForm.locator("input[data-note]").fill(`${ctx.marker("ESC")} — escalate for the decision row`);
   const esc = escForm.locator('button[data-verb="escalate"]');
@@ -1771,22 +1788,35 @@ const T14: StepFn = async (ctx) => {
   }
   // DB half: the deferred run_finished rows exist server-side with visible_at = the window's end.
   if (dbBound) {
+    // witnesses live inside the whole current window instance, not a trailing 4h — a leg that
+    // runs hours after the window ended (live datum 2026-11-25: window 16:29–19:29Z, leg at
+    // 04:20Z) holds zero in-window deliveries inside 4h and "every row undelayed" false-fired
+    // `armed nothing` while yesterday's in-window rows sat deferred to exactly the window end.
     const { rows } = await db().query(
       `select run_id, created_at, visible_at from inbox_items
-        where user_id = $1 and payload->>'type' = 'run_finished' and created_at > now() - interval '4 hours'
+        where user_id = $1 and payload->>'type' = 'run_finished' and created_at >= $2::timestamptz
         order by created_at desc`,
-      [userId],
+      [userId, windowStart!.toISOString()],
     );
     if (rows.length === 0) {
       throw new Error("no run_finished inbox rows exist at all — the terminal deliveries produced nothing to defer");
+    }
+    const witnesses = rows.filter((r) => {
+      const row = r as { created_at: Date };
+      return (
+        row.created_at.getTime() >= windowStart!.getTime() &&
+        deferredVisibleAt(qh!.startMinutesUtc, qh!.endMinutesUtc, row.created_at) !== null
+      );
+    });
+    if (witnesses.length === 0) {
+      throw new Error(
+        "no run_finished row was delivered inside the currently-armed quiet window — the deferral arm has no witness this leg",
+      );
     }
     const undeferred = rows.filter((r) => {
       const row = r as { created_at: Date; visible_at: Date };
       return row.visible_at.getTime() <= row.created_at.getTime() + 60_000;
     });
-    if (undeferred.length === rows.length) {
-      throw new Error("every recent run_finished row is undelayed — quiet hours armed nothing");
-    }
     for (const r of undeferred) {
       const row = r as { run_id: string | null; created_at: Date };
       // a row whose terminal event fell outside the window (delivered after the end) is
@@ -1865,13 +1895,33 @@ const T14: StepFn = async (ctx) => {
   // obligation is closed/mooted hits routeDisposition on a dead row (observed live 2026-10-06:
   // → 500 internal_error; the closed-world transition has no mooted→deferred edge — recorded as a
   // product finding, the leg keeps to live obligations).
+  // an obligation that already carries an OPEN decision row is not a candidate:
+  // createDecisionRequest re-uses it rather than landing the swept re-defer row (live datum
+  // 2026-11-25: iteration 1 deferred the root finding of the obligation the escalate arm's
+  // row already sat on — the sweep returned the obligation to open, reused the decide/dismiss
+  // row, and the re-defer waitFor timed out). DOM can't mark it — exclude via the DB when
+  // bound, else fall back to the escalate arm's data-selected exclusion.
+  const decisionBoundFindings = new Set<string>(
+    !process.env.JOURNEY_DATABASE_URL
+      ? []
+      : (
+          (await db().query(
+            `select of2.finding_id from decision_requests dr
+               join obligation_findings of2 on of2.obligation_id = dr.obligation_id and of2.relation = 'root'
+              where dr.state = 'open' and dr.obligation_id is not null`,
+          )).rows as { finding_id: string }[]
+        ).map((r) => r.finding_id),
+  );
   const findingIds = (
     await page
       .locator(
-        '[data-finding]:has([data-obligation-state="open"], [data-obligation-state="reopened"])',
+        '[data-finding]:not(:has(button[data-verb="escalate"][data-selected="true"]))' +
+          ':has([data-obligation-state="open"], [data-obligation-state="reopened"])',
       )
       .evaluateAll((els) => els.map((el) => el.getAttribute("data-finding") ?? "").filter(Boolean))
-  ).slice(-2); // the last two — least likely already parked by earlier steps.
+  )
+    .filter((id) => !decisionBoundFindings.has(id))
+    .slice(-2); // the last two — least likely already parked by earlier steps.
   if (findingIds.length === 0) throw new Error("no obligation-bearing findings on the dossier to park");
   const answers = ["re-defer", "drop"] as const;
   for (let i = 0; i < findingIds.length; i++) {
