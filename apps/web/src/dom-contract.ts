@@ -336,6 +336,10 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-drawer", "conditional", "spa/app-shell.tsx", "the <768 off-canvas drawer state (open|closed)"),
     a("data-tone", "conditional", "spa/app-shell.tsx", "recent-project status dot tone (attention group|error|running|quiet)"),
     a("data-demo", "conditional", "spa/app-shell.tsx", "the demo-boot shell variant marker"),
+    // 324 R7UX.1 (BL-90) — /app's polish: the centered ≈850px content column under the
+    // full-width header strip + the Rhēma-only footer (the project-home leaf only).
+    a("data-shell-column", "conditional", "spa/app-shell.tsx", "the /app centered ≈850px content column"),
+    a("data-shell-footer", "conditional", "spa/app-shell.tsx", "the /app footer strip — the Rhēma mark only"),
     // R7SHELL.1b (REQ-SHELL-3) — the page-header content row replacing the per-leaf <Shell>
     // headers: the row itself, the `Project › Surface` trail (project scope), and its links.
     a("data-page-header", "conditional", "spa/page-header.tsx", "the leaf's title row (REQ-COPY-7 h1 focus target)"),

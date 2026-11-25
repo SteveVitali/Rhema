@@ -24,8 +24,8 @@
 ## CURRENT STATE
 ```
 projectStatus:   IN_PROGRESS
-nextTicket:        324_R7UX.1          # UX backlog wave 324–334 (GD-UXBACKLOG-1, operator-asked); returns to (maintenance mode) after 334
-lastCompleted:   R6DEP.6          # prod deploy 73902381→279f45d3 + all deploy-bound verifies discharged (F-R6FIX.37-1, F-R6FIX.39-1, BL-114 arm; F-16 discharged)
+nextTicket:        325_R7UX.2          # UX backlog wave 324–334 (GD-UXBACKLOG-1, operator-asked); returns to (maintenance mode) after 334
+lastCompleted:   324_R7UX.1       # /app 850px column + Rhēma footer — Stage A + pr-418 preview walk PASS (#418 unmerged; D-R7UX.1-1 = deployed re-walk)
 blockedOn:       (none)
 pauseRequested:  false
 returnPass:      (none)
@@ -36,12 +36,12 @@ dispatchTarget:  subagent
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main              # flat mode — inserts branch off origin/main
 pinnedBaseSha:   a34eb51           # round-7 fork point (unchanged)
-chainTip:        stevenvitali/r6fix-52-mem-hygiene  # R7UX.1 forks here; stack rides unmerged #412–#416
+chainTip:        stevenvitali/r7ux-1-app-content-column  # R7UX.1 tip (#418); stack rides unmerged #412–#418
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
 round:           7                  # post-round maintenance per GD-MAINT.R6
-updatedAt:       2026-11-25T06:40Z  # UX wave decomposition committed; GD-UXBACKLOG-1 rules scope
+updatedAt:       2026-11-25T09:35Z  # 324_R7UX.1 done — pr-418 preview walk PASS; torn down, orphan sweep CLEAN
 ```
 
 ## OPEN FINDINGS
@@ -883,6 +883,17 @@ pointers; substance unchanged.)_
   lint exemption, but the U4 probe's per-surface `exempt` list never mirrored it. Census fix →
   **`U4.controls` PASS live at `73902381` ($0)** — `reports/2026-11-17_R6FIX.33/`. Product was
   correct throughout.
+- **OPEN 2026-11-25 — F-R7UX.1-1: `gcr.io/google-containers/pause:3.9` is gone — the preview
+  placeholder fallback cannot realize Cloud Run services.** `preview-stack.mjs up pr-418`
+  pass 1 failed all 8 Cloud Run creates on image-pull (`pause:3.9` returns not-found from
+  gcr). This run converged because pinned `serviceImages` from Cloud Build `47bd484c`
+  superseded the placeholder — any `up` path that reaches a service without a pinned image
+  fails the same way. `infra/pulumi`'s placeholder default needs a tag that still resolves
+  (or the up-order contract needs to require `serviceImages`). Same run, second infra-drift
+  note: the project-level `ciPreviewSweepBucketsList` custom role survives every stack
+  (`retainOnDelete`, grant set by 313_R6FIX.42) — `up` cannot adopt it unless imported; this
+  run imported it, then `state delete`d it at teardown to preserve the shared project
+  resource rather than destroy it. Handled in-run; recurrence class recorded.
 
 ## GATE DECISIONS
 
@@ -1814,3 +1825,4 @@ decomposition) predate the convention and remain in the prior region verbatim._
 - 2026-11-25 — **322_R6FIX.51 in flight — D-SLO.1-6 lever 2: commit-time event wakeups (run-time insert; product fix + 6 tests, $0; PR on `stevenvitali/r6fix-51-slo-wakeup` stacked on r6fix-50, unmerged; mergePolicy OPERATOR).** The bounded diagnosis landed on mechanism: the residual's producer (`01M88BF2`, N11's hiccup-resumed op-ed — all 487 >2 s post-deploy samples, p95 4 976/max 9 795 ≈ poll floor) is the **wasted in-tx wakeup**, not a degraded bus — `SqlEventWriter.append` publishes inside the still-open tx; the woken tail reads only committed rows, sees nothing, and sleeps to its 10 s poll. Smoking gun: `step.started` seq 242 (`at` 03:49:42.854, `beginStep` inside the second hiccup's fat resume tx) flushed to ~8 subscribers at 6–9.5 s each on their individual poll schedules — the wakeup died for every streamer. Breach window sits exactly between the run's two `run.hiccup`s (03:41:28/03:48:28); api latencies avg 74 ms (not starvation), zero Redis errors. **Fix:** `beginDeferredWakes`/`drainDeferredWakes` WeakMap seam in event-store (one wake per run per tx, highest seq) + `PgPoolTxRunner` (the api+worker binding) drains after `withTenant`'s commit — chosen over ~17 callsite republishes: every append path present+future gets commit-time wakeups; rollback never publishes; runners without the seam keep immediate publish. **Tests:** event-store deferred-wake 4 cases (queued-not-published, coalesce-to-max-seq, rollback, drain resilience) + live-clients wire-order pin (`publish` strictly after `commit`); orchestrator suite 552 green; api+worker build/lint/typecheck clean. **D-SLO.1-6 stays OPEN** — p95 re-read rides the next deploy + a fresh ≥50-sample window. `tickets/322_R6FIX.51` · harness: devin-cli/swe-2-high.
 
 - 2026-11-25 — **335_R6FIX.53 in flight — nightly suite crash on a route.fetch teardown race (run-time insert; harness fix, $0; PR on `stevenvitali/r6fix-53-route-fetch-abort` stacked on r6fix-52, unmerged; mergePolicy OPERATOR).** The 06:23Z scheduled journeys run `45560244600` (the D-SPAF discharge bake) died 19m in: `TargetClosedError2: route.fetch: Request context disposed` at `r7legs.js:1327` — the `**/bff/p/*` GET-patch handler's `route.fetch()` rejected while Playwright tore the context down mid-`GET /bff/p/untitled-6`; Node's fatal unhandled rejection killed the process, zero leg verdicts. The ~45 `D-SPAF.*` bake rows ride a green run — still owed; re-run waits on this fix (a re-run before it re-crashes identically). Same abort-race class as 317_R6FIX.46. **Logged:** the crash's Playwright call-log printed the fixture session cookie (`__Host-rhema.session_token`, test tenant) into the public repo's CI log — recorded in the ticket; a full request-header redaction policy is scoped-out. harness: devin-cli/swe-2-high.
+- 2026-11-25 — **324_R7UX.1 done — /app content column ≈850px centered + `Rhēma`-only footer (UX wave 1/11, BL-90; code+tests, ~$small owned preview; PR #418 on `stevenvitali/r7ux-1-app-content-column` stacked on r6fix-52, unmerged; mergePolicy OPERATOR).** `.app-shell-column` (`width:100%; max-width:850px; margin:0 auto`) wraps the `/app` leaf only; `.app-shell-footer` (`flex:0 0 auto`, border-top, caption) is the `Flex` sibling pinned after `.app-shell-content` — emitted `COPY.footer` = `Rhēma`. Both hooks declared in dom-contract (`data-shell-column`/`data-shell-footer`, conditional `/app`). Other leaves unchanged. **Stage A:** dom tests 14/14 (column rule regex-pinned from `ideCss()`; topbar outside column; footer `FOOTER`/`Rhēma`/0 interactive descendants; `/app/inbox` negative) · `check:dom-contract`/`spa-env`/`spa-entry-graph` pass · `check:spa-budget` base entry graph 250,543 vs ceiling 250,582 ⇒ **+39 gz B** · turbo 13/13. **Preview `pr-418` (owned lifecycle):** Cloud Build `47bd484c` all-10 @ `0e3e3008` (~12m); `up` converged on the third pass — `ciPreviewSweepBucketsList` project role imported (prior-preview orphan), `pause:3.9` gone from gcr (placeholder fallback can't realize Cloud Run — infra note), api revision forced post-migrate (R7DEP.2 class); migrate job + `seed-invite` → `prv-418-test`. **Headless walk PASS** — real magic-link mint (`test+r7ux1@rhema.tools` via pinned mailbox) → `/app` @1440: column 850px exactly centered (left 419; (1192−850)/2), footer `FOOTER`/`Rhēma`/0 controls pinned 858.5–900 — `reports/2026-11-25_r7ux-1-app-walk/` (test-tenant evidence, P-1 clean). Teardown clean: `destroy` ×3 — passes 1/2 deleted 155 then the subnet sat pinned by Google-owned `serverless-ipv4-cloudrun-*` reservations until ~09:29Z (~1h44m GC lag, the F-OPS.1-12 class); pass 3 deleted the remaining 60 → 0; **orphan sweep CLEAN** (zero live `pr-<n>` resources); `rm` deregistered the stack (dev+prod only); sweep role `state delete`d to preserve the shared project resource. **Findings:** opened F-R7UX.1-1 (`pause:3.9` gone from gcr — placeholder fallback can't realize Cloud Run; sweep-role import dance). **Deferrals:** opened D-R7UX.1-1 (Stage-B re-walk at a deployed tip, per the ticket's Live-stage line). `ci:` `pass #418@0e3e3008` (run 45564343159 — all 7 checks). `runs/R7UX.1.md` · `pr/324_R7UX.1.md` · `tickets/324_R7UX.1` · harness: devin-cli/swe-2-high. lastCompleted → 324_R7UX.1 · nextTicket → 325_R7UX.2 · chainTip → `stevenvitali/r7ux-1-app-content-column` · projectStatus IN_PROGRESS.
