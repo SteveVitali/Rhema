@@ -152,6 +152,15 @@ pointers; substance unchanged.)_
   which must not render as extra charge either. Fix sketch: the report's charged figure reads
   `spent_credits`/Σ debits−refunds+adjustments, with the true-up disclosed as its own line.
   Blocks R6's `expected:"green"` close — every arm passed except this report arm.
+  *2026-11-25 → diagnosis corrected: **product correct, harness defect.** The live report twin
+  renders the full RPT.1 disclosure — `meteredCredits:523`, `spentCredits:360` (charged),
+  `differences:[{absorbed:163},{cross_check:355}]` ("523 cr metered · 360 cr charged" + "163 cr
+  absorbed by the platform"). Every `adjustment` is `reason='absorbed'` — committed-mode overrun
+  the platform absorbs into the variance reserve, never a user charge. The leg's contract was
+  too narrow: it accepted only `data-refund` to explain charged < meter, ignoring the designed
+  difference-line mechanism (it validates difference rows' text *after* the failing check).
+  Fix carrier **319_R6FIX.48** (PR #412): the arm sums rendered credits over gap-explaining
+  `data-difference` rows (`cross_check` excluded) and requires exact equality with the gap.*
 - **G2 DEFERRED (operator decision 2026-09-15) — Phase-B implementation proceeds.** G2 + H2 stay
   a HARD gate before public launch; §16.4 marketing/efficacy claims do NOT ship until LIFT is met
   (REQ-EVAL-16 consequences apply retroactively to UI built meanwhile). See `readouts/GATE-G2.md`.
