@@ -1,0 +1,40 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "3d6c785feaa4",
+  "startedAt": "2026-11-25T01:00:18.296Z",
+  "finishedAt": "2026-11-25T01:00:27.348Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "bf5650ea718f6b2aee1b4ab2ba390e3445ebf989",
+    "observed": {
+      "web": "bf5650ea718f6b2aee1b4ab2ba390e3445ebf989",
+      "api": "bf5650ea718f6b2aee1b4ab2ba390e3445ebf989"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 38.807683,
+    "capUsd": 22,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "R6",
+      "journey": "returning",
+      "owner": "RPT.1",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 9012,
+      "error": "Review launch: not enabled",
+      "screenshot": "R6.png"
+    }
+  ],
+  "passed": false
+}
