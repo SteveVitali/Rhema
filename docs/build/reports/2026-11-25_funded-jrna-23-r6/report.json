@@ -1,0 +1,55 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "47987e2be97c",
+  "startedAt": "2026-11-25T01:01:13.462Z",
+  "finishedAt": "2026-11-25T01:33:18.664Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "bf5650ea718f6b2aee1b4ab2ba390e3445ebf989",
+    "observed": {
+      "web": "bf5650ea718f6b2aee1b4ab2ba390e3445ebf989",
+      "api": "bf5650ea718f6b2aee1b4ab2ba390e3445ebf989"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 38.807683,
+    "capUsd": 22,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "R6",
+      "journey": "returning",
+      "owner": "RPT.1",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET https://rhema.tools/p/jrn-47987e2be97c-r6excerpt/r/01M883HDHA717J6FS925PCHJYF/events?after=2 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-47987e2be97c-r6excerpt/r/01M883HDHA717J6FS925PCHJYF/events?after=3 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-47987e2be97c-r6excerpt/r/01M883HDHA717J6FS925PCHJYF/events?after=7 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-47987e2be97c-r6excerpt/r/01M883HDHA717J6FS925PCHJYF/events?after=29 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-47987e2be97c-r6excerpt/r/01M883HDHA717J6FS925PCHJYF/events?after=54 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-47987e2be97c-r6excerpt/r/01M883HDHA717J6FS925PCHJYF/events?after=93 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-47987e2be97c-r6excerpt/r/01M883HDHA717J6FS925PCHJYF/events?after=123 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-47987e2be97c-r6excerpt/r/01M883HDHA717J6FS925PCHJYF/events?after=128 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-47987e2be97c-r6excerpt/r/01M883HDHA717J6FS925PCHJYF/events?after=129 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-47987e2be97c-r6excerpt/r/01M883HDHA717J6FS925PCHJYF/events?after=130 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-47987e2be97c-r6excerpt/r/01M883HDHA717J6FS925PCHJYF/events?after=134 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-47987e2be97c-r6excerpt/r/01M883HDHA717J6FS925PCHJYF/events?after=167 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-47987e2be97c-r6excerpt/r/01M883HDHA717J6FS925PCHJYF/events?after=199 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-47987e2be97c-r6excerpt/r/01M883HDHA717J6FS925PCHJYF/events?after=229 net::ERR_ABORTED"
+      ],
+      "durationMs": 1925150,
+      "error": "report spent 360 < the card's committed meter 523 with no refund line explaining the gap",
+      "screenshot": "R6.png"
+    }
+  ],
+  "passed": false
+}
