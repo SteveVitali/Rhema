@@ -1,0 +1,36 @@
+{
+  "preview": "pr-420",
+  "gitSha": "1959db529364e9e3e8e884051faa6ad1a0d68965",
+  "provenance": "api /healthz/ gitSha matches the PR head",
+  "email": "test+r7ux3@rhema.tools",
+  "invite": "prv-420-test",
+  "signinVia": "mailbox (first mint; cache on the walk leg)",
+  "slug": "r7ux3-files",
+  "fixtureSeed": {
+    "execution": "rhema-pr-420-migrate-da9814c-nzg58",
+    "result": "R7UX3-SEED-OK",
+    "reviewRun": "01M89CYDJ1EBKWWCJX5BZJRMXB",
+    "substrate": "seedWritableDossier + steps.produced_version_ids links (letter→editors_letter, craft→draft v2 head, letter→run_report) + direct artifact rows (figure/source_note/persona_seed/structure_plan/corpus_note/sample)"
+  },
+  "walk": {
+    "filesPanePresent": true,
+    "advancedOpened": true,
+    "sections": ["outline", "drafts", "rounds", "research", "voice", "assets", "advanced"],
+    "rows": 11,
+    "lockBadgeArms": {
+      "editableNoBadge": ["draft v2 (working head)", "persona_seed (readOnly+editable — the deviation arm)", "sample"],
+      "immutableFrozen": ["outline", "draft v1 (frozen)", "editors_letter", "response_letter", "run_report", "source_note", "figure"],
+      "inspectOnly": ["structure_plan (guidance_only, inside the Advanced disclosure)"]
+    },
+    "provenance": {
+      "collapsedOneLine": true,
+      "fullTextOnTitle": true,
+      "runLinked": ["draft v2 → /p/r7ux3-files/r/01M89CYDJ1EBKWWCJX5BZJRMXB (craft)", "editors_letter → same run (letter)", "run_report → same run (letter)"],
+      "plain": ["System", "You"]
+    },
+    "kindIcons": "data-kind-icon emitted per row kind (draft/outline/figure → Lucide FileText/ListTree/Image; other kinds → File default)",
+    "freshness": "data-freshness data-stale=0 on editors_letter + run_report (describes v1)",
+    "sealed": "data-sealed-count=1 (corpus_note H kind — count, never a row)",
+    "screenshot": "files-1440.png"
+  }
+}

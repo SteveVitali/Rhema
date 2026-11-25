@@ -7,19 +7,21 @@ import {
   Mic,
   Paperclip,
 } from "lucide-react";
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Badge } from "./primitives/index.js";
 
 // The §5.13 artifact Browser (P1.08; REQ-IDE-35/36/37, REQ-VIS-3): typed sections, never a
-// filesystem tree. Every row carries the provenance badge (linked to run + phase — ledger D21),
-// a lock-state Badge (R7SHELL.2 — the B10 glyph icons are gone: "Working"/"Frozen"/"Inspect only"
+// filesystem tree. Every row carries a collapsed provenance span (linked to run + phase —
+// ledger D21), a lock-state Badge ONLY where a lock is meaningful (326_R7UX.3/BL-94: the
+// non-`editable` lock states — frozen/immutable/inspect, which is where read-only/demo rows
+// land; R7SHELL.2's B10 "Working"/"Frozen"/"Inspect only" labels replace the 🔒/✎/👁 glyphs),
+// and the freshness note when a describing artifact's subject has moved on.
 // R7FIX.7 (F-R7DEP.2-12) — muted text here rides `ui-t-mut` (--shell-fg-muted), never `ui-t-pm`
 // (--paper-fg-muted): the pane mounts inside the AppShell sidebar (shell ground), where the
 // paper-pinned muted token can land under-AA (observed ~3.1:1 on the pinned-light paper inside
 // the dark shell). Inside `.paper`, --shell-fg-muted remaps to --paper-fg-muted, so the token is
 // correct on both grounds.
-// badges replace 🔒/✎/👁), and the freshness note when a describing artifact's subject has moved
-// on. The DTO already enforces visibility: `rows` hold SE/SR only, `advancedRows` hold I kinds
+// The DTO already enforces visibility: `rows` hold SE/SR only, `advancedRows` hold I kinds
 // (rendered inside `data-tier="advanced"` wrappers — the Advanced disclosure, REQ-IDE-10), and H
 // kinds arrive as `sealedCount`, never a row and never a route. Text-agnostic — all copy via
 // `labels` (UXC-30: the "Files" label is COPY-owned, never a literal).
@@ -89,9 +91,8 @@ export interface FilesPaneProps {
   readonly labels: FilesPaneLabels;
 }
 
-const muted: CSSProperties = { color: "var(--shell-fg-muted, #9aa3ad)" };
-
-/** One Lucide icon per artifact kind (B10 — the OS-glyph icons are gone; UXC-26's icon set). */
+/** One Lucide icon per artifact kind (B10 — the OS-glyph icons are gone; UXC-26's icon set).
+ *  326_R7UX.3 — the `data-kind-icon` hook rides the wrapper so tests assert the icon per kind. */
 function KindIcon({ kind }: { kind: string }): ReactNode {
   const size = 14;
   switch (kind) {
@@ -119,6 +120,11 @@ function KindIcon({ kind }: { kind: string }): ReactNode {
 
 let tabbableSeen = false;
 
+// 326_R7UX.3 (BL-94) — the readable rebalance: one `.ui-t-frow` flex line per row (fs-dense,
+// hover/focus-within affordance from uiTailCss), the kind icon hooked by `data-kind-icon`,
+// the lock Badge ONLY where a lock is meaningful (a non-`editable` lock — never on an
+// ordinary working draft), and provenance collapsed onto the same line as a truncated
+// muted span (full text on the anchor's `title`; the run link is preserved navigation).
 function Row({
   row,
   hrefs,
@@ -133,6 +139,12 @@ function Row({
     : row.figureId != null && hrefs.figure != null
       ? hrefs.figure(row.figureId)
       : hrefs.artifact(row.artifactId);
+  const prov = labels.provenanceLabel(row.provenance);
+  // A lock is meaningful only on a non-editable lock state (frozen draft, immutable
+  // artifact — every read-only/demo `editMode:"none"` row lands there — inspect-only
+  // guidance). An ordinary working draft shows none; the badge's text always states
+  // the row's true lock rather than inventing a label for `readOnly`+`editable`.
+  const locked = row.lock !== "editable";
   // Roving tabindex: the FIRST treeitem carries the group's tab stop; the arrows move within.
   const tabbable = !tabbableSeen;
   tabbableSeen = true;
@@ -144,50 +156,55 @@ function Row({
       data-level={row.level}
       data-lock={row.lock}
       {...(row.readOnly ? { "data-readonly": "1" } : {})}
-      className="ui-t-p20 ui-d-fs"
+      className="ui-t-frow"
     >
       <a
         href={href}
         role="treeitem"
         tabIndex={tabbable ? 0 : -1}
         data-file-link
-        className="ui-d-inh ui-d-g6"
+        className="ui-t-frow-link ui-d-inh ui-d-g6"
+        title={prov}
         style={{ display: "inline-flex", alignItems: "center" }}
       >
-        <KindIcon kind={row.kind} />
+        <span data-kind-icon={row.kind} style={{ display: "inline-flex" }}>
+          <KindIcon kind={row.kind} />
+        </span>
         <span>{row.label}</span>
-        {/* B10 — the frozen/working Badge replaces the lock glyph on every row. */}
-        <Badge
-          tone={row.lock === "editable" ? "ok" : "neutral"}
-          data-lock-badge={row.lock}
-          title={labels.lockTitle(row.lock)}
-          aria-label={labels.lockTitle(row.lock)}
-        >
-          {labels.lockBadge(row.lock)}
-        </Badge>
+        {row.draftRef ? <span className="ui-t-mut ui-d-s">v{row.draftRef.n}</span> : null}
+        {row.words != null ? (
+          <span className="ui-t-mut ui-d-s">{labels.wordsFmt(row.words)}</span>
+        ) : null}
+        {locked ? (
+          <Badge
+            tone="neutral"
+            data-lock-badge={row.lock}
+            title={labels.lockTitle(row.lock)}
+            aria-label={labels.lockTitle(row.lock)}
+          >
+            {labels.lockBadge(row.lock)}
+          </Badge>
+        ) : null}
       </a>
-      {row.draftRef ? <span style={muted}> · v{row.draftRef.n}</span> : null}
-      {row.words != null ? <span style={muted}> · {labels.wordsFmt(row.words)}</span> : null}
       <span
         data-provenance
         {...(row.provenance.runId ? { "data-run": row.provenance.runId } : {})}
-        className="ui-d-s ui-t-pl20 ui-t-mut"
-        style={{ display: "block" }}
+        className="ui-t-frow-prov ui-t-mut ui-d-s"
+        title={prov}
       >
         {row.provenance.runId ? (
           <a href={hrefs.run(row.provenance.runId)} className="ui-d-inh" tabIndex={-1}>
-            {labels.provenanceLabel(row.provenance)}
+            {prov}
           </a>
         ) : (
-          labels.provenanceLabel(row.provenance)
+          prov
         )}
       </span>
       {row.freshness ? (
         <span
           data-freshness
           data-stale={row.freshness.stale ? "1" : "0"}
-          className="ui-d-s ui-t-pl20 ui-t-mut"
-          style={{ display: "block" }}
+          className="ui-t-frow-sub ui-t-mut ui-d-s"
         >
           {labels.freshnessLabel(row.freshness.subjectDraftN, row.freshness.stale)}
         </span>
