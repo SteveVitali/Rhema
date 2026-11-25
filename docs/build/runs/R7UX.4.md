@@ -161,6 +161,9 @@ Budget: ~400 changed lines incl. tests (S–M)
 - Changed lines: 261+ / 10− (8 files) — inside the ~400 budget.
 - **Preview `pr-421`** lifecycle + provenance + walk + teardown as logged above;
   api `/healthz/` `gitSha 6634f8cf42632b822fe7a611376fe1264f112cf8` = PR head.
+- **ci:** `pass #421@6634f8cf` (run 45641711719 — all seven legs + `ci-pass`
+  anchor); records head `0d0152a4` re-read `pass` (run 45666236318 — fast-path
+  same-tree anchor on `6634f8cf`, all seven legs success).
 
 ## Evidence report
 
