@@ -167,6 +167,9 @@ Budget: ~400 changed lines incl. tests (S–M)
   `check:spa-budget` OK (WARN +33.7 kB = cumulative baseline drift, informational;
   this ticket's JS delta ≈0 — the `.ui-t-frow` rules ride the inlined tail CSS,
   +0.0 kB JS).
+- **ci:** `pass #420@1959db52` (run 45614056371 — all seven legs + `ci-pass`
+  anchor); records head `22dd5a6b` re-read `pass` (run 45638749318 — fast-path
+  same-tree anchor on `1959db52`, all seven legs success).
 
 ## Evidence report
 
