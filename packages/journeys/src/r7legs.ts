@@ -1393,18 +1393,26 @@ const U6_CHAT: StepFn = async (ctx) => {
   // the terminal refetch: patch the project twin's ide.chat.turns with the stub turn.
   await page.route("**/bff/p/*", async (route) => {
     if (route.request().method() !== "GET") return route.continue();
-    const res = await route.fetch();
+    let res: import("playwright").APIResponse;
+    try {
+      res = await route.fetch();
+    } catch {
+      // 335_R6FIX.53 — the context/page can be mid-teardown here ("Request context
+      // disposed"); an unhandled rejection in a route callback kills the whole suite
+      // process. Abort the route and let the closing page win.
+      return route.abort().catch(() => undefined);
+    }
     let body: unknown;
     try {
       body = await res.json();
     } catch {
-      return route.fulfill({ response: res });
+      return route.fulfill({ response: res }).catch(() => undefined);
     }
     const o = body as { ide?: { chat?: { turns?: unknown[] } } };
     if (o.ide?.chat && Array.isArray(o.ide.chat.turns)) {
       o.ide.chat.turns = [fx.turn, ...o.ide.chat.turns];
     }
-    return route.fulfill({ response: res, json: body });
+    return route.fulfill({ response: res, json: body }).catch(() => undefined);
   });
 
   await gotoOk(page, `${ctx.webBaseUrl}/app?src=jrn`, ctx);
