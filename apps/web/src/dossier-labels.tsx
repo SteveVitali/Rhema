@@ -83,6 +83,8 @@ export const runCardLabels: RunCardLabels = {
   reportLabel: COPY.steer.report,
   // P1.09 (§6.4 item 8; REQ-RUN-5/6) — the permanent approval-decision lines under the run card.
   decisionLabel: (d) => decisionLine(d),
+  // R7UX.2 (BL-93) — the structured approval row's kind badge (canonical gate-kind labels).
+  decisionKindLabel: (kind) => G.kindLabel[kind] ?? kind,
 };
 
 export const timelineLabels: TimelineLabels = {

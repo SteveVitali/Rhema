@@ -139,6 +139,8 @@ const gateCardLabels: GateCardLabels = {
   },
   decisionsHeading: G.decisionsHeading,
   decisionLabel: (decision) => decisionLine(decision),
+  // R7UX.2 (BL-93) — the structured approval row's kind badge (canonical gate-kind labels).
+  decisionKindLabel: (kind) => G.kindLabel[kind] ?? kind,
 };
 
 /** The permanent decision line (§6.4 item 8): "approved by you at 14:02 · with 3 changes". Shared by the

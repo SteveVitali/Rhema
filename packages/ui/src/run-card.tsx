@@ -8,7 +8,7 @@ import type {
   GateDecisionView,
 } from "@rhema/findings-core";
 import { Button } from "./primitives/button.js";
-import { Chip } from "./primitives/chips.js";
+import { Chip, Pill, type Tone } from "./primitives/chips.js";
 import { TextField } from "./primitives/fields.js";
 
 // The run card + live feed (§5.5; REQ-IDE-11/12/14; P1.05 §6.5 steering). The card renders ONLY the
@@ -23,6 +23,41 @@ const GLYPH: Record<PhaseStatus, string> = {
   pending: "○",
   skipped: "○",
   off: "○",
+};
+
+/**
+ * R7UX.2 (BL-93) — a run's state → its pill tone + card accent: in-flight states read "running", a
+ * gate/consent wait reads "needs_you", a completed run reads "ready", failed/orphaned reads
+ * "attention", and every quiet pre-run/terminal state stays neutral. The tone is never colour-only —
+ * the Pill carries its dot AND the state label text, and `data-state-tone` exposes it to legs.
+ */
+export function runStateTone(state: string): Tone {
+  switch (state) {
+    case "provisioning":
+    case "running":
+    case "cancelling":
+    case "finalizing":
+      return "running";
+    case "waiting_gate":
+    case "awaiting_consent":
+      return "needs_you";
+    case "completed":
+      return "ready";
+    case "failed":
+    case "orphaned":
+      return "attention";
+    default:
+      return "neutral";
+  }
+}
+
+/** The card's left-edge accent per tone — a quiet tint so a mixed timeline scans at a glance. */
+const TONE_ACCENT: Record<Tone, string> = {
+  running: "var(--state-running)",
+  needs_you: "var(--state-needs-you)",
+  ready: "var(--state-ready)",
+  attention: "var(--sev-major)",
+  neutral: "var(--shell-fg-faint)",
 };
 
 export interface RunCardLabels {
@@ -82,6 +117,11 @@ export interface RunCardLabels {
    *  policy"). One per recorded decision on the run.
    */
   readonly decisionLabel?: (decision: GateDecisionView) => string;
+  /**
+   * R7UX.2 (BL-93) — the decision row's kind badge ("Approve triage", "Spend cap"). Absent ⇒ the
+   *  row keeps its bare line (a pre-R7UX.2 caller renders unchanged).
+   */
+  readonly decisionKindLabel?: (kind: string) => string;
   /**
    * RES.2 — the run-level delivery-label line, rendered ABOVE the state/verdict when the persisted
    * label is set (e.g. (label) => "Unverified — research could not check the claims; research credits
@@ -253,13 +293,19 @@ export function RunCard({
         return undefined;
     }
   };
+  // R7UX.2 (BL-93) — one tone per run state drives the header pill + the card's left accent, so a
+  // mixed delivered/failed/in-flight scroll differentiates at a glance without shouting.
+  const tone = runStateTone(view.state);
   return (
     <section
       data-run-card={view.runId}
       data-run-state={view.state}
       {...(view.paused ? { "data-paused": "1" } : {})}
       className="ui-vc-card ui-d-rc"
-      style={{ border: "1px solid var(--shell-border)" }}
+      style={{
+        border: "1px solid var(--shell-border)",
+        borderLeft: `3px solid ${TONE_ACCENT[tone]}`,
+      }}
     >
       {/* RES.2 — the persisted run-level delivery label leads the card, above the state/verdict
           (the same slot the dossier + email carry). Never recomputed — `view.deliveryLabel` is the
@@ -307,7 +353,7 @@ export function RunCard({
         className="ui-c2-mb"
         style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
       >
-        <span className="ui-d-b ui-d-fs14">{labels.stateLabel(view.state)}</span>
+        <Pill label={labels.stateLabel(view.state)} tone={tone} data-state-tone={tone} />
         {/* R7DEM.4b — the demo twin's replayed runs carry null credit fields ("not recorded",
             S-9); a row without a meter reading renders no credit line, never a crash. */}
         {view.spentCredits != null && view.capCredits != null ? (
@@ -409,8 +455,10 @@ export function RunCard({
           a stored `runs.walkthrough` never renders here (ADR-130). */}
       {view.delivered ? (
         <div data-delivered-summary className="ui-d-mt10 ui-d-fd">
+          {/* R7UX.2 (BL-93) — the block's heading is a quiet label now, not the retired caps
+              treatment (`ui-d-cap` read "WHAT IT DELIVERED" over every delivered card). */}
           {labels.deliveredHeading ? (
-            <p className="ui-c2-m0 ui-d-mb10 ui-d-cap ui-d-l">{labels.deliveredHeading}</p>
+            <p className="ui-c2-m0 ui-d-mb10 ui-d-l">{labels.deliveredHeading}</p>
           ) : null}
           {view.delivered.verdict != null ? (
             <p data-delivered-verdict className="ui-c2-m0 ui-d-it">
@@ -494,8 +542,21 @@ export function RunCard({
           style={{ listStyle: "none", display: "flex", flexDirection: "column" }}
         >
           {view.decisions.map((d) => (
-            <li key={d.id} data-decision={d.id} data-action={d.action} data-by={d.byActor}>
-              {labels.decisionLabel!(d)}
+            // R7UX.2 (BL-93) — a structured approval row: the kind badge + the composed
+            // action/actor/time line, with a per-kind hook so legs can assert each entry.
+            <li
+              key={d.id}
+              data-decision={d.id}
+              data-kind={d.kind}
+              data-action={d.action}
+              data-by={d.byActor}
+              className="ui-d-acts"
+              style={{ display: "flex", alignItems: "center" }}
+            >
+              {labels.decisionKindLabel ? (
+                <Chip variant="static" label={labels.decisionKindLabel(d.kind)} />
+              ) : null}
+              <span>{labels.decisionLabel!(d)}</span>
             </li>
           ))}
         </ul>
