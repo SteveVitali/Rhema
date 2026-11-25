@@ -1,0 +1,31 @@
+{
+  "preview": "pr-419",
+  "gitSha": "d34c0427ee9978681fd7884ad738445c692a9db6",
+  "provenance": "api /healthz/ gitSha matches the PR head",
+  "email": "test+r7ux2@rhema.tools",
+  "invite": "prv-419-test",
+  "signinVia": "mailbox (first mint; cache on the walk leg)",
+  "slug": "r7ux2-mixed",
+  "fixtureSeed": {
+    "execution": "rhema-pr-419-migrate-7077a2b-q6rkp",
+    "result": "R7UX2-SEED-OK",
+    "runs": {
+      "completed": "01M8949E0K4EXYAHVD0PA4N4Y7",
+      "failed": "01M8949E3SQBF6GTHDA1SWN2W4",
+      "waiting_gate": "01M8949E3SQRK2KDWC0NG75VD0"
+    },
+    "decisions": ["approve_triage/approve on completed", "approve_scope/proceed_as_proposed on waiting_gate"]
+  },
+  "walk": {
+    "panelTab": "timeline",
+    "timelineTabOpened": true,
+    "runCards": 3,
+    "runStates": [
+      {"state": "failed", "tone": "attention", "hasDecisionRows": false, "capHeading": false},
+      {"state": "waiting_gate", "tone": "needs_you", "hasDecisionRows": true, "capHeading": false},
+      {"state": "completed", "tone": "ready", "hasDecisionRows": true, "capHeading": false}
+    ],
+    "decisionRowKinds": ["approve_scope", "approve_triage"],
+    "screenshot": "timeline-1440.png"
+  }
+}
