@@ -630,6 +630,9 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
   // (project scope is decided inside the palette from the location). `paletteHere` now only
   // gates the <768 pane-sheet toggle (an IDE-only control).
   const paletteHere = routeId != null && FRAMED.has(routeId);
+  // 324 R7UX.1 (BL-90) — the project-home leaf gets the ≈850px centered column + the
+  // Rhēma-only footer strip; every other leaf keeps the plain content region.
+  const appHome = loc.pathname === "/app";
   const openPalette = useCallback(() => {
     window.dispatchEvent(new CustomEvent("rhema:palette-open", { detail: {} }));
   }, []);
@@ -857,7 +860,23 @@ function WorkspaceAppShell({ children }: { children?: ReactNode }): ReactNode {
               </Button>
             ) : null}
           </div>
-          <div className="app-shell-content">{children}</div>
+          <div className="app-shell-content">
+            {/* 324 R7UX.1 (BL-90) — /app only: the leaf renders inside the centered ≈850px
+                content column under the (full-width) header strip; whitespace below fills
+                naturally — the column sizes to content. */}
+            {appHome ? (
+              <div className="app-shell-column" data-shell-column>
+                {children}
+              </div>
+            ) : (
+              children
+            )}
+          </div>
+          {appHome ? (
+            <footer className="app-shell-footer" data-shell-footer>
+              {COPY.footer}
+            </footer>
+          ) : null}
           {palette.open ? (
             <Suspense fallback={null}>
               <GlobalPalette

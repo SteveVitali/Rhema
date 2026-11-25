@@ -424,6 +424,12 @@ export function ideCss(): string {
     ".app-shell-topbar { display: none; }",
     ".app-shell-scrim { display: none; }",
     ".app-shell-demo-bar { flex: 0 0 auto; }",
+    // 324 R7UX.1 (BL-90; R5 A6) — /app's polish: the leaf column caps at ≈850px centered
+    // under the full-width header strip (whitespace below fills naturally), and a single
+    // mark closes the canvas — the footer strip is a `.app-shell-main` sibling of the
+    // scroll region, so it pins to the bottom instead of scrolling away.
+    ".app-shell-column { width: 100%; max-width: 850px; margin: 0 auto; }",
+    ".app-shell-footer { flex: 0 0 auto; border-top: 1px solid var(--shell-border); padding: var(--s3) var(--s4); text-align: center; font-family: var(--font-shell); font-size: var(--fs-caption, 11px); color: var(--shell-fg-faint); }",
     // The hosted IDE: the global rail is the sidebar's job (REQ-IDE-2 amended — UXC-10) and it is
     // DELETED outright (R7SHELL.2 — never mounted); the phonebar is the shell top bar's.
     // Suppression is DOM-level (the elements are never mounted when hosted).

@@ -19,6 +19,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ideCss } from "@rhema/tokens";
+import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
 import { restoreDocumentNav, settled, stubDocumentNav } from "./testkit.js";
@@ -311,6 +312,51 @@ describe("R7SHELL.1a — the AppShell census and mount", () => {
     // the current project is not repeated in Recent projects.
     expect(document.querySelector('[data-shell-recent="alpha"]')).toBeNull();
     expect(document.querySelector('[data-shell-recent="beta"]')).not.toBeNull();
+  });
+
+  it("R7UX.1 (BL-90) — /app: centered ≈850px column under the full-width header + Rhēma-only footer", async () => {
+    await mountAt("/app", boot());
+    await shell();
+    // the leaf renders inside the centered column, not the bare content region
+    const column = await settled<HTMLElement>("[data-shell-column]");
+    expect(column.classList.contains("app-shell-column")).toBe(true);
+    expect(column.parentElement?.classList.contains("app-shell-content")).toBe(true);
+    expect(column.querySelector("[data-spa-surface]")).not.toBeNull();
+    // the rule itself — centered ≈850px (assert the rule, not pixel-perfect layout)
+    const rule = /\.app-shell-column\s*\{[^}]*\}/.exec(ideCss())?.[0] ?? "";
+    expect(rule).toContain("max-width: 850px");
+    expect(rule).toContain("margin: 0 auto");
+    // the header stays full-width — the top-bar strip is a `.app-shell-main` sibling of
+    // the scroll region, never pulled into the column
+    const topbar = document.querySelector("[data-shell-topbar]")!;
+    expect(topbar.closest("[data-shell-column]")).toBeNull();
+    expect(topbar.closest(".app-shell-main")).not.toBeNull();
+    // the footer strip renders only the Rhēma mark — no links, nav, or controls
+    const footer = await settled<HTMLElement>("[data-shell-footer]");
+    expect(footer.tagName).toBe("FOOTER");
+    expect(footer.textContent?.trim()).toBe(COPY.footer);
+    expect(COPY.footer).toBe("Rhēma");
+    expect(footer.querySelector("a, nav, button")).toBeNull();
+    // it pins below the scroll region — a `.app-shell-main` child AFTER .app-shell-content
+    expect(footer.parentElement?.classList.contains("app-shell-main")).toBe(true);
+    expect(footer.previousElementSibling?.classList.contains("app-shell-content")).toBe(true);
+  });
+
+  it("R7UX.1 (BL-90) — the column + footer are /app-scoped (nav away drops them; back restores)", async () => {
+    const router = await mountAt("/app", boot());
+    await settled("[data-shell-footer]");
+    // in-SPA navigation /app → /app/inbox removes the strip (other leaves keep the plain
+    // content region), and navigating back re-adds it.
+    await act(async () => {
+      await router.navigate({ href: "/app/inbox" });
+    });
+    await settled("[data-inbox-badge]");
+    expect(document.querySelector("[data-shell-column]")).toBeNull();
+    expect(document.querySelector("[data-shell-footer]")).toBeNull();
+    await act(async () => {
+      await router.navigate({ href: "/app" });
+    });
+    await settled("[data-shell-footer]");
   });
 
   it("the in-shell 404 renders inside the shell with the sidebar present", async () => {
