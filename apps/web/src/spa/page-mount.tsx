@@ -52,6 +52,7 @@ import {
   isCollabWire,
 } from "./page-collab.js";
 import { pageSessionRegistry, type PageSessionRegistry } from "./page-sessions.js";
+import { SlashMenuMount } from "./slash-menu.js";
 import type { SourceModeHandle } from "./page-source-mode.js";
 import { isDemo } from "./demo.js";
 import { COPY } from "../copy.js";
@@ -305,6 +306,10 @@ export function PageMount(props: PageMountProps): ReactNode {
       if (provTimer != null) flushProvenance();
     };
 
+    // REQ-WRITE-3 (329_R7UX.6) — the `/` menu's DOM half, created before the dispatch tap that
+    // syncs it.
+    const slashMenu = new SlashMenuMount(view);
+
     installOriginDispatch(view, {
       armed: () => pasteArmed,
       onDocChanged: () => {
@@ -314,8 +319,13 @@ export function PageMount(props: PageMountProps): ReactNode {
         }
       },
       // SPA.25 — the source bridge's transaction tap: every tr (local commits, remote ySync applies,
-      // the applyLock/onReadOnly empty re-dispatch) reaches the CodeMirror handle.
-      onTransaction: (tr) => sourceRef.current?.onTransaction(tr),
+      // the applyLock/onReadOnly empty re-dispatch) reaches the CodeMirror handle. REQ-WRITE-3 —
+      // the `/` menu's DOM half rides the same tap: the plugin state re-derives in `apply`, the
+      // mount re-renders here (typing, arrow meta, remote pulls, editable flips).
+      onTransaction: (tr) => {
+        sourceRef.current?.onTransaction(tr);
+        slashMenu.sync();
+      },
     });
 
     // decorations + the authorship overlay — refreshed on mount and on the chrome's broadcast.
@@ -687,6 +697,7 @@ export function PageMount(props: PageMountProps): ReactNode {
       // SPA.25 — the source handle's destroy commits any pending buffer BEFORE the view dies.
       sourceRef.current?.destroy();
       sourceRef.current = null;
+      slashMenu.destroy();
       if (viewSink) viewSink.current = null;
       viewRef.current = null;
       setMounted(false);

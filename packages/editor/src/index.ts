@@ -43,5 +43,14 @@ export type { FormatAction } from "./format-commands.js";
 export { FORMAT_ACTIONS, formatCommand, linkCommand } from "./format-commands.js";
 export type { PageKeyBinding } from "./page-keymap.js";
 export { PAGE_KEYMAP, pageShortcutFor, pmKeyToChord, BASE_KEYMAP_CHORDS } from "./page-keymap.js";
+export type { SlashMenuState, SlashEntry } from "./slash-menu.js";
+export {
+  slashMenuKey,
+  slashMenuPlugin,
+  slashMatch,
+  filterSlashEntries,
+  applySlashEntry,
+  SLASH_ENTRIES,
+} from "./slash-menu.js";
 export type { SourceEditRun } from "./source-mode.js";
 export { SOURCE_EDIT_META, diffTopBlocks, applySourceMarkdown } from "./source-mode.js";

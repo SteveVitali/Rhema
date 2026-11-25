@@ -25,6 +25,7 @@ import { gapCursor } from "prosemirror-gapcursor";
 import { inputRules, wrappingInputRule, textblockTypeInputRule } from "prosemirror-inputrules";
 import { pageSchema } from "./schema.js";
 import { decorationsPlugin } from "./decorations.js";
+import { slashMenuPlugin } from "./slash-menu.js";
 import { provenancePlugin, ORIGIN_META, type BlockSource } from "./provenance.js";
 import { PAGE_KEYMAP } from "./page-keymap.js";
 
@@ -161,6 +162,10 @@ export function pagePlugins(
         textblockTypeInputRule(/^```$/, s.nodes.code_block!),
       ],
     }),
+    // REQ-WRITE-3 (329_R7UX.6) — the `/` menu. BEFORE the editing keymap: while open it claims
+    // Enter/Escape/arrows; a claimed key preventDefaults, which also keeps the chrome's layered
+    // Esc handler out (`e.defaultPrevented`). Closed, it never claims a key.
+    slashMenuPlugin(),
     // REQ-KEYS-1 (239_R7WRITE.2) — the editing map builds from PAGE_KEYMAP's committed table so
     // the reserved-chords checker sees every binding; the command set is schema-derived here.
     keymap(
