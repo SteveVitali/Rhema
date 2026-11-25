@@ -3,7 +3,7 @@
 Harness: devin-cli/swe-2-high/subagent
 Skills: unknown
 Started: 2026-11-25T15:03Z
-Closed: (pending)
+Closed: 2026-11-25T17:31Z
 Spec: docs/tickets/327_R7UX.4__dossier-visual-unify.md
 Base: `stevenvitali/r7ux-3-files-panel-polish` @ `d4d4c928` (unmerged — OPERATOR)
 Branch: `stevenvitali/r7ux-4-dossier-visual-unify`
@@ -114,13 +114,71 @@ Budget: ~400 changed lines incl. tests (S–M)
 | Tests: shared class/token source, not a copied hex | `ui.test.tsx`, `marketing.test.ts` | asserts emitted scope rules + tokens, never a literal hex |
 | DOM test: opens without JS | `landing-faq.dom.test.tsx` | happy-dom over the real SSR component output |
 | build/lint/typecheck + web suite + 4 checks | Phase 4 log | all green; spa-entry-graph run too |
-| Preview walk + side-by-side screenshots | Phase 5 (pending) | AC4 |
+| Preview walk + side-by-side screenshots | `reports/2026-11-25_r7ux-4-dossier-walk/` | AC4 — PASS: identical computed values on both surfaces |
 | Out of scope: copy, new sections, marketing nav | none touched | |
+
+- 2026-11-25T15:5xZ — Phase 5 done: **PR #421** (base `r7ux-3`, head `6634f8cf`) →
+  owned preview `pr-421` lifecycle: `init` → config (gitSha `6634f8cf`,
+  protocolsVersion `0.4.0+07b1ad37ddaaa6f4`, oauth id, apparmor) → `resend-pull` →
+  `up` in converging passes: `ciPreviewSweepBucketsList` role `pulumi import`ed
+  (F-R7UX.1-1 class; `state delete`d + member at teardown); collab-sa hit the
+  per-minute SA quota 429 → retried; `pause:3.9` still gone → all-8 Cloud Run
+  creates failed (F-R7UX.1-1 stands) → Cloud Build `52e5eae6` all-10 images @
+  `6634f8cf` (12m10s, `_ALLOW_PLACEHOLDER_SDK=1`) → digests pinned → api rev
+  `00001` terminal pre-migrate (R7DEP.2 class) → migrate job `…-rsc56` applied →
+  rev `…-mig2` forced + serving → `appBaseUrl`/`apiPublicUrl` pinned → `up`
+  converged (215 resources). Provenance: api `/healthz/` → `gitSha 6634f8cf…` (the
+  PR head) via `gcloud run services proxy`.
+- **Headless walk PASS** — both surfaces public, $0, no fixture/invite needed:
+  landing `/` `data-section="dossier"` article = `.paper ui-dsv` under
+  `data-paper="light"` — computed `Literata, Lora, Georgia, serif` /
+  `rgb(255,253,248)` / `rgb(29,28,26)`; the in-app dossier
+  (`/demo/constitution-of-reason/review/v2-review`, `.paper > [data-letter-view]`,
+  html `data-paper="light"`) computes the SAME three values — the committed token
+  set end-to-end, not a copy. FAQ: native `DETAILS`, `aria-expanded: null`,
+  `listStyleType: none`, chevron transform `none` → rotation matrix on real click,
+  toggles both ways. Evidence `reports/2026-11-25_r7ux-4-dossier-walk/`
+  (8 PNGs + `walk-facts.json`).
+- 2026-11-25T16:1xZ — teardown: `ci-preview-sweep-buckets-list` member + role
+  `state delete`d → `destroy` 137 deleted → the Google-owned
+  `serverless-ipv4-cloudrun-1795621301247508866` reservation pinned the
+  private-app subnet (F-OPS.1-12 GC-lag class).
+- 2026-11-25T17:3xZ — reservations released ~17:28Z (~1h23m lag, inside the
+  R7UX.2/3 1h24m–1h55m window) → `destroy` retry deleted the remaining 77
+  (subnet + network + all SAs/secrets/buckets → 0) → **orphan sweep CLEAN**
+  (zero live `pr-<n>` resources) → `rm` deregistered the stack.
 
 ## Evidence log
 
-(pending Phase 5)
+- `pnpm exec vitest run packages/ui packages/tokens` — 237 tests / 21 files
+  (incl. the new DossierView paper-scope test; `tokens.test.ts`'s element-level
+  pin does NOT fire on the `details.ui-accordion-*` rules).
+- Web suite — 1,716 tests / 103 files; `landing-faq.dom.test.tsx` 2/2;
+  `marketing.test.ts` 21/21.
+- `pnpm turbo build lint typecheck --filter=@rhema/web...` — 39/39.
+- `check:dom-contract` OK · `check:spa-env` OK · `check:spa-entry-graph` OK ·
+  `check:protocol-markers` OK · `check:spa-budget` OK.
+- Changed lines: 261+ / 10− (8 files) — inside the ~400 budget.
+- **Preview `pr-421`** lifecycle + provenance + walk + teardown as logged above;
+  api `/healthz/` `gitSha 6634f8cf42632b822fe7a611376fe1264f112cf8` = PR head.
 
 ## Evidence report
 
-(pending Phase 6)
+- **Preview `pr-421` @ `6634f8cf`** — the recorded walk is the AC4 surface pair:
+  - landing `/` sample dossier: `.paper ui-dsv` inside `<div data-paper="light">`,
+    computed bg `rgb(255,253,248)` (`--paper-bg` = `#fffdf8`), fg `rgb(29,28,26)`,
+    body/letter type `Literata, Lora, Georgia, serif` (`--font-paper`).
+  - in-app dossier (demo review `v2-review`): `.paper` sheet under
+    `<html data-paper="light">`, `article.ui-letter-grid` — the identical three
+    computed values.
+  - verdict rows `sameMechanism`/`sameSerif`/`sameBg`/`sameFg`/`faqNoJs`/
+    `chevronRestyled` all `true` (`walk-facts.json`); `landing-dossier.png` +
+    `landing-dossier-top.png` vs `inapp-dossier-top.png` are the side-by-side.
+- **FAQ (RV-36):** 3 `<details data-faq-item>`; `<summary>` carries
+  `svg.ui-accordion-chevron`, native `::marker` suppressed (`listStyleType: none`),
+  `aria-expanded` absent (no JS in the mechanism), `[open]` toggles on real clicks
+  and rotates the chevron (computed transform `none` → rotation matrix).
+- **Teardown clean:** `destroy` cleared 137 then the `private-app` subnet sat
+  pinned by the Google-owned `serverless-ipv4-cloudrun-*` reservation
+  (F-OPS.1-12 GC lag — ~1h23m, inside the R7UX.2 ~1h24m / R7UX.3 ~1h55m
+  window); the retry deleted the remaining 77 → orphan sweep CLEAN → `rm`.

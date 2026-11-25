@@ -1,0 +1,49 @@
+{
+  "base": "https://rhema-pr-421-web-9d33334-tkbl73n3tq-uc.a.run.app",
+  "ts": "2026-11-25T15:52:07.110Z",
+  "landing": {
+    "dossierPresent": true,
+    "paperScoped": {
+      "classes": "paper ui-dsv",
+      "pin": "light",
+      "font": "Literata, Lora, Georgia, serif",
+      "bg": "rgb(255, 253, 248)",
+      "color": "rgb(29, 28, 26)",
+      "letterFont": "Literata, Lora, Georgia, serif"
+    },
+    "faqItems": 3,
+    "faq": {
+      "tagName": "DETAILS",
+      "chevronSvg": true,
+      "ariaExpanded": null,
+      "markerStyle": "none",
+      "chevronTransformClosed": "none",
+      "openAfterClick": true,
+      "chevronTransformOpen": "matrix(0.769949, 0.638105, -0.638105, 0.769949, 0, 0)",
+      "closedAfterSecondClick": true
+    }
+  },
+  "demo": {
+    "status": 200,
+    "url": "https://rhema-pr-421-web-9d33334-tkbl73n3tq-uc.a.run.app/demo/constitution-of-reason/review/v2-review",
+    "dossierPresent": true,
+    "paperScoped": {
+      "classes": "ui-letter-grid",
+      "insidePaper": true,
+      "htmlPin": "light",
+      "font": "Literata, Lora, Georgia, serif",
+      "bg": "rgb(255, 253, 248)",
+      "color": "rgb(29, 28, 26)",
+      "letterFont": "Literata, Lora, Georgia, serif",
+      "claimFont": "Literata, Lora, Georgia, serif"
+    }
+  },
+  "verdict": {
+    "sameMechanism": true,
+    "sameSerif": true,
+    "sameBg": true,
+    "sameFg": true,
+    "faqNoJs": true,
+    "chevronRestyled": true
+  }
+}
