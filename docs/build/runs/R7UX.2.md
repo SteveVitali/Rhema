@@ -145,7 +145,9 @@ Budget: ~400 changed lines incl. tests (S–M)
 - Web suite — 1713 tests / 102 files pass; `check:dom-contract` / `check:spa-env` /
   `check:spa-entry-graph` pass. `check:spa-budget` WARN +33.7 kB = cumulative drift vs
   pinned baseline `04a4e98b` (2026-11-05), informational; this ticket's delta ≈0.
-- **ci:** `pass #419@d34c0427` (run 45588618037 — all seven legs + `ci-pass` anchor).
+- **ci:** `pass #419@d34c0427` (run 45588618037 — all seven legs + `ci-pass` anchor);
+  records head `219484c7` re-read `pass` (run 45611881181 — fast-path same-tree
+  anchor on `d34c0427`, all seven legs success).
 - **Preview `pr-419` (owned lifecycle):** `init` → config (gitSha `d34c0427`,
   protocolsVersion `0.4.0+07b1ad37ddaaa6f4`, oauth id, apparmor) → `resend-pull` →
   `up` in converging passes: `ciPreviewSweepBucketsList` project role `pulumi import`ed
