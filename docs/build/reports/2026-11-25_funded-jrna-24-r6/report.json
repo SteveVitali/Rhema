@@ -1,0 +1,49 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "13d002330575",
+  "startedAt": "2026-11-25T02:18:11.299Z",
+  "finishedAt": "2026-11-25T02:58:21.493Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "bf5650ea718f6b2aee1b4ab2ba390e3445ebf989",
+    "observed": {
+      "web": "bf5650ea718f6b2aee1b4ab2ba390e3445ebf989",
+      "api": "bf5650ea718f6b2aee1b4ab2ba390e3445ebf989"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 42.624839,
+    "capUsd": 22,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "R6",
+      "journey": "returning",
+      "owner": "RPT.1",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET https://rhema.tools/p/jrn-13d002330575-r6excerpt/r/01M887YB5R4DNN4PNNE3VERCM5/events?after=2 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-13d002330575-r6excerpt/r/01M887YB5R4DNN4PNNE3VERCM5/events?after=3 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-13d002330575-r6excerpt/r/01M887YB5R4DNN4PNNE3VERCM5/events?after=6 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-13d002330575-r6excerpt/r/01M887YB5R4DNN4PNNE3VERCM5/events?after=28 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-13d002330575-r6excerpt/r/01M887YB5R4DNN4PNNE3VERCM5/events?after=62 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-13d002330575-r6excerpt/r/01M887YB5R4DNN4PNNE3VERCM5/events?after=97 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-13d002330575-r6excerpt/r/01M887YB5R4DNN4PNNE3VERCM5/events?after=136 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-13d002330575-r6excerpt/r/01M887YB5R4DNN4PNNE3VERCM5/events?after=198 net::ERR_ABORTED"
+      ],
+      "durationMs": 2410144,
+      "error": "the run did not reach a terminal state within 40 min",
+      "screenshot": "R6.png"
+    }
+  ],
+  "passed": false
+}

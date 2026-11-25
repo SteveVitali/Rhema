@@ -1597,19 +1597,34 @@ const R6: StepFn = async (ctx) => {
       `the report contradicts itself: "…${meteredMatch[2]} cr charged" beside "${reportSpent} cr spent"`,
     );
   }
-  const hasRefundLine = (await page.locator("[data-refund]").count()) > 0;
   if (reportSpent > finalSpent) {
     throw new Error(
       `report spent ${reportSpent} exceeds the card's committed meter ${finalSpent} — a charge no meter recorded`,
     );
   }
-  if (reportSpent < finalSpent && !hasRefundLine) {
-    throw new Error(
-      `report spent ${reportSpent} < the card's committed meter ${finalSpent} with no refund line explaining the gap`,
-    );
+  // RPT.1/F-R6FIX.45-3 — a charged < committed-meter gap is disclosed through the
+  // reconciliation lines, never silently: every credit below the meter must be reasoned by a
+  // gap-explaining difference row (`cap`/`absorbed`/`entitlement`/`committed`/`refund`), and
+  // their stated credits must equal the gap exactly. `cross_check` is a display-only
+  // estimate divergence — it never explains spend. (`data-refund` alone is not the test:
+  // a refunded run's refund rows ride `data-difference` too.)
+  const diffs = page.locator("[data-difference]");
+  if (reportSpent < finalSpent) {
+    const GAP_KEYS = new Set(["cap", "absorbed", "entitlement", "committed", "refund"]);
+    let explained = 0;
+    for (let i = 0; i < (await diffs.count()); i++) {
+      const key = await diffs.nth(i).getAttribute("data-difference");
+      if (key == null || !GAP_KEYS.has(key)) continue;
+      const m = /(\d[\d,]*)\s*cr/.exec((await diffs.nth(i).textContent()) ?? "");
+      if (m?.[1] != null) explained += Number(m[1].replace(/,/g, ""));
+    }
+    if (explained !== finalSpent - reportSpent) {
+      throw new Error(
+        `report spent ${reportSpent} < the card's committed meter ${finalSpent} — difference rows explain ${explained} cr of the ${finalSpent - reportSpent} cr gap`,
+      );
+    }
   }
   // Every difference row renders its reasoned sentence — never a bare key.
-  const diffs = page.locator("[data-difference]");
   for (let i = 0; i < (await diffs.count()); i++) {
     const text = ((await diffs.nth(i).textContent()) ?? "").trim();
     if (text.length < 10 || /^[a-z_]+$/.test(text)) {
