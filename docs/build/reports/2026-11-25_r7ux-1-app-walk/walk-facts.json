@@ -1,0 +1,62 @@
+{
+  "signinVia": "mailbox",
+  "appUrl": "https://rhema-pr-418-web-04a0c8f-tkbl73n3tq-uc.a.run.app/app",
+  "dom": {
+    "viewport": 1440,
+    "column": {
+      "left": 419,
+      "right": 1269,
+      "width": 850,
+      "top": 0,
+      "bottom": 212.6875
+    },
+    "columnParentClass": "app-shell-content",
+    "columnInContent": true,
+    "footer": {
+      "left": 248,
+      "right": 1440,
+      "width": 1192,
+      "top": 858.5,
+      "bottom": 900
+    },
+    "footerTag": "FOOTER",
+    "footerText": "Rhēma",
+    "footerInteractive": 0,
+    "footerPrevClass": "app-shell-content",
+    "topbar": {
+      "left": 0,
+      "right": 0,
+      "width": 0,
+      "top": 0,
+      "bottom": 0
+    },
+    "topbarInColumn": false,
+    "main": {
+      "left": 248,
+      "right": 1440,
+      "width": 1192,
+      "top": 0,
+      "bottom": 900
+    },
+    "content": {
+      "left": 248,
+      "right": 1440,
+      "width": 1192,
+      "top": 0,
+      "bottom": 858.5
+    },
+    "healthSha": null
+  },
+  "dom1024": {
+    "left": 248,
+    "width": 776,
+    "viewport": 1024
+  },
+  "healthz": {
+    "ok": true,
+    "service": "web",
+    "build": {
+      "gitSha": "0e3e3008487c1688b460811b9173b25dbd1cf772"
+    }
+  }
+}
