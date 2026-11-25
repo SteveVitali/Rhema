@@ -147,5 +147,15 @@ export function uiTailCss(): string {
     ".ui-t-r0 { right: 0; }",
     // ---- dynamic carriers (the `--d-*` seam) ----
     ".ui-t-bcd { border-color: var(--d-sev); }",
+    // ---- 326_R7UX.3 (BL-94) — the Files tree's interactive row: one flex line at the
+    //    dense step (the 11–12 px wall rebalance), the hover/focus clickability
+    //    affordance, the truncated right-aligned provenance, and the wrapped sub-line
+    //    the freshness note rides. uiCss() is at its REQ-KIT-5 bound — these live here. ----
+    ".ui-t-frow { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s2); padding: 3px var(--s2); border-radius: var(--radius-2); font-size: var(--fs-dense); }",
+    ".ui-t-frow:hover, .ui-t-frow:focus-within { background: var(--shell-raised); }",
+    ".ui-t-frow:hover .ui-t-frow-link, .ui-t-frow:focus-within .ui-t-frow-link { text-decoration: underline; }",
+    ".ui-t-frow-link { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }",
+    ".ui-t-frow-prov { flex: 0 1 auto; margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }",
+    ".ui-t-frow-sub { flex-basis: 100%; }",
   ].join("\n");
 }
