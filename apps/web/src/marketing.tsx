@@ -9,7 +9,7 @@
 import type { ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 import { Shell, PageTitle, SectionTitle, DossierView, NonceScript, type DossierLabels } from "@rhema/ui";
-import { buildPricingPageData, rangeLabel, PUBLIC_CLAIM_COPY, publicClaimEnabled, MODEL_TIERS, MODEL_TIER_DISPLAY, HERO_RECORDING } from "@rhema/contracts";
+import { buildPricingPageData, rangeLabel, reviewCardCredits, formatUsd, formatCredits, RIGOR_DISPLAY, PUBLIC_CLAIM_COPY, publicClaimEnabled, MODEL_TIERS, MODEL_TIER_DISPLAY, HERO_RECORDING } from "@rhema/contracts";
 import { surfacePricer } from "@rhema/run-sheet";
 import { COPY } from "./copy.js";
 import { SAMPLE_DOSSIER } from "./sample-dossier.js";
@@ -158,9 +158,15 @@ export function LandingPage(): ReactNode {
   const { invite, claims } = usePageData();
   const open = invite?.signupOpen === true;
   // EST.1 — the same estimator-facing API prices the landing figures (never the retired modelled pricer).
-  const pricing = buildPricingPageData(claims, surfacePricer());
+  const pricer = surfacePricer();
+  const pricing = buildPricingPageData(claims, pricer);
   const essayCard = pricing.cards.find((card) => card.key === "essay") ?? pricing.cards[0];
-  const reviewRow = essayCard?.rows.find((r) => r.key === "review");
+  // 328_R7UX.5 (BL-96) — the teaser's single anchor is the entitlement config's own
+  // first-run terms (the trial's `rigor`/`modelTier`) priced through the SAME pricer,
+  // dollarized the run-sheet way (REQ-BILL-1) — never the 4.5× tier span.
+  const ent = pricing.trial.entitlement;
+  const teaserReview =
+    essayCard == null ? null : reviewCardCredits(pricer, essayCard.words, essayCard.claims, ent.modelTier);
   return (
     <MarketingShell>
       {/* 1 — hero (the drop-zone IS the hero's primary affordance; REQ-GROWTH-1) */}
@@ -291,11 +297,18 @@ export function LandingPage(): ReactNode {
       <section data-section="pricing" style={SECTION}>
         <SectionTitle>{COPY.landing.pricing.heading}</SectionTitle>
         <p style={MUTED}>{COPY.landing.pricing.body}</p>
-        {essayCard && reviewRow ? (
+        {essayCard ? (
           <div style={{ ...CARD, maxWidth: "420px" }}>
             <strong>{essayCard.label}</strong>
             <p style={{ ...MUTED, maxWidth: "100%", fontSize: "13px" }}>
-              {essayCard.words.toLocaleString("en-US")} words · {essayCard.claims} claims — Review {rangeLabel(reviewRow.range)} credits
+              {fmtCopy(COPY.landing.pricing.teaserReviewFmt, {
+                words: essayCard.words.toLocaleString("en-US"),
+                claims: essayCard.claims,
+                rigor: RIGOR_DISPLAY[ent.rigor],
+                tier: MODEL_TIER_DISPLAY[ent.modelTier],
+                usd: teaserReview == null ? "—" : formatUsd(teaserReview),
+                credits: teaserReview == null ? "—" : formatCredits(teaserReview),
+              })}
             </p>
           </div>
         ) : null}
