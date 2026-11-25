@@ -29,6 +29,20 @@ export async function assertActionable(locator: Locator, name: string): Promise<
   return el;
 }
 
+/** Bounded enable-wait for controls that mount disabled until async state lands — the Review
+ *  launch disables itself while the estimate computes (`est.missing`), and a one-shot enable
+ *  assert raced it into a false "not enabled" (R6FIX.50; live datum 2026-11-25: a funded leg
+ *  failed ~9 s in with "Estimate pending — the draft is still being measured"). Falling
+ *  through on expiry is deliberate — the caller's assertActionable produces the precise line. */
+export async function waitEnabled(locator: Locator, ms = 60_000): Promise<void> {
+  const el = locator.first();
+  const deadline = Date.now() + ms;
+  while (Date.now() < deadline) {
+    if (await el.isEnabled({ timeout: 1_000 }).catch(() => false)) return;
+    await el.page().waitForTimeout(500);
+  }
+}
+
 /**
  * Assert a clickable target is actionable AND click it — the common pair. `click` re-runs
  * Playwright's own hit-target check, so an occlusion that develops between the assert and the click
