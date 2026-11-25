@@ -89,6 +89,16 @@ pointers; substance unchanged.)_
   pending-declarations placeholders → `PROTOCOLS_VERSION` re-frozen
   `0.4.0+07b1ad37ddaaa6f4`. Stays OPEN until deployed and a real-coverage dossier lands —
   the under-researched seat still *can* under-research, the gate now refuses honestly.*
+  *2026-11-25 → post-deploy live datum (golden cohort `r6dep7-a` at `bf5650ea`, fix live):
+  zero placeholder rows across all 4 runs — the hole is closed. Essay + academic delivered
+  verified; op-ed + memo landed `run.unverified` + `cost.refunded{zero_coverage}` — but on
+  real researched rows, not skeletons: every claim carries a substantive researched note
+  ("Cited source (Q3 board metrics deck)…", "Highest-risk claim in the draft…") — honest
+  all-`unverifiable` verdicts on fictional-entity fixtures whose claims are intrinsically
+  unverifiable externally (same honest shape as N6). Zero-coverage on fictional fixtures is
+  the designed REQ-SPEC-31 outcome, not the defect. The defect half — a never-researched
+  skeleton delivering as verified — no longer reproduces. Stays OPEN pending one funded
+  relaunch confirming a real-coverage dossier on checkable text (R6's own fixture).*
 - **OPEN 2026-11-24 — F-R6FIX.45-2: SSE client-abort races crash the api instance's response —
   intermittent 503 bursts + web SSR 500s on live project pages.** Cloud Run log evidence:
   `TypeError [ERR_INVALID_STATE]: Controller is already closed` at
@@ -110,6 +120,11 @@ pointers; substance unchanged.)_
   *2026-11-24 → fix carrier **317_R6FIX.46** (PR #409, stacked on #408): sink `enqueue`
   guarded; wakeup rejections routed into the tail; 2 regression tests. Stays OPEN until
   merged + deployed and the 503-burst class stops appearing in prod logs.*
+  *2026-11-25 → deployed at `bf5650ea` (R6DEP.7, update 188). The 4-run golden cohort
+  `r6dep7-a` (~3h of live SSE streams under constant client reloads) produced **zero**
+  `ERR_INVALID_STATE` crashes and no 503-burst/SSR-500 correlation in the window — the
+  crash class did not reproduce. Stays OPEN pending one funded relaunch (R6) under the
+  25s-reload console gate for direct evidence.*
 - **G2 DEFERRED (operator decision 2026-09-15) — Phase-B implementation proceeds.** G2 + H2 stay
   a HARD gate before public launch; §16.4 marketing/efficacy claims do NOT ship until LIFT is met
   (REQ-EVAL-16 consequences apply retroactively to UI built meanwhile). See `readouts/GATE-G2.md`.
