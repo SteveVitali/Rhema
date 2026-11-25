@@ -2188,6 +2188,12 @@ export const COPY = {
     pricing: {
       heading: "Pricing",
       body: "The same numbers the run sheet quotes — plans, credits, and the per-workflow cost cards.",
+      // 328_R7UX.5 (BL-96) — the teaser quotes ONE anchor the way the run sheet does
+      // (dollars first, REQ-BILL-1): the Essay card's Review at the entitlement config's
+      // own rigor + tier (`PRICING.trial.entitlement` — the reader's first-run terms),
+      // credits kept visible. The 4.5× Base→Frontier span lives on /pricing's cards.
+      teaserReviewFmt:
+        "{words} words · {claims} claims — a {rigor} Review on {tier} costs ≈ {usd} ({credits} credits)",
       cta: "See pricing",
     },
     changelog: {

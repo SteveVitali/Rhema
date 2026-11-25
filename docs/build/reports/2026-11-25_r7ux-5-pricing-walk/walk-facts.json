@@ -1,0 +1,36 @@
+{
+  "base": "https://rhema-pr-422-web-b876f13-tkbl73n3tq-uc.a.run.app",
+  "ts": "2026-11-25T18:49:10.619Z",
+  "expected": {
+    "words": "5,000",
+    "claims": "20",
+    "rigor": "Standard",
+    "tier": "Base",
+    "usd": "$26.10",
+    "credits": "2,610",
+    "entitlement": {
+      "kind": "review",
+      "wordCap": 2800,
+      "rigor": "standard",
+      "modelTier": "base"
+    }
+  },
+  "landing": {
+    "status": 200,
+    "pricingSectionPresent": true,
+    "pricingSectionText": "PricingThe same numbers the run sheet quotes — plans, credits, and the per-workflow cost cards.Essay5,000 words · 20 claims — a Standard Review on Base costs ≈ $26.10 (2,610 credits)See pricing",
+    "teaserText": "5,000 words · 20 claims — a Standard Review on Base costs ≈ $26.10 (2,610 credits)",
+    "rangeMatches": [],
+    "anchorPieces": {
+      "words": true,
+      "claims": true,
+      "rigor": true,
+      "tier": true,
+      "usd": true,
+      "credits": true
+    }
+  },
+  "verdict": {
+    "singleAnchor": true
+  }
+}

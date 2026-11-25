@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import type { ProjectRow } from "@rhema/api-client";
-import { buildPricingPageData, HERO_HEADLINE } from "@rhema/contracts";
+import { buildPricingPageData, reviewCardCredits, formatUsd, formatCredits, MODEL_TIER_DISPLAY, RIGOR_DISPLAY, HERO_HEADLINE } from "@rhema/contracts";
 import { surfacePricer } from "@rhema/run-sheet";
 import { createWebApp, type WebDeps, type AuthOutcome } from "./server.js";
 import { COPY } from "./copy.js";
@@ -185,14 +185,29 @@ describe("§15.1 — the landing page", () => {
     expect(html).toContain("--font-paper:");
   });
 
-  it("the landing's pricing teaser derives its figure (the Essay card's Review range)", async () => {
+  it("328_R7UX.5 (BL-96) — the pricing teaser quotes the estimator's ONE anchor, dollarized the run-sheet way", async () => {
     const html = await (await createWebApp(makeDeps()).request("/")).text();
-    const data = buildPricingPageData(undefined, surfacePricer());
+    const pricer = surfacePricer();
+    const data = buildPricingPageData(undefined, pricer);
     const card = data.cards[0]!;
+    const ent = data.trial.entitlement;
+    // the anchor recomputes from the estimator + entitlement config — never a literal
+    const anchor = reviewCardCredits(pricer, card.words, card.claims, ent.modelTier)!;
+    const section = html.slice(
+      html.indexOf('data-section="pricing"'),
+      html.indexOf('data-section="changelog"'),
+    );
+    // dollars first (REQ-BILL-1) + the credit mechanism visible + the named anchor terms
+    expect(section).toContain(formatUsd(anchor));
+    expect(section).toContain(formatCredits(anchor));
+    expect(section).toContain(MODEL_TIER_DISPLAY[ent.modelTier]);
+    expect(section).toContain(RIGOR_DISPLAY[ent.rigor]);
+    // the 4.5× Base→Frontier credit range is gone from the teaser (it lives on /pricing)
     const review = card.rows.find((r) => r.key === "review")!;
-    expect(html).toContain(
+    expect(section).not.toContain(
       `${review.range.low.toLocaleString("en-US")} – ${review.range.high.toLocaleString("en-US")}`,
     );
+    expect(section).not.toMatch(/\d\s*–\s*\d/);
   });
 });
 
