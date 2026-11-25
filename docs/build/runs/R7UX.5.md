@@ -138,6 +138,9 @@ Budget: ~250 changed lines incl. tests (S) — stop past it
 - CI (PR #422, head `a368bc20`): all 7 checks SUCCESS — fast-path,
   typecheck/lint/unit, contracts, public-safe (gitleaks/markers/licence),
   integration, images, ci-pass anchor (run 45670195898).
+- 2026-11-25T21:2xZ — records commit `7999d964` (records + pr-422 evidence +
+  D-R7UX.5-1) pushed; records-head ci read — pass (run 45702170018, fast-path
+  anchor, same-tree delta all-eligible).
 
 ## Gap table
 
