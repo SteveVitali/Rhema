@@ -158,6 +158,31 @@ describe("§15.1 — the landing page", () => {
     for (const f of COPY.landing.faq.items) expect(html).toContain(f.q);
     expect(html).toContain("ui-accordion-trigger");
     expect(html).toContain("ui-accordion-panel");
+    // 327_R7UX.4 (BL-95) — every item's <summary> carries the Accordion's own chevron as
+    // its styled marker (the native ::marker is suppressed by the themeCss rules below);
+    // the disclosure stays a real <details> — no JS-dependent control anywhere.
+    // count the rendered <svg>: the inlined stylesheet's `.ui-accordion-chevron` selector
+    // text also lives in this document — scoping to the tag keeps the count honest.
+    const chevrons = [...html.matchAll(/<svg[^>]*ui-accordion-chevron/g)];
+    expect(chevrons.length).toBe(COPY.landing.faq.items.length);
+    expect(html).toMatch(/<details[^>]*data-faq-item[^>]*>\s*<summary class="ui-accordion-trigger">/);
+    // …and the no-JS disclosure CSS is served IN the document (marker suppression +
+    // the [open] rotate — the CSS-only twin of the scripted aria-expanded arm).
+    expect(html).toContain("details.ui-accordion-item > summary.ui-accordion-trigger { list-style: none; }");
+    expect(html).toContain("details.ui-accordion-item > summary.ui-accordion-trigger::-webkit-details-marker");
+    expect(html).toContain("details.ui-accordion-item[open] > summary.ui-accordion-trigger .ui-accordion-chevron { transform: rotate(180deg); }");
+  });
+
+  it("327_R7UX.4 (BL-95) — the sample dossier mounts the in-app token set (the `.paper` sheet under `data-paper=light`)", async () => {
+    const html = await (await createWebApp(makeDeps()).request("/")).text();
+    // The dossier article IS the committed `.paper` sheet under the light pin — the
+    // asserted contract is the shared class/token source (themeCss's `[data-paper]` +
+    // `.paper` scope rules deriving from paperVars/paperScopeVars), never a copied hex.
+    expect(html).toMatch(/<div data-paper="light">\s*<article[^>]*data-dossier="true"[^>]*class="paper ui-dsv"/);
+    // the served stylesheet carries the pin + scope rules the article resolves through
+    expect(html).toContain('[data-paper="light"] .paper {');
+    expect(html).toContain("--paper-bg:");
+    expect(html).toContain("--font-paper:");
   });
 
   it("the landing's pricing teaser derives its figure (the Essay card's Review range)", async () => {

@@ -7,6 +7,7 @@
 // JS (the file input's label links to /signup; landing.js adds the client-side hold).
 
 import type { ReactNode } from "react";
+import { ChevronDown } from "lucide-react";
 import { Shell, PageTitle, SectionTitle, DossierView, NonceScript, type DossierLabels } from "@rhema/ui";
 import { buildPricingPageData, rangeLabel, PUBLIC_CLAIM_COPY, publicClaimEnabled, MODEL_TIERS, MODEL_TIER_DISPLAY, HERO_RECORDING } from "@rhema/contracts";
 import { surfacePricer } from "@rhema/run-sheet";
@@ -312,7 +313,9 @@ export function LandingPage(): ReactNode {
         <SectionTitle>{COPY.landing.faq.heading}</SectionTitle>
         {/* REQ-PUB-2 — the FAQ rides the Accordion's `.ui-accordion*` visual system; on the
             no-JS funnel the items ARE styled native <details> (the KIT-1 fallback), so the
-            section opens identically with or without the island. */}
+            section opens identically with or without the island. 327_R7UX.4 — the disclosure
+            marker is the Accordion's own chevron; themeCss() suppresses the native ::marker
+            and rotates it on [open], CSS-only. */}
         <div className="ui-accordion" data-faq style={{ maxWidth: "68ch" }}>
           {COPY.landing.faq.items.map((f) => {
             // HOT.1 — a `claimId` item renders its PUBLIC_CLAIM_COPY variant only while enabled.
@@ -322,8 +325,12 @@ export function LandingPage(): ReactNode {
                 : f.a;
             return (
               <details key={f.q} className="ui-accordion-item" data-faq-item>
-                <summary className="ui-accordion-trigger" style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: 600 }}>
+                {/* the native <details> stays (RV-36); only its marker is restyled — the
+                    same chevron the Accordion primitive renders, rotated by themeCss()'s
+                    [open] rule. No JS anywhere in the mechanism. */}
+                <summary className="ui-accordion-trigger">
                   <span>{f.q}</span>
+                  <ChevronDown className="ui-icon ui-accordion-chevron" aria-hidden />
                 </summary>
                 <div className="ui-accordion-panel">
                   <p style={{ ...MUTED, marginTop: "6px" }}>{answer}</p>

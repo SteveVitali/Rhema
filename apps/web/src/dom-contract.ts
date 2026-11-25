@@ -148,7 +148,12 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
       "theme boot attr — tokens CSS + the island theme POSTs select on it",
     ),
     a("data-app-theme", "required", "render.tsx/spa-shell.ts", "app-theme pref stamp"),
-    a("data-paper", "conditional", "render.tsx/spa-shell.ts", "per-project paper theme stamp"),
+    a(
+      "data-paper",
+      "conditional",
+      "render.tsx/spa-shell.ts + ui/dossier.tsx",
+      "per-project paper theme stamp · 327_R7UX.4 — also the public sample dossier's pinned-light sheet scope",
+    ),
     a("data-project", "conditional", "render.tsx/spa-shell.ts", "project context stamp"),
     a(
       "data-user",
