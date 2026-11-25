@@ -82,6 +82,17 @@ describe("DossierView (REQ-POS-3)", () => {
     expect(html).not.toContain("<form");
   });
 
+  it("327_R7UX.4 (BL-95) — mounts the in-app sheet scope: `.paper` under `data-paper=light`", () => {
+    const html = renderToStaticMarkup(
+      <DossierView title="Sample" letter={["One paragraph."]} claims={claims} findings={[]} labels={labels} />,
+    );
+    // The sample dossier rides the SAME committed mechanism the in-app Page column
+    // uses — `[data-paper="light"] .paper` (paperScopeVars("light") + the serif paper
+    // typeset from tokens.ts), never a copied palette.
+    expect(html).toContain('<div data-paper="light">');
+    expect(html).toMatch(/<article[^>]*data-dossier="true"[^>]*class="paper ui-dsv"/);
+  });
+
   it("honorsContradictedTierOneRule detects a contradicted Tier-1 claim with a fetched URL", () => {
     expect(honorsContradictedTierOneRule(claims)).toBe(true);
     expect(honorsContradictedTierOneRule([{ ...claims[0]!, fetched: [] }])).toBe(false);

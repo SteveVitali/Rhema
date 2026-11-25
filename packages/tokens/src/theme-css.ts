@@ -178,6 +178,15 @@ export function themeCss(): string {
     ".rhema-pulse { animation: rhema-pulse 1.4s ease-in-out infinite; }",
     // HOT.1 (REQ-IDE-4) — the collapsed group's explicit affordance: its ▸ marker rotates open and the
     // Show/Hide cue swaps, all on the native <details> state (the summary suppresses the default marker).
+    // 327_R7UX.4 (BL-95; RV-36) — the no-JS <details> arm of the accordion visual system: the
+    // public funnel's FAQ items are real <details>/<summary> riding the committed .ui-accordion-*
+    // classes, so the native ::marker triangle is suppressed and the same .ui-accordion-chevron
+    // the scripted trigger carries rotates on [open] — the CSS-only twin of uiCss()'s
+    // `aria-expanded` arm (uiCss()/uiTailCss() are at their REQ-KIT-5 bounds, so the
+    // native-element rules live here beside the collapsed-group arm).
+    "details.ui-accordion-item > summary.ui-accordion-trigger { list-style: none; }",
+    "details.ui-accordion-item > summary.ui-accordion-trigger::-webkit-details-marker { display: none; }",
+    "details.ui-accordion-item[open] > summary.ui-accordion-trigger .ui-accordion-chevron { transform: rotate(180deg); }",
     "details[data-collapsed-group][open] > summary [data-collapsed-marker] { transform: rotate(90deg); }",
     "details[data-collapsed-group]:not([open]) > summary [data-cue-when-open] { display: none; }",
     "details[data-collapsed-group][open] > summary [data-cue-when-closed] { display: none; }",

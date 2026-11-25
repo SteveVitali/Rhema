@@ -98,13 +98,20 @@ function ClaimRow({ claim, labels }: { claim: DossierClaim; labels: DossierLabel
 }
 
 export function DossierView({ title, letter, claims, findings, labels }: DossierViewProps): ReactNode {
+  // 327_R7UX.4 (BL-95; R5 H4) — the sample dossier mounts the SAME dossier visual system as
+  // the in-app sheet: the `.paper` island under a `data-paper="light"` pin (REQ-IDE-38's
+  // "pinned-light paper inside the dark shell reads as a sheet"). Before this, `.ui-dsv`
+  // read the default `:root` DARK paper tokens on the public dark-shell pages — the
+  // dark-sans second language this closes. Every consumer is a public funnel surface
+  // (landing, invite, signup-sent, /showcase), so the pin lives here, not at call sites.
   return (
-    <article
-      data-dossier="true"
-      data-readonly="true"
-      className="ui-dsv"
-      style={{ border: "1px solid var(--paper-rule)", boxShadow: "0 1px 0 var(--shell-border)" }}
-    >
+    <div data-paper="light">
+      <article
+        data-dossier="true"
+        data-readonly="true"
+        className="paper ui-dsv"
+        style={{ border: "1px solid var(--paper-rule)", boxShadow: "0 1px 0 var(--shell-border)" }}
+      >
       <div role="note" className="ui-d-s ui-d-cm ui-d-mb16" style={{ borderBottom: "1px solid var(--paper-rule)" }}>
         {labels.readOnlyNote}
       </div>
@@ -140,7 +147,8 @@ export function DossierView({ title, letter, claims, findings, labels }: Dossier
           ))}
         </ul>
       </section>
-    </article>
+      </article>
+    </div>
   );
 }
 
