@@ -31,10 +31,18 @@ export function severityColor(sev: string): string {
   return SEVERITY_COLOR[sev as Severity] ?? "var(--sev-note)";
 }
 
-/** A small status pill (the project-state pill; §6.3). Colour by tone, with a dot so it is not colour-only. */
-export function Pill({ label, tone = "neutral" }: { label: string; tone?: Tone }): ReactNode {
+/** A small status pill (the project-state pill; §6.3). Colour by tone, with a dot so it is not colour-only.
+ *  R7UX.2 (BL-93): `...rest` forwards dom hooks (`data-*`) onto the span, matching Chip's contract. */
+export function Pill({
+  label,
+  tone = "neutral",
+  ...rest
+}: { label: string; tone?: Tone } & Omit<ComponentPropsWithRef<"span">, "children">): ReactNode {
   return (
-    <span className={["ui-pill", TONE_MODIFIER[tone]].filter(Boolean).join(" ")}>
+    <span
+      className={["ui-pill", TONE_MODIFIER[tone]].filter(Boolean).join(" ")}
+      {...rest}
+    >
       <span aria-hidden="true" className="ui-pill-dot" />
       {label}
     </span>

@@ -1799,7 +1799,9 @@ export const COPY = {
     queuedNotesFmt: "{n} note(s) queued for the next phase",
     // R7COPY.0 (REQ-COPY-4; ADR-130) — the record-composed "What it delivered" (the generated
     // walkthrough's heading survives verbatim; nothing pending/failed can ever render again).
-    deliveredHeading: "What it delivered",
+    // R7UX.2 (BL-93): the heading itself is a quiet label now — "Delivered", not the retired
+    // caps reading; the block keeps its REQ-COPY-4 name in prose only.
+    deliveredHeading: "Delivered",
     deliveredCountsFmt: "{findings} findings{strengths} · {claims} claims",
     deliveredStrengthsFmt: " · {n} strength{s}",
     deliveredLinkLabel: labelLookup(UI_LABELS.deliveredLink),

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { GateKind } from "@rhema/contracts";
 import { Button } from "./primitives/button.js";
+import { Chip } from "./primitives/chips.js";
 import { TextField } from "./primitives/fields.js";
 import {
   presenceCountdown,
@@ -97,6 +98,8 @@ export interface GateCardLabels {
   /** the permanent decision lines under the card (§6.4 item 8 — one per recorded decision). */
   readonly decisionsHeading?: string;
   readonly decisionLabel?: (decision: GateDecisionView) => string;
+  /** R7UX.2 (BL-93) — the decision row's kind badge; absent ⇒ the row keeps its bare line. */
+  readonly decisionKindLabel?: (kind: string) => string;
   /** the first-run inline explainer (§5.11/§6.4 — one-time, inline, dismissible; never a modal). */
   readonly explainer?: {
     readonly title: string;
@@ -579,8 +582,21 @@ export function GateCard({
           ) : null}
           <ul className="ui-os-ul ui-c2-g1" style={{ display: "flex", flexDirection: "column" }}>
             {decisions.map((d) => (
-              <li key={d.id} data-decision={d.id} data-action={d.action} data-by={d.byActor}>
-                {labels.decisionLabel!(d)}
+              // R7UX.2 (BL-93) — the same structured approval row the run card renders:
+              // kind badge + the composed action/actor/time line + a per-kind hook.
+              <li
+                key={d.id}
+                data-decision={d.id}
+                data-kind={d.kind}
+                data-action={d.action}
+                data-by={d.byActor}
+                className="ui-d-acts"
+                style={{ display: "flex", alignItems: "center" }}
+              >
+                {labels.decisionKindLabel ? (
+                  <Chip variant="static" label={labels.decisionKindLabel(d.kind)} />
+                ) : null}
+                <span>{labels.decisionLabel!(d)}</span>
               </li>
             ))}
           </ul>
