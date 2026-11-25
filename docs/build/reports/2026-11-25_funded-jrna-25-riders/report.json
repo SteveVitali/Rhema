@@ -1,0 +1,81 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "fbf859bc098d",
+  "startedAt": "2026-11-25T03:19:45.179Z",
+  "finishedAt": "2026-11-25T04:00:36.471Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "bf5650ea718f6b2aee1b4ab2ba390e3445ebf989",
+    "observed": {
+      "web": "bf5650ea718f6b2aee1b4ab2ba390e3445ebf989",
+      "api": "bf5650ea718f6b2aee1b4ab2ba390e3445ebf989"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 48.010067,
+    "capUsd": 22,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "N11",
+      "journey": "new-visitor",
+      "owner": "CITE.1",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET https://rhema.tools/p/jrn-fbf859bc098d-cite1/r/01M88BF2H22NM86A5E74MS433Z/events?after=2 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-fbf859bc098d-cite1/r/01M88BF2H22NM86A5E74MS433Z/events?after=32 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-fbf859bc098d-cite1/r/01M88BF2H22NM86A5E74MS433Z/events?after=179 net::ERR_ABORTED",
+        "GET https://rhema.tools/p/jrn-fbf859bc098d-cite1/r/01M88BF2H22NM86A5E74MS433Z/events?after=190 net::ERR_ABORTED"
+      ],
+      "durationMs": 2410827,
+      "error": "run 01M88BF2H22NM86A5E74MS433Z did not reach a terminal state within 40 min",
+      "screenshot": "N11.png"
+    },
+    {
+      "id": "T10",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 40383,
+      "error": "no delivered own-tenant Review found (61 project(s), 3 review link(s) probed)"
+    },
+    {
+      "id": "T13",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "browser.newContext: Target page, context or browser has been closed"
+    },
+    {
+      "id": "T14",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "browser.newContext: Target page, context or browser has been closed"
+    }
+  ],
+  "passed": false
+}

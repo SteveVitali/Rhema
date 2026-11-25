@@ -1022,7 +1022,7 @@ const T10: StepFn = async (ctx) => {
   if (await filter.isVisible().catch(() => false)) {
     await assertClick(filter, "the findings filter select");
   } else {
-    await assertClick(page.locator("[data-findings-list] [data-verb]").first(), "a disposition verb");
+    await assertClick(page.locator("[data-finding] [data-verb]").first(), "a disposition verb");
   }
   assertBundleParity(ctx);
 };
@@ -1188,6 +1188,9 @@ const T13: StepFn = async (ctx) => {
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}`);
 
   // ---- Apply ------------------------------------------------------------------------------
+  // 307_R6FIX.36's desk repair — findings mount inside the right panel's Findings tab, CSS-hidden
+  // until openFindingsDesk swaps data-desk-tab; a bare [data-apply] locator counts hidden DOM.
+  if (!(await openFindingsDesk(page))) throw new Error("the delivered dossier's Findings tab never opened");
   const apply = page.locator("[data-apply]").first();
   if ((await apply.count()) === 0) {
     throw new Error("no suggestion-bearing finding on the delivered Review — Apply waits on the next weekly paid journey");
@@ -1195,27 +1198,55 @@ const T13: StepFn = async (ctx) => {
   await assertClick(apply, "the Apply control");
   // the apply form's hook carries the finding id (REQ-VFY-4 — the action URL is SSR detail).
   const appliedFid = await page.locator("[data-apply-form]").first().getAttribute("data-apply-form");
+  // VERIF.1 — same repaint-race class as the bulk arm below: capture the POST's status AND wait
+  // for the notice to attach, or a leaf repaint lag reads as a missing landing.
+  const applyPostP = page
+    .waitForResponse(
+      (r) =>
+        r.request().method() === "POST" &&
+        /\/findings\/[^/]+\/apply$/.test(new URL(r.url()).pathname),
+      { timeout: 20_000 },
+    )
+    .catch(() => null);
   await apply.click();
+  const applyPost = await applyPostP;
   await page.waitForURL(/applied=/, { timeout: 20_000 }).catch(() => settleNav(page, ctx));
   if (!/applied=/.test(page.url())) {
-    throw new Error(`the Apply click did not land on ?applied= (${page.url()})`);
+    const status = applyPost?.status();
+    const detail = await applyPost?.text().catch(() => "");
+    throw new Error(
+      `the Apply click did not land on ?applied= (${page.url()})` +
+        (status == null
+          ? " — no apply POST was captured (a click/navigation race)"
+          : ` — the apply POST answered ${status}${detail ? ` (${detail.slice(0, 160)})` : ""}`),
+    );
   }
-  if ((await page.locator('[data-finding-notice="applied"]').count()) === 0) {
-    throw new Error("the ?applied= landing shows no applied notice");
+  try {
+    await page.locator('[data-finding-notice="applied"]').waitFor({ state: "attached", timeout: 15_000 });
+  } catch {
+    const status = applyPost?.status();
+    throw new Error(
+      status != null && status >= 400
+        ? `the apply POST failed → ${status} — a product failure, not a repaint race`
+        : "the ?applied= landing shows no applied notice after a 2xx POST — the leaf repaint lagged the route change",
+    );
   }
   if (appliedFid) {
     // the applied finding's card no longer offers Apply (the gate sees the applied row).
     await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}`);
+    await openFindingsDesk(page);
     const again = page.locator(`[data-finding="${appliedFid}"] [data-apply]`).count();
     if ((await again) > 0) throw new Error("the applied finding still offers Apply");
   }
 
   // ---- the bulk preview's per-item checklist ---------------------------------------------
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}?bulk=defer_minor`);
+  await openFindingsDesk(page);
   let preview = page.locator("[data-bulk-preview]");
   if ((await preview.count()) === 0 || (await preview.locator('input[name="only"]').count()) === 0) {
     // try apply_notes — whichever action has eligible rows.
     await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}?bulk=apply_notes`);
+    await openFindingsDesk(page);
     preview = page.locator("[data-bulk-preview]");
   }
   if ((await preview.count()) === 0) throw new Error("no bulk action produced a preview");
@@ -1634,14 +1665,53 @@ const T14: StepFn = async (ctx) => {
   // first; `data-findings-list` no longer exists and the persisted escalate state is the verb's
   // `data-selected`, so the exclusion targets un-escalated desk rows.
   if (!(await openFindingsDesk(page))) throw new Error("the delivered dossier's Findings tab never opened");
-  const escCard = page
-    .locator('[data-finding]:not(:has(button[data-verb="escalate"][data-selected="true"]))')
-    .last();
+  // the DOM's `data-selected` marks only the finding's LATEST disposition kind — a finding
+  // escalated then re-disposed (or whose card re-rendered after an obligation transition)
+  // renders escalate un-selected, and re-escalating it is an idempotent noop: 200, no new
+  // disposition, no new decision row, badge +0 (live datum 2026-11-25). When bound, exclude
+  // every finding that already has an escalate disposition — escalate is once-per-finding.
+  const priorEscalations = new Set<string>(
+    !process.env.JOURNEY_DATABASE_URL
+      ? []
+      : (
+          (await db().query(`select finding_id from dispositions where kind = 'escalate'`))
+            .rows as { finding_id: string }[]
+        ).map((r) => r.finding_id),
+  );
+  const escCards = (
+    await page
+      .locator('[data-finding]:not(:has(button[data-verb="escalate"][data-selected="true"]))')
+      .evaluateAll((els) => els.map((el) => el.getAttribute("data-finding") ?? "").filter(Boolean))
+  ).filter((id) => !priorEscalations.has(id));
+  if (escCards.length === 0) throw new Error("no un-escalated finding card left to escalate");
+  const escCard = page.locator(`[data-finding="${escCards[escCards.length - 1]}"]`);
   const escForm = escCard.locator("[data-disposition-form]");
   await escForm.locator("input[data-note]").fill(`${ctx.marker("ESC")} — escalate for the decision row`);
   const esc = escForm.locator('button[data-verb="escalate"]');
   await assertClick(esc, "the Escalate verb");
+  // the badge read must not race the disposition commit: settleNav resolves on the client route
+  // change, which can land while the POST is still in flight — the inbox twin then reads the
+  // pre-commit decisions set (live datum 2026-11-25: row committed 5ms after the badge read →
+  // 1→1 instead of 1→2). Capture the POST so a 2xx precedes the re-read; ≥400 is product truth.
+  const escPostP = page
+    .waitForResponse(
+      (r) =>
+        r.request().method() === "POST" &&
+        /\/findings\/[^/]+\/disposition$/.test(new URL(r.url()).pathname),
+      { timeout: 30_000 },
+    )
+    .catch(() => null);
   await esc.click();
+  const escPost = await escPostP;
+  if (escPost == null) {
+    throw new Error("no disposition POST was captured on escalate (a click/navigation race)");
+  }
+  if (escPost.status() >= 400) {
+    const detail = await escPost.text().catch(() => "");
+    throw new Error(
+      `the escalate POST failed → ${escPost.status()}${detail ? ` (${detail.slice(0, 160)})` : ""} — a product failure`,
+    );
+  }
   await settleNav(page, ctx);
   const afterEscalate = await readInboxBadge(page, ctx);
   if (afterEscalate !== baseline + 1) {
@@ -1718,22 +1788,35 @@ const T14: StepFn = async (ctx) => {
   }
   // DB half: the deferred run_finished rows exist server-side with visible_at = the window's end.
   if (dbBound) {
+    // witnesses live inside the whole current window instance, not a trailing 4h — a leg that
+    // runs hours after the window ended (live datum 2026-11-25: window 16:29–19:29Z, leg at
+    // 04:20Z) holds zero in-window deliveries inside 4h and "every row undelayed" false-fired
+    // `armed nothing` while yesterday's in-window rows sat deferred to exactly the window end.
     const { rows } = await db().query(
       `select run_id, created_at, visible_at from inbox_items
-        where user_id = $1 and payload->>'type' = 'run_finished' and created_at > now() - interval '4 hours'
+        where user_id = $1 and payload->>'type' = 'run_finished' and created_at >= $2::timestamptz
         order by created_at desc`,
-      [userId],
+      [userId, windowStart!.toISOString()],
     );
     if (rows.length === 0) {
       throw new Error("no run_finished inbox rows exist at all — the terminal deliveries produced nothing to defer");
+    }
+    const witnesses = rows.filter((r) => {
+      const row = r as { created_at: Date };
+      return (
+        row.created_at.getTime() >= windowStart!.getTime() &&
+        deferredVisibleAt(qh!.startMinutesUtc, qh!.endMinutesUtc, row.created_at) !== null
+      );
+    });
+    if (witnesses.length === 0) {
+      throw new Error(
+        "no run_finished row was delivered inside the currently-armed quiet window — the deferral arm has no witness this leg",
+      );
     }
     const undeferred = rows.filter((r) => {
       const row = r as { created_at: Date; visible_at: Date };
       return row.visible_at.getTime() <= row.created_at.getTime() + 60_000;
     });
-    if (undeferred.length === rows.length) {
-      throw new Error("every recent run_finished row is undelayed — quiet hours armed nothing");
-    }
     for (const r of undeferred) {
       const row = r as { run_id: string | null; created_at: Date };
       // a row whose terminal event fell outside the window (delivered after the end) is
@@ -1773,7 +1856,26 @@ const T14: StepFn = async (ctx) => {
   const decide = openDecision.locator('button[data-decision-option="decide"]');
   const answer = (await dismiss.count()) > 0 ? dismiss : decide;
   await assertClick(answer.first(), "the decision row's answer control");
+  // same commit-vs-read race as the escalate arm above — capture the answer POST before the
+  // badge re-read or the inbox twin can serve the pre-commit set.
+  const answerPostP = page
+    .waitForResponse(
+      (r) =>
+        r.request().method() === "POST" && /\/decisions\/[^/]+$/.test(new URL(r.url()).pathname),
+      { timeout: 30_000 },
+    )
+    .catch(() => null);
   await answer.first().click();
+  const answerPost = await answerPostP;
+  if (answerPost == null) {
+    throw new Error("no decision-answer POST was captured (a click/navigation race)");
+  }
+  if (answerPost.status() >= 400) {
+    const detail = await answerPost.text().catch(() => "");
+    throw new Error(
+      `the decision answer POST failed → ${answerPost.status()}${detail ? ` (${detail.slice(0, 160)})` : ""} — a product failure`,
+    );
+  }
   await settleNav(page, ctx);
   const afterAnswer = await readInboxBadge(page, ctx);
   if (afterAnswer !== baseline) {
@@ -1793,13 +1895,33 @@ const T14: StepFn = async (ctx) => {
   // obligation is closed/mooted hits routeDisposition on a dead row (observed live 2026-10-06:
   // → 500 internal_error; the closed-world transition has no mooted→deferred edge — recorded as a
   // product finding, the leg keeps to live obligations).
+  // an obligation that already carries an OPEN decision row is not a candidate:
+  // createDecisionRequest re-uses it rather than landing the swept re-defer row (live datum
+  // 2026-11-25: iteration 1 deferred the root finding of the obligation the escalate arm's
+  // row already sat on — the sweep returned the obligation to open, reused the decide/dismiss
+  // row, and the re-defer waitFor timed out). DOM can't mark it — exclude via the DB when
+  // bound, else fall back to the escalate arm's data-selected exclusion.
+  const decisionBoundFindings = new Set<string>(
+    !process.env.JOURNEY_DATABASE_URL
+      ? []
+      : (
+          (await db().query(
+            `select of2.finding_id from decision_requests dr
+               join obligation_findings of2 on of2.obligation_id = dr.obligation_id and of2.relation = 'root'
+              where dr.state = 'open' and dr.obligation_id is not null`,
+          )).rows as { finding_id: string }[]
+        ).map((r) => r.finding_id),
+  );
   const findingIds = (
     await page
       .locator(
-        '[data-findings-list] [data-finding]:has([data-obligation-state="open"], [data-obligation-state="reopened"])',
+        '[data-finding]:not(:has(button[data-verb="escalate"][data-selected="true"]))' +
+          ':has([data-obligation-state="open"], [data-obligation-state="reopened"])',
       )
       .evaluateAll((els) => els.map((el) => el.getAttribute("data-finding") ?? "").filter(Boolean))
-  ).slice(-2); // the last two — least likely already parked by earlier steps.
+  )
+    .filter((id) => !decisionBoundFindings.has(id))
+    .slice(-2); // the last two — least likely already parked by earlier steps.
   if (findingIds.length === 0) throw new Error("no obligation-bearing findings on the dossier to park");
   const answers = ["re-defer", "drop"] as const;
   for (let i = 0; i < findingIds.length; i++) {
@@ -1831,7 +1953,25 @@ const T14: StepFn = async (ctx) => {
       throw new Error(`the swept decision row offers ${opts.join("/")}, not re-defer/drop`);
     }
     await assertClick(option, `the ${answers[i]} option`);
+    // same commit-vs-read class as the badge arm — the row-removal read must not race the POST.
+    const optPostP = page
+      .waitForResponse(
+        (r) =>
+          r.request().method() === "POST" && /\/decisions\/[^/]+$/.test(new URL(r.url()).pathname),
+        { timeout: 30_000 },
+      )
+      .catch(() => null);
     await option.click();
+    const optPost = await optPostP;
+    if (optPost == null) {
+      throw new Error(`no decision POST was captured on ${answers[i]} (a click/navigation race)`);
+    }
+    if (optPost.status() >= 400) {
+      const detail = await optPost.text().catch(() => "");
+      throw new Error(
+        `the ${answers[i]} POST failed → ${optPost.status()}${detail ? ` (${detail.slice(0, 160)})` : ""} — a product failure`,
+      );
+    }
     await settleNav(page, ctx);
     // the request closes — THAT row leaves the open list.
     const stillOpen = await page.locator(`[data-decisions-list] [data-decision="${answeredId}"]`).count();
@@ -1842,7 +1982,7 @@ const T14: StepFn = async (ctx) => {
   // obligation-state proof on the dossier: the re-deferred finding parks (deferred); the dropped
   // finding's obligation is mooted (its live chip leaves).
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}`);
-  const redeferred = page.locator(`[data-findings-list] [data-finding="${findingIds[0]}"] [data-obligation-state="deferred"]`);
+  const redeferred = page.locator(`[data-finding="${findingIds[0]}"] [data-obligation-state="deferred"]`);
   if ((await redeferred.count()) === 0) {
     throw new Error("the re-deferred finding shows no deferred obligation chip on the dossier");
   }

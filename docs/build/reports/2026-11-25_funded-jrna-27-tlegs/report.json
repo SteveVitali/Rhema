@@ -1,0 +1,65 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "2bb6f2422cba",
+  "startedAt": "2026-11-25T04:02:21.835Z",
+  "finishedAt": "2026-11-25T04:03:09.082Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "bf5650ea8e7a1f6be8cf7ba1bd3a9a3d9bb0cf0e",
+    "observed": {
+      "web": "bf5650ea718f6b2aee1b4ab2ba390e3445ebf989",
+      "api": "bf5650ea718f6b2aee1b4ab2ba390e3445ebf989"
+    },
+    "match": false
+  },
+  "spend": {
+    "weeklyMeteredUsd": 53.078377,
+    "capUsd": 22,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "T10",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": true,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 5986,
+      "screenshot": "T10.png"
+    },
+    {
+      "id": "T13",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 34985,
+      "error": "the Apply control: not visible",
+      "screenshot": "T13.png"
+    },
+    {
+      "id": "T14",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": true,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 6099,
+      "error": "the badge moved 1 → 1 on escalate, expected +1",
+      "screenshot": "T14.png"
+    }
+  ],
+  "passed": false
+}
