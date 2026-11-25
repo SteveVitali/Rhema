@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import pg from "pg";
 import type { Locator, Page, Response } from "playwright";
 import type { StepCtx, StepFn } from "./runner.js";
-import { assertActionable, clickActionable } from "./occlusion.js";
+import { assertActionable, clickActionable, waitEnabled } from "./occlusion.js";
 // SPA.6 (REQ-VFY-3/4) — the settle contract: journeys wait on `data-mounted`/`data-route`, never
 // on `domcontentloaded`/`form[action]`/inline-script internals (the markers exist on BOTH
 // renderers, so the same probe proves the SSR fallback AND the flagged SPA).
@@ -73,6 +73,12 @@ const GOLDEN_OP_ED = readFileSync(
   join(dirname(fileURLToPath(import.meta.url)), "../fixtures/golden-op-ed.md"),
   "utf8",
 );
+
+/** R6FIX.50 — delivery-poll bound for run-driving legs. Hiccup-resumed runs exceed the old
+ *  40/45-min bounds (the 2026-11-25 funded wave measured 42–48 min deliveries; the bound, not
+ *  the run, red the leg — R6's `01M887YB…` delivered at 48 min, 8 past its poll). 90 min
+ *  covers a hiccup-resume pair under trial concurrency=1. */
+const RUN_DELIVERY_BOUND_MS = 90 * 60_000;
 
 // ---------------------------------------------------------------- helpers
 
@@ -1035,6 +1041,7 @@ const N5: StepFn = async (ctx) => {
   // R6FIX.43b — the sheet is long; the launch control can sit below the 720px fold once the
   // §5.6 row is armed (elementFromPoint → null off-viewport ⇒ "occluded by (no element at point)").
   await launch.scrollIntoViewIfNeeded();
+  await waitEnabled(launch);
   await assertActionable(launch, "Review launch");
   await launch.click();
   // the launch POST's doc nav (SSR) or mutation re-render (SPA) — settle on the markers.
@@ -1063,7 +1070,7 @@ const N5: StepFn = async (ctx) => {
   if (!reviewHref) throw new Error("run sheet shows no active-run dossier link after trial launch");
   const runId = /\/review\/([A-Za-z0-9]+)/.exec(reviewHref)?.[1] ?? "";
   // poll the dossier route until the run delivers — a cap death never produces it.
-  const deadline = Date.now() + 40 * 60_000;
+  const deadline = Date.now() + RUN_DELIVERY_BOUND_MS;
   let delivered = false;
   while (Date.now() < deadline) {
     const r = await page
@@ -1075,7 +1082,7 @@ const N5: StepFn = async (ctx) => {
     }
     await new Promise((res) => setTimeout(res, 20_000));
   }
-  if (!delivered) throw new Error(`trial run ${runId} did not deliver a dossier within 40 min`);
+  if (!delivered) throw new Error(`trial run ${runId} did not deliver a dossier within ${RUN_DELIVERY_BOUND_MS / 60_000} min`);
 };
 
 /**
@@ -1213,6 +1220,7 @@ const N6: StepFn = async (ctx) => {
   const runBtn = page.locator('button[data-run-button="true"]').first();
   // R6FIX.43b — same off-viewport occlusion class as N5's launch; scroll before asserting.
   await runBtn.scrollIntoViewIfNeeded();
+  await waitEnabled(runBtn);
   await assertActionable(runBtn, "Review launch");
   await runBtn.click();
   await settleNav(page, ctx);
@@ -1243,7 +1251,7 @@ const N6: StepFn = async (ctx) => {
   if (!reviewHref) throw new Error("run sheet shows no active-run dossier link after launch");
   const runId = /\/review\/([A-Za-z0-9]+)/.exec(reviewHref)?.[1] ?? "";
   // poll the dossier route until the run delivers — it 404s while the run is in flight.
-  const deadline = Date.now() + 40 * 60_000;
+  const deadline = Date.now() + RUN_DELIVERY_BOUND_MS;
   let delivered = false;
   while (Date.now() < deadline) {
     const r = await page
@@ -1255,7 +1263,7 @@ const N6: StepFn = async (ctx) => {
     }
     await new Promise((res) => setTimeout(res, 20_000));
   }
-  if (!delivered) throw new Error(`run ${runId} did not deliver a dossier within 40 min`);
+  if (!delivered) throw new Error(`run ${runId} did not deliver a dossier within ${RUN_DELIVERY_BOUND_MS / 60_000} min`);
   // ≥1 fetched-✓ claim: a FetchedUrlChip (`a[data-fetched="true"]`, primitives.tsx) — a source the
   // fact-check actually retrieved, stamped from the run's own fetch_log (REQ-POS-3's proof).
   const fetched = await page.locator('a[data-fetched="true"]').count();
@@ -1510,6 +1518,7 @@ const R6: StepFn = async (ctx) => {
   const runBtn = page.locator('button[data-run-button="true"]').first();
   // R6FIX.43b — same off-viewport occlusion class as N5's launch; scroll before asserting.
   await runBtn.scrollIntoViewIfNeeded();
+  await waitEnabled(runBtn);
   await assertActionable(runBtn, "Review launch");
   await runBtn.click();
   await settleNav(page, ctx);
@@ -1532,7 +1541,7 @@ const R6: StepFn = async (ctx) => {
   const readingsByPhase = new Map<string, Set<number>>();
   let provisionalSeen = false;
   let finalSpent: number | null = null;
-  const deadline = Date.now() + 40 * 60_000;
+  const deadline = Date.now() + RUN_DELIVERY_BOUND_MS;
   let lastReload = 0;
   while (Date.now() < deadline) {
     if (Date.now() - lastReload > 25_000) {
@@ -1577,7 +1586,7 @@ const R6: StepFn = async (ctx) => {
   if (!provisionalSeen) {
     throw new Error("the meter moved but never rendered a provisional (≈) reading");
   }
-  if (finalSpent == null) throw new Error("the run did not reach a terminal state within 40 min");
+  if (finalSpent == null) throw new Error(`the run did not reach a terminal state within ${RUN_DELIVERY_BOUND_MS / 60_000} min`);
 
   // The report (§14.5 Level 3): its charged figure is Σ ledger debits − refunds. The card's terminal
   // meter is the committed/metered figure — charged ≤ committed always (a metered-mode refund can
@@ -2650,6 +2659,7 @@ async function launchQuickReviewToDelivery(
   const runBtn = page.locator('button[data-run-button="true"]').first();
   // R6FIX.43b — same off-viewport occlusion class as N5's launch; scroll before asserting.
   await runBtn.scrollIntoViewIfNeeded();
+  await waitEnabled(runBtn);
   await assertActionable(runBtn, "Review launch");
   await runBtn.click();
   await settleNav(page, ctx);
@@ -2663,7 +2673,7 @@ async function launchQuickReviewToDelivery(
   const runId = (await card.getAttribute("data-run-card")) ?? "";
   if (!runId) throw new Error("the run card carries no data-run-card id");
   const TERMINAL = new Set(["completed", "completed_partial", "failed", "cancelled"]);
-  const deadline = Date.now() + 40 * 60_000;
+  const deadline = Date.now() + RUN_DELIVERY_BOUND_MS;
   let state = "";
   while (Date.now() < deadline) {
     // REQ-VFY-4 — the remount assert: every poll reload re-settles on the markers.
@@ -2672,7 +2682,7 @@ async function launchQuickReviewToDelivery(
     if (TERMINAL.has(state)) break;
     await new Promise((r) => setTimeout(r, 2_000));
   }
-  if (!TERMINAL.has(state)) throw new Error(`run ${runId} did not reach a terminal state within 40 min`);
+  if (!TERMINAL.has(state)) throw new Error(`run ${runId} did not reach a terminal state within ${RUN_DELIVERY_BOUND_MS / 60_000} min`);
   return { slug, runId, state };
 }
 
@@ -2849,7 +2859,7 @@ const N11: StepFn = async (ctx) => {
     if (!rSlug || !rRun) throw new Error('JOURNEY_N11_RIDE wants "<slug>,<runId>"');
     slug = rSlug;
     runId = rRun;
-    const deadline = Date.now() + 45 * 60_000;
+    const deadline = Date.now() + RUN_DELIVERY_BOUND_MS;
     for (let i = 0; Date.now() < deadline; i++) {
       // the twin is the delivered truth — the document shell 200s every /review/ URL.
       const twin = await page.request
@@ -2873,7 +2883,7 @@ const N11: StepFn = async (ctx) => {
       .get(`${ctx.webBaseUrl}/bff/p/${slug}/review/${runId}`)
       .catch(() => null);
     if (!twin || twin.status() !== 200) {
-      throw new Error(`ride dossier /p/${slug}/review/${runId} never delivered within 45 min`);
+      throw new Error(`ride dossier /p/${slug}/review/${runId} never delivered within ${RUN_DELIVERY_BOUND_MS / 60_000} min`);
     }
   } else {
     const launched = await launchQuickReviewToDelivery(page, ctx, "CITE1", GOLDEN_OP_ED);

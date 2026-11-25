@@ -439,8 +439,9 @@ async function dispatchMinimal() {
       const { runId } = JSON.parse(launched.body);
       console.log(`[dispatch] ${leg.fixture.id}: run ${runId} launched`);
 
-      // poll to terminal (45 min bound; trial concurrency=1 → sequential legs).
-      const deadline = Date.now() + 45 * 60_000;
+      // poll to terminal (R6FIX.50 — 90 min; hiccup-resumed runs exceeded the old 45-min bound
+      // on 2026-11-25 with 42–48 min deliveries; trial concurrency=1 → sequential legs).
+      const deadline = Date.now() + 90 * 60_000;
       let row;
       for (;;) {
         row = (
@@ -452,7 +453,7 @@ async function dispatchMinimal() {
         )[0];
         if (!row) throw new Error(`run ${runId} not found`);
         if (["completed", "completed_partial", "failed", "cancelled"].includes(row.state)) break;
-        if (Date.now() > deadline) throw new Error(`run ${runId} not terminal in 45min (${row.state})`);
+        if (Date.now() > deadline) throw new Error(`run ${runId} not terminal in 90min (${row.state})`);
         await new Promise((r) => setTimeout(r, 15_000));
       }
       console.log(`[dispatch] ${leg.fixture.id}: run ${runId} → ${row.state}`);
