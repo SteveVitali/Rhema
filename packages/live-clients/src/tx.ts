@@ -8,6 +8,7 @@
 
 import type { Pool, PoolClient } from "pg";
 import { withTenant } from "@rhema/db";
+import { beginDeferredWakes, drainDeferredWakes } from "@rhema/orchestrator";
 import type { SqlClient, TxRunner } from "@rhema/orchestrator";
 
 /** Narrow a `pg` `PoolClient` to the orchestrator's `SqlClient` (query text + params → `{ rows }`). */
@@ -36,8 +37,15 @@ export class PgPoolTxRunner implements TxRunner {
     const client = await this.pool.connect();
     try {
       // withTenant issues BEGIN / SET LOCAL ROLE / SET LOCAL app.tenant_id / COMMIT|ROLLBACK on this one
-      // checked-out connection.
-      return await withTenant(client, tenantId, () => fn(pgClientToSqlClient(client)), this.opts);
+      // checked-out connection. D-SLO.1-6 (lever 2): the sql client registers the tx's deferred-wake bag,
+      // so `SqlEventWriter.append` queues its fan-out wakeup instead of publishing mid-transaction — an
+      // in-tx wakeup lands before the rows are visible and is wasted (the tail then rides the 10 s safety
+      // poll). The bag drains only after `withTenant`'s COMMIT resolves; a rollback drains nothing.
+      const tx = pgClientToSqlClient(client);
+      const wakes = beginDeferredWakes(tx);
+      const result = await withTenant(client, tenantId, () => fn(tx), this.opts);
+      await drainDeferredWakes(wakes);
+      return result;
     } finally {
       client.release();
     }

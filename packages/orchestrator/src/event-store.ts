@@ -69,6 +69,41 @@ export async function publishCommittedEventHighWater(
   }
 }
 
+/** One queued post-commit wakeup: republish `seq` for a run once its commit lands. */
+export interface DeferredWake {
+  readonly seq: number;
+  readonly wake: () => unknown;
+}
+
+const deferredWakes = new WeakMap<SqlClient, Map<string, DeferredWake>>();
+
+/**
+ * REQ-ENG-2 / D-SLO.1-6 (lever 2) — give `append`'s wakeup COMMIT-TIME semantics. A `TxRunner` that
+ * supports deferred delivery calls this on the `tx` it hands `fn`, then `drainDeferredWakes` after the
+ * commit resolves: every `append` queues into the bag (one entry per run, highest seq wins) instead of
+ * publishing mid-transaction. The in-tx publish was a systematically WASTED wakeup — the tail pumps on
+ * it, reads only committed rows, sees nothing while the tx is still open, and the batch then rides the
+ * 10 s safety poll (prod 2026-11-25: one hiccup-resumed run flushed the same event to ~8 subscribers at
+ * 6–9.5 s each, p95 4 976 ms against the <2 s target). A rollback simply never drains, so a publish can
+ * never precede its rows' visibility. Runners without the seam keep the immediate in-tx publish.
+ */
+export function beginDeferredWakes(tx: SqlClient): Map<string, DeferredWake> {
+  const bag = new Map<string, DeferredWake>();
+  deferredWakes.set(tx, bag);
+  return bag;
+}
+
+/** Publish every wakeup a transaction deferred — call only AFTER its commit has resolved. */
+export async function drainDeferredWakes(bag: Map<string, DeferredWake>): Promise<void> {
+  for (const { wake } of bag.values()) {
+    try {
+      await wake();
+    } catch {
+      /* a lost wakeup is recovered by the tail's safety re-poll — never throw into a commit tail. */
+    }
+  }
+}
+
 /** The UTC calendar day of an instant — the `run_events` partition key. */
 export function eventDay(at: Date): string {
   return at.toISOString().slice(0, 10); // YYYY-MM-DD
@@ -108,15 +143,26 @@ export class SqlEventWriter implements EventWriter {
         [event.runId, seq, eventDay(event.at), event.type, payloadJson, def.density, event.agentLabel ?? null, event.at],
       );
       // (4) best-effort fan-out (user rows only). Never let a publish failure abort the append. NOTE: this
-      // in-tx publish is a wakeup, not a delivery — the tail always reads committed rows from Postgres, so a
-      // publish for a not-yet-committed / rolled-back seq is at most a no-op. The LIVE Redis binding publishes
-      // the POST-COMMIT high-water seq so p95 delivery does not hinge on in-tx timing (DEFERRALS D-P0.08b-2);
-      // the SSE tail's safety re-poll + Last-Event-ID reconnect keep it correct regardless.
+      // publish is a wakeup, not a delivery — the tail always reads committed rows from Postgres, so a
+      // publish for a not-yet-committed / rolled-back seq is at most a no-op. When the tx runner registered
+      // a deferred-wake bag (PgPoolTxRunner does), the wakeup QUEUES here and fires post-commit (D-SLO.1-6
+      // lever 2 — an in-tx wakeup lands before the rows are visible and is wasted; the live tail then rides
+      // the 10 s safety poll). Runners without the seam keep the immediate publish; the SSE tail's safety
+      // re-poll + Last-Event-ID reconnect keep it correct regardless.
       if (this.publisher) {
-        try {
-          await this.publisher.publish(event.runId, seq);
-        } catch {
-          /* Redis is not a source of truth; the tail recovers via Postgres replay + reconnect. */
+        const bag = deferredWakes.get(tx);
+        if (bag) {
+          const publisher = this.publisher;
+          const cur = bag.get(event.runId);
+          if (!cur || seq > cur.seq) {
+            bag.set(event.runId, { seq, wake: () => publisher.publish(event.runId, seq) });
+          }
+        } else {
+          try {
+            await this.publisher.publish(event.runId, seq);
+          } catch {
+            /* Redis is not a source of truth; the tail recovers via Postgres replay + reconnect. */
+          }
         }
       }
     } else {

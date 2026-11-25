@@ -8,6 +8,8 @@ import {
 import {
   SqlEventWriter,
   InMemoryRunEventBus,
+  beginDeferredWakes,
+  drainDeferredWakes,
   deleteExpiredInternalEvents,
   ensureRunEventsPartition,
   eventDay,
@@ -99,6 +101,63 @@ describe("SqlEventWriter — seq, the visibility split, fan-out", () => {
     };
     const day = row.day instanceof Date ? row.day.toISOString().slice(0, 10) : String(row.day).slice(0, 10);
     expect(day).toBe(eventDay(AT));
+  });
+});
+
+describe("deferred wakes (D-SLO.1-6 lever 2) — commit-time fan-out", () => {
+  it("a registered bag queues the wakeup instead of publishing; drain fires it post-commit", async () => {
+    await db.txRunner.run(seed.workspaceId, async (tx) => {
+      const bag = beginDeferredWakes(tx);
+      await writer.append(tx, { runId: "run1", type: "run.started", payload: {}, at: AT });
+      // mid-transaction: the wakeup is queued, NOT published — an early wake would read
+      // only committed rows and be wasted.
+      expect(bag.size).toBe(1);
+      expect(bus.published).toHaveLength(0);
+      return bag;
+    }).then((bag) => drainDeferredWakes(bag));
+    expect(bus.published).toEqual([{ runId: "run1", seq: 1 }]);
+  });
+
+  it("several appends in one tx coalesce to ONE wake at the highest seq", async () => {
+    await db.txRunner.run(seed.workspaceId, async (tx) => {
+      const bag = beginDeferredWakes(tx);
+      await writer.append(tx, { runId: "run1", type: "run.started", payload: {}, at: AT });
+      await writer.append(tx, {
+        runId: "run1",
+        type: "step.started",
+        payload: { phase: "1", ordinal: 1, of: 2 },
+        at: AT,
+      });
+      expect(bag.size).toBe(1);
+      expect(bag.get("run1")?.seq).toBe(2);
+      return bag;
+    }).then((bag) => drainDeferredWakes(bag));
+    expect(bus.published).toEqual([{ runId: "run1", seq: 2 }]);
+  });
+
+  it("a rolled-back tx's queued wake is never drained — nothing is published", async () => {
+    // the runner owns the drain: a throwing fn rolls back and the bag it returns never
+    // reaches drainDeferredWakes — mirroring PgPoolTxRunner's post-commit drain.
+    await expect(
+      db.txRunner.run(seed.workspaceId, async (tx) => {
+        beginDeferredWakes(tx);
+        await writer.append(tx, { runId: "run1", type: "run.started", payload: {}, at: AT });
+        throw new Error("boom — rollback");
+      }),
+    ).rejects.toThrow("boom");
+    expect(bus.published).toHaveLength(0);
+    expect(await userRows()).toHaveLength(0);
+  });
+
+  it("a wake that rejects on drain does not throw into the commit tail", async () => {
+    const failing = new SqlEventWriter({ publish: () => Promise.reject(new Error("redis down")) });
+    await db.txRunner
+      .run(seed.workspaceId, async (tx) => {
+        const bag = beginDeferredWakes(tx);
+        await failing.append(tx, { runId: "run1", type: "run.started", payload: {}, at: AT });
+        return bag;
+      })
+      .then((bag) => drainDeferredWakes(bag)); // must resolve — the safety re-poll covers a lost wakeup
   });
 });
 
