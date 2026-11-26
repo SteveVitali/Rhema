@@ -36,12 +36,12 @@ dispatchTarget:  subagent
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main              # flat mode — inserts branch off origin/main
 pinnedBaseSha:   a34eb51           # round-7 fork point (unchanged)
-chainTip:        stevenvitali/r7ux-6-slash-menu  # R7UX.6 tip (#423); stack rides unmerged #412–#423
+chainTip:        stevenvitali/r7ux-6-slash-menu  # R7UX.6 tip (#423 on main — wave #413–#422 merged by operator 2026-11-25)
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
 round:           7                  # post-round maintenance per GD-MAINT.R6
-updatedAt:       2026-11-25T23:32Z  # 329_R7UX.6 done — pr-423 preview walk PASS, teardown clean
+updatedAt:       2026-11-26T00:11Z  # 329_R7UX.6 done — pr-423 walk PASS, teardown clean; wave merged to main (PR base now main)
 ```
 
 ## OPEN FINDINGS

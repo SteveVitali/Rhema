@@ -172,6 +172,14 @@ Budget: ~700 changed lines incl. tests (M) — stop past it; the ticket OWNS the
   D-R7UX.6-1) pushed; records-head ci read — pass (run 45722614140, all 7 legs:
   fast-path 52s → typecheck/lint/unit 22m58s → public-safe/contracts/integration/
   images → ci-pass anchor).
+- 2026-11-26T00:1xZ — **chain event observed mid-closeout:** the operator merged
+  the wave bottom-up into `main` during the teardown/records window (#413→#422
+  each synced with `main` then merged); GitHub retargeted PR #423's base to
+  `main` (MERGEABLE). Remote `r7ux-6` tip gained `4ed29a4a` (`Merge branch
+  'main'`) — merged into the local branch, CURRENT STATE keys preserved
+  (nextTicket `330_R7UX.7`, lastCompleted `329_R7UX.6`, chainTip this branch).
+  `check-append-only --base origin/main` now runs **OK** (the earlier
+  `3f12d437`-base flag resolved with the merge itself).
 
 ## Gap table
 
