@@ -1,0 +1,29 @@
+{
+  "cookies": [
+    {
+      "name": "__Host-rhema.session_token",
+      "value": "knmpWGLcD0tq62IjrJEkpkpk1XGdakEW.Ih9lD8kU1n2A74ibgtCPpuF2UZB3u7T1kh2ITPsfJVM%3D",
+      "domain": "rhema-pr-425-web-3fce186-tkbl73n3tq-uc.a.run.app",
+      "path": "/",
+      "expires": 1796276185.612321,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "https://rhema-pr-425-web-3fce186-tkbl73n3tq-uc.a.run.app",
+      "localStorage": [
+        {
+          "name": "rhema:paper:v1:showcase",
+          "value": "light"
+        },
+        {
+          "name": "rhema:theme:v1",
+          "value": "dark"
+        }
+      ]
+    }
+  ]
+}
