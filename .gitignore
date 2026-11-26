@@ -44,3 +44,6 @@ apps/web/public/*
 # under docs/build/reports/<date>_JOURNEY.1-journeys/ instead).
 .journeys-state/
 journey-report/
+
+# walk-probe session caches hold live cookies — never commit (P-1)
+**/.state/

@@ -62,3 +62,13 @@ operator's own key is what `rhema-prod-anthropic-api-key` v5 now holds).
   holds have not released before the re-run.
 - Failed runs: `01M8B6444QVZ9VKXRDPS0MDYBF` (3 attempts), `01M8B7G7622NKS9QEW5MY56R5X` (1
   attempt) — all `error_during_execution` at the agent call; zero model spend.
+
+## 2026-11-26 — `.state/` session cache removed (P-1)
+
+The walk script's `.state/test_jr7ux8tok_rhema_tools.json` held a live-at-capture
+`__Host-rhema.session_token` cookie for the test tenant and was committed on
+`f2420b09` (PR #425, merged). Removed forward per operator ruling P-1 (no session
+tokens in records — even dead/test-tenant ones). The cookie is dead with the
+pr-425 stack; the test tenant is `is_test` and holds no real data. The walk
+script keeps writing `.state/` locally — it is now gitignored (`**/.state/`) and
+the UX.9 run scrubbed its own copy pre-commit (`runs/R7UX.9.md`).
