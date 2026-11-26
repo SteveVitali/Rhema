@@ -63,6 +63,12 @@ export function feedRowsFor(events: readonly FeedEventRow[], density: FeedDensit
 export function feedTemplateCoverage(): { type: string; covered: boolean }[] {
   const maps = feedLabelMaps();
   return Object.keys(RUN_EVENTS)
-    .filter((t) => RUN_EVENTS[t as keyof typeof RUN_EVENTS].visibility === "user")
+    .filter(
+      (t) =>
+        RUN_EVENTS[t as keyof typeof RUN_EVENTS].visibility === "user" &&
+        // ADR-137 — ephemeral types (chat.token) render on their own surface (the chat bubble,
+        // UX.9), never as feed rows: they need no template and fail-closed rendering drops them.
+        (RUN_EVENTS[t as keyof typeof RUN_EVENTS] as { ephemeral?: boolean }).ephemeral !== true,
+    )
     .map((t) => ({ type: t, covered: maps.t[t] != null }));
 }

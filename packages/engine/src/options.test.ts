@@ -256,3 +256,17 @@ describe("buildPrompt (§12.2)", () => {
     expect(p).toContain("sidecar=true");
   });
 });
+
+describe("includePartialMessages — the chat_turn partial-stream opt-in (ADR-137)", () => {
+  it("is set when the frozen inputs carry a turnId (a chat_turn phase)", () => {
+    const out = buildWith({ ...req(), inputs: { ...req().inputs, turnId: "01JQ00000000000000000000AB" } });
+    expect(out.includePartialMessages).toBe(true);
+  });
+
+  it("stays absent on every non-chat phase (the pre-UX.8 options shape)", () => {
+    const out = build();
+    expect("includePartialMessages" in out).toBe(false);
+    const weird = buildWith({ ...req(), inputs: { ...req().inputs, turnId: 42 } });
+    expect("includePartialMessages" in weird).toBe(false);
+  });
+});

@@ -1,0 +1,16 @@
+config:
+  gcp:project: rhema-507501
+  gcp:region: us-central1
+  rhema:gitSha: f25bb4b2cf14ac3b06cd0a17ce5c8ec3cc1396ad
+  rhema:protocolsVersion: 0.4.0+07b1ad37ddaaa6f4
+  rhema:placeholderImage: us-docker.pkg.dev/cloudrun/container/hello
+  rhema:googleOauthClientId: 25012989319-ivoppj8l0c456hblt74ji6r7u1mf52n0.apps.googleusercontent.com
+  rhema:runTaskAppArmorType: Localhost
+  rhema:runTaskAppArmorLocalhostProfile: rhema-run-task
+  rhema:nonprodResendVersion: "1"
+  rhema:emailFrom: previews@rhema.tools
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-425/api@sha256:9d33111f04a68f0d070d36304622bbcdd44bb43bc200423bb211551a0e9cf24f","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-425/collab@sha256:6483024f294e67f8f34a03693cb4bc7a8e19e0a96a27d9ea118d052a312928e4","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-425/convert@sha256:27eb98c40e74e2abd99ad011782efa25d065dda9c59d586a40fa76ec4a768c87","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-425/export@sha256:33bd257912ec94dcfa57d237c31d0d14a5db8d65eae82aacaa5f937235969fe9","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-425/fetcher@sha256:2d0505d41046034005f3ba01e5e8dac70c47d04f9ae3b0007f8151d42aa09e63","turbo-cache":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-425/turbo-cache@sha256:f42b0808df81c12c210961f3cb2180b72fb442374e44c71607303cb2f0f6b56d","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-425/web@sha256:94bb1b918d6cdc52628c158aed1274606d98218b93a38440bb00bbce869f1d8b","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-425/worker@sha256:046e48833b70661fb27a53997491196ffd1c3dd9cd9b3a70141c12a2680cc6d6"}'
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-pr-425/run-task@sha256:319822896639edecc72ec15fad66e4d6c73cf436fe62197a9b9b8f9f87e2c501
+  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-pr-425/egress-proxy@sha256:d845ad7c8268a83e49c5f5cfa38a90c69aed0c5aee3bb1cde894a25fed44cf5f
+  rhema:appBaseUrl: https://rhema-pr-425-web-3fce186-tkbl73n3tq-uc.a.run.app
+  rhema:apiPublicUrl: https://rhema-pr-425-api-4f34cfa-tkbl73n3tq-uc.a.run.app

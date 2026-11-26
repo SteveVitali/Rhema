@@ -269,3 +269,102 @@ describe("streamRunEvents — the composed replay-then-tail loop", () => {
     await new Promise((r) => setTimeout(r, 50)); // let the in-flight pump drain before db teardown
   });
 });
+
+// ADR-137 — ephemeral (chat.token) rows persist like every user event but are live-only on the wire:
+// replay-class reads drop them once the run is terminal; the live tail includes them unconditionally.
+const TURN = "01JQ00000000000000000000AB";
+const token = (seq: number, text = `t${seq}`) => ({
+  type: "chat.token",
+  payload: { turnId: TURN, seq, text },
+});
+const setState = (state: string) =>
+  db.txRunner.run(seed.workspaceId, (tx) => tx.query("update runs set state = $1 where id = 'run1'", [state]));
+
+describe("readUserEventsAfter — the ADR-137 ephemeral live-only replay rule", () => {
+  it("returns chat.token rows while the run is non-terminal", async () => {
+    await append({ type: "step.started", payload: { phase: "answer", ordinal: 0, of: 1 } });
+    await append(token(0, "The "));
+    await append(token(1, "quick"));
+    const rows = await db.txRunner.run(seed.workspaceId, (tx) =>
+      readUserEventsAfter(tx, "run1", 0, { maxDensity: "verbose", ephemeral: "live-only" }),
+    );
+    expect(rows.map((r) => r.type)).toEqual(["step.started", "chat.token", "chat.token"]);
+  });
+
+  it("drops chat.token rows on a terminal run — a late subscriber never replays stale deltas", async () => {
+    await append({ type: "step.started", payload: { phase: "answer", ordinal: 0, of: 1 } });
+    await append(token(0));
+    await append(token(1));
+    await append({ type: "cost.final", payload: { spentCredits: 12, capCredits: 840 } });
+    await setState("completed");
+    const rows = await db.txRunner.run(seed.workspaceId, (tx) =>
+      readUserEventsAfter(tx, "run1", 0, { maxDensity: "verbose", ephemeral: "live-only" }),
+    );
+    // the token rows are gone; the turn's lifecycle rows still replay (the canonical record won).
+    expect(rows.map((r) => r.type)).toEqual(["step.started", "cost.final"]);
+  });
+
+  it("`include` returns token rows unconditionally (the live tail's read)", async () => {
+    await append(token(0));
+    await setState("completed");
+    const rows = await db.txRunner.run(seed.workspaceId, (tx) =>
+      readUserEventsAfter(tx, "run1", 0, { maxDensity: "verbose", ephemeral: "include" }),
+    );
+    expect(rows.map((r) => r.type)).toEqual(["chat.token"]);
+  });
+});
+
+describe("RunEventStreamer — ephemeral rows: live tail includes, catch-up on a live run includes", () => {
+  const TERMINAL_TURN = "01JQ00000000000000000000CD";
+
+  it("a subscriber attached mid-turn receives deltas live; a terminal attach replays none", async () => {
+    await append({ type: "step.started", payload: { phase: "answer", ordinal: 0, of: 1 } });
+    const a = collectSink();
+    const reader: EventReader = (after, mode) =>
+      db.txRunner.run(seed.workspaceId, (tx) =>
+        readUserEventsAfter(tx, "run1", after, {
+          maxDensity: "verbose",
+          ephemeral: mode?.tail ? "include" : "live-only",
+        }),
+      );
+    const s = new RunEventStreamer(reader, a.sink, 0);
+    await s.pump(); // catch-up while live
+    await append(token(0, "A"));
+    await append(token(1, "B"));
+    await s.pump(); // live tail — delivers the deltas
+    expect(seqsOf(a.chunks)).toEqual([1, 2, 3]);
+
+    // the turn completes; its final deltas + the terminal events commit together-ish.
+    await append(token(2, "C"));
+    await append({ type: "cost.final", payload: { spentCredits: 12, capCredits: 840 } });
+    await setState("completed");
+    await s.pump(); // tail still delivers the last deltas + the terminal events
+    expect(seqsOf(a.chunks)).toEqual([1, 2, 3, 4, 5]);
+
+    // a NEW subscriber attaching after completion replays NO tokens — only the lifecycle rows.
+    const b = collectSink();
+    const s2 = new RunEventStreamer(reader, b.sink, 0);
+    await s2.pump();
+    const typesB = b.chunks.flatMap((c) => c.split("\n")).filter((l) => l.startsWith("event: ")).map((l) => l.slice(7));
+    expect(typesB).toEqual(["step.started", "cost.final"]);
+    expect(JSON.stringify(b.chunks)).not.toContain(TERMINAL_TURN);
+  });
+
+  it("a mid-flight reconnect replays deltas (the client's seq dedup reconciles)", async () => {
+    await append({ type: "step.started", payload: { phase: "answer", ordinal: 0, of: 1 } });
+    await append(token(0, "A"));
+    await append(token(1, "B"));
+    const reader: EventReader = (after, mode) =>
+      db.txRunner.run(seed.workspaceId, (tx) =>
+        readUserEventsAfter(tx, "run1", after, {
+          maxDensity: "verbose",
+          ephemeral: mode?.tail ? "include" : "live-only",
+        }),
+      );
+    // subscriber 2 connects AFTER the deltas but while the run is still live → replay includes them.
+    const b = collectSink();
+    const s2 = new RunEventStreamer(reader, b.sink, 0);
+    await s2.pump();
+    expect(seqsOf(b.chunks)).toEqual([1, 2, 3]);
+  });
+});

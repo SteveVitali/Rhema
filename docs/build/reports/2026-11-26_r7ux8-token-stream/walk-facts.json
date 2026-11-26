@@ -1,0 +1,561 @@
+{
+  "base": "https://rhema-pr-425-web-3fce186-tkbl73n3tq-uc.a.run.app",
+  "ts": "2026-11-26T07:11:30.565Z",
+  "legs": {
+    "create": {
+      "status": 302,
+      "location": "/p/untitled-10?created=scratch"
+    },
+    "mounted": true,
+    "turnPost": {
+      "status": 200,
+      "body": {
+        "ok": true,
+        "redirect": "/p/untitled-10#chat",
+        "data": {
+          "runId": "01M8BB40M7BMZ4HJX1GPBCX7KY",
+          "state": "queued",
+          "deduped": false,
+          "planCard": {
+            "kind": "plan_card",
+            "threadId": "01M8BB3ZPS9507GEHG08TDWM1C",
+            "summary": "Reply with a short paragraph about rivers — a few sentences is plenty.",
+            "steps": [
+              "Read this thread's brief, pins, and your message",
+              "Answer under the consented budgets (searches/fetches ride the metered path)",
+              "Land any sources as chat source notes — never drafts"
+            ],
+            "budget": {
+              "credits": 40,
+              "searches": 5,
+              "fetches": 10
+            },
+            "modelTier": "base",
+            "actions": [
+              "run_research",
+              "first_step",
+              "edit",
+              "cancel"
+            ],
+            "researchSheetHref": "/p/untitled-10/sheet?workflow=research_burst&threadId=01M8BB3ZPS9507GEHG08TDWM1C&sources=5"
+          }
+        }
+      }
+    },
+    "probeSummary": {
+      "frames": 71,
+      "eventTypes": [
+        "run.state_changed",
+        "chat.plan_card",
+        "step.started",
+        "usage.tick",
+        "chat.token",
+        "step.finished",
+        "cost.final"
+      ],
+      "tokenCount": 59,
+      "tokenSeqs": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58
+      ],
+      "monotonic": true,
+      "contiguous": true,
+      "terminalSeq": 1,
+      "allBeforeTerminal": false,
+      "completionEvent": null
+    }
+  },
+  "signinVia": "cache",
+  "email": "test+jr7ux8tok@rhema.tools",
+  "projectSlug": "untitled-10",
+  "runId": "01M8BB40M7BMZ4HJX1GPBCX7KY",
+  "probe": {
+    "attachAt": "2026-11-26T07:11:34.514Z",
+    "frames": [
+      {
+        "at": "2026-11-26T07:11:34.692Z",
+        "id": "1",
+        "event": "run.state_changed",
+        "data": "{\"seq\":1,\"type\":\"run.state_changed\",\"payload\":{\"to\":\"queued\",\"from\":\"created\"},\"density\":\"summary\",\"at\":\"2026-11-26T07:11:34.548Z\"}"
+      },
+      {
+        "at": "2026-11-26T07:11:34.693Z",
+        "id": "2",
+        "event": "chat.plan_card",
+        "data": "{\"seq\":2,\"type\":\"chat.plan_card\",\"payload\":{\"fetches\":10,\"searches\":5,\"threadId\":\"01M8BB3ZPS9507GEHG08TDWM1C\",\"modelTier\":\"base\",\"capCredits\":40},\"density\":\"normal\",\"at\":\"2026-11-26T07:11:34.557Z\"}"
+      },
+      {
+        "at": "2026-11-26T07:11:34.859Z",
+        "id": "3",
+        "event": "run.state_changed",
+        "data": "{\"seq\":3,\"type\":\"run.state_changed\",\"payload\":{\"to\":\"provisioning\",\"from\":\"queued\"},\"density\":\"summary\",\"at\":\"2026-11-26T07:11:34.783Z\"}"
+      },
+      {
+        "at": "2026-11-26T07:11:48.258Z",
+        "id": "4",
+        "event": "run.state_changed",
+        "data": "{\"seq\":4,\"type\":\"run.state_changed\",\"payload\":{\"to\":\"running\",\"from\":\"provisioning\"},\"density\":\"summary\",\"at\":\"2026-11-26T07:11:48.303Z\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:08.395Z",
+        "id": "5",
+        "event": "step.started",
+        "data": "{\"seq\":5,\"type\":\"step.started\",\"payload\":{\"of\":1,\"phase\":\"answer\",\"ordinal\":0},\"density\":\"summary\",\"at\":\"2026-11-26T07:12:08.439Z\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:18.340Z",
+        "id": "6",
+        "event": "usage.tick",
+        "data": "{\"seq\":6,\"type\":\"usage.tick\",\"payload\":{\"capCredits\":40,\"provisional\":false,\"spentCredits\":0},\"density\":\"summary\",\"at\":\"2026-11-26T07:12:18.387Z\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:38.339Z",
+        "id": "7",
+        "event": "usage.tick",
+        "data": "{\"seq\":7,\"type\":\"usage.tick\",\"payload\":{\"capCredits\":40,\"provisional\":true,\"spentCredits\":4},\"density\":\"summary\",\"at\":\"2026-11-26T07:12:38.375Z\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.975Z",
+        "id": "9",
+        "event": "chat.token",
+        "data": "{\"seq\":9,\"type\":\"chat.token\",\"payload\":{\"seq\":0,\"text\":\"Rivers are fl\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.975Z",
+        "id": "10",
+        "event": "chat.token",
+        "data": "{\"seq\":10,\"type\":\"chat.token\",\"payload\":{\"seq\":1,\"text\":\"owing b\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.975Z",
+        "id": "11",
+        "event": "chat.token",
+        "data": "{\"seq\":11,\"type\":\"chat.token\",\"payload\":{\"seq\":2,\"text\":\"odies of fresh water that\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.975Z",
+        "id": "12",
+        "event": "chat.token",
+        "data": "{\"seq\":12,\"type\":\"chat.token\",\"payload\":{\"seq\":3,\"text\":\" g\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.975Z",
+        "id": "13",
+        "event": "chat.token",
+        "data": "{\"seq\":13,\"type\":\"chat.token\",\"payload\":{\"seq\":4,\"text\":\"ather from\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.975Z",
+        "id": "14",
+        "event": "chat.token",
+        "data": "{\"seq\":14,\"type\":\"chat.token\",\"payload\":{\"seq\":5,\"text\":\" r\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.975Z",
+        "id": "15",
+        "event": "chat.token",
+        "data": "{\"seq\":15,\"type\":\"chat.token\",\"payload\":{\"seq\":6,\"text\":\"ain\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.975Z",
+        "id": "16",
+        "event": "chat.token",
+        "data": "{\"seq\":16,\"type\":\"chat.token\",\"payload\":{\"seq\":7,\"text\":\", snowmelt, and\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.975Z",
+        "id": "17",
+        "event": "chat.token",
+        "data": "{\"seq\":17,\"type\":\"chat.token\",\"payload\":{\"seq\":8,\"text\":\" springs in\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.975Z",
+        "id": "18",
+        "event": "chat.token",
+        "data": "{\"seq\":18,\"type\":\"chat.token\",\"payload\":{\"seq\":9,\"text\":\" high\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "19",
+        "event": "chat.token",
+        "data": "{\"seq\":19,\"type\":\"chat.token\",\"payload\":{\"seq\":10,\"text\":\"land\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "20",
+        "event": "chat.token",
+        "data": "{\"seq\":20,\"type\":\"chat.token\",\"payload\":{\"seq\":11,\"text\":\" are\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "21",
+        "event": "chat.token",
+        "data": "{\"seq\":21,\"type\":\"chat.token\",\"payload\":{\"seq\":12,\"text\":\"as before\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "22",
+        "event": "chat.token",
+        "data": "{\"seq\":22,\"type\":\"chat.token\",\"payload\":{\"seq\":13,\"text\":\" win\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "23",
+        "event": "chat.token",
+        "data": "{\"seq\":23,\"type\":\"chat.token\",\"payload\":{\"seq\":14,\"text\":\"ding their way to\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "24",
+        "event": "chat.token",
+        "data": "{\"seq\":24,\"type\":\"chat.token\",\"payload\":{\"seq\":15,\"text\":\"ward l\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "25",
+        "event": "chat.token",
+        "data": "{\"seq\":25,\"type\":\"chat.token\",\"payload\":{\"seq\":16,\"text\":\"akes, seas, or o\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "26",
+        "event": "chat.token",
+        "data": "{\"seq\":26,\"type\":\"chat.token\",\"payload\":{\"seq\":17,\"text\":\"ceans. Along\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "27",
+        "event": "chat.token",
+        "data": "{\"seq\":27,\"type\":\"chat.token\",\"payload\":{\"seq\":18,\"text\":\" the\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "28",
+        "event": "chat.token",
+        "data": "{\"seq\":28,\"type\":\"chat.token\",\"payload\":{\"seq\":19,\"text\":\" way, they carve val\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "29",
+        "event": "chat.token",
+        "data": "{\"seq\":29,\"type\":\"chat.token\",\"payload\":{\"seq\":20,\"text\":\"leys,\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "30",
+        "event": "chat.token",
+        "data": "{\"seq\":30,\"type\":\"chat.token\",\"payload\":{\"seq\":21,\"text\":\" de\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "31",
+        "event": "chat.token",
+        "data": "{\"seq\":31,\"type\":\"chat.token\",\"payload\":{\"seq\":22,\"text\":\"posit f\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "32",
+        "event": "chat.token",
+        "data": "{\"seq\":32,\"type\":\"chat.token\",\"payload\":{\"seq\":23,\"text\":\"ertile silt on\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "33",
+        "event": "chat.token",
+        "data": "{\"seq\":33,\"type\":\"chat.token\",\"payload\":{\"seq\":24,\"text\":\" flo\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "34",
+        "event": "chat.token",
+        "data": "{\"seq\":34,\"type\":\"chat.token\",\"payload\":{\"seq\":25,\"text\":\"odplains, and support\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "35",
+        "event": "chat.token",
+        "data": "{\"seq\":35,\"type\":\"chat.token\",\"payload\":{\"seq\":26,\"text\":\" r\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "36",
+        "event": "chat.token",
+        "data": "{\"seq\":36,\"type\":\"chat.token\",\"payload\":{\"seq\":27,\"text\":\"ich ecosystems of f\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "37",
+        "event": "chat.token",
+        "data": "{\"seq\":37,\"type\":\"chat.token\",\"payload\":{\"seq\":28,\"text\":\"ish, bir\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "38",
+        "event": "chat.token",
+        "data": "{\"seq\":38,\"type\":\"chat.token\",\"payload\":{\"seq\":29,\"text\":\"ds, and plants. Be\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "39",
+        "event": "chat.token",
+        "data": "{\"seq\":39,\"type\":\"chat.token\",\"payload\":{\"seq\":30,\"text\":\"yond their ecological role,\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "40",
+        "event": "chat.token",
+        "data": "{\"seq\":40,\"type\":\"chat.token\",\"payload\":{\"seq\":31,\"text\":\" rivers have sh\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "41",
+        "event": "chat.token",
+        "data": "{\"seq\":41,\"type\":\"chat.token\",\"payload\":{\"seq\":32,\"text\":\"aped human civ\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "42",
+        "event": "chat.token",
+        "data": "{\"seq\":42,\"type\":\"chat.token\",\"payload\":{\"seq\":33,\"text\":\"ilization for\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "43",
+        "event": "chat.token",
+        "data": "{\"seq\":43,\"type\":\"chat.token\",\"payload\":{\"seq\":34,\"text\":\" millennia — ser\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "44",
+        "event": "chat.token",
+        "data": "{\"seq\":44,\"type\":\"chat.token\",\"payload\":{\"seq\":35,\"text\":\"ving as s\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "45",
+        "event": "chat.token",
+        "data": "{\"seq\":45,\"type\":\"chat.token\",\"payload\":{\"seq\":36,\"text\":\"ources of dr\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "46",
+        "event": "chat.token",
+        "data": "{\"seq\":46,\"type\":\"chat.token\",\"payload\":{\"seq\":37,\"text\":\"inking water, ir\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "47",
+        "event": "chat.token",
+        "data": "{\"seq\":47,\"type\":\"chat.token\",\"payload\":{\"seq\":38,\"text\":\"rigation, transportation,\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "48",
+        "event": "chat.token",
+        "data": "{\"seq\":48,\"type\":\"chat.token\",\"payload\":{\"seq\":39,\"text\":\" and trade rout\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "49",
+        "event": "chat.token",
+        "data": "{\"seq\":49,\"type\":\"chat.token\",\"payload\":{\"seq\":40,\"text\":\"es that g\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "50",
+        "event": "chat.token",
+        "data": "{\"seq\":50,\"type\":\"chat.token\",\"payload\":{\"seq\":41,\"text\":\"ave rise to many\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "51",
+        "event": "chat.token",
+        "data": "{\"seq\":51,\"type\":\"chat.token\",\"payload\":{\"seq\":42,\"text\":\" of the world's ear\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "52",
+        "event": "chat.token",
+        "data": "{\"seq\":52,\"type\":\"chat.token\",\"payload\":{\"seq\":43,\"text\":\"liest cities.\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "56",
+        "event": "chat.token",
+        "data": "{\"seq\":56,\"type\":\"chat.token\",\"payload\":{\"seq\":44,\"text\":\"Done\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "57",
+        "event": "chat.token",
+        "data": "{\"seq\":57,\"type\":\"chat.token\",\"payload\":{\"seq\":45,\"text\":\" — I\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "58",
+        "event": "chat.token",
+        "data": "{\"seq\":58,\"type\":\"chat.token\",\"payload\":{\"seq\":46,\"text\":\" replied with a\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "59",
+        "event": "chat.token",
+        "data": "{\"seq\":59,\"type\":\"chat.token\",\"payload\":{\"seq\":47,\"text\":\" short paragraph about\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "60",
+        "event": "chat.token",
+        "data": "{\"seq\":60,\"type\":\"chat.token\",\"payload\":{\"seq\":48,\"text\":\" rivers in chat, and\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "61",
+        "event": "chat.token",
+        "data": "{\"seq\":61,\"type\":\"chat.token\",\"payload\":{\"seq\":49,\"text\":\" both sidecar files (\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "62",
+        "event": "chat.token",
+        "data": "{\"seq\":62,\"type\":\"chat.token\",\"payload\":{\"seq\":50,\"text\":\"`turn-result.json`\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "63",
+        "event": "chat.token",
+        "data": "{\"seq\":63,\"type\":\"chat.token\",\"payload\":{\"seq\":51,\"text\":\", `phase-result.json\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "64",
+        "event": "chat.token",
+        "data": "{\"seq\":64,\"type\":\"chat.token\",\"payload\":{\"seq\":52,\"text\":\"`) are written with `status:\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "65",
+        "event": "chat.token",
+        "data": "{\"seq\":65,\"type\":\"chat.token\",\"payload\":{\"seq\":53,\"text\":\" \\\"done\\\"`.\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "66",
+        "event": "chat.token",
+        "data": "{\"seq\":66,\"type\":\"chat.token\",\"payload\":{\"seq\":54,\"text\":\" No sear\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "67",
+        "event": "chat.token",
+        "data": "{\"seq\":67,\"type\":\"chat.token\",\"payload\":{\"seq\":55,\"text\":\"ches,\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "68",
+        "event": "chat.token",
+        "data": "{\"seq\":68,\"type\":\"chat.token\",\"payload\":{\"seq\":56,\"text\":\" fetches, or artifact\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "69",
+        "event": "chat.token",
+        "data": "{\"seq\":69,\"type\":\"chat.token\",\"payload\":{\"seq\":57,\"text\":\" reads were needed for this one\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:39.977Z",
+        "id": "70",
+        "event": "chat.token",
+        "data": "{\"seq\":70,\"type\":\"chat.token\",\"payload\":{\"seq\":58,\"text\":\".\",\"turnId\":\"01M8BB40GFDHWPPPA9819VXND5\"},\"density\":\"verbose\",\"at\":\"2026-11-26T07:12:39.940Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:40.147Z",
+        "id": "71",
+        "event": "usage.tick",
+        "data": "{\"seq\":71,\"type\":\"usage.tick\",\"payload\":{\"capCredits\":40,\"spentCredits\":5},\"density\":\"summary\",\"at\":\"2026-11-26T07:12:40.168Z\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:50.219Z",
+        "id": "72",
+        "event": "step.finished",
+        "data": "{\"seq\":72,\"type\":\"step.finished\",\"payload\":{\"of\":1,\"phase\":\"answer\",\"credits\":5,\"ordinal\":0,\"durationMs\":41796},\"density\":\"summary\",\"at\":\"2026-11-26T07:12:50.235Z\"}"
+      },
+      {
+        "at": "2026-11-26T07:12:50.219Z",
+        "id": "73",
+        "event": "run.state_changed",
+        "data": "{\"seq\":73,\"type\":\"run.state_changed\",\"payload\":{\"to\":\"finalizing\",\"from\":\"running\"},\"density\":\"summary\",\"at\":\"2026-11-26T07:12:50.251Z\"}"
+      },
+      {
+        "at": "2026-11-26T07:13:00.294Z",
+        "id": "74",
+        "event": "run.state_changed",
+        "data": "{\"seq\":74,\"type\":\"run.state_changed\",\"payload\":{\"to\":\"completed\",\"from\":\"finalizing\"},\"density\":\"summary\",\"at\":\"2026-11-26T07:13:00.299Z\"}"
+      },
+      {
+        "at": "2026-11-26T07:13:00.294Z",
+        "id": "75",
+        "event": "cost.final",
+        "data": "{\"seq\":75,\"type\":\"cost.final\",\"payload\":{\"capCredits\":40,\"spentCredits\":5},\"density\":\"summary\",\"at\":\"2026-11-26T07:13:00.315Z\"}"
+      }
+    ]
+  },
+  "verdict": "REVIEW"
+}

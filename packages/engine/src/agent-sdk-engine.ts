@@ -11,7 +11,7 @@ import { emptyUsage } from "./engine.js";
 import type { SdkMessage } from "./sdk-types.js";
 import type { AgentSdkQueryOptions, PreToolUseHook, SessionStore } from "./options.js";
 import { buildQueryOptions, buildPrompt } from "./options.js";
-import { createMapper } from "./mapper/mapper.js";
+import { chatTurnIdFor, createMapper } from "./mapper/mapper.js";
 import { driveMapper } from "./stream-runner.js";
 
 /** The vendored SDK `query()` narrowed to what the engine needs: prompt + options → an SDK message stream. */
@@ -68,6 +68,7 @@ export class AgentSdkEngine implements Engine {
       ordinal: req.ordinal,
       of: req.of,
       mainAgentLabel: req.seat,
+      chatTurnId: chatTurnIdFor(req), // ADR-137 — chat_turn phases only
     });
     this.currentMapperUsage = () => mapper.usage();
 

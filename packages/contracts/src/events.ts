@@ -28,6 +28,12 @@ export type EventDensity = "summary" | "normal" | "verbose" | "internal";
 interface EventDef {
   visibility: EventVisibility;
   density: EventDensity;
+  /**
+   * ADR-137 — an EPHEMERAL event is live-only on the wire: the row persists to `run_events`
+   * (the SSE tail's sole source) but replay-class reads drop it once its run is terminal, so a
+   * late subscriber can never replay stale deltas. `EPHEMERAL_EVENT_TYPES` names the set.
+   */
+  ephemeral?: boolean;
   payload: z.ZodTypeAny;
 }
 
@@ -333,6 +339,22 @@ export const RUN_EVENTS = {
     density: "normal",
     payload: z.object({ threadId: idSchema }),
   },
+  // ADR-137 (BL-99 part 1; GD-UX-STREAM.R7's "tokens later") — one model-text delta inside a chat
+  // turn: `turnId` binds it to the turn (the same id the completion record keys on), `seq` is the
+  // per-turn token ordinal (the client's dedup/coalescing key on reconnect), `text` is the delta.
+  // `verbose` ⇒ the requester-only density (REQ-DATA-38 — a summary viewer never receives model
+  // text); `ephemeral` ⇒ live-only on the wire — replay drops these rows once the run is terminal
+  // so a late subscriber never sees stale deltas, while a mid-flight replay still returns them.
+  "chat.token": {
+    visibility: "user",
+    density: "verbose",
+    ephemeral: true,
+    payload: z.object({
+      turnId: idSchema,
+      seq: z.number().int().nonnegative(),
+      text: boundedText,
+    }),
+  },
   // P1.11 (§7.1/REQ-CHAT-10) — the per-turn plan card: the budgets + tier the turn was consented under
   // (the card IS the consent — ids + counts only, never the message text).
   "chat.plan_card": {
@@ -495,6 +517,14 @@ export const INTERNAL_EVENT_TYPES = RUN_EVENT_TYPES.filter(
   (t) => RUN_EVENTS[t].visibility === "internal",
 );
 export const USER_EVENT_TYPES = RUN_EVENT_TYPES.filter((t) => RUN_EVENTS[t].visibility === "user");
+/**
+ * ADR-137 — event types whose rows are live-only on the wire (persisted to `run_events`, dropped
+ * from replay-class reads once the run is terminal). The orchestrator's event-stream reader
+ * applies the rule generically over this set.
+ */
+export const EPHEMERAL_EVENT_TYPES = RUN_EVENT_TYPES.filter(
+  (t) => (RUN_EVENTS[t] as EventDef).ephemeral === true,
+);
 
 /** True when the event type is safe to stream over the SSE user route (REQ-ARCH-12). */
 export function isUserVisible(type: RunEventType): boolean {

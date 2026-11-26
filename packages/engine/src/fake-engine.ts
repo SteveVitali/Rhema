@@ -9,7 +9,7 @@ import type { Engine, EngineEvent, PhaseRequest, UsageSnapshot } from "./engine.
 import { emptyUsage } from "./engine.js";
 import type { RecordedFixture } from "./fixtures.js";
 import type { SdkMessage } from "./sdk-types.js";
-import { createMapper } from "./mapper/mapper.js";
+import { chatTurnIdFor, createMapper } from "./mapper/mapper.js";
 import { driveMapper } from "./stream-runner.js";
 
 export class FakeEngine implements Engine {
@@ -37,6 +37,7 @@ export class FakeEngine implements Engine {
       ordinal: req.ordinal,
       of: req.of,
       mainAgentLabel: req.seat || this.seat,
+      chatTurnId: chatTurnIdFor(req), // ADR-137 — chat_turn phases only
     });
     this.currentMapperUsage = () => mapper.usage();
     const source = toAsync(this.messages);

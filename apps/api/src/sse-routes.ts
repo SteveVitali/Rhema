@@ -88,9 +88,16 @@ export function createSseRoutes(deps: SseApiDeps): Hono {
     if (!access.ok) return c.json({ error: "not_found" }, access.status as 404);
 
     const afterSeq = parseAfterSeq(c.req.query("after"), c.req.header("last-event-id"));
-    const read = (after: number): Promise<StreamedEvent[]> =>
+    // ADR-137 — catch-up/poll reads are "live-only" for ephemeral types (chat.token drops out once
+    // the run is terminal ⇒ a late subscriber never replays a finished turn's stale deltas, while a
+    // mid-flight replay still returns them for the client's seq-dedup); live-tail reads include
+    // them unconditionally (the last deltas committed just before the terminal events still deliver).
+    const read = (after: number, mode?: { tail?: boolean }): Promise<StreamedEvent[]> =>
       deps.txRunner.run(principal.workspaceId, (tx) =>
-        readUserEventsAfter(tx, runId, after, { maxDensity: access.maxDensity }),
+        readUserEventsAfter(tx, runId, after, {
+          maxDensity: access.maxDensity,
+          ephemeral: mode?.tail ? "include" : "live-only",
+        }),
       );
 
     // Mobile poll (REQ-MOBILE-5, shape only): a finite replay of everything past `after`, then close.

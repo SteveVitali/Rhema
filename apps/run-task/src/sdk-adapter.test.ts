@@ -123,3 +123,12 @@ describe("adaptSdkQuery (D-P0.06-4 — the QueryFn↔SDK bridge)", () => {
     }).rejects.toThrow("sdk exploded");
   });
 });
+
+describe("includePartialMessages — the chat_turn partial-stream forwarding (ADR-137)", () => {
+  it("forwards the real SDK field when set and leaves the key absent otherwise", () => {
+    const on = toSdkOptions({ ...OPTIONS, includePartialMessages: true }) as Record<string, unknown>;
+    expect(on.includePartialMessages).toBe(true);
+    const off = toSdkOptions(OPTIONS) as Record<string, unknown>;
+    expect("includePartialMessages" in off).toBe(false);
+  });
+});

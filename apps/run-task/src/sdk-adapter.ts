@@ -52,6 +52,10 @@ export function toSdkOptions(options: AgentSdkQueryOptions): Record<string, unkn
     abortController: options.abortController,
   };
   if (options.pathToClaudeCodeExecutable) out.pathToClaudeCodeExecutable = options.pathToClaudeCodeExecutable;
+  // ADR-137 — REAL SDK field, forwarded only when set: a chat_turn phase opts into the partial
+  // stream (stream_event deltas → chat.token); every other phase leaves the key absent so the
+  // SDK's own default applies (the pre-UX.8 options shape, bit for bit).
+  if (options.includePartialMessages === true) out.includePartialMessages = true;
   return out;
 }
 
