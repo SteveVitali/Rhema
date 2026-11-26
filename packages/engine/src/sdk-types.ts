@@ -73,10 +73,33 @@ export interface SdkResultMessage {
   session_id?: string;
 }
 
-/** A partial-streaming event (`type: "stream_event"`). The mapper ignores these — it maps whole messages. */
+/**
+ * The Anthropic `MessageStreamEvent` delta shapes the mapper reads inside a `stream_event`
+ * (ADR-137). Only `content_block_delta` matters: `text_delta` carries model output (→
+ * `chat.token` on a chat turn); `thinking_delta` / `input_json_delta` are explicitly dropped —
+ * no partial chain-of-thought and no partial tool input ever leaves the harness. Other event
+ * types (`message_start`, `content_block_start/stop`, `message_delta`, `ping`) are ignored.
+ */
+export interface SdkStreamDeltaEvent {
+  type: string;
+  index?: number;
+  delta?: {
+    type: string;
+    text?: string;
+    thinking?: string;
+    partial_json?: string;
+  };
+}
+
+/**
+ * A partial-streaming event (`type: "stream_event"`). Present only when the SDK's
+ * `includePartialMessages` option is set (enabled for `chat_turn` phases only — ADR-137); the
+ * mapper maps `text_delta` events to `chat.token` when the phase carries a turn id and drops
+ * everything else.
+ */
 export interface SdkStreamEvent {
   type: "stream_event";
-  event?: unknown;
+  event?: SdkStreamDeltaEvent | unknown;
   parent_tool_use_id?: string | null;
 }
 

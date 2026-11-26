@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  EPHEMERAL_EVENT_TYPES,
   INTERNAL_EVENT_TYPES,
   RUN_EVENTS,
   RUN_EVENT_TYPES,
@@ -75,5 +76,42 @@ describe("visibility split (REQ-ARCH-12)", () => {
 
   it("parseRunEvent rejects an unknown type", () => {
     expect(() => parseRunEvent("run.exploded", {})).toThrow();
+  });
+});
+
+describe("chat.token — the ADR-137 token-delta event (BL-99 part 1)", () => {
+  it("is a user-visible, verbose, ephemeral event", () => {
+    expect(RUN_EVENTS["chat.token"].visibility).toBe("user");
+    expect(RUN_EVENTS["chat.token"].density).toBe("verbose");
+    expect(RUN_EVENTS["chat.token"].ephemeral).toBe(true);
+    expect(isUserVisible("chat.token")).toBe(true);
+    expect(EPHEMERAL_EVENT_TYPES).toEqual(["chat.token"]);
+  });
+
+  it("accepts the {turnId, seq, text} shape and rejects free text past 280 (REQ-DATA-37)", () => {
+    expect(() =>
+      parseRunEvent("chat.token", {
+        turnId: "01JQ00000000000000000000AA",
+        seq: 0,
+        text: "The quick",
+      }),
+    ).not.toThrow();
+    expect(() =>
+      parseRunEvent("chat.token", {
+        turnId: "01JQ00000000000000000000AA",
+        seq: 1,
+        text: "x".repeat(281),
+      }),
+    ).toThrow();
+    expect(() =>
+      parseRunEvent("chat.token", { turnId: "not-an-id", seq: 0, text: "hi" }),
+    ).toThrow();
+    expect(() =>
+      parseRunEvent("chat.token", {
+        turnId: "01JQ00000000000000000000AA",
+        seq: -1,
+        text: "hi",
+      }),
+    ).toThrow();
   });
 });

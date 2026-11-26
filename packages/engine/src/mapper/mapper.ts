@@ -13,14 +13,16 @@
 // derivable from the raw stream. Credits need the proxy rate table, so the mapper yields a `usage` marker
 // (tokens) and the orchestrator renders `usage.tick` (credits).
 
-import { renderNote } from "@rhema/contracts";
-import type { EngineEvent, ResultSubtype, UsageSnapshot } from "../engine.js";
+import { idSchema, renderNote } from "@rhema/contracts";
+import type { EngineEvent, PhaseRequest, ResultSubtype, UsageSnapshot } from "../engine.js";
 import { emptyUsage } from "../engine.js";
 import type {
   SdkAssistantMessage,
   SdkContentBlock,
   SdkMessage,
   SdkResultMessage,
+  SdkStreamDeltaEvent,
+  SdkStreamEvent,
   SdkUserMessage,
 } from "../sdk-types.js";
 import { addUsage, setUsageTotals, cloneUsage } from "../usage.js";
@@ -35,6 +37,26 @@ export interface MapperContext {
   readonly of: number;
   /** the main agent's label (the seat), attributed to non-subagent events. */
   readonly mainAgentLabel: string;
+  /**
+   * ADR-137 — the chat turn's id (the `turnId` frozen into the chat_turn run's `inputs`), present
+   * ONLY on a chat_turn phase. When set, `stream_event` text deltas map to `chat.token` events
+   * bound to this turn; when absent every stream event is dropped (non-chat phases emit nothing).
+   */
+  readonly chatTurnId?: string;
+}
+
+/**
+ * ADR-137 — the ONE derivation of a phase's chat-turn binding: the `turnId` the chat route froze
+ * into the run's `inputs` (`chat_turn` is the only workflow that carries it). The SDK's
+ * `includePartialMessages` opt-in (options.ts) and the mapper's `chatTurnId` context both read
+ * this same fact, so the partial stream can never be enabled for a phase that can't bind tokens.
+ * A turnId that isn't a valid id returns `undefined` — a corrupt frozen input degrades to
+ * no-streaming (the turn still completes and renders at completion) rather than throwing the
+ * schema error mid-stream inside `parseRunEvent`.
+ */
+export function chatTurnIdFor(req: PhaseRequest): string | undefined {
+  const v = req.inputs?.["turnId"];
+  return typeof v === "string" && idSchema.safeParse(v).success ? v : undefined;
 }
 
 type SearchTool = "WebSearch" | "web_search";
@@ -80,6 +102,8 @@ export function createMapper(ctx: MapperContext): Mapper {
   const subagentLabelById = new Map<string, string>();
   let sourcesRead = 0;
   let compactions = 0;
+  /** ADR-137 — the per-turn token ordinal (the `seq` in each `chat.token`; the client's dedup key). */
+  let tokenSeq = 0;
 
   const labelFor = (parentToolUseId: string | null | undefined): string =>
     (parentToolUseId && subagentLabelById.get(parentToolUseId)) || ctx.mainAgentLabel;
@@ -192,6 +216,31 @@ export function createMapper(ctx: MapperContext): Mapper {
     return out;
   }
 
+  /**
+   * ADR-137 — a `stream_event` carries an Anthropic `MessageStreamEvent`. Only
+   * `content_block_delta` + `text_delta` becomes a `chat.token` (model output for THIS turn);
+   * `thinking_delta`/`input_json_delta` and every other event type are dropped — no partial
+   * chain-of-thought and no partial tool input ever leaves the harness. A delta is emitted only
+   * when the phase carries `ctx.chatTurnId`; a non-chat phase drops the whole class. Deltas longer
+   * than the 280-char free-text bound split into consecutive `chat.token` events (each its own
+   * `seq`) so `parseRunEvent` can never throw inside the agent stream.
+   */
+  function handleStreamEvent(msg: SdkStreamEvent): EngineEvent[] {
+    if (!ctx.chatTurnId) return [];
+    const inner = msg.event as SdkStreamDeltaEvent | undefined;
+    if (inner?.type !== "content_block_delta" || inner.delta?.type !== "text_delta") return [];
+    const text = inner.delta.text;
+    if (typeof text !== "string" || text.length === 0) return [];
+    const agentLabel = labelFor(msg.parent_tool_use_id);
+    const out: EngineEvent[] = [];
+    for (let i = 0; i < text.length; i += 280) {
+      out.push(
+        event("chat.token", { turnId: ctx.chatTurnId, seq: tokenSeq++, text: text.slice(i, i + 280) }, agentLabel),
+      );
+    }
+    return out;
+  }
+
   function handleResult(msg: SdkResultMessage): EngineEvent[] {
     // the result carries the CUMULATIVE total — overwrite, never add (see setUsageTotals; §12.7 cross-check).
     setUsageTotals(usage, msg.usage, msg.total_cost_usd);
@@ -215,8 +264,9 @@ export function createMapper(ctx: MapperContext): Mapper {
           }
           return [];
         case "stream_event":
+          return handleStreamEvent(msg); // ADR-137 — text deltas → chat.token on a chat turn
         default:
-          return []; // partial-streaming deltas are not mapped (we map whole messages)
+          return [];
       }
     },
     flush(): EngineEvent[] {

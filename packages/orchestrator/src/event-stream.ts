@@ -7,8 +7,10 @@
 // Verbose (REQ-DATA-38).
 
 import type { EventDensity } from "@rhema/contracts";
+import { EPHEMERAL_EVENT_TYPES } from "@rhema/contracts";
 import type { SqlClient } from "./tx.js";
 import type { RunEventSubscriber } from "./event-store.js";
+import { TERMINAL_RUN_STATES } from "./state-machine.js";
 
 /** A user-visible event as delivered over SSE (never carries visibility/internal detail). */
 export interface StreamedEvent {
@@ -35,12 +37,21 @@ export interface ReadEventsOptions {
   readonly maxDensity?: EventDensity;
   /** cap the number of rows returned (replay paging); default unbounded. */
   readonly limit?: number;
+  /**
+   * ADR-137 — how to treat EPHEMERAL event types (`chat.token`): `"live-only"` returns them only
+   * while the run is non-terminal (replay-class reads — SSE catch-up / `?poll=1` / BFF seeds — so
+   * a late subscriber can never replay a finished turn's stale deltas); `"include"` (default)
+   * returns them unconditionally (the live tail, which must still deliver the last deltas a
+   * just-completed run committed moments before its terminal events).
+   */
+  readonly ephemeral?: "live-only" | "include";
 }
 
 /**
  * Read the run's user events with `seq > afterSeq`, in seq order, at or below `maxDensity`. Reads only
  * `run_events`, so an internal-visibility row can never be returned. Run inside the VIEWER's tenant
- * transaction — RLS then also guarantees cross-tenant isolation.
+ * transaction — RLS then also guarantees cross-tenant isolation. `ephemeral: "live-only"` drops
+ * ephemeral rows once the run's `state` is terminal (ADR-137's no-stale-token rule).
  */
 export async function readUserEventsAfter(
   tx: SqlClient,
@@ -50,6 +61,19 @@ export async function readUserEventsAfter(
 ): Promise<StreamedEvent[]> {
   const densities = densitiesUpTo(opts.maxDensity ?? "summary");
   const limitClause = opts.limit != null ? ` limit ${Math.max(0, Math.floor(opts.limit))}` : "";
+  if (opts.ephemeral === "live-only" && EPHEMERAL_EVENT_TYPES.length > 0) {
+    // A row of an ephemeral type survives replay ONLY while its run is non-terminal; a terminal run's
+    // ephemeral rows are stale by definition (its token deltas' canonical record already landed).
+    const res = await tx.query(
+      `select e.seq, e.type, e.payload, e.density, e.agent_label, e.at
+         from run_events e
+        where e.run_id = $1 and e.seq > $2 and e.density = any($3)
+          and (e.type <> all($4) or (select r.state from runs r where r.id = $1) <> all($5))
+        order by e.seq${limitClause}`,
+      [runId, afterSeq, densities, [...EPHEMERAL_EVENT_TYPES], [...TERMINAL_RUN_STATES]],
+    );
+    return (res.rows as RunEventRow[]).map(toStreamedEvent);
+  }
   const res = await tx.query(
     `select seq, type, payload, density, agent_label, at
        from run_events
@@ -96,8 +120,18 @@ export function formatSse(ev: StreamedEvent): string {
 /** The SSE heartbeat comment (§12.5: `: ping` every 25 s to hold the connection open through the ALB). */
 export const SSE_PING = ": ping\n\n";
 
+/**
+ * ADR-137 — read class: `tail` marks a LIVE-TAIL pass (a pump after the first catch-up completed).
+ * Catch-up and poll reads omit it. Ephemeral (`chat.token`) rows replay only on catch-up while the
+ * run is non-terminal; the tail always includes them — the deltas a just-completed run committed
+ * immediately before its terminal events still must be delivered.
+ */
+export interface EventReadMode {
+  readonly tail?: boolean;
+}
+
 /** Reads the run's user events after a seq (a tenant-scoped Postgres read; the streamer's only data source). */
-export type EventReader = (afterSeq: number) => Promise<StreamedEvent[]>;
+export type EventReader = (afterSeq: number, mode?: EventReadMode) => Promise<StreamedEvent[]>;
 /** Writes one SSE chunk to the client connection. */
 export type SseSink = (chunk: string) => void | Promise<void>;
 
@@ -157,7 +191,9 @@ export class RunEventStreamer {
     try {
       do {
         this.dirty = false;
-        const rows = await this.read(this.last);
+        // ADR-137 — `tail` marks live-tail passes (post-first-pump): ephemeral rows ride them
+        // unconditionally; catch-up/replay passes apply the live-only ephemeral filter.
+        const rows = await this.read(this.last, { tail: this.caughtUp });
         for (const ev of rows) {
           if (ev.seq <= this.last) continue; // exactly-once guard
           await this.sink(formatSse(ev));

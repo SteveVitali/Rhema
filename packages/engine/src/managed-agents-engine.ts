@@ -10,7 +10,7 @@
 import type { Engine, EngineEvent, PhaseRequest, UsageSnapshot } from "./engine.js";
 import { emptyUsage } from "./engine.js";
 import type { SdkMessage } from "./sdk-types.js";
-import { createMapper } from "./mapper/mapper.js";
+import { chatTurnIdFor, createMapper } from "./mapper/mapper.js";
 import { driveMapper } from "./stream-runner.js";
 
 /** The Managed Agents client narrowed to a message stream (injected; the real client is a superset). */
@@ -37,6 +37,7 @@ export class ManagedAgentsEngine implements Engine {
       ordinal: req.ordinal,
       of: req.of,
       mainAgentLabel: req.seat,
+      chatTurnId: chatTurnIdFor(req), // ADR-137 — chat_turn phases only
     });
     this.currentMapperUsage = () => mapper.usage();
     const messages = this.deps.run(req);

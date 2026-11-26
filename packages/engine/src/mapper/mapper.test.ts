@@ -151,3 +151,89 @@ describe("mapper — usage accumulation across ticks", () => {
     expect(all.filter((e) => e.kind === "result").length).toBe(1);
   });
 });
+
+describe("mapper — chat.token (ADR-137; stream_event deltas on a chat turn)", () => {
+  const TURN = "01JQ00000000000000000000AB";
+  const chatCtx = { ...ctx, chatTurnId: TURN };
+  const delta = (text: string): SdkMessage => ({
+    type: "stream_event",
+    event: { type: "content_block_delta", index: 0, delta: { type: "text_delta", text } },
+  });
+
+  it("maps each text_delta to an ordered chat.token bound to the turn", () => {
+    const evs = mapMessages([delta("The "), delta("quick "), delta("fox")], chatCtx).filter(
+      (e) => e.kind === "event",
+    );
+    expect(evs.map((e) => e.type)).toEqual(["chat.token", "chat.token", "chat.token"]);
+    const payloads = evs.map((e) => e.kind === "event" && (e.payload as { turnId: string; seq: number; text: string }));
+    expect(payloads).toEqual([
+      { turnId: TURN, seq: 0, text: "The " },
+      { turnId: TURN, seq: 1, text: "quick " },
+      { turnId: TURN, seq: 2, text: "fox" },
+    ]);
+    // verbose density → requester-only on the wire (REQ-DATA-38); attributed to the seat.
+    for (const e of evs) {
+      if (e.kind === "event") {
+        expect(e.density).toBe("verbose");
+        expect(e.visibility).toBe("user");
+        expect(e.agentLabel).toBe("editor");
+      }
+    }
+  });
+
+  it("drops every stream_event on a phase with no chatTurnId (non-chat phases emit nothing)", () => {
+    const evs = mapMessages([delta("The "), delta("fox")], ctx).filter((e) => e.kind === "event");
+    expect(evs).toEqual([]);
+  });
+
+  it("never emits thinking_delta or input_json_delta (no partial chain-of-thought / tool input)", () => {
+    const evs = mapMessages(
+      [
+        { type: "stream_event", event: { type: "content_block_delta", delta: { type: "thinking_delta", thinking: "hmm secret" } } },
+        { type: "stream_event", event: { type: "content_block_delta", delta: { type: "input_json_delta", partial_json: "{\"q\":\"" } } },
+        { type: "stream_event", event: { type: "content_block_delta", delta: { type: "signature_delta" } } },
+        delta("visible"),
+      ],
+      chatCtx,
+    ).filter((e) => e.kind === "event");
+    expect(evs.map((e) => e.type)).toEqual(["chat.token"]);
+    expect(JSON.stringify(evs)).not.toContain("secret");
+    expect(JSON.stringify(evs)).not.toContain("partial_json");
+  });
+
+  it("splits a >280-char delta into consecutive bounded chat.token events", () => {
+    const long = "x".repeat(700);
+    const evs = mapMessages([delta(long)], chatCtx).filter((e) => e.kind === "event");
+    expect(evs).toHaveLength(3);
+    const texts = evs.map((e) => e.kind === "event" && (e.payload as { text: string }).text);
+    expect(texts.map((t) => (t as string).length)).toEqual([280, 280, 140]);
+    const seqs = evs.map((e) => e.kind === "event" && (e.payload as { seq: number }).seq);
+    expect(seqs).toEqual([0, 1, 2]);
+  });
+
+  it("drops empty / malformed deltas and non-delta stream events without throwing", () => {
+    const evs = mapMessages(
+      [
+        { type: "stream_event", event: { type: "content_block_delta", delta: { type: "text_delta", text: "" } } },
+        { type: "stream_event", event: { type: "content_block_start" } },
+        { type: "stream_event", event: { type: "message_start" } },
+        { type: "stream_event" }, // no inner event at all
+        { type: "stream_event", event: null },
+        delta("ok"),
+      ],
+      chatCtx,
+    ).filter((e) => e.kind === "event");
+    expect(evs.map((e) => e.type)).toEqual(["chat.token"]);
+  });
+
+  it("attributes subagent-scoped deltas through parent_tool_use_id (defense; chat_turn is solo)", () => {
+    const evs = mapMessages(
+      [
+        { type: "assistant", message: { content: [{ type: "tool_use", id: "t1", name: "Task", input: { subagent_type: "helper" } }] } },
+        { type: "stream_event", parent_tool_use_id: "t1", event: { type: "content_block_delta", delta: { type: "text_delta", text: "sub" } } },
+      ],
+      chatCtx,
+    ).filter((e) => e.kind === "event" && e.type === "chat.token");
+    expect(evs[0] && evs[0].kind === "event" && evs[0].agentLabel).toBe("helper");
+  });
+});

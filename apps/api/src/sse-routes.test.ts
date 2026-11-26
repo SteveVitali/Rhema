@@ -124,3 +124,42 @@ describe("GET /runs/:id/events?poll — replay content (mobile poll shape, REQ-M
     expect(seqs(afterHeader)).toEqual([3]);
   });
 });
+
+// ADR-137 — the ephemeral (chat.token) replay rule at the route: catch-up/poll reads are live-only
+// (a terminal run's token rows never replay to a late subscriber), a mid-flight replay returns them,
+// and a summary-capped viewer can never receive token text (REQ-DATA-38).
+const TURN = "01JQ00000000000000000000AB";
+
+describe("GET /runs/:id/events — chat.token ephemerality (ADR-137)", () => {
+  const setState = (state: string) =>
+    db.txRunner.run(seed.workspaceId, (tx) => tx.query("update runs set state = $1 where id = 'run1'", [state]));
+
+  it("replays live token deltas to the requester while the turn is in flight", async () => {
+    await append({ type: "step.started", payload: { phase: "answer", ordinal: 0, of: 1 } });
+    await append({ type: "chat.token", payload: { turnId: TURN, seq: 0, text: "The " } });
+    await append({ type: "chat.token", payload: { turnId: TURN, seq: 1, text: "quick" } });
+    const app = makeApp(() => principal());
+    const body = await (await app.request("/runs/run1/events?poll=1")).text();
+    expect(types(body)).toEqual(["step.started", "chat.token", "chat.token"]);
+  });
+
+  it("never replays token deltas once the run is terminal — a late subscriber sees no stale text", async () => {
+    await append({ type: "step.started", payload: { phase: "answer", ordinal: 0, of: 1 } });
+    await append({ type: "chat.token", payload: { turnId: TURN, seq: 0, text: "The " } });
+    await append({ type: "chat.token", payload: { turnId: TURN, seq: 1, text: "quick" } });
+    await append({ type: "cost.final", payload: { spentCredits: 12, capCredits: 840 } });
+    await setState("completed");
+    const app = makeApp(() => principal());
+    const body = await (await app.request("/runs/run1/events?poll=1")).text();
+    expect(types(body)).toEqual(["step.started", "cost.final"]);
+    expect(body).not.toContain("quick");
+  });
+
+  it("a summary-capped viewer never receives token text even mid-turn (REQ-DATA-38)", async () => {
+    await append({ type: "chat.token", payload: { turnId: TURN, seq: 0, text: "secret draft" } });
+    const viewerApp = makeApp(() => principal({ userId: "usr_other_viewer" }));
+    const body = await (await viewerApp.request("/runs/run1/events?poll=1")).text();
+    expect(types(body)).toEqual([]);
+    expect(body).not.toContain("secret");
+  });
+});

@@ -15,6 +15,7 @@ import {
 } from "@rhema/contracts";
 import type { PhaseRequest } from "./engine.js";
 import { buildAgentEnv } from "./scrubbed-env.js";
+import { chatTurnIdFor } from "./mapper/mapper.js";
 import { buildOtelConfig } from "./otel.js";
 import { buildAgentRoster, mainModelForTier, routeModelForPhaseClass, TEST_CHEAP_ROUTE_MODEL } from "./roster.js";
 import type { AgentDef } from "./roster.js";
@@ -145,6 +146,14 @@ export interface AgentSdkQueryOptions {
   /** the GCS session store (§12.2). NOT a real SDK field — advisory only (F5); not applied by the wrapper. */
   sessionStore: SessionStore;
   abortController: AbortController;
+  /**
+   * ADR-137 — REAL SDK `Options` field: emit `stream_event` partial-streaming messages so the
+   * mapper can produce `chat.token` deltas. Set ONLY for a `chat_turn` phase (one whose frozen
+   * `inputs` carry `turnId` — `chatTurnIdFor`, the same derivation that binds the mapper
+   * context); every other phase keeps the §12.2 default (`undefined` ⇒ the adapter forwards
+   * nothing and the SDK's own default applies).
+   */
+  includePartialMessages?: boolean;
 }
 
 /** The ≤5 concurrent-subagents cap (§12.2). */
@@ -222,6 +231,9 @@ export function buildQueryOptions(req: PhaseRequest, deps: BuildOptionsDeps): Ag
     cacheControlTtl: levers?.l4CacheTtl5m ? "5m" : "1h",
     sessionStore: deps.sessionStore,
     abortController: deps.abortController,
+    // ADR-137 — a chat_turn phase opts into the SDK's partial stream so `chat.token` deltas reach
+    // the event pipe; `chatTurnIdFor` is the same derivation the mapper binds its context from.
+    ...(chatTurnIdFor(req) ? { includePartialMessages: true } : {}),
   };
 }
 
