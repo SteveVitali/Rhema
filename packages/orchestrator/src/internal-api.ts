@@ -60,6 +60,7 @@ import { applyOutlineApproval } from "./outline-delivery.js";
 import { applyFigureDelivery, enqueueFigureRender } from "./figure-delivery.js";
 import type { FigureClaimsMountProvider } from "./figure-claims.js";
 import {
+  isTransientDbReadError,
   readRunWebToolsPolicy,
   researchBudgetConsult,
   type ResearchBudgetConsult,
@@ -1076,8 +1077,17 @@ export async function researchBudgetState(
   deps: OrchestratorDeps,
   args: { runId: string; workspaceId: string },
 ): Promise<ResearchBudgetConsult> {
-  const webTools = await readRunWebToolsPolicy(deps, args);
-  return researchBudgetConsult(deps, { ...args, webTools });
+  const attempt = () =>
+    readRunWebToolsPolicy(deps, args).then((webTools) =>
+      researchBudgetConsult(deps, { ...args, webTools }),
+    );
+  try {
+    return await attempt();
+  } catch (err) {
+    // R6FIX.55 — a pure read; one retry absorbs the transient connection-class drop prod showed.
+    if (!isTransientDbReadError(err)) throw err;
+    return attempt();
+  }
 }
 
 // ---------------------------------------------------------------------------- commit / fail / finalize

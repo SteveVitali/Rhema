@@ -78,6 +78,25 @@ export async function readRunWebToolsPolicy(
  * caller that already read the credential context (`buildHarnessRunSpec` reads it once for both the
  * preflight roster and this consult); absent, this reads it itself.
  */
+/** Transient read-failure classes the consult retries once — connection-class SQLSTATEs
+ *  (08xxx), admin-shutdown (57P01), serialization/deadlock (40001/40P01 — unreachable on a pure
+ *  read but harmless), and the node's own socket codes. R6FIX.55: prod showed the route 500ing on
+ *  a bare pg `DatabaseError` mid-consult (the run-task degrades to `null` honestly, but the
+ *  consult is a pure read — one retry absorbs the drop). */
+export function isTransientDbReadError(err: unknown): boolean {
+  const code = (err as { code?: unknown } | null)?.code;
+  if (typeof code !== "string") return false;
+  return (
+    code.startsWith("08") ||
+    code === "57P01" ||
+    code === "40001" ||
+    code === "40P01" ||
+    code === "ECONNRESET" ||
+    code === "ETIMEDOUT" ||
+    code === "EPIPE"
+  );
+}
+
 export async function researchBudgetConsult(
   deps: Pick<OrchestratorDeps, "txRunner" | "systemTxRunner">,
   args: {

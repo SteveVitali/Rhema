@@ -5,6 +5,7 @@ import {
   cloudTraceId,
   errorClass,
   errorLogValue,
+  driverTagsForLog,
   errorSummary,
   formatRouteErrorLine,
   resolveRequestId,
@@ -125,6 +126,23 @@ describe("the allowlisted structured error line (ADR-053)", () => {
     ) as Record<string, unknown>;
     expect(bare.serviceContext).toEqual({ service: "api" });
   });
+  it("emits driverTags for driver-error tags and drops the field when absent (R6FIX.55)", () => {
+    const pg = Object.assign(new Error(""), { code: "08006", routine: "exec_query" }) as Error;
+    expect(driverTagsForLog(pg)).toBe("code=08006 routine=exec_query");
+    expect(driverTagsForLog(new Error("no tags"))).toBeNull();
+    expect(driverTagsForLog("nope")).toBeNull();
+    const parsed = JSON.parse(
+      formatRouteErrorLine({ ...base, driverTags: "code=08006 routine=exec_query" }),
+    ) as Record<string, unknown>;
+    expect(parsed.driverTags).toBe("code=08006 routine=exec_query");
+    expect(JSON.parse(formatRouteErrorLine(base))).not.toHaveProperty("driverTags");
+    // hostile values never reach the field — the emit seam re-validates the token alphabet
+    const hostile = JSON.parse(
+      formatRouteErrorLine({ ...base, driverTags: '"><script>alert(1)</script>' }),
+    ) as Record<string, unknown>;
+    expect(hostile).not.toHaveProperty("driverTags");
+  });
+
   it("drops null optional fields rather than emitting them", () => {
     const parsed = JSON.parse(
       formatRouteErrorLine({ ...base, trace: null, stack: null }),

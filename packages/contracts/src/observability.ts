@@ -111,6 +111,26 @@ export function errorSummary(err: unknown): string {
 }
 
 /**
+ * The bounded driver tags alone (`code=57P01 routine=…`) for the route error line's `driverTags`
+ * field — same allowlist as `errorSummary`'s tags (driver/driver-adjacent facts, never messages or
+ * values). pg `DatabaseError`s carry the SQLSTATE on `code`; a bare-name stack (`errorClass` alone)
+ * then still names the class. null when the error carries none of the tag fields.
+ */
+export function driverTagsForLog(err: unknown): string | null {
+  if (!(err instanceof Error)) return null;
+  const rec = err as Error & Record<string, unknown>;
+  const tags: string[] = [];
+  for (const k of ERROR_TAG_FIELDS) {
+    const v = rec[k];
+    if (typeof v === "string" && v.length > 0) {
+      const clean = v.replace(/[^A-Za-z0-9_.$-]/g, "").slice(0, 80);
+      if (clean.length > 0) tags.push(`${k}=${clean}`);
+    }
+  }
+  return tags.length > 0 ? tags.join(" ") : null;
+}
+
+/**
  * The whole-Error log value for `console.error(prefix, errorLogValue(err))`: `errorSummary` on the
  * first line plus the message-stripped frames, so the emitted line groups sanely in Error Reporting
  * (frame identity) while never carrying `err.message` text. This is the ADR-053-safe replacement
@@ -164,6 +184,12 @@ export interface RouteErrorFields {
    */
   readonly degradedCount?: number | null;
   /**
+   * R6FIX.55 — the bounded driver tags from `driverTagsForLog` (`code=08006`, `routine=…`) —
+   * enum tokens a thrown driver error carries, never its message. A pg `DatabaseError`'s SQLSTATE
+   * lands here so a bare `errorClass:"error"` line still names its failure class.
+   */
+  readonly driverTags?: string | null;
+  /**
    * RH-21 residual — the running release (the image-baked `RHEMA_BUILD_GIT_SHA`), emitted as
    * `serviceContext.version` so Cloud Error Reporting attributes each grouped error to a release
    * instead of an unversioned bucket. Service-level identity (like `service`), never request data;
@@ -212,6 +238,11 @@ export function formatRouteErrorLine(f: RouteErrorFields): string {
   if (f.trace) entry["logging.googleapis.com/trace"] = f.trace;
   if (f.stack) entry.stack = f.stack;
   if (typeof f.degradedCount === "number") entry.degradedCount = f.degradedCount;
+  // the tag string is code vocabulary only (key=value tokens) — re-validated at the seam so a
+  // hostile or message-bearing value can never reach the line even from a direct caller.
+  if (typeof f.driverTags === "string" && /^[\w .=$-]{1,200}$/.test(f.driverTags)) {
+    entry.driverTags = f.driverTags;
+  }
   return JSON.stringify(entry);
 }
 
