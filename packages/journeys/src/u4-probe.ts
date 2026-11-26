@@ -67,8 +67,13 @@ export const U4_SURFACES: readonly U4Surface[] = [
   // batch c2 — outline + figures ride the same sheet family; figures' rows keep the migrated kit.
   { id: "outline-figures", path: "/p/:p/outline" },
   // batch d — the dossier: the findings live in the right panel's Findings tab; the bulk preview's
-  // `only[]` carriers (BulkOnlyCheck) are the named natives.
-  { id: "dossier", path: "/p/:p/review/:runId", exempt: ["[data-bulk-preview] input[type='checkbox']"] },
+  // `only[]` carriers (BulkOnlyCheck) are the named natives, and `findings-desk.tsx`'s `FilterSelect`
+  // (the sev/kind/disp filter bar) is the named no-JS GET-form select (R7KIT.3d exemption, RV-36).
+  {
+    id: "dossier",
+    path: "/p/:p/review/:runId",
+    exempt: ["[data-bulk-preview] input[type='checkbox']", "[data-findings-filters] select"],
+  },
 ];
 
 const CONTROL_SEL = "button, input, select, textarea";
@@ -150,23 +155,26 @@ export function assertU4Clean(where: string, findings: readonly U4NativeFinding[
   );
 }
 
-/** The timeline twin's run rows — `rounds[].runs[]` plus top-level `ungrouped[]`
- *  (GET /projects/:id/timeline → TimelineDto), each carrying `runId` + `card.state`. */
-interface TimelineTwinRun {
-  readonly runId?: string;
-  readonly card?: { readonly state?: string };
-}
-interface TimelineTwinShape {
-  readonly rounds?: readonly { readonly runs?: readonly TimelineTwinRun[] }[];
-  readonly ungrouped?: readonly TimelineTwinRun[];
+/** The `/bff/app` project-list row — the dossier-card row fact `latestReviewRunId` rides
+ *  (the sidebar's own derivation source; the per-project twin does not populate it, and
+ *  `/bff/p/:slug/timeline` is a demo-only twin that 404s for tenants). */
+interface ProjectListRowShape {
+  readonly slug?: string;
+  readonly latestReviewRunId?: string | null;
 }
 
-/** The dossier surface's runId — the first `completed` run, else the twin's first run.
- *  Exported for the local unit test; "" means the tenant twin held no discoverable run. */
-export function dossierRunIdFromTimeline(twin: TimelineTwinShape | null | undefined): string {
-  const all: readonly TimelineTwinRun[] = [
-    ...(twin?.rounds ?? []).flatMap((rd) => rd.runs ?? []),
-    ...(twin?.ungrouped ?? []),
-  ];
-  return all.find((run) => run.card?.state === "completed")?.runId ?? all[0]?.runId ?? "";
+/** The dossier surface's `{slug, runId}` — the picked project's own review first, else
+ *  the first list row carrying one (the fixture tenant's Showcase dossier may not be the
+ *  sidebar's first project). `null` = no row carries a review — the leg's honest
+ *  "no dossier run id discoverable" arm. Exported for the local unit test. */
+export function dossierTargetFromProjectList(
+  rows: readonly ProjectListRowShape[] | null | undefined,
+  preferredSlug: string,
+): { slug: string; runId: string } | null {
+  const withReview = (rows ?? []).filter(
+    (r): r is ProjectListRowShape & { slug: string; latestReviewRunId: string } =>
+      typeof r?.slug === "string" && typeof r?.latestReviewRunId === "string" && r.latestReviewRunId !== "",
+  );
+  const row = withReview.find((r) => r.slug === preferredSlug) ?? withReview[0];
+  return row == null ? null : { slug: row.slug, runId: row.latestReviewRunId };
 }
