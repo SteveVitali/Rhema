@@ -2089,9 +2089,21 @@ export const COPY = {
   },
   landing: {
     nav: {
+      // 334_R7UX.11 (BL-89 / UXC-13 remainder; §15.1) — the marketing nav's item set. Labels
+      // only: the destinations (page links + in-page anchors) live in marketing.tsx's
+      // MARKETING_NAV so the anchor↔section mapping is one table, not scattered strings.
+      product: "Product",
+      workflows: "Workflows",
       pricing: "Pricing",
+      changelog: "Changelog",
+      // §15.1 names a Docs destination; no public docs surface exists yet — the item renders
+      // as a marked non-link placeholder, never a dead href (D-R7UX.11-1).
+      docs: "Docs",
+      docsPending: "Docs — the public docs site is on the roadmap",
       faq: "FAQ",
       signIn: "Sign in",
+      cta: "Get Rhēma free",
+      navLabel: "Marketing sections",
     },
     hero: {
       // REQ-POS-4 — the locked §15.1 headline (the lint pins it verbatim).

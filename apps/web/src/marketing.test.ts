@@ -173,6 +173,61 @@ describe("§15.1 — the landing page", () => {
     expect(html).toContain("details.ui-accordion-item[open] > summary.ui-accordion-trigger .ui-accordion-chevron { transform: rotate(180deg); }");
   });
 
+  it("334_R7UX.11 (BL-89/UXC-13) — the §15.1 nav: every anchor routes to a rendered section; the app shell never mounts", async () => {
+    const res = await createWebApp(makeDeps()).request("/");
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    // the dedicated marketing chrome — never the app shell (sidebar/rail/account chrome absent)
+    expect(html).toContain("data-mk-nav");
+    for (const appShell of ["data-app-shell", "data-app-sidebar", "data-shell-wordmark", "data-shell-account"]) {
+      expect(html).not.toContain(appShell);
+    }
+    // the §15.1 item set in order — Product · Workflows · Demo · Pricing · Changelog ·
+    // Docs(pending) · Sign in · [Get Rhēma free]
+    const nav = html.slice(html.indexOf("data-mk-nav"), html.indexOf("</header>"));
+    const items = [...nav.matchAll(/data-mk-nav-item="([^"]+)"/g)].map((m) => m[1]);
+    expect(items).toEqual(["product", "workflows", "demo", "pricing", "changelog", "signIn", "cta"]);
+    expect(nav).toContain(COPY.landing.nav.cta);
+    // every in-page anchor routes to a real `id` on a rendered section — plain anchors, so the
+    // no-JS document navigates every destination (RV-36: the nav needs no island)
+    const anchors = [...nav.matchAll(/href="\/#([a-z-]+)"/g)].map((m) => m[1]).sort();
+    expect(anchors).toEqual(["changelog", "dossier", "workflow"]);
+    for (const id of anchors) expect(html).toContain(`id="${id}"`);
+    // Docs has no public surface — a marked non-link placeholder, never a dead href
+    expect(nav).toContain('data-mk-nav-pending="docs"');
+    expect(nav).toContain(COPY.landing.nav.docsPending);
+    expect(nav).not.toContain('href="/docs"');
+    // the /demo entry stays a document navigation (S-14); Sign in + the CTA are real routes
+    expect(nav).toMatch(/href="\/demo"[^>]*data-spa-native|data-spa-native[^>]*href="\/demo"/);
+    expect(nav).toContain('href="/login"');
+    expect(nav).toContain('href="/signup"');
+    // the marketing footer repeats the section map (incl. FAQ) ahead of the shared legal line
+    const footer = html.slice(html.indexOf("data-mk-footer"));
+    expect(footer).toContain('href="/#faq"');
+    expect(html).toContain('id="faq"');
+    expect(footer).toContain("data-legal-nav");
+    // the no-JS SSR document carries the whole content — nav AND all twelve sections
+    for (const s of ["hero", "dossier", "workflow", "seat", "voices", "runs", "models", "proof", "pricing", "changelog", "faq", "final-cta"]) {
+      expect(html).toContain(`id="${s}"`);
+    }
+  });
+
+  it("334_R7UX.11 — /pricing rides the same marketing chrome; the signed-in arm keeps REQ-PUB-1", async () => {
+    // signed-out: the marketing nav + the section-map footer on /pricing
+    const out = await (await createWebApp(makeDeps()).request("/pricing")).text();
+    expect(out).toContain("data-mk-nav");
+    expect(out).toContain("data-mk-footer");
+    expect(out).toContain('href="/#dossier"');
+    expect(out).toContain('href="/login"');
+    expect(out).not.toContain("data-app-shell");
+    // signed-in: the nav swaps "Sign in" for the way back to /app (data-pricing-app)
+    const authed = await (await createWebApp(makeDeps({ session: () => ({}) })).request("/pricing")).text();
+    expect(authed).toContain("data-mk-nav");
+    expect(authed).toContain("data-pricing-app");
+    expect(authed).toContain('href="/app"');
+    expect(authed).not.toContain('href="/login"');
+  });
+
   it("327_R7UX.4 (BL-95) — the sample dossier mounts the in-app token set (the `.paper` sheet under `data-paper=light`)", async () => {
     const html = await (await createWebApp(makeDeps()).request("/")).text();
     // The dossier article IS the committed `.paper` sheet under the light pin — the
