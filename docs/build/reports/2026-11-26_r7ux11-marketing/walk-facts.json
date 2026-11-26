@@ -1,0 +1,205 @@
+{
+  "base": "https://rhema-pr-428-web-dee2007-tkbl73n3tq-uc.a.run.app",
+  "ts": "2026-11-26T15:00:25.568Z",
+  "legs": {
+    "get": {
+      "url": "https://rhema-pr-428-web-dee2007-tkbl73n3tq-uc.a.run.app/",
+      "status": 200
+    },
+    "landing": {
+      "hasMkNav": true,
+      "headerSticky": "sticky",
+      "items": [
+        {
+          "key": "product",
+          "href": "/#dossier",
+          "text": "Product",
+          "spaNative": false,
+          "demoEntry": null
+        },
+        {
+          "key": "workflows",
+          "href": "/#workflow",
+          "text": "Workflows",
+          "spaNative": false,
+          "demoEntry": null
+        },
+        {
+          "key": "demo",
+          "href": "/demo",
+          "text": "Demo",
+          "spaNative": true,
+          "demoEntry": "nav"
+        },
+        {
+          "key": "pricing",
+          "href": "/pricing",
+          "text": "Pricing",
+          "spaNative": false,
+          "demoEntry": null
+        },
+        {
+          "key": "changelog",
+          "href": "/#changelog",
+          "text": "Changelog",
+          "spaNative": false,
+          "demoEntry": null
+        },
+        {
+          "key": "signIn",
+          "href": "/login",
+          "text": "Sign in",
+          "spaNative": false,
+          "demoEntry": null
+        },
+        {
+          "key": "cta",
+          "href": "/signup",
+          "text": "Get Rhēma free",
+          "spaNative": false,
+          "demoEntry": null
+        }
+      ],
+      "pending": [
+        {
+          "key": "docs",
+          "tag": "SPAN",
+          "hasHref": false,
+          "title": "Docs — the public docs site is on the roadmap"
+        }
+      ],
+      "sections": [
+        {
+          "key": "hero",
+          "id": "hero",
+          "text": "An editorial board for everything you write.Rhēma reads a fi"
+        },
+        {
+          "key": "dossier",
+          "id": "dossier",
+          "text": "What the board hands backEvery finding quotes its passageEve"
+        },
+        {
+          "key": "workflow",
+          "id": "workflow",
+          "text": "The workflow, in lifecycle orderOutlineThe argument's skelet"
+        },
+        {
+          "key": "seat",
+          "id": "seat",
+          "text": "The author's seatYou read the dossier, pick the moves worth "
+        },
+        {
+          "key": "voices",
+          "id": "voices",
+          "text": "A register, not a personA Voice is a set of registers and ti"
+        },
+        {
+          "key": "runs",
+          "id": "runs",
+          "text": "Runs you can watchEvery run carries its estimate-and-cap car"
+        },
+        {
+          "key": "models",
+          "id": "models",
+          "text": "Stay on the frontierPowered by Claude — model tiers stay cur"
+        },
+        {
+          "key": "proof",
+          "id": "proof",
+          "text": "Show your workThe dossier's claims ledger is the proof: ever"
+        },
+        {
+          "key": "pricing",
+          "id": "pricing",
+          "text": "PricingThe same numbers the run sheet quotes — plans, credit"
+        },
+        {
+          "key": "changelog",
+          "id": "changelog",
+          "text": "ChangelogWhat's live now: the full editor, the sign-up flow,"
+        },
+        {
+          "key": "faq",
+          "id": "faq",
+          "text": "QuestionsDoes Rhēma write my essay?No. The board reviews and"
+        },
+        {
+          "key": "final-cta",
+          "id": "final-cta",
+          "text": "Bring the draft.The board reads first, quotes what it found,"
+        }
+      ],
+      "hasFooter": true,
+      "footerFaq": true,
+      "footerLegal": true,
+      "appShell": [],
+      "wordmark": true
+    },
+    "sectionShots": true,
+    "noJs": {
+      "mkNav": true,
+      "headerItems": [
+        "product",
+        "workflows",
+        "demo",
+        "pricing",
+        "changelog",
+        "signIn",
+        "cta"
+      ],
+      "footerItems": [
+        "product",
+        "workflows",
+        "demo",
+        "pricing",
+        "changelog",
+        "faq"
+      ],
+      "sections": [
+        "hero",
+        "dossier",
+        "workflow",
+        "seat",
+        "voices",
+        "runs",
+        "models",
+        "proof",
+        "pricing",
+        "changelog",
+        "faq",
+        "final-cta"
+      ],
+      "footer": true
+    },
+    "pricing": {
+      "status": 200,
+      "mkNav": true,
+      "items": [
+        "product",
+        "workflows",
+        "demo",
+        "pricing",
+        "changelog",
+        "signIn",
+        "cta",
+        "product",
+        "workflows",
+        "demo",
+        "pricing",
+        "changelog",
+        "faq"
+      ],
+      "signIn": true,
+      "appShell": false,
+      "footer": true
+    },
+    "mobile": {
+      "mkNav": true,
+      "headerItems": 7,
+      "sections": 12,
+      "overflowX": false
+    }
+  },
+  "verdict": "PASS"
+}
