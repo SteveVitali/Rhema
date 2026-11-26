@@ -14,6 +14,7 @@ import { HTTPException } from "hono/http-exception";
 import {
   REQUEST_ID_RESPONSE_HEADER,
   cloudLoggingTraceField,
+  driverTagsForLog,
   errorClass,
   resolveRequestId,
   routeErrorLine,
@@ -190,6 +191,7 @@ export function logApiRouteError(
       upstreamStatus: args.upstreamStatus ?? null,
       upstreamCode: args.upstreamCode ?? null,
       errorClass: err === undefined && args.severity === "WARNING" ? "UpstreamDegradation" : errorClass(err),
+      driverTags: err === undefined ? null : driverTagsForLog(err),
       stack: stackForLog(err),
       degradedCount: args.degradedCount ?? null,
     }),
