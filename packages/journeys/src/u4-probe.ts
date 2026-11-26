@@ -149,3 +149,24 @@ export function assertU4Clean(where: string, findings: readonly U4NativeFinding[
     `U4.controls — ${findings.length} native-styled control(s) on ${where}:\n${lines.join("\n")}`,
   );
 }
+
+/** The timeline twin's run rows — `rounds[].runs[]` plus top-level `ungrouped[]`
+ *  (GET /projects/:id/timeline → TimelineDto), each carrying `runId` + `card.state`. */
+interface TimelineTwinRun {
+  readonly runId?: string;
+  readonly card?: { readonly state?: string };
+}
+interface TimelineTwinShape {
+  readonly rounds?: readonly { readonly runs?: readonly TimelineTwinRun[] }[];
+  readonly ungrouped?: readonly TimelineTwinRun[];
+}
+
+/** The dossier surface's runId — the first `completed` run, else the twin's first run.
+ *  Exported for the local unit test; "" means the tenant twin held no discoverable run. */
+export function dossierRunIdFromTimeline(twin: TimelineTwinShape | null | undefined): string {
+  const all: readonly TimelineTwinRun[] = [
+    ...(twin?.rounds ?? []).flatMap((rd) => rd.runs ?? []),
+    ...(twin?.ungrouped ?? []),
+  ];
+  return all.find((run) => run.card?.state === "completed")?.runId ?? all[0]?.runId ?? "";
+}
