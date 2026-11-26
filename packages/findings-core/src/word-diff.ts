@@ -84,10 +84,11 @@ export function diffWords(before: string, after: string, cellLimit = WORD_DIFF_C
   }
   const a = tokenizeWords(before);
   const b = tokenizeWords(after);
+  // Offset helpers take token BOUNDS only — aPos(i) is the offset before token i (before.length at
+  // the tail). Every char is covered exactly once, so the offset after token i−1 IS aPos(i); taking
+  // bounds never indexes −1 when a gap is empty on one side (an insertion at offset 0).
   const aPos = (i: number) => (i < a.length ? a[i]!.start : before.length); // offset before token i
   const bPos = (i: number) => (i < b.length ? b[i]!.start : after.length);
-  const aTo = (i: number) => (i < a.length ? a[i]!.end : before.length); // offset after token i
-  const bTo = (i: number) => (i < b.length ? b[i]!.end : after.length);
 
   // shared prefix/suffix on exact token text — the common case (a few words edited mid-paragraph).
   let p = 0;
@@ -115,7 +116,7 @@ export function diffWords(before: string, after: string, cellLimit = WORD_DIFF_C
     // middles exhausted — only the suffix remains.
   } else if (midA === 0 || midB === 0 || midA * midB > cellLimit) {
     // a pure insert/delete middle, or an oversized pair: one coarse run, never the dp table.
-    push(aPos(p), aTo(p + midA - 1), bPos(p), bTo(p + midB - 1));
+    push(aPos(p), aPos(p + midA), bPos(p), bPos(p + midB));
   } else {
     // LCS over the unmatched middles — dp[i][j] = matches in a[p..p+i) × b[p..p+j).
     const dp = new Uint32Array((midA + 1) * (midB + 1));
@@ -140,13 +141,13 @@ export function diffWords(before: string, after: string, cellLimit = WORD_DIFF_C
     let ai = p;
     let bj = p;
     for (const [ma, mb] of anchors) {
-      if (ai < ma || bj < mb) push(aPos(ai), aTo(ma - 1), bPos(bj), bTo(mb - 1));
+      if (ai < ma || bj < mb) push(aPos(ai), aPos(ma), bPos(bj), bPos(mb));
       push(a[ma]!.start, a[ma]!.end, b[mb]!.start, b[mb]!.end); // the matched token → same
       ai = ma + 1;
       bj = mb + 1;
     }
     if (ai < p + midA || bj < p + midB) {
-      push(aPos(ai), aTo(p + midA - 1), bPos(bj), bTo(p + midB - 1));
+      push(aPos(ai), aPos(p + midA), bPos(bj), bPos(p + midB));
     }
   }
   if (s > 0) push(a[a.length - s]!.start, before.length, b[b.length - s]!.start, after.length); // shared suffix → same

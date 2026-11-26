@@ -73,6 +73,33 @@ describe("diffWords (BL-88)", () => {
     expect(del.every((r) => r.kind !== "inserted" && r.kind !== "edited")).toBe(true);
   });
 
+  it("a mark at offset 0 never indexes a token −1 — empty-side gaps take bounds, not ends", () => {
+    // regression for the pr-427 walk crash: an insertion/deletion at the paragraph start, and an
+    // LCS first anchor at index 0 with a one-sided gap, both read token[-1].end in the offsets.
+    const ins = diffWords("same", "new same");
+    expect(reconstruct("same", "new same", ins)).toEqual({ a: "same", b: "new same" });
+    expect(marked(ins, "same", "new same").inserted.join("")).toBe("new ");
+    const del = diffWords("new same", "same");
+    expect(reconstruct("new same", "same", del)).toEqual({ a: "new same", b: "same" });
+    expect(marked(del, "new same", "same").deleted.join("")).toBe("new ");
+    // LCS path — the first anchor sits at A-index 0 while B carries a leading insertion.
+    const mid = diffWords("X q tail", "ins ins X q tail2");
+    expect(reconstruct("X q tail", "ins ins X q tail2", mid)).toEqual({
+      a: "X q tail",
+      b: "ins ins X q tail2",
+    });
+    expect(mid.find((r) => r.kind === "inserted")).toMatchObject({ fromA: 0, toA: 0 });
+    expect("ins ins X q tail2".slice(mid[0]!.fromB, mid[0]!.toB)).toBe("ins ins ");
+    // and its mirror — a leading deletion before the first anchor.
+    const mirror = diffWords("ins ins X q tail", "X q tail2");
+    expect(reconstruct("ins ins X q tail", "X q tail2", mirror)).toEqual({
+      a: "ins ins X q tail",
+      b: "X q tail2",
+    });
+    expect(mirror.find((r) => r.kind === "deleted")).toMatchObject({ fromB: 0, toB: 0 });
+    expect("ins ins X q tail".slice(mirror[0]!.fromA, mirror[0]!.toA)).toBe("ins ins ");
+  });
+
   it("unicode words diff as words, and punctuation diffs separately from the word it trails", () => {
     const runs = diffWords("café über alles end.", "café naïve alles end,");
     const m = marked(runs, "café über alles end.", "café naïve alles end,");
