@@ -25,7 +25,7 @@
 ```
 projectStatus:   IN_PROGRESS
 nextTicket:        (maintenance mode)   # UX backlog wave 324–334 COMPLETE (GD-UXBACKLOG-1, operator-asked) — 334_R7UX.11 was the final row
-lastCompleted:    338_R6FIX.56      # proxy MIG PROACTIVE zero-gap roll (F-R7UX.8-1); #432 unmerged; live leg parked on spend ruling
+lastCompleted:    339_R6FIX.57      # placeholder default → digest-pinned hello (F-R7UX.1-1); #433 unmerged; live leg parked (D-R6FIX.57-1)
 blockedOn:       (none)
 pauseRequested:  false
 returnPass:      (none)
@@ -36,7 +36,7 @@ dispatchTarget:  subagent
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main              # flat mode — inserts branch off origin/main
 pinnedBaseSha:   a34eb51           # round-7 fork point (unchanged)
-chainTip:        stevenvitali/r6fix-56-proxy-mig-guard  # next insert forks origin/main (flat mode)
+chainTip:        stevenvitali/r6fix-57-pause-image  # next insert forks origin/main (flat mode)
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
@@ -1844,3 +1844,4 @@ decomposition) predate the convention and remain in the prior region verbatim._
 
 - 2026-11-26 — **337_R6FIX.55 done — research-budget transient-read retry + driverTags (run-time insert; PR #431 on `stevenvitali/r6fix-55-research-budget`, base main; unmerged — mergePolicy OPERATOR).** The R6FIX.54 post-fix error sweep found 12 `unhandled_route_error` on `/internal/runs/:id/research-budget` (11-24/25 burst, quiescent since) — a bare pg `DatabaseError` inside `withTenant`, undiagnosable because the log line strips the message AND carried no SQLSTATE. Fix: `driverTags` field on `RouteErrorFields` (the `ERROR_TAG_FIELDS` allowlist — `code`/`routine`/`constraint`/`syscall` tokens, re-validated at the emit seam) + `isTransientDbReadError` + one retry on the consult's pure reads. 32/32 tests; build/typecheck/lint green. **F-R6FIX.55-1** opened for the underlying connection-drop class (recurrence watch). Sweep datums folded in: F-R6FIX.45-2's SSE class silent 55h+ post-deploy; billing recompute $256.87/mo (BL-29 note). harness: devin-cli/swe-2-high. `chainTip` → `stevenvitali/r6fix-55-research-budget`.
 - 2026-11-26 — **338_R6FIX.56 done — proxy MIG PROACTIVE zero-gap roll (run-time insert; F-R7UX.8-1; PR #432 on `stevenvitali/r6fix-56-proxy-mig-guard`, base main; unmerged — mergePolicy OPERATOR).** The MIG's default `OPPORTUNISTIC` updatePolicy never rolls a running VM on template change — pr-425/426 served the deleted hello template on :8443 (agent "JSON but not a Message"). Declared `updatePolicy`: `PROACTIVE`+`minimalAction REPLACE`+`SUBSTITUTE` with `maxSurgeFixed:1`/`maxUnavailableFixed:0` — `pulumi up` alone converges the proxy, gapless (substitute health-checks before the old drops; prod benefit: template-changing deploys now roll prod VMs). compute.test.ts posture leg 30/30. Live leg parked on the spend ruling (next natural repin). harness: devin-cli/swe-2-high. `chainTip` → `stevenvitali/r6fix-56-proxy-mig-guard`.
+- 2026-11-26 — **339_R6FIX.57 done — placeholder default → digest-pinned hello (run-time insert; F-R7UX.1-1; PR #433 on `stevenvitali/r6fix-57-pause-image`, base main; unmerged — mergePolicy OPERATOR).** gcr pruned `pause:3.9` (repo lists ≤3.2 + `deprecated-public-image-*`) — `pulumi up` sans image pins failed all Cloud Run creates on image-pull (pr-418/420 bring-ups). Default → `us-docker.pkg.dev/cloudrun/container/hello@sha256:9654ebfd…da0e`: digest survives tag GC (the failure mode), hello = prod's own `Pulumi.prod.yaml` override, and it listens on the port pause never did. Stage A: `@rhema/infra` typecheck+lint+vitest 155/155. Live leg parked — D-R6FIX.57-1 owes the next preview bring-up datum per the spend ruling; F-R7UX.1-1 stays OPEN until then. harness: devin-cli/swe-2-high. `chainTip` → `stevenvitali/r6fix-57-pause-image`.

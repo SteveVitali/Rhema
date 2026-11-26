@@ -44,8 +44,11 @@ const region = gcpConfig.get("region") ?? "us-central1";
 
 const rhemaConfig = new pulumi.Config("rhema");
 // A placeholder container image until each service ships real logic; overridden per-deploy with the
-// digest-pinned image from the `images` job (REQ-ARCH-39).
-const placeholderImage = rhemaConfig.get("placeholderImage") ?? "gcr.io/google-containers/pause:3.9";
+// digest-pinned image from the `images` job (REQ-ARCH-39). The default is itself a digest pin —
+// F-R7UX.1-1: a tag default (`gcr.io/google-containers/pause:3.9`) silently died when the registry
+// pruned old tags, so `pulumi up` without image pins could no longer realize Cloud Run; a digest
+// survives tag GC, and the hello image actually listens where pause could not.
+const placeholderImage = rhemaConfig.get("placeholderImage") ?? "us-docker.pkg.dev/cloudrun/container/hello@sha256:9654ebfdd31387ad4c1b79ca025ce55ed157d55abb29bdd6ec2231f754d8da0e";
 // The digest-pinned egress-proxy image + its DATABASE_URL (a Pulumi SECRET config — encrypted, not
 // committed). R6HRD.1: the config now seeds ONLY the `proxy-database-url` SM container (below) —
 // the proxy resolves `versions/latest` at boot via its instance SA, the same path the provider key
