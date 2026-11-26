@@ -1,0 +1,43 @@
+{
+  "base": "https://rhema-pr-423-web-b2081f4-tkbl73n3tq-uc.a.run.app",
+  "ts": "2026-11-25T22:15:50.928Z",
+  "legs": {
+    "create": {
+      "status": 302,
+      "location": "/p/untitled-2?created=scratch"
+    },
+    "pageMounted": true,
+    "menuOpened": true,
+    "initialRows": [
+      "Heading 2",
+      "Heading 3",
+      "Quote",
+      "Code block",
+      "Bulleted list",
+      "Numbered list",
+      "Task list",
+      "Divider",
+      "Figure",
+      "Table",
+      "Math block"
+    ],
+    "filteredRows": [
+      "h2",
+      "h3",
+      "tasks",
+      "divider"
+    ],
+    "activeAfterArrow": "h3",
+    "menuClosedAfterEnter": true,
+    "docAfterEnter": {
+      "hasH3": true,
+      "noSlash": true
+    },
+    "menuClosedAfterEscape": true,
+    "textKeptAfterEscape": true
+  },
+  "signinVia": "cache",
+  "email": "test+jr7ux6slash@rhema.tools",
+  "projectSlug": "untitled-2",
+  "verdict": "PASS"
+}

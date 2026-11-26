@@ -1581,6 +1581,9 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-placed", "conditional", "spa/ide/controller.ts", "the bubble's above/below placement (R7WRITE.1a's contract)"),
     a("data-format-link-input", "conditional", "spa/ide/controller.ts", "the contextual-⌘K link URL field"),
     a("data-format-link-apply", "conditional", "spa/ide/controller.ts", "the link form's apply control"),
+    // R7UX.6 (REQ-WRITE-3) — the `/` block-start menu (emitted only while the match is open).
+    a("data-slash-menu", "conditional", "spa/slash-menu.ts", "the slash menu box (emitted only while open)"),
+    a("data-slash-item", "conditional", "spa/slash-menu.ts", "one slash-menu row — a schema-derived block construct"),
     a("data-comment-input", "conditional", "spa/ide/controller.ts", "the Comment bubble's textarea (REQ-WRITE-2)"),
     a("data-comment-composer", "conditional", "spa/ide/controller.ts", "the Comment composer's bubble box"),
     a("data-comment-submit", "conditional", "spa/ide/controller.ts", "the Comment composer's Post control"),
