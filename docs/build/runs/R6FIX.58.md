@@ -1,5 +1,7 @@
 # R6FIX.58 — vendored SDK via _SDK_BUNDLE_URI (F-R7UX.9-1)
 
+Harness: devin-cli/swe-2-high (direct implementation, no subagent)
+
 - **Finding:** placeholder-SDK run-task images can't execute the agent — the vendored SDK is
   gitignored operator-held state, so clean-worktree submits produce no-engine images
   (`ERR_MODULE_NOT_FOUND` at `step.started`; pr-426 run `01M8BF6BJMSF2NC56ZG5E2ZYDS` attempt 2).
