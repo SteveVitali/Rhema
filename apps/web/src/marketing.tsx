@@ -31,7 +31,9 @@ function fmtCopy(template: string, vars: Record<string, string | number>): strin
   return template.replace(/\{(\w+)\}/g, (_, k: string) => (k in vars ? String(vars[k]) : `{${k}}`));
 }
 
-const SECTION = { marginTop: "48px" } as const;
+// 334_R7UX.11 — the marketing section rhythm: a wider gap than the beta shell's 48 px, and a
+// scroll margin so a sticky-header anchor lands the section title clear of the bar.
+const SECTION = { marginTop: "72px", scrollMarginTop: "80px" } as const;
 const MUTED = { color: "var(--shell-fg-muted)", fontSize: "14px", lineHeight: 1.6, maxWidth: "68ch" } as const;
 const CARD = {
   border: "1px solid var(--shell-border)",
@@ -57,23 +59,75 @@ const CTA_GHOST = {
 } as const;
 
 // ---- 249a R7PUB.1 (REQ-PUB-2) — the dedicated marketing chrome + the hero-recording slot ----
+// ---- 334_R7UX.11 (BL-89 / UXC-13 remainder) — the §15.1 nav set + section anchors + footer ----
 
 /**
- * The R7b marketing layout (REQ-PUB-2): a wider header/nav than the shared flat `Shell` — the
- * wordmark, the product nav (Pricing · the /demo entry · Sign in), and the primary CTA — over
- * the same public footer. The demo link is a document navigation like every other /demo entry
- * (S-14; `data-spa-native` + `data-demo-entry="nav"`).
+ * §15.1's marketing nav, as data. Every destination is a real route or a real `id` on a rendered
+ * section (`/#<section-id>` — absolute, so the same chrome serves /pricing without a dead
+ * fragment): "Product" opens the product story at the dossier, "Workflows" the lifecycle strip,
+ * "Changelog" the changelog+FAQ block. `demo` is the kept /demo entry — a document navigation
+ * like every other /demo link (S-14; `data-spa-native` + `data-demo-entry="nav"`). §15.1's
+ * "Docs" has no public docs surface to route to — it renders as a marked placeholder instead
+ * (`data-mk-nav-pending`; D-R7UX.11-1), never a dead href.
+ */
+const MARKETING_NAV: readonly {
+  key: string;
+  href: string;
+  label: () => string;
+  /** the /demo entry — a document navigation (S-14), never a client hop. */
+  demo?: boolean;
+}[] = [
+  { key: "product", href: "/#dossier", label: () => COPY.landing.nav.product },
+  { key: "workflows", href: "/#workflow", label: () => COPY.landing.nav.workflows },
+  { key: "demo", href: "/demo", label: () => COPY.footerDemo, demo: true },
+  { key: "pricing", href: "/pricing", label: () => COPY.landing.nav.pricing },
+  { key: "changelog", href: "/#changelog", label: () => COPY.landing.nav.changelog },
+];
+
+function MarketingNavLinks({ footer = false }: { footer?: boolean }): ReactNode {
+  return (
+    <>
+      {MARKETING_NAV.map((item) =>
+        item.demo === true ? (
+          <a key={item.key} href={item.href} data-spa-native data-demo-entry="nav" data-mk-nav-item={item.key}>
+            {item.label()}
+          </a>
+        ) : (
+          <a key={item.key} href={item.href} data-mk-nav-item={item.key}>
+            {item.label()}
+          </a>
+        ),
+      )}
+      {footer ? <a href="/#faq" data-mk-nav-item="faq">{COPY.landing.nav.faq}</a> : null}
+    </>
+  );
+}
+
+/**
+ * The §15.1 marketing layout (R7PUB.1 chrome, UXC-13's remainder): the wordmark, the full
+ * marketing nav (Product · Workflows · Demo · Pricing · Changelog · Docs-pending · Sign in ·
+ * [Get Rhēma free]) in a sticky top bar, the 1120-px marketing column, and a footer that
+ * repeats the section map ahead of the shared legal line. Distinct from the app shell — no
+ * sidebar, rail, or account chrome renders here — and distinct from the beta's flat `Shell`.
+ * Progressive enhancement only: every nav affordance is a plain anchor, so the no-JS SSR
+ * document carries the whole content and the nav needs no island. Signed-in readers (the
+ * REQ-PUB-1 /pricing arm) get the way back to /app in place of "Sign in".
  */
 function MarketingShell({ children }: { children: ReactNode }): ReactNode {
+  const { signedIn } = usePageData();
   return (
     <div className="ui-t-vh" style={{ display: "flex", flexDirection: "column" }}>
       <header
         data-mk-nav
         style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 20,
+          background: "var(--shell-bg)",
           display: "flex",
           alignItems: "center",
           flexWrap: "wrap",
-          gap: "16px",
+          gap: "18px",
           borderBottom: "1px solid var(--shell-border)",
           padding: "14px 24px",
         }}
@@ -81,20 +135,57 @@ function MarketingShell({ children }: { children: ReactNode }): ReactNode {
         <a href="/" className="ui-d-b" style={{ fontSize: "16px", color: "var(--shell-fg)", textDecoration: "none" }}>
           {COPY.brand}
         </a>
-        <nav style={{ display: "flex", alignItems: "center", gap: "16px", marginLeft: "auto", fontSize: "14px" }}>
-          <a href="/pricing">{COPY.landing.nav.pricing}</a>
-          <a href="/demo" data-spa-native data-demo-entry="nav">
-            {COPY.footerDemo}
-          </a>
-          <a href="/login">{COPY.landing.nav.signIn}</a>
-          <a href="/signup" style={CTA}>{COPY.landing.hero.ctaPrimary}</a>
+        <nav aria-label={COPY.landing.nav.navLabel} style={{ display: "flex", alignItems: "center", gap: "18px", marginLeft: "auto", fontSize: "14px", flexWrap: "wrap" }}>
+          <MarketingNavLinks />
+          {/* the marked Docs placeholder — §15.1's destination with no surface yet (never a 404) */}
+          <span
+            data-mk-nav-pending="docs"
+            title={COPY.landing.nav.docsPending}
+            style={{ color: "var(--shell-fg-faint)", cursor: "default" }}
+          >
+            {COPY.landing.nav.docs}
+          </span>
+          {signedIn === true ? (
+            <a href="/app" data-pricing-app data-mk-nav-item="signIn">
+              {COPY.pricing.backToApp}
+            </a>
+          ) : (
+            <a href="/login" data-mk-nav-item="signIn">{COPY.landing.nav.signIn}</a>
+          )}
+          <a href="/signup" data-mk-nav-item="cta" style={CTA}>{COPY.landing.nav.cta}</a>
         </nav>
       </header>
       <main style={{ flex: 1, width: "100%", maxWidth: "1120px", margin: "0 auto", padding: "24px 24px 0", boxSizing: "border-box" }}>
         {children}
       </main>
-      <footer style={{ borderTop: "1px solid var(--shell-border)", textAlign: "center", padding: "16px", fontSize: "12px", color: "var(--shell-fg-faint)" }}>
-        {publicFooter()}
+      <footer
+        data-mk-footer
+        style={{ borderTop: "1px solid var(--shell-border)", marginTop: "72px", padding: "28px 24px 16px" }}
+      >
+        <div
+          style={{
+            maxWidth: "1120px",
+            margin: "0 auto",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "18px",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+          }}
+        >
+          <div>
+            <a href="/" style={{ fontSize: "15px", fontWeight: 600, color: "var(--shell-fg)", textDecoration: "none" }}>
+              {COPY.brand}
+            </a>
+            <div style={{ fontSize: "12px", color: "var(--shell-fg-faint)", marginTop: "4px" }}>{COPY.tagline}</div>
+          </div>
+          <nav aria-label={COPY.landing.nav.navLabel} style={{ display: "flex", flexWrap: "wrap", gap: "14px", fontSize: "13px" }}>
+            <MarketingNavLinks footer />
+          </nav>
+        </div>
+        <div style={{ maxWidth: "1120px", margin: "18px auto 0", textAlign: "center", fontSize: "12px", color: "var(--shell-fg-faint)" }}>
+          {publicFooter()}
+        </div>
       </footer>
     </div>
   );
@@ -170,7 +261,7 @@ export function LandingPage(): ReactNode {
   return (
     <MarketingShell>
       {/* 1 — hero (the drop-zone IS the hero's primary affordance; REQ-GROWTH-1) */}
-      <section data-section="hero">
+      <section data-section="hero" id="hero">
         <div style={{ display: "flex", flexWrap: "wrap", gap: "32px", alignItems: "center" }}>
           <div style={{ flex: "1 1 380px", minWidth: "280px" }}>
         {/* §15.1 — the display headline sets in the paper serif (Literata, already the reading
@@ -232,7 +323,7 @@ export function LandingPage(): ReactNode {
       </section>
 
       {/* 2 — the dossier (the real sample board read; REQ-POS-11) */}
-      <section data-section="dossier" style={SECTION}>
+      <section data-section="dossier" id="dossier" style={SECTION}>
         <SectionTitle>{COPY.landing.dossier.heading}</SectionTitle>
         <ul style={{ ...MUTED, paddingLeft: "18px" }}>
           {COPY.landing.dossier.bullets.map((b) => (
@@ -250,7 +341,7 @@ export function LandingPage(): ReactNode {
       </section>
 
       {/* 3 — the workflow strip (lifecycle order; Draft's authorship frame + approval gate named) */}
-      <section data-section="workflow" style={SECTION}>
+      <section data-section="workflow" id="workflow" style={SECTION}>
         <SectionTitle>{COPY.landing.workflow.heading}</SectionTitle>
         <ol style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px", padding: 0, listStyle: "none" }}>
           {COPY.landing.workflow.steps.map((s) => (
@@ -264,37 +355,37 @@ export function LandingPage(): ReactNode {
       </section>
 
       {/* 4 — the author's seat */}
-      <section data-section="seat" style={SECTION}>
+      <section data-section="seat" id="seat" style={SECTION}>
         <SectionTitle>{COPY.landing.seat.heading}</SectionTitle>
         <p style={MUTED}>{COPY.landing.seat.body}</p>
       </section>
 
       {/* 5 — voices ("a register, not a person" + the staleness pill's promise) */}
-      <section data-section="voices" style={SECTION}>
+      <section data-section="voices" id="voices" style={SECTION}>
         <SectionTitle>{COPY.landing.voices.heading}</SectionTitle>
         <p style={MUTED}>{COPY.landing.voices.body}</p>
       </section>
 
       {/* 6 — live runs (the estimate-and-cap contract, on the marketing page) */}
-      <section data-section="runs" style={SECTION}>
+      <section data-section="runs" id="runs" style={SECTION}>
         <SectionTitle>{COPY.landing.runs.heading}</SectionTitle>
         <p style={MUTED}>{COPY.landing.runs.body}</p>
       </section>
 
       {/* 7 — models ("Stay on the frontier"; "Powered by Claude" permitted) */}
-      <section data-section="models" style={SECTION}>
+      <section data-section="models" id="models" style={SECTION}>
         <SectionTitle>{COPY.landing.models.heading}</SectionTitle>
         <p style={MUTED}>{COPY.landing.models.body}</p>
       </section>
 
       {/* 8 — proof (measured claims only — no testimonials, no logos; REQ-GROWTH-5 amended) */}
-      <section data-section="proof" style={SECTION}>
+      <section data-section="proof" id="proof" style={SECTION}>
         <SectionTitle>{COPY.landing.proof.heading}</SectionTitle>
         <p style={MUTED}>{COPY.landing.proof.body}</p>
       </section>
 
       {/* 9 — pricing (the same pricing.json as /pricing; the Essay card leads — REQ-POS-2) */}
-      <section data-section="pricing" style={SECTION}>
+      <section data-section="pricing" id="pricing" style={SECTION}>
         <SectionTitle>{COPY.landing.pricing.heading}</SectionTitle>
         <p style={MUTED}>{COPY.landing.pricing.body}</p>
         {essayCard ? (
@@ -318,11 +409,11 @@ export function LandingPage(): ReactNode {
       </section>
 
       {/* 10 — changelog + FAQ */}
-      <section data-section="changelog" style={SECTION}>
+      <section data-section="changelog" id="changelog" style={SECTION}>
         <SectionTitle>{COPY.landing.changelog.heading}</SectionTitle>
         <p style={MUTED}>{COPY.landing.changelog.body}</p>
       </section>
-      <section data-section="faq" style={SECTION}>
+      <section data-section="faq" id="faq" style={SECTION}>
         <SectionTitle>{COPY.landing.faq.heading}</SectionTitle>
         {/* REQ-PUB-2 — the FAQ rides the Accordion's `.ui-accordion*` visual system; on the
             no-JS funnel the items ARE styled native <details> (the KIT-1 fallback), so the
@@ -355,7 +446,7 @@ export function LandingPage(): ReactNode {
       </section>
 
       {/* 11 — final CTA */}
-      <section data-section="final-cta" style={{ ...SECTION, marginBottom: "48px" }}>
+      <section data-section="final-cta" id="final-cta" style={{ ...SECTION, marginBottom: "48px" }}>
         <SectionTitle>{COPY.landing.finalCta.heading}</SectionTitle>
         <p style={MUTED}>{COPY.landing.finalCta.body}</p>
         <p style={{ marginTop: "16px" }}>
@@ -376,25 +467,13 @@ export function LandingPage(): ReactNode {
  * a document navigation, so the nav swaps its sign-in affordance for the way back to /app.
  */
 export function PricingPage(): ReactNode {
-  const { pricing: cycle, claims, signedIn } = usePageData();
+  const { pricing: cycle, claims } = usePageData();
   const data = buildPricingPageData(claims, surfacePricer());
   const annual = cycle?.annual === true;
   return (
-    <Shell
-      brand={COPY.brand}
-      tagline={COPY.tagline}
-      nav={
-        <>
-          <a href="/" style={{ marginRight: "16px" }}>{COPY.brand}</a>
-          {signedIn === true ? (
-            <a href="/app" data-pricing-app style={{ marginRight: "16px" }}>{COPY.pricing.backToApp}</a>
-          ) : (
-            <a href="/login" style={{ marginRight: "16px" }}>{COPY.landing.nav.signIn}</a>
-          )}
-        </>
-      }
-      footer={publicFooter()}
-    >
+    // 334_R7UX.11 — /pricing rides the same marketing chrome as the landing (the REQ-PUB-1
+    // signed-in "Back to the app" arm is the shell's own signedIn swap).
+    <MarketingShell>
       <PageTitle>{COPY.pricing.heading}</PageTitle>
       <p style={MUTED}>{COPY.pricing.lede}</p>
       <p style={MUTED}>{fmtCopy(COPY.pricing.annualSavingLine, { pct: data.annualSavingsPct })}</p>
@@ -579,7 +658,7 @@ export function PricingPage(): ReactNode {
           </details>
         ))}
       </section>
-    </Shell>
+    </MarketingShell>
   );
 }
 

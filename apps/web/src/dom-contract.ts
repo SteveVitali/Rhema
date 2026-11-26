@@ -215,6 +215,9 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     // ---- 249a R7PUB.1 (REQ-PUB-1/2; REQ-GROWTH-3) — the marketing chrome, serif display
     // headline, hero-recording slot, FAQ accordion, and the signed-in /pricing nav ----
     a("data-mk-nav", "conditional", "marketing.tsx MarketingShell", "the dedicated marketing nav (R7PUB.1)"),
+    a("data-mk-nav-item", "conditional", "marketing.tsx MarketingShell", "334_R7UX.11 — one §15.1 nav anchor, value = the item key (product/workflows/demo/pricing/changelog/faq/signIn/cta)"),
+    a("data-mk-nav-pending", "conditional", "marketing.tsx MarketingShell", "334_R7UX.11 — a marked non-link nav placeholder, value = the pending destination (docs)"),
+    a("data-mk-footer", "conditional", "marketing.tsx MarketingShell", "334_R7UX.11 — the marketing footer (brand + section map + the shared legal line)"),
     a("data-display-headline", "conditional", "marketing.tsx LandingPage", "the §15.1 serif display h1"),
     a("data-hero-slot", "conditional", "marketing.tsx HeroRecordingSlot", "the reserved 16:9 hero box — identical in both states (CLS 0)"),
     a("data-hero-video", "conditional", "marketing.tsx HeroRecordingSlot", "the clip arm — muted/loop/playsinline/lazy; only while the declared asset exists"),
