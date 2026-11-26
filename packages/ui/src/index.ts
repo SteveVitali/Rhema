@@ -181,6 +181,7 @@ export type {
   ChatDeskLabels,
   ChatDeskEndpoints,
   ChatLiveWire,
+  ChatStreamWire,
   ChatThreadWire,
   ChatTurnWire,
   ChatMessageWire,

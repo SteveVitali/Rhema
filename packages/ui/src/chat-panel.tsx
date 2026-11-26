@@ -188,6 +188,20 @@ export interface ChatDeskLabels {
 }
 
 /**
+ * 332_R7UX.9 (BL-99b; ADR-137) — one in-flight token stream bound to a pending turn. `runId` is
+ * the turn's RUN id (what a transcript row's `id` carries and what the run-event tail is keyed
+ * on); `turnId` is the `chat.token` payload's own id (the client-side buffer's dedup key); `text`
+ * is the accumulated plain-text deltas, already frame-coalesced upstream. The stream renders
+ * un-parsed inside the pending bubble — the canonical reply/markdown wins on completion and a
+ * zero-token turn is exactly today's pending render.
+ */
+export interface ChatStreamWire {
+  readonly runId: string;
+  readonly turnId: string;
+  readonly text: string;
+}
+
+/**
  * The live arm's props — absent ⇒ the pure SSR/no-JS render (native form posts). Present ⇒ the
  * SPA composer intercepts the submit and issues the JSON fetch itself (REQ-RELOAD-1).
  */
@@ -211,6 +225,9 @@ export interface ChatLiveWire {
   readonly onTierChange?: (tier: string) => void;
   /** the live meter's spent credits (usage.tick-fed); falls back to the strip. */
   readonly spentLive?: number;
+  /** 332_R7UX.9 — the in-flight token stream for the pending turn (absent ⇒ the pending bubble
+   *  keeps the working line exactly as before). */
+  readonly streamed?: ChatStreamWire | null;
   /** disables the composer with the shown reason (demo boot / read-only project). */
   readonly disabledReason?: string;
 }
@@ -268,6 +285,14 @@ function TurnBubbles({
 }): ReactNode {
   const failed = t.state === "failed" || t.state === "cancelled";
   const pending = !TERMINAL_STATES.has(t.state);
+  // R7UX.9 — the stream binds to THIS turn only through the run id (a transcript row's `id` IS
+  // the run's; the payload's own `turnId` is the buffer key, never the row key). The canonical
+  // `reply` outranks it unconditionally — the completion swap renders the record, not the stream.
+  const streaming =
+    t.reply == null &&
+    live?.streamed != null &&
+    live.streamed.runId === t.id &&
+    live.streamed.text !== "";
   return (
     <li className="chat-turn" data-chat-turn={t.id}>
       {t.userText != null && t.userText !== "" ? (
@@ -276,10 +301,24 @@ function TurnBubbles({
           {renderAssistantText(t.userText, `u-${t.id}`)}
         </div>
       ) : null}
-      <div className="chat-bubble chat-bubble-assistant" data-chat-bubble="assistant">
+      <div
+        className="chat-bubble chat-bubble-assistant"
+        data-chat-bubble="assistant"
+        {...(streaming ? { "data-streaming": "true" } : {})}
+      >
         <span className="chat-bubble-who">{L.assistantLabel}</span>
         {t.reply != null && t.reply !== "" ? (
           renderAssistantText(t.reply, `a-${t.id}`)
+        ) : streaming ? (
+          // Plain text while in flight (no per-token markdown parse — ADR-137); aria-hidden so the
+          // aria-live log announces the CANONICAL bubble once at completion, not every frame.
+          <span
+            className="chat-bubble-text chat-bubble-stream"
+            data-chat-stream={t.id}
+            aria-hidden="true"
+          >
+            {live?.streamed?.text}
+          </span>
         ) : pending ? (
           <span className="chat-bubble-pending">{L.progressWorking}</span>
         ) : failed ? (
@@ -355,6 +394,12 @@ export function ChatDesk(props: ChatDeskProps): ReactNode {
   // live reading, never an estimate.
   const spent = live?.spentLive ?? m.strip?.spentCredits ?? 0;
   const cap = m.strip?.capCredits ?? m.budgets.credits;
+  // R7UX.9 — the stream renders in the optimistic bubble ONLY until the twin refetch lands the
+  // real turn row (which then carries it by runId) — never in both at once.
+  const optimisticStreaming =
+    live?.streamed != null &&
+    live.streamed.text !== "" &&
+    !m.turns.some((t) => t.id === live.streamed?.runId);
 
   const onComposerSubmit = (e: { preventDefault(): void; currentTarget: unknown }): void => {
     if (live?.onSend == null) return; // no live arm — the native post happens
@@ -436,11 +481,25 @@ export function ChatDesk(props: ChatDeskProps): ReactNode {
                     <span className="chat-bubble-who">{L.youLabel}</span>
                     {renderAssistantText(live.optimistic, "opt")}
                   </div>
-                  <div className="chat-bubble chat-bubble-assistant" data-chat-bubble="assistant">
+                  <div
+                    className="chat-bubble chat-bubble-assistant"
+                    data-chat-bubble="assistant"
+                    {...(optimisticStreaming ? { "data-streaming": "true" } : {})}
+                  >
                     <span className="chat-bubble-who">{L.assistantLabel}</span>
-                    <span className="chat-bubble-pending" data-chat-progress>
-                      {live.progress ?? L.progressWorking}
-                    </span>
+                    {optimisticStreaming ? (
+                      <span
+                        className="chat-bubble-text chat-bubble-stream"
+                        data-chat-stream="optimistic"
+                        aria-hidden="true"
+                      >
+                        {live?.streamed?.text}
+                      </span>
+                    ) : (
+                      <span className="chat-bubble-pending" data-chat-progress>
+                        {live.progress ?? L.progressWorking}
+                      </span>
+                    )}
                   </div>
                 </li>
               ) : null}

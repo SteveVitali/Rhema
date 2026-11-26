@@ -103,6 +103,10 @@ export function ideCss(): string {
     ".chat-bubble-text { margin: 0 0 4px; font-size: 13px; white-space: pre-wrap; }",
     ".chat-bubble-text:last-child { margin-bottom: 0; }",
     ".chat-bubble-pending { color: var(--shell-fg-muted); font-size: 12px; }",
+    // R7UX.9 (BL-99b; ADR-137) — the in-flight stream: plain text (pre-wrap like the canonical
+    // bubble) inside a dashed-border bubble so an unfinished answer reads as transient.
+    ".chat-bubble-stream { display: block; white-space: pre-wrap; }",
+    ".chat-bubble-assistant[data-streaming='true'] { border-style: dashed; }",
     ".chat-bubble-failed { color: var(--state-needs-you); font-size: 12px; display: inline-flex; gap: 8px; align-items: center; }",
     ".chat-citations { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; align-items: center; }",
     ".chat-citations-label { font-size: 11px; color: var(--shell-fg-faint); }",
