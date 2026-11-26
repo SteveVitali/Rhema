@@ -150,6 +150,10 @@ Budget: ~700 changed lines incl. tests (M) — stop + request a split past it.
   needed; the other `serverless-ipv4-cloudrun-*` addresses in the project belong
   to other stacks) → `rm` deregistered; `Pulumi.pr-427.yaml` restored to the
   tree per the pr-425/426 precedent.
-- 2026-11-26 — CI read on PR head `74c2fc3e` to follow on the records commit.
+- 2026-11-26 — CI read on PR head `71318766` (records head; run 45830502470):
+  all 7 legs pass — fast-path 55s, contracts 23s, public-safe 39s,
+  integration 2m47s, images 9m36s, typecheck/lint/unit 28m0s, ci-pass
+  anchor 16s. (The two code-head runs also passed: `d11d0e20` run
+  45807265688, `74c2fc3e` run 45815304493.)
 
-Closed: 2026-11-26T13:35Z
+Closed: 2026-11-26T14:15Z
