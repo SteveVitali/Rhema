@@ -3,7 +3,7 @@
 Harness: devin-cli/swe-2-high/subagent
 Skills: implement-spec (full)
 Started: 2026-11-26T00:19Z
-Closed: (pending)
+Closed: 2026-11-26T03:28Z (records commit; preview fully torn down)
 Spec: docs/tickets/330_R7UX.7__pane-resize.md
 Base: `stevenvitali/r7ux-6-slash-menu` @ `ba31e06b` (worktree tip at dispatch — carries the
 operator's mid-run main merge; PR base stays `stevenvitali/r7ux-6-slash-menu`, unmerged — OPERATOR)
@@ -128,6 +128,38 @@ Budget: ~400 changed lines incl. tests (S–M) — stop past it.
 - **Chain event at closeout:** the operator merged #423 (r7ux-6) to `main` at 00:12Z —
   `ba31e06b` (this branch's records-only base) sits on the merged branch, so this PR's base
   is `main` (ticket said r7ux-6 — now merged; same wave-bottom-up pattern as #423 itself).
+- Phase 5.3 preview `pr-424` (owned lifecycle): `init` → `config` (gitSha `d63533cb…`,
+  protocolsVersion `0.4.0+07b1ad37ddaaa6f4` via `scripts/compute-protocols-version.mjs
+  --bare`, placeholder image `us-docker.pkg.dev/cloudrun/container/hello` — the `pause:3.9`
+  default is unpullable, the F-R7UX.1-1-class pin, oauth id, apparmor `Localhost`/`rhema-run-task`,
+  gcp:project/region) → `resend-pull` (nonprodResendVersion 1 + `previews@rhema.tools`) →
+  `pulumi install` → `up` — `ciPreviewSweepBucketsList` IAMCustomRole `pulumi import`ed then
+  `state delete`d (F-R7UX.1-1 class; delete the IAMMember first, then the role) → Cloud Build
+  `cb96be2d` all-10 @ `d63533cb` (`_ALLOW_PLACEHOLDER_SDK=1`) → digests pinned
+  (`serviceImages` + `runTaskImageDigest` + `proxyImage`) → api rev `00002` terminal
+  pre-migrate ("database rhema does not exist", R7DEP.2 class) → migrate Job
+  `rhema-pr-424-migrate-a7e635e` succeeded → `gcloud run deploy` forced rev `00003-lxm`
+  serving 100% → `appBaseUrl`/`apiPublicUrl` pinned → `up` converged (198 resources) →
+  `seed-invite` `prv-424-test` (exec `…-62l86`). Provenance: api `/healthz/` `gitSha
+  d63533cb…` = PR head.
+- Headless walk **PASS** at `https://rhema-pr-424-web-aa02bfb-tkbl73n3tq-uc.a.run.app`
+  (`docs/build/reports/2026-11-26_r7ux7-pane-walk/`): JourneySessions magic-link
+  `test+jr7ux7pane@rhema.tools` (signinVia mailbox, invite `prv-424-test`) → POST `/app/new`
+  scratch → `/p/untitled` @1440 docked → initial `--panel-w`/`aria-valuenow` 320 → real
+  pointer drag on `[data-ide-handle="panel"]` → 400 and the `rhema:panes:v2:<uid>:<pid>`
+  blob carries `panelWidth:400` (`split-custom.png`) → reload → 400 renders back
+  (`split-persisted.png`) → `dblclick` → 320 and the `panelWidth` key is ABSENT from the
+  blob (`panelOpen:true` retained — the drag's legitimate open intent) (`split-reset.png`)
+  → a second reload stays 320, key still absent (`walk-facts.json`, `verdict: PASS`). The
+  `.state` session-cache dir (live cookie, P-1) was deleted before the records commit.
+- Teardown: `destroy` pass 1 deleted 136 (18m44s — AlloyDB 359s, Redis 165s, nodepool 234s,
+  GKE 305s) → pass 2 +18 → `--continue-on-error` +57 → `rhema-pr-424-private-app` subnet
+  pinned by the Google-owned `serverless-ipv4-cloudrun-1795655204083942406` reservation
+  (in-use 400, F-OPS.1-12 GC-lag class) → the reservation released ~03:27Z (~1h41m after
+  services went down, inside the sibling 50min–2h02m window) → final `destroy` deleted the
+  last 3 resources in 35s (subnet → net → stack) → `preview-orphan-sweep.mjs` CLEAN (zero
+  live `pr-<n>` resources) → `preview-stack.mjs rm pr-424` deregistered the stack and the
+  untracked `Pulumi.pr-424.yaml` residue was removed from the worktree.
 
 ## Gap table
 
@@ -139,15 +171,62 @@ Budget: ~400 changed lines incl. tests (S–M) — stop past it.
 | "ReadOnly/demo … same visual persistence … nothing user-visible beyond the local pref" | demo-boot leg: drag writes `rhema:panes:v2:demo:p-alpha`, zero non-GET fetches | MET (DOM leg) |
 | "occlusion legs' selectors unchanged" | `title` attr only; `data-ide-handle`/`role="separator"`/aria range byte-identical; `u3-occlusion.local.test.ts` 3/3 | MET |
 | "pnpm turbo build lint typecheck + web suite + checks green" | §Phase-5 progress entry | MET |
-| "preview walk: drag → reload → persists → dbl-click resets (screenshots)" | pending Phase 5.3 on the PR head | OPEN → `D-R7UX.7-1` at close |
+| "preview walk: drag → reload → persists → dbl-click resets (screenshots)" | `pr-424` headless walk at head `d63533cb` — drag→400+blob, reload→400, dblclick→320+key absent, second reload stable; 3 PNGs + `walk-facts.json` | MET (preview walk PASS; deployed-tip re-walk → `D-R7UX.7-1`) |
 
 ## Evidence log
 
 - Stage A (this commit): turbo 138/138 · vitest 95/95 focused + ide-chrome 47/47 ·
   occlusion 3/3 · dom-contract/spa-env/spa-budget OK · web suite green (5 contention
   timeouts resolved on re-run — 0 real failures).
-- Preview (records commit): `docs/build/reports/<date>_r7ux7-pane-walk/` — pending.
+- Preview (records commit): `docs/build/reports/2026-11-26_r7ux7-pane-walk/` —
+  `walk.mjs` + `walk-facts.json` (`verdict: PASS`) + `split-custom.png` /
+  `split-persisted.png` / `split-reset.png`; provenance `/healthz/` `gitSha d63533cb…`.
 
 ## Evidence report
 
-_(filled at close)_
+- **Ticket:** 330_R7UX.7 (BL-98 / REQ-PANE-1) — the `[data-ide-handle]` panel split
+  persists across sessions through the existing `rhema:panes:v2` codec, and a double-click
+  snaps it back to the default while CLEARING the stored pref (the key leaves the blob).
+- **Change:** `panelWidth?: number` three-state like `panelOpen` (absent ⇒
+  `DEFAULT_PANEL_WIDTH` = 320); `DEFAULT_PANE_STATE` drops the key; v2 parse keeps absence;
+  v1 migration keeps a concrete width; serialize never re-emits a cleared key; controller
+  `?? DEFAULT_PANEL_WIDTH` at the three read sites + delegated `dblclick` on
+  `[data-ide-handle]` — docked ⇒ `commit({panelWidth: undefined})`, overlay/sheet ⇒
+  session-scoped reset (REQ-PANE-2 preserved); `title={L.panel.resizeReset}` on the
+  separator. ~300 changed lines incl. tests (S–M budget).
+- **Stage A:** `pnpm turbo build lint typecheck` 138/138 green · `ide.test.ts` 36/36 ·
+  `ide-chrome.dom.test.tsx` 47/47 (all 5 BL-98 legs: drag→blob, remount→stored split,
+  dblclick→320+key-gone+never-reserialized+remount, no-pref harmless, 1100px overlay
+  session-scope, demo boot zero non-GET) · `ide-shell` 8/8 · `review-tabs` 4/4 ·
+  `u3-occlusion.local.test.ts` 3/3 real Chromium (selectors byte-identical) ·
+  `check:dom-contract`/`spa-env`/`spa-budget` OK — the +33.7 kB WARN is the standing
+  cumulative drift vs `04a4e98b` disclosed on every R7UX row (this ticket ≈ +0 kB) · web
+  suite green (3 first-pass `settings.dom` timeouts = load-avg ~47 contention; file re-ran
+  37/37 clean — zero real failures) · gitleaks on staged diff clean.
+- **Stage A + preview walk (the ticket's Live stage):** owned `pr-424` preview at the PR
+  head `d63533cb` (`/healthz/` provenance) — headless signed-in walk PASS: drag →
+  `--panel-w`/`aria-valuenow` 400 + blob `panelWidth:400`; reload → 400; `dblclick` → 320
+  and the `panelWidth` key absent; second reload → 320, key still absent. Evidence:
+  `docs/build/reports/2026-11-26_r7ux7-pane-walk/` (3 PNGs + `walk-facts.json`).
+- **Preview lifecycle (GD-PREVIEW.R7):** `init` → `config` → `resend-pull` → `up`
+  (converge passes per §Progress: `ciPreviewSweepBucketsList` import + `state delete`,
+  placeholder `pause:3.9`→hello pin, gcp:project/region, AlertPolicy 404s self-healed,
+  Cloud Build `cb96be2d` all-10 + digest pins, api rev `00002` pre-migrate → migrate
+  `…-a7e635e` → rev `00003-lxm` forced — R7DEP.2 class) → `seed-invite` `prv-424-test` →
+  walk → `destroy` 136+18+57 — `private-app` subnet pinned by Google-owned
+  `serverless-ipv4-cloudrun-1795655204083942406` until its GC release (F-OPS.1-12 class;
+  sibling waits ran ~50 min–2h02m) → final `destroy` pass deleted the last 4 (subnet + net
+  + stack + provider) → `preview-orphan-sweep.mjs` CLEAN (zero `pr-<n>` resources) →
+  `preview-stack.mjs rm pr-424` deregistered. `Pulumi.pr-424.yaml` removed by `rm`.
+- **Records:** `docs/build/pr/330_R7UX.7.md` (PR #424 body) · BUILD_INDEX row 370 ·
+  LEDGER CURRENT STATE (`nextTicket → 331_R7UX.8`, `lastCompleted → 330_R7UX.7`,
+  `chainTip → stevenvitali/r7ux-7-pane-resize`) + PHASE LOG entry · `D-R7UX.7-1`
+  appended (Stage-B re-walk of the persisted split + reset at a deployed tip) · BACKLOG
+  BL-98 pointer → `330_R7UX.7 (PR #424, unmerged)` · append-only vs `origin/main` OK ·
+  check-build-memory: the 3 pre-existing dup-id baseline violations only.
+- **PR:** #424 `stevenvitali/r7ux-7-pane-resize` → `main` (ticket-named base r7ux-6 was
+  merged by the operator at 00:12Z mid-dispatch), head `d63533cb` — unmerged, mergePolicy
+  OPERATOR.
+- **ci:** pass #424@`d63533cb` (run 45731694565 — ci-pass anchor, contracts, fast-path,
+  images 9m50s, integration, public-safe, typecheck/lint/unit 26m37s — all 7 legs);
+  records-head read pending the records commit.
