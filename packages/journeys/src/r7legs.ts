@@ -22,7 +22,7 @@ import {
 } from "./steps.js";
 import { newMarkedContext } from "./marked-context.js";
 import { u3ProbePage, u3UnscrimmedViolation } from "./u3-probe.js";
-import { U4_SURFACES, assertU4Clean, dossierRunIdFromTimeline, u4ProbePage } from "./u4-probe.js";
+import { U4_SURFACES, assertU4Clean, dossierTargetFromProjectList, u4ProbePage } from "./u4-probe.js";
 import { assertActionable } from "./occlusion.js";
 
 // R7DEM.4b — helpers shared by the two demo legs. Assertions derive every expectation from
@@ -1667,28 +1667,36 @@ const U4_CONTROLS: StepFn = async (ctx) => {
   const href = (await projectLink.getAttribute("href")) ?? "";
   const slug = /\/p\/([^/]+)/.exec(href)?.[1] ?? "";
   if (slug === "") throw new Error(`the project entry's href ${href} is not a /p/<slug> link`);
-  // the dossier's run id rides the project's own twin (harness-side discovery, not a page
-  // emission). `page.request` carries the browser context's session — a bare Node `fetch`
-  // is anonymous and the tenant twin 401s (R6FIX.54: runId silently stayed "" and the
-  // surface probed the NotFound leaf, control-clean, until R6FIX.44's guard caught it).
-  let runId = "";
+  // the dossier's run id rides the `/bff/app` project-list rows — the dossier-card row
+  // fact the sidebar itself uses (harness-side discovery, not a page emission).
+  // `page.request` carries the browser context's session — a bare Node `fetch` is
+  // anonymous and 401s; the `/timeline` twin this once fetched is demo-only and 404s
+  // for tenants (R6FIX.54: runId silently stayed "" and the surface probed the NotFound
+  // leaf, control-clean, until R6FIX.44's guard caught it).
+  let dossierTarget: { slug: string; runId: string } | null = null;
   try {
-    const r = await page.request.get(`${ctx.webBaseUrl}/bff/p/${slug}/timeline`, {
+    const r = await page.request.get(`${ctx.webBaseUrl}/bff/app`, {
       headers: { accept: "application/json" },
     });
     if (r.ok()) {
-      runId = dossierRunIdFromTimeline(await r.json());
+      const body = (await r.json()) as {
+        rows?: readonly { slug?: string; latestReviewRunId?: string | null }[];
+      };
+      dossierTarget = dossierTargetFromProjectList(body.rows, slug);
     }
   } catch {
-    runId = "";
+    dossierTarget = null;
   }
   const failures: string[] = [];
   for (const surface of U4_SURFACES) {
-    if (surface.path.includes(":runId") && runId === "") {
+    const needsRun = surface.path.includes(":runId");
+    if (needsRun && dossierTarget == null) {
       failures.push(`${surface.id}: no dossier run id discoverable — the leg owes a seeded run`);
       continue;
     }
-    const path = surface.path.replace(":p", slug).replace(":runId", runId);
+    const path = surface.path
+      .replace(":p", needsRun ? dossierTarget!.slug : slug)
+      .replace(":runId", dossierTarget?.runId ?? "");
     try {
       await gotoOk(page, `${ctx.webBaseUrl}${path}?src=jrn`, ctx);
       await page
