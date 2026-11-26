@@ -583,6 +583,22 @@ describe("GET /p/:slug/v/:n/diff/:m mounted (SPA.23)", () => {
     await axeRun(main);
   });
 
+  it("BL-88 — the edited hunk pair marks the changed words inside the tinted cells", async () => {
+    const f = makeFetch();
+    await mountAt(`/p/${SLUG}/v/6/diff/7`, bootFor(SPA_EDITOR), f.impl);
+    const main = el()!;
+    await vi.waitFor(() => expect(main.querySelector("[data-hunk]")).not.toBeNull());
+    // the fixture's "Old text." → "Body text." pair: deleted/inserted words marked, the shared
+    // "text." span unmarked, both inside the paragraph-tint cells.
+    const del = main.querySelector("del[data-diff-word='deleted']");
+    const ins = main.querySelector("ins[data-diff-word='inserted']");
+    expect(del?.textContent).toBe("Old");
+    expect(ins?.textContent).toBe("Body");
+    expect(del?.closest("[data-diff-side]")?.getAttribute("data-diff-side")).toBe("before");
+    expect(ins?.closest("[data-diff-side]")?.getAttribute("data-diff-side")).toBe("after");
+    expect(main.querySelector("[data-hunk]")?.textContent).toContain("text.");
+  });
+
   it("REQ-TST-2 parity — every compare hook the SSR compare emits on this fixture is emitted", async () => {
     const ssr = renderToStaticMarkup(
       <PageDataContext.Provider

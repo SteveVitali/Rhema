@@ -1,5 +1,6 @@
-import type { ReactNode } from "react";
-import type { BlockDiff, DiffBlock, DiffHunk } from "@rhema/findings-core";
+import { Fragment, type ReactNode } from "react";
+import type { BlockDiff, DiffBlock, DiffHunk, WordRun } from "@rhema/findings-core";
+import { diffWords, wordPairable } from "@rhema/findings-core";
 import type { WhatChangedView as WhatChangedViewModel } from "@rhema/findings-core";
 import { WhatChangedView, type WhatChangedLabels } from "./what-changed.js";
 import { Button } from "./primitives/button.js";
@@ -43,7 +44,58 @@ export interface CompareProps {
   readonly labels: CompareLabels;
 }
 
-function BlockCell({ block, side }: { block: DiffBlock | null; side: "before" | "after" }): ReactNode {
+/** The paired word marks for one before/after block row (333_R7UX.10, BL-88): the run set is the
+ *  prosemirror-changeset 1.x `Change` shape, shared between the row's two cells — the before cell
+ *  strikes `deleted`/`edited` A-spans, the after cell underlines `inserted`/`edited` B-spans. */
+interface WordMarks {
+  readonly beforeText: string;
+  readonly afterText: string;
+  readonly runs: readonly WordRun[];
+}
+
+/** Word marks only where the pair is a real edit (the hunk's own coverage floor) — below it the
+ *  paragraphs are a remove+add and per-word marks would only restate the block tint. */
+function wordMarks(beforeText: string, afterText: string): WordMarks | undefined {
+  if (!wordPairable(beforeText, afterText)) return undefined;
+  const runs = diffWords(beforeText, afterText);
+  return runs.some((r) => r.kind !== "same") ? { beforeText, afterText, runs } : undefined;
+}
+
+function MarkedCellText({ marks, side }: { marks: WordMarks; side: "before" | "after" }): ReactNode {
+  const src = side === "before" ? marks.beforeText : marks.afterText;
+  return marks.runs.map((r, i) => {
+    const text = src.slice(side === "before" ? r.fromA : r.fromB, side === "before" ? r.toA : r.toB);
+    if (text === "") return null;
+    if (r.kind === "same") return <Fragment key={i}>{text}</Fragment>;
+    return side === "before" ? (
+      <del
+        key={i}
+        data-diff-word="deleted"
+        style={{ textDecoration: "line-through", textDecorationColor: "var(--sev-major)", textDecorationThickness: "1.5px" }}
+      >
+        {text}
+      </del>
+    ) : (
+      <ins
+        key={i}
+        data-diff-word="inserted"
+        style={{ textDecoration: "underline", textDecorationColor: "var(--accent)", textDecorationThickness: "1.5px", textUnderlineOffset: "2px" }}
+      >
+        {text}
+      </ins>
+    );
+  });
+}
+
+function BlockCell({
+  block,
+  side,
+  marks,
+}: {
+  block: DiffBlock | null;
+  side: "before" | "after";
+  marks?: WordMarks;
+}): ReactNode {
   return (
     <div
       data-diff-block={block?.blockId ?? "empty"}
@@ -56,7 +108,7 @@ function BlockCell({ block, side }: { block: DiffBlock | null; side: "before" | 
           : "2px solid transparent",
       }}
     >
-      {block?.text ?? ""}
+      {marks != null && block != null ? <MarkedCellText marks={marks} side={side} /> : (block?.text ?? "")}
     </div>
   );
 }
@@ -82,12 +134,17 @@ function SideBySide({
             <div className="ui-d-cap ui-d-cm ui-d-s">
               {labels.hunkKindLabel(h.kind)}
             </div>
-            {Array.from({ length: rows }, (_, i) => (
-              <div key={i} className="ui-d-acts" style={{ display: "flex" }}>
-                <BlockCell block={h.before[i] ?? null} side="before" />
-                <BlockCell block={h.after[i] ?? null} side="after" />
-              </div>
-            ))}
+            {Array.from({ length: rows }, (_, i) => {
+              const b = h.before[i] ?? null;
+              const a = h.after[i] ?? null;
+              const marks = b != null && a != null ? wordMarks(b.text, a.text) : undefined;
+              return (
+                <div key={i} className="ui-d-acts" style={{ display: "flex" }}>
+                  <BlockCell block={b} side="before" {...(marks ? { marks } : {})} />
+                  <BlockCell block={a} side="after" {...(marks ? { marks } : {})} />
+                </div>
+              );
+            })}
             {commentFormAction ? (
               <form method="post" action={commentFormAction(h.id)} data-hunk-comment={h.id} className="ui-d-mt6 ui-d-g6" style={{ display: "flex" }}>
                 <TextField
@@ -128,12 +185,34 @@ function InlineDiff({
           <div className="ui-d-cap ui-d-cm ui-d-s">
             {labels.hunkKindLabel(h.kind)}
           </div>
-          {h.before.map((b) => (
-            <BlockCell key={`b-${b.blockId}`} block={b} side="before" />
-          ))}
-          {h.after.map((b) => (
-            <BlockCell key={`a-${b.blockId}`} block={b} side="after" />
-          ))}
+          {(() => {
+            // positional pairing inside the hunk (the same seam the side-layout rows use) — word
+            // marks render only where `wordMarks` clears the pairing floor.
+            const pairCount = Math.min(h.before.length, h.after.length);
+            const marks = Array.from({ length: pairCount }, (_, i) =>
+              wordMarks(h.before[i]!.text, h.after[i]!.text),
+            );
+            return (
+              <>
+                {h.before.map((b, i) => (
+                  <BlockCell
+                    key={`b-${b.blockId}`}
+                    block={b}
+                    side="before"
+                    {...(i < pairCount && marks[i] ? { marks: marks[i]! } : {})}
+                  />
+                ))}
+                {h.after.map((b, i) => (
+                  <BlockCell
+                    key={`a-${b.blockId}`}
+                    block={b}
+                    side="after"
+                    {...(i < pairCount && marks[i] ? { marks: marks[i]! } : {})}
+                  />
+                ))}
+              </>
+            );
+          })()}
           {commentFormAction ? (
             <form method="post" action={commentFormAction(h.id)} data-hunk-comment={h.id} className="ui-d-mt6 ui-d-g6" style={{ display: "flex" }}>
               <TextField

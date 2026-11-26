@@ -1,0 +1,39 @@
+{
+  "base": "https://rhema-pr-427-web-4ea1f3e-tkbl73n3tq-uc.a.run.app",
+  "essay": "structure-of-political-difference",
+  "ts": "2026-11-26T12:04:29.657Z",
+  "legs": {
+    "get": {
+      "url": "https://rhema-pr-427-web-4ea1f3e-tkbl73n3tq-uc.a.run.app/demo/structure-of-political-difference/v/1/diff/2",
+      "status": 200
+    },
+    "compareMounted": true,
+    "counts": {
+      "hunks": 34,
+      "diffCells": 464,
+      "deletedMarks": 263,
+      "insertedMarks": 317,
+      "delTags": [
+        "DEL"
+      ],
+      "insTags": [
+        "INS"
+      ],
+      "delInBefore": 263,
+      "insInAfter": 317,
+      "delComputed": [
+        "line-through",
+        "line-through",
+        "line-through"
+      ],
+      "insComputed": [
+        "underline",
+        "underline",
+        "underline"
+      ]
+    },
+    "crop": true,
+    "midShot": true
+  },
+  "verdict": "PASS"
+}

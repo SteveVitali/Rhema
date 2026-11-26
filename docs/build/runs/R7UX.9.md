@@ -169,6 +169,15 @@ Budget: ~500 changed lines incl. tests (M) — stop + request a split past it.
   `private-app` subnet pinned by Google-owned
   `serverless-ipv4-cloudrun-1795679318002389696` (F-OPS.1-12 GC-lag class — the
   Cloud Run serverless reservation releases on Google's clock, ~50 min–2 h) →
-  final destroy pass on release + orphan sweep + `rm` to follow.
+  reservation released 10:14Z (~1 h 40 m lag) → final pass deleted the last 3
+  (subnet + net + stack) → **orphan sweep CLEAN for pr-426**
+  (`preview-orphan-sweep.mjs --allow pr-425` — pr-425's 6 resources are the
+  concurrent session's in-flight teardown, stack still live) → `rm`
+  deregistered; `Pulumi.pr-426.yaml` restored to the tree per the pr-425
+  precedent.
+- 2026-11-26 — CI read on PR head `08ef40f3` (records head; run 45788268977):
+  all 7 legs pass — fast-path 1m2s, contracts 29s, public-safe 43s,
+  integration 2m58s, images 10m10s, typecheck/lint/unit 24m13s, ci-pass
+  anchor 15s.
 
-Closed: —
+Closed: 2026-11-26T10:20Z
