@@ -43,7 +43,12 @@ const PAIRS = [
   { adr: 'ADR-113', file: 'docs/rhema-design-spec.md', anchor: /Amendment — 2026-10-21 \(R6UCD\.1 \/ ADR-113\): user-content delivery is API-minted GCS V4/s, name: '§13.3 ADR-113 banner' },
   { adr: 'ADR-113', file: 'docs/rhema-design-spec.md', anchor: /Checked as built — 2026-11-11 \(205_R6REC\.2 \/ REQ-TAIL-3\).*mintUserContentUrl/s, name: '§13.3 as-built check' },
   // REQ-TAIL-3 fold note in the round-6 spec's own §4.10
-  { adr: 'ADR-111', file: 'docs/round-6-draft-spec.md', anchor: /Post-ratification note, 2026-11-11 — folded at `205_R6REC\.2`/s, name: '§4.10 REQ-TAIL-3 fold note' },
+  { adr: 'ADR-111', file: 'docs/round-6-draft-spec.md', anchor: /Post-ratification note, 2026-11-11 — folded at `205_R6REC\.2`/s, name: '§4.10 REQ-TAIL-3 fold note' },  // 2026-11-26 maintenance fold — post-ADR-130 banners (BL-05 continuation)
+  { adr: 'ADR-136', file: 'docs/rhema-design-spec.md', anchor: /ADR-136, R7HOME\.2a\): REQ-DATA-21's freeze-cause union gains a fifth/, name: 'DS §11.6 superseded_by_import + empty-head' },
+  { adr: 'ADR-137', file: 'docs/rhema-design-spec.md', anchor: /ADR-137, R7UX\.8\/9\): `chat.token` joins the catalogue/, name: 'DS §12.5 chat.token + ephemeral flag' },
+  { adr: 'ADR-131', file: 'docs/round-7-draft-spec.md', anchor: /ADR-131, R7SHELL\.1a\): shell sub-decisions recorded/, name: '§4.5 sidebar storage + reserved-chords' },
+  { adr: 'ADR-134', file: 'docs/round-7-draft-spec.md', anchor: /ADR-134, R7RELOAD\.1\): the write-grammar mechanics recorded/, name: '§4.8 delegated submit + SPA_WRITE' },
+  { adr: 'ADR-135', file: 'docs/round-7-draft-spec.md', anchor: /ADR-135, R7TALK\.1a\): the chat contract's decided shape/, name: '§4.11 chat contract + debitedCredits' },
 ];
 
 const missing = [];
