@@ -871,6 +871,10 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-chat-notes", "conditional", "ui/chat-panel.tsx", "the notes scratch form"),
     a("data-chat-empty", "conditional", "ui/chat-panel.tsx", "the §7.6 empty state"),
     a("data-chat-live-note", "conditional", "ui/chat-panel.tsx", "the live-run committed-artifacts note"),
+    // R7UX.9 (BL-99b; ADR-137) — the token-stream render: `data-streaming` flags the in-flight
+    // assistant bubble; `data-chat-stream` is the accumulating plain-text node it carries.
+    a("data-streaming", "conditional", "ui/chat-panel.tsx", "in-flight assistant bubble flag"),
+    a("data-chat-stream", "conditional", "ui/chat-panel.tsx", "the accumulating token text node"),
     u("thread", "conditional", "chat thread deep link"),
     u("scope", "conditional", "pages.tsx scoped-run param"),
   ],

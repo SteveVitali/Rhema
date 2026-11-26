@@ -308,6 +308,90 @@ describe("ChatDesk (R7TALK.1a; REQ-TALK-2)", () => {
   });
 });
 
+describe("ChatDesk token streaming (332_R7UX.9; BL-99b/ADR-137)", () => {
+  const pendingTurn = {
+    id: "run_9", // a transcript row's id IS the run's — the stream binds through it
+    state: "running",
+    createdAt: "2026-11-26T00:00:00Z",
+    spentCredits: 0,
+    capCredits: 40,
+    modelTier: "base",
+    userText: "Tell me about rivers.",
+  };
+  const stream = { runId: "run_9", turnId: "turn_9", text: "Rivers run from high ground" };
+  const live = (over: object = {}) => ({ streamed: stream, ...over });
+
+  it("renders the accumulated stream in the matching pending bubble — plain text, data-streaming", () => {
+    const html = renderToStaticMarkup(
+      <ChatDesk
+        model={{ ...baseModel, turns: [pendingTurn] }}
+        endpoints={ENDPOINTS}
+        labels={LABELS}
+        live={live()}
+      />,
+    );
+    expect(html).toContain('data-chat-stream="run_9"');
+    expect(html).toContain('data-streaming="true"');
+    expect(html).toContain("Rivers run from high ground");
+    // the pending line is replaced — the stream IS the in-flight render.
+    expect(html).not.toContain("Working…");
+  });
+
+  it("never binds a stream to another turn's bubble; a zero-token turn renders as today", () => {
+    const html = renderToStaticMarkup(
+      <ChatDesk
+        model={{ ...baseModel, turns: [{ ...pendingTurn, id: "run_other" }] }}
+        endpoints={ENDPOINTS}
+        labels={LABELS}
+        live={live()}
+      />,
+    );
+    expect(html).not.toContain("data-chat-stream");
+    expect(html).toContain("Working…");
+    const noStream = render({ turns: [pendingTurn] });
+    expect(noStream).not.toContain("data-streaming");
+    expect(noStream).not.toContain("data-chat-stream");
+  });
+
+  it("the canonical reply wins on completion — no stream node, markdown render", () => {
+    const html = renderToStaticMarkup(
+      <ChatDesk
+        model={{
+          ...baseModel,
+          turns: [{ ...pendingTurn, state: "completed", reply: "*Rivers* run from high ground." }],
+        }}
+        endpoints={ENDPOINTS}
+        labels={LABELS}
+        live={live()}
+      />,
+    );
+    expect(html).not.toContain("data-chat-stream");
+    expect(html).not.toContain("data-streaming");
+    expect(html).toContain("<em>Rivers</em>");
+  });
+
+  it("the optimistic bubble carries the stream only until the real turn row lands", () => {
+    const withOptimistic = (turns: typeof pendingTurn[]) =>
+      renderToStaticMarkup(
+        <ChatDesk
+          model={{ ...baseModel, turns }}
+          endpoints={ENDPOINTS}
+          labels={LABELS}
+          live={{ optimistic: "Tell me about rivers.", ...live() }}
+        />,
+      );
+    // twin refetch hasn't landed the row yet — the stream shows under the optimistic send.
+    const early = withOptimistic([]);
+    expect(early).toContain('data-chat-stream="optimistic"');
+    expect(early).toContain("Rivers run from high ground");
+    // once the row lands, the stream hops to it — never rendered twice.
+    const landed = withOptimistic([pendingTurn]);
+    expect(landed).not.toContain('data-chat-stream="optimistic"');
+    expect(landed).toContain('data-chat-stream="run_9"');
+    expect((landed.match(/data-chat-stream=/g) ?? []).length).toBe(1);
+  });
+});
+
 describe("ChatDesk live/read-only hooks (R7TALK.1a)", () => {
   it("emits the live arm's hooks: progress, error, abort, send, read-only reason", () => {
     const html = renderToStaticMarkup(

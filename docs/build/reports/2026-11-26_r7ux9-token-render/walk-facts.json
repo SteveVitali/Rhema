@@ -1,0 +1,2525 @@
+{
+  "base": "https://rhema-pr-426-web-b8e5835-tkbl73n3tq-uc.a.run.app",
+  "ts": "2026-11-26T08:37:40.034Z",
+  "legs": {
+    "create": {
+      "status": 302,
+      "location": "/p/untitled-4?created=scratch"
+    },
+    "mounted": true,
+    "turnPost": {
+      "status": 200,
+      "body": {
+        "ok": true,
+        "redirect": "/p/untitled-4#chat",
+        "data": {
+          "runId": "01M8BG1RG5ACBCEXPV2QVD0JQN",
+          "state": "queued",
+          "deduped": false,
+          "planCard": {
+            "kind": "plan_card",
+            "threadId": "01M8BG1QNGSKREH0KAZGM8HCXQ",
+            "summary": "Write a short paragraph about rivers — three or four sentences, plain prose, no list.",
+            "steps": [
+              "Read this thread's brief, pins, and your message",
+              "Answer under the consented budgets (searches/fetches ride the metered path)",
+              "Land any sources as chat source notes — never drafts"
+            ],
+            "budget": {
+              "credits": 40,
+              "searches": 5,
+              "fetches": 10
+            },
+            "modelTier": "base",
+            "actions": [
+              "run_research",
+              "first_step",
+              "edit",
+              "cancel"
+            ],
+            "researchSheetHref": "/p/untitled-4/sheet?workflow=research_burst&threadId=01M8BG1QNGSKREH0KAZGM8HCXQ&sources=5"
+          }
+        }
+      }
+    },
+    "dom": {
+      "sampleCount": 190,
+      "sawNonEmptyStream": true,
+      "strictlyGrew": false,
+      "growthLens": [
+        753
+      ],
+      "maxConcurrentStreamNodes": 1,
+      "finalTurn": {
+        "id": "01M8BG1RG5ACBCEXPV2QVD0JQN",
+        "streamNodes": 0,
+        "streaming": 0,
+        "replyText": "Wrote a short plain-prose paragraph about rivers (3-4 sentences, no list) directly in chat reply.",
+        "pending": false
+      },
+      "canonicalSwap": true
+    },
+    "probeSummary": {
+      "frames": 77,
+      "eventTypes": [
+        "run.state_changed",
+        "chat.plan_card",
+        "step.started",
+        "usage.tick",
+        "chat.token",
+        "step.finished",
+        "cost.final"
+      ],
+      "tokenCount": 66,
+      "tokenSeqs": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "monotonic": true,
+      "terminalSeq": 83,
+      "allBeforeTerminal": true,
+      "completionEvent": null
+    }
+  },
+  "signinVia": "cache",
+  "email": "test+jr7ux9tok@rhema.tools",
+  "projectSlug": "untitled-4",
+  "runId": "01M8BG1RG5ACBCEXPV2QVD0JQN",
+  "probe": {
+    "attachAt": "2026-11-26T08:37:43.579Z",
+    "frames": [
+      {
+        "at": "2026-11-26T08:37:43.780Z",
+        "id": "1",
+        "event": "run.state_changed",
+        "data": "{\"seq\":1,\"type\":\"run.state_changed\",\"payload\":{\"to\":\"queued\",\"from\":\"created\"},\"density\":\"summary\",\"at\":\"2026-11-26T08:37:43.578Z\"}"
+      },
+      {
+        "at": "2026-11-26T08:37:43.780Z",
+        "id": "2",
+        "event": "chat.plan_card",
+        "data": "{\"seq\":2,\"type\":\"chat.plan_card\",\"payload\":{\"fetches\":10,\"searches\":5,\"threadId\":\"01M8BG1QNGSKREH0KAZGM8HCXQ\",\"modelTier\":\"base\",\"capCredits\":40},\"density\":\"normal\",\"at\":\"2026-11-26T08:37:43.591Z\"}"
+      },
+      {
+        "at": "2026-11-26T08:37:43.780Z",
+        "id": "3",
+        "event": "run.state_changed",
+        "data": "{\"seq\":3,\"type\":\"run.state_changed\",\"payload\":{\"to\":\"provisioning\",\"from\":\"queued\"},\"density\":\"summary\",\"at\":\"2026-11-26T08:37:43.758Z\"}"
+      },
+      {
+        "at": "2026-11-26T08:37:46.711Z",
+        "id": "4",
+        "event": "run.state_changed",
+        "data": "{\"seq\":4,\"type\":\"run.state_changed\",\"payload\":{\"to\":\"running\",\"from\":\"provisioning\"},\"density\":\"summary\",\"at\":\"2026-11-26T08:37:46.726Z\"}"
+      },
+      {
+        "at": "2026-11-26T08:37:46.985Z",
+        "id": "5",
+        "event": "step.started",
+        "data": "{\"seq\":5,\"type\":\"step.started\",\"payload\":{\"of\":1,\"phase\":\"answer\",\"ordinal\":0},\"density\":\"summary\",\"at\":\"2026-11-26T08:37:47.001Z\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:06.836Z",
+        "id": "6",
+        "event": "usage.tick",
+        "data": "{\"seq\":6,\"type\":\"usage.tick\",\"payload\":{\"capCredits\":40,\"provisional\":true,\"spentCredits\":6},\"density\":\"summary\",\"at\":\"2026-11-26T08:38:06.804Z\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "12",
+        "event": "chat.token",
+        "data": "{\"seq\":12,\"type\":\"chat.token\",\"payload\":{\"seq\":0,\"text\":\"Bash isn't available\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "13",
+        "event": "chat.token",
+        "data": "{\"seq\":13,\"type\":\"chat.token\",\"payload\":{\"seq\":1,\"text\":\" in\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "14",
+        "event": "chat.token",
+        "data": "{\"seq\":14,\"type\":\"chat.token\",\"payload\":{\"seq\":2,\"text\":\" this sandbox, so I\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "15",
+        "event": "chat.token",
+        "data": "{\"seq\":15,\"type\":\"chat.token\",\"payload\":{\"seq\":3,\"text\":\"'ll write the sidecar\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "16",
+        "event": "chat.token",
+        "data": "{\"seq\":16,\"type\":\"chat.token\",\"payload\":{\"seq\":4,\"text\":\" files\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "17",
+        "event": "chat.token",
+        "data": "{\"seq\":17,\"type\":\"chat.token\",\"payload\":{\"seq\":5,\"text\":\" directly.\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "20",
+        "event": "chat.token",
+        "data": "{\"seq\":20,\"type\":\"chat.token\",\"payload\":{\"seq\":6,\"text\":\"Rivers beg\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "21",
+        "event": "chat.token",
+        "data": "{\"seq\":21,\"type\":\"chat.token\",\"payload\":{\"seq\":7,\"text\":\"in as\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "22",
+        "event": "chat.token",
+        "data": "{\"seq\":22,\"type\":\"chat.token\",\"payload\":{\"seq\":8,\"text\":\" mod\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "23",
+        "event": "chat.token",
+        "data": "{\"seq\":23,\"type\":\"chat.token\",\"payload\":{\"seq\":9,\"text\":\"est tr\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "24",
+        "event": "chat.token",
+        "data": "{\"seq\":24,\"type\":\"chat.token\",\"payload\":{\"seq\":10,\"text\":\"ickles high\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "25",
+        "event": "chat.token",
+        "data": "{\"seq\":25,\"type\":\"chat.token\",\"payload\":{\"seq\":11,\"text\":\" in m\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "26",
+        "event": "chat.token",
+        "data": "{\"seq\":26,\"type\":\"chat.token\",\"payload\":{\"seq\":12,\"text\":\"ountains or\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "27",
+        "event": "chat.token",
+        "data": "{\"seq\":27,\"type\":\"chat.token\",\"payload\":{\"seq\":13,\"text\":\" h\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "28",
+        "event": "chat.token",
+        "data": "{\"seq\":28,\"type\":\"chat.token\",\"payload\":{\"seq\":14,\"text\":\"ills, where mel\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "29",
+        "event": "chat.token",
+        "data": "{\"seq\":29,\"type\":\"chat.token\",\"payload\":{\"seq\":15,\"text\":\"ting snow and rain\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "30",
+        "event": "chat.token",
+        "data": "{\"seq\":30,\"type\":\"chat.token\",\"payload\":{\"seq\":16,\"text\":\"fall gather into\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "31",
+        "event": "chat.token",
+        "data": "{\"seq\":31,\"type\":\"chat.token\",\"payload\":{\"seq\":17,\"text\":\" thre\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "32",
+        "event": "chat.token",
+        "data": "{\"seq\":32,\"type\":\"chat.token\",\"payload\":{\"seq\":18,\"text\":\"ads of\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "33",
+        "event": "chat.token",
+        "data": "{\"seq\":33,\"type\":\"chat.token\",\"payload\":{\"seq\":19,\"text\":\" water that se\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "34",
+        "event": "chat.token",
+        "data": "{\"seq\":34,\"type\":\"chat.token\",\"payload\":{\"seq\":20,\"text\":\"ek the lowest path\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "35",
+        "event": "chat.token",
+        "data": "{\"seq\":35,\"type\":\"chat.token\",\"payload\":{\"seq\":21,\"text\":\" down\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "36",
+        "event": "chat.token",
+        "data": "{\"seq\":36,\"type\":\"chat.token\",\"payload\":{\"seq\":22,\"text\":\"hill. As\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "37",
+        "event": "chat.token",
+        "data": "{\"seq\":37,\"type\":\"chat.token\",\"payload\":{\"seq\":23,\"text\":\" they desc\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "38",
+        "event": "chat.token",
+        "data": "{\"seq\":38,\"type\":\"chat.token\",\"payload\":{\"seq\":24,\"text\":\"end, count\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "39",
+        "event": "chat.token",
+        "data": "{\"seq\":39,\"type\":\"chat.token\",\"payload\":{\"seq\":25,\"text\":\"less small\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "40",
+        "event": "chat.token",
+        "data": "{\"seq\":40,\"type\":\"chat.token\",\"payload\":{\"seq\":26,\"text\":\" streams merge into\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "41",
+        "event": "chat.token",
+        "data": "{\"seq\":41,\"type\":\"chat.token\",\"payload\":{\"seq\":27,\"text\":\" a\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "42",
+        "event": "chat.token",
+        "data": "{\"seq\":42,\"type\":\"chat.token\",\"payload\":{\"seq\":28,\"text\":\" single, str\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "43",
+        "event": "chat.token",
+        "data": "{\"seq\":43,\"type\":\"chat.token\",\"payload\":{\"seq\":29,\"text\":\"engthening current that\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "44",
+        "event": "chat.token",
+        "data": "{\"seq\":44,\"type\":\"chat.token\",\"payload\":{\"seq\":30,\"text\":\" carves val\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "45",
+        "event": "chat.token",
+        "data": "{\"seq\":45,\"type\":\"chat.token\",\"payload\":{\"seq\":31,\"text\":\"leys, de\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "46",
+        "event": "chat.token",
+        "data": "{\"seq\":46,\"type\":\"chat.token\",\"payload\":{\"seq\":32,\"text\":\"posits sediment, and sh\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "47",
+        "event": "chat.token",
+        "data": "{\"seq\":47,\"type\":\"chat.token\",\"payload\":{\"seq\":33,\"text\":\"apes the land\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "48",
+        "event": "chat.token",
+        "data": "{\"seq\":48,\"type\":\"chat.token\",\"payload\":{\"seq\":34,\"text\":\" it cr\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "49",
+        "event": "chat.token",
+        "data": "{\"seq\":49,\"type\":\"chat.token\",\"payload\":{\"seq\":35,\"text\":\"osses over centuries.\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "50",
+        "event": "chat.token",
+        "data": "{\"seq\":50,\"type\":\"chat.token\",\"payload\":{\"seq\":36,\"text\":\" Along the\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "51",
+        "event": "chat.token",
+        "data": "{\"seq\":51,\"type\":\"chat.token\",\"payload\":{\"seq\":37,\"text\":\" way, a\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "52",
+        "event": "chat.token",
+        "data": "{\"seq\":52,\"type\":\"chat.token\",\"payload\":{\"seq\":38,\"text\":\" river s\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "53",
+        "event": "chat.token",
+        "data": "{\"seq\":53,\"type\":\"chat.token\",\"payload\":{\"seq\":39,\"text\":\"ustains for\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "54",
+        "event": "chat.token",
+        "data": "{\"seq\":54,\"type\":\"chat.token\",\"payload\":{\"seq\":40,\"text\":\"ests, w\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "55",
+        "event": "chat.token",
+        "data": "{\"seq\":55,\"type\":\"chat.token\",\"payload\":{\"seq\":41,\"text\":\"etlands, and the\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "56",
+        "event": "chat.token",
+        "data": "{\"seq\":56,\"type\":\"chat.token\",\"payload\":{\"seq\":42,\"text\":\" towns that sp\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "57",
+        "event": "chat.token",
+        "data": "{\"seq\":57,\"type\":\"chat.token\",\"payload\":{\"seq\":43,\"text\":\"ring up on\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "58",
+        "event": "chat.token",
+        "data": "{\"seq\":58,\"type\":\"chat.token\",\"payload\":{\"seq\":44,\"text\":\" its banks, ser\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "59",
+        "event": "chat.token",
+        "data": "{\"seq\":59,\"type\":\"chat.token\",\"payload\":{\"seq\":45,\"text\":\"ving as a source\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "60",
+        "event": "chat.token",
+        "data": "{\"seq\":60,\"type\":\"chat.token\",\"payload\":{\"seq\":46,\"text\":\" of dr\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "61",
+        "event": "chat.token",
+        "data": "{\"seq\":61,\"type\":\"chat.token\",\"payload\":{\"seq\":47,\"text\":\"inking water, ir\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "62",
+        "event": "chat.token",
+        "data": "{\"seq\":62,\"type\":\"chat.token\",\"payload\":{\"seq\":48,\"text\":\"rigation, and transport.\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "63",
+        "event": "chat.token",
+        "data": "{\"seq\":63,\"type\":\"chat.token\",\"payload\":{\"seq\":49,\"text\":\" E\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "64",
+        "event": "chat.token",
+        "data": "{\"seq\":64,\"type\":\"chat.token\",\"payload\":{\"seq\":50,\"text\":\"ventually, the current\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "65",
+        "event": "chat.token",
+        "data": "{\"seq\":65,\"type\":\"chat.token\",\"payload\":{\"seq\":51,\"text\":\" sl\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "66",
+        "event": "chat.token",
+        "data": "{\"seq\":66,\"type\":\"chat.token\",\"payload\":{\"seq\":52,\"text\":\"ows and widens into\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "67",
+        "event": "chat.token",
+        "data": "{\"seq\":67,\"type\":\"chat.token\",\"payload\":{\"seq\":53,\"text\":\" a delta or\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "68",
+        "event": "chat.token",
+        "data": "{\"seq\":68,\"type\":\"chat.token\",\"payload\":{\"seq\":54,\"text\":\" estuary, releasing its\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "69",
+        "event": "chat.token",
+        "data": "{\"seq\":69,\"type\":\"chat.token\",\"payload\":{\"seq\":55,\"text\":\" water\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "70",
+        "event": "chat.token",
+        "data": "{\"seq\":70,\"type\":\"chat.token\",\"payload\":{\"seq\":56,\"text\":\" and\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "71",
+        "event": "chat.token",
+        "data": "{\"seq\":71,\"type\":\"chat.token\",\"payload\":{\"seq\":57,\"text\":\" sil\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "72",
+        "event": "chat.token",
+        "data": "{\"seq\":72,\"type\":\"chat.token\",\"payload\":{\"seq\":58,\"text\":\"t into a\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "73",
+        "event": "chat.token",
+        "data": "{\"seq\":73,\"type\":\"chat.token\",\"payload\":{\"seq\":59,\"text\":\" lake or\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "74",
+        "event": "chat.token",
+        "data": "{\"seq\":74,\"type\":\"chat.token\",\"payload\":{\"seq\":60,\"text\":\" ocean, complet\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.121Z",
+        "id": "75",
+        "event": "chat.token",
+        "data": "{\"seq\":75,\"type\":\"chat.token\",\"payload\":{\"seq\":61,\"text\":\"ing a journ\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.125Z",
+        "id": "76",
+        "event": "chat.token",
+        "data": "{\"seq\":76,\"type\":\"chat.token\",\"payload\":{\"seq\":62,\"text\":\"ey that may\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.125Z",
+        "id": "77",
+        "event": "chat.token",
+        "data": "{\"seq\":77,\"type\":\"chat.token\",\"payload\":{\"seq\":63,\"text\":\" have begun th\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.125Z",
+        "id": "78",
+        "event": "chat.token",
+        "data": "{\"seq\":78,\"type\":\"chat.token\",\"payload\":{\"seq\":64,\"text\":\"ousands of miles up\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.125Z",
+        "id": "79",
+        "event": "chat.token",
+        "data": "{\"seq\":79,\"type\":\"chat.token\",\"payload\":{\"seq\":65,\"text\":\"stream.\",\"turnId\":\"01M8BG1RBVJCW4AH22YR9MQ6HE\"},\"density\":\"verbose\",\"at\":\"2026-11-26T08:38:10.957Z\",\"agentLabel\":\"assistant\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.288Z",
+        "id": "80",
+        "event": "usage.tick",
+        "data": "{\"seq\":80,\"type\":\"usage.tick\",\"payload\":{\"capCredits\":40,\"spentCredits\":7},\"density\":\"summary\",\"at\":\"2026-11-26T08:38:11.308Z\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.395Z",
+        "id": "81",
+        "event": "step.finished",
+        "data": "{\"seq\":81,\"type\":\"step.finished\",\"payload\":{\"of\":1,\"phase\":\"answer\",\"credits\":7,\"ordinal\":0,\"durationMs\":24386},\"density\":\"summary\",\"at\":\"2026-11-26T08:38:11.387Z\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.395Z",
+        "id": "82",
+        "event": "run.state_changed",
+        "data": "{\"seq\":82,\"type\":\"run.state_changed\",\"payload\":{\"to\":\"finalizing\",\"from\":\"running\"},\"density\":\"summary\",\"at\":\"2026-11-26T08:38:11.411Z\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.477Z",
+        "id": "83",
+        "event": "run.state_changed",
+        "data": "{\"seq\":83,\"type\":\"run.state_changed\",\"payload\":{\"to\":\"completed\",\"from\":\"finalizing\"},\"density\":\"summary\",\"at\":\"2026-11-26T08:38:11.467Z\"}"
+      },
+      {
+        "at": "2026-11-26T08:38:11.477Z",
+        "id": "84",
+        "event": "cost.final",
+        "data": "{\"seq\":84,\"type\":\"cost.final\",\"payload\":{\"capCredits\":40,\"spentCredits\":8},\"density\":\"summary\",\"at\":\"2026-11-26T08:38:11.496Z\"}"
+      }
+    ]
+  },
+  "domSamples": [
+    {
+      "t": 1795682263581,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682263734,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682263888,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682264041,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682264194,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682264345,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682264498,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682264651,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682264805,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682264956,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682265108,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682265259,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682265413,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682265566,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682265719,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682265872,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682266024,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682266176,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682266328,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682266479,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682266638,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682266790,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682266942,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682267095,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682267247,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682267398,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682267551,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682267704,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682267856,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682268009,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682268162,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682268315,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682268467,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682268619,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682268771,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682268922,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682269074,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682269226,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682269380,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682269533,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682269685,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682269837,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682269989,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682270142,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682270295,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682270449,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682270601,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682270754,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682270906,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682271058,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682271211,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682271363,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682271516,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682271668,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682271821,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682271974,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682272126,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682272279,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682272434,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682272585,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682272739,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682272890,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682273044,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682273195,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682273348,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682273500,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682273651,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682273804,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682273957,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682274109,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682274262,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682274414,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682274567,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682274721,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682274874,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682275027,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682275181,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682275335,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682275488,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682275640,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682275793,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682275946,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682276099,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682276250,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682276402,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682276553,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682276706,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682276857,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682277009,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682277162,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682277316,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682277469,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682277620,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682277773,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682277926,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682278079,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682278232,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682278385,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682278537,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682278688,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682278841,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682278994,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682279145,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682279297,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682279448,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682279601,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682279754,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682279907,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682280060,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682280213,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682280366,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682280519,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682280672,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682280825,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682280978,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682281131,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682281283,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682281435,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682281589,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682281741,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682281893,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682282044,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682282196,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682282349,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682282502,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682282656,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682282807,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682282960,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682283112,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682283265,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682283418,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682283570,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682283723,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682283875,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682284028,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682284182,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682284334,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682284486,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682284639,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682284792,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682284945,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682285097,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682285249,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682285399,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682285552,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682285705,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682285857,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682286010,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682286164,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682286317,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682286471,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682286621,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682286773,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682286926,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682287079,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682287231,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682287384,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682287537,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682287689,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682287841,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682287994,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682288148,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682288300,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682288453,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682288604,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682288757,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682288910,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682289063,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682289215,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682289369,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682289522,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682289676,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682289829,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682289983,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682290136,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682290290,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682290443,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682290596,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682290748,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682290901,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682291054,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682291207,
+      "streamTexts": [
+        {
+          "bound": "01M8BG1RG5ACBCEXPV2QVD0JQN",
+          "len": 753
+        }
+      ],
+      "streamingCount": 1,
+      "replyLens": [
+        0,
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682291561,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682291714,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682291867,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682292021,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682292175,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682292328,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682292481,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        0
+      ],
+      "pendingLine": true
+    },
+    {
+      "t": 1795682292634,
+      "streamTexts": [],
+      "streamingCount": 0,
+      "replyLens": [
+        97
+      ],
+      "pendingLine": false
+    }
+  ],
+  "finalDom": [
+    {
+      "id": "01M8BG1RG5ACBCEXPV2QVD0JQN",
+      "streamNodes": 0,
+      "streaming": 0,
+      "replyText": "Wrote a short plain-prose paragraph about rivers (3-4 sentences, no list) directly in chat reply.",
+      "pending": false
+    }
+  ],
+  "verdict": "PASS"
+}
