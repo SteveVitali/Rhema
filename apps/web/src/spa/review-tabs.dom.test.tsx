@@ -27,6 +27,7 @@ const LABELS: IdeLabels = {
     heading: "Panel",
     tabs: { chat: "Chat", findings: "Findings", claims: "Claims", timeline: "Timeline", feed: "Live feed" },
     resize: "Resize",
+    resizeReset: "Drag to resize · double-click for the default split",
     emptyChat: "No chat yet.",
     emptyFeed: "No run activity yet.",
     emptyFindings: "No findings yet.",

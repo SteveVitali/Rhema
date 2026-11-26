@@ -25,6 +25,7 @@ const LABELS = {
   panel: {
     heading: "Panel",
     resize: "Resize the panel",
+    resizeReset: "Drag to resize · double-click for the default split",
     tabs: { chat: "Chat", findings: "Findings", claims: "Claims", timeline: "Timeline", feed: "Live feed" },
     emptyChat: "e",
     emptyFeed: "e",

@@ -1601,6 +1601,8 @@ export const COPY = {
     panel: {
       heading: "Panel",
       resize: "Resize the panel",
+      // R7UX.7 (BL-98) — the divider's discoverable reset affordance (`title` on the separator).
+      resizeReset: "Drag to resize · double-click for the default split",
       tabs: {
         chat: "Chat",
         findings: "Findings",

@@ -6,6 +6,7 @@ import { describe, it, expect } from "vitest";
 import {
   paneLayout,
   paneDrag,
+  DEFAULT_PANEL_WIDTH,
   DEFAULT_PANE_STATE,
   parsePaneState,
   serializePaneState,
@@ -95,6 +96,12 @@ describe("paneLayout() — the REQ-PANE-2 breakpoint table", () => {
   });
   it("no findings ⇒ the Margin is hidden, not tick-collapsed", () => {
     expect(paneLayout(1600, hosted({ hasFindings: false })).margin).toBe("hidden");
+  });
+  it("an absent panelWidth lays out at DEFAULT_PANEL_WIDTH (R7UX.7/BL-98)", () => {
+    // "no stored custom split" and "split = the codec default" are the same geometry.
+    const withDefault = paneLayout(1600, hosted({ panelOpen: true, panelWidth: DEFAULT_PANEL_WIDTH }));
+    const withAbsent = paneLayout(1600, hosted({ panelOpen: true, panelWidth: undefined }));
+    expect(withAbsent.pageCh).toBe(withDefault.pageCh);
   });
   it("View-menu 'finding cards off' forces ticks even when wide", () => {
     expect(paneLayout(1600, hosted({ findingCards: false })).margin).toBe("ticks");
@@ -204,6 +211,20 @@ describe("pane persistence (per user + project, never the URL)", () => {
     expect(parsePaneState(blob).panelOpen).toBeUndefined();
     // an explicit intent round-trips
     expect(parsePaneState(serializePaneState({ ...DEFAULT_PANE_STATE, panelOpen: false })).panelOpen).toBe(false);
+  });
+  it("panelWidth takes the same three-state shape — absent means DEFAULT_PANEL_WIDTH (R7UX.7/BL-98)", () => {
+    // a fresh state carries no stored custom split — the key stays out of the blob…
+    const blob = serializePaneState(DEFAULT_PANE_STATE);
+    expect(JSON.parse(blob)).not.toHaveProperty("panelWidth");
+    expect(parsePaneState(blob).panelWidth).toBeUndefined();
+    // …an explicit custom split round-trips…
+    expect(parsePaneState(serializePaneState({ ...DEFAULT_PANE_STATE, panelWidth: 400 })).panelWidth).toBe(400);
+    // …and a cleared split (the divider's double-click reset) never re-serializes.
+    const cleared = serializePaneState({ ...DEFAULT_PANE_STATE, panelWidth: undefined });
+    expect(JSON.parse(cleared)).not.toHaveProperty("panelWidth");
+    expect(parsePaneState(cleared).panelWidth).toBeUndefined();
+    // a stored out-of-range split still clamps per key
+    expect(parsePaneState('{"v":2,"panelWidth":4000}').panelWidth).toBe(480);
   });
   it("a malformed or wrong-version blob falls back to defaults — never throws", () => {
     expect(parsePaneState("not json")).toEqual(DEFAULT_PANE_STATE);

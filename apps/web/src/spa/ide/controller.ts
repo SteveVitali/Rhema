@@ -19,6 +19,7 @@
 import { useCallback, useEffect, useRef, type RefObject } from "react";
 import { parseCommand, resolveCommand } from "@rhema/commands";
 import {
+  DEFAULT_PANEL_WIDTH,
   DEFAULT_PANE_STATE,
   contextMenuItems,
   cyclePaperTheme,
@@ -187,7 +188,7 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
     ide.dataset.view = state.view;
     if (ssrMargin !== "hidden") ide.dataset.margin = state.findingCards ? "auto" : "ticks";
     ide.toggleAttribute("data-advanced", state.advanced);
-    ide.style.setProperty("--panel-w", `${state.panelWidth}px`);
+    ide.style.setProperty("--panel-w", `${state.panelWidth ?? DEFAULT_PANEL_WIDTH}px`);
     ide.querySelector(".ide-panel")?.toggleAttribute("data-open", panelOpen);
     // REQ-PANE-2 — the sidebar advisory goes on the shell frame (its CSS enforces rail/drawer).
     const shell = ide.closest<HTMLElement>(".app-shell");
@@ -197,7 +198,7 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
     }
     // UXC-26 — the separator's ARIA value tracks the committed width.
     for (const h of ide.querySelectorAll<HTMLElement>("[data-ide-handle]")) {
-      h.setAttribute("aria-valuenow", String(Math.round(state.panelWidth)));
+      h.setAttribute("aria-valuenow", String(Math.round(state.panelWidth ?? DEFAULT_PANEL_WIDTH)));
     }
     for (const b of ide.querySelectorAll<HTMLElement>("[data-ide-view]")) {
       b.setAttribute("aria-checked", String(b.dataset["ideView"] === state.view));
@@ -718,13 +719,30 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
       const st = stateRef.current;
       // the panel's positive direction is "wider" — left shrinks it (mirroring the drag math).
       const dir = -1 * (e.key === "ArrowRight" ? 1 : -1);
-      const cur = st.panelWidth;
+      const cur = st.panelWidth ?? DEFAULT_PANEL_WIDTH;
       const px = Math.min(480, Math.max(160, cur + dir * 16));
       if (px === cur) return;
       e.preventDefault();
       commit(paneDrag(st, pane, px, window.innerWidth));
     };
     ide.addEventListener("keydown", onHandleKey);
+
+    // REQ-PANE-1 (BL-98, R7UX.7) — a double-click on the divider snaps the split back to the
+    // codec default: the custom `panelWidth` leaves the stored blob entirely (absent ⇒
+    // DEFAULT_PANEL_WIDTH at every read site). The drag's REQ-PANE-2 arm is mirrored — an
+    // overlay/sheet reset stays session-scoped and never touches pane storage.
+    const onHandleDoubleClick = (e: MouseEvent): void => {
+      const handle = (e.target as HTMLElement | null)?.closest<HTMLElement>("[data-ide-handle]");
+      if (!handle) return;
+      e.preventDefault();
+      if (overlayMode(presentationNow().panel)) {
+        stateRef.current = { ...stateRef.current, panelWidth: undefined };
+        apply();
+        return;
+      }
+      commit({ panelWidth: undefined });
+    };
+    ide.addEventListener("dblclick", onHandleDoubleClick);
 
     // ---- the §7.2/§7.4 cmdmenu (selection popover + timeline context menu) ----
     let cmdMenu: HTMLElement | null = null;
@@ -1350,6 +1368,7 @@ export function useIdeChromeController(opts: IdeChromeControllerOpts): void {
 
     return () => {
       ide.removeEventListener("keydown", onHandleKey);
+      ide.removeEventListener("dblclick", onHandleDoubleClick);
       ide.removeEventListener("click", onIdeClick);
       ide.removeEventListener("pointerdown", onPointerDown);
       ide.removeEventListener("contextmenu", onContextMenu);
