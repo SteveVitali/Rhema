@@ -1,5 +1,7 @@
 # R6FIX.57 — placeholder default → digest-pinned hello (F-R7UX.1-1)
 
+Harness: devin-cli/swe-2-high (direct implementation, no subagent)
+
 - **Finding:** `gcr.io/google-containers/pause:3.9` pruned — tag list now ≤3.2 + `deprecated-public-image-*`.
   `pulumi up` without image pins failed all 8 Cloud Run creates (pr-418: all-8 image-pull failures;
   pr-420 same class). Prod unaffected (own override `us-docker.pkg.dev/cloudrun/container/hello`,
