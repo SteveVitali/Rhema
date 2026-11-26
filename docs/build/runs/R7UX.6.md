@@ -168,6 +168,10 @@ Budget: ~700 changed lines incl. tests (M) — stop past it; the ticket OWNS the
   `319_R6FIX.48` manifest row to its in-sequence position; this branch's
   manifest blob is byte-identical to `4e1d2c86`'s (zero manifest diff authored
   here).
+- 2026-11-25T23:5xZ — records commit `e9930333` (records + pr-423 evidence +
+  D-R7UX.6-1) pushed; records-head ci read — pass (run 45722614140, all 7 legs:
+  fast-path 52s → typecheck/lint/unit 22m58s → public-safe/contracts/integration/
+  images → ci-pass anchor).
 
 ## Gap table
 
