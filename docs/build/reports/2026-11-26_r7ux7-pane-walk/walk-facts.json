@@ -1,0 +1,88 @@
+{
+  "base": "https://rhema-pr-424-web-aa02bfb-tkbl73n3tq-uc.a.run.app",
+  "ts": "2026-11-26T01:36:06.722Z",
+  "legs": {
+    "create": {
+      "status": 302,
+      "location": "/p/untitled?created=scratch"
+    },
+    "mounted": true,
+    "initial": {
+      "panelW": "320px",
+      "ariaNow": "320"
+    },
+    "afterDrag": {
+      "panelW": "400px",
+      "ariaNow": "400",
+      "panes": {
+        "key": "rhema:panes:v2:01M8AQXSPQ0K7GFEZZ5CF25YHX:01M8AQY4H3Z6JYWWAYQKQCJJ4T",
+        "blob": {
+          "v": 2,
+          "view": "write",
+          "panelTab": "chat",
+          "findingCards": true,
+          "suggestionsInline": true,
+          "advanced": false,
+          "readerStep": 0,
+          "panelOpen": true,
+          "panelWidth": 400
+        }
+      }
+    },
+    "afterReload": {
+      "panelW": "400px",
+      "ariaNow": "400",
+      "panes": {
+        "key": "rhema:panes:v2:01M8AQXSPQ0K7GFEZZ5CF25YHX:01M8AQY4H3Z6JYWWAYQKQCJJ4T",
+        "blob": {
+          "v": 2,
+          "view": "write",
+          "panelTab": "chat",
+          "findingCards": true,
+          "suggestionsInline": true,
+          "advanced": false,
+          "readerStep": 0,
+          "panelOpen": true,
+          "panelWidth": 400
+        }
+      }
+    },
+    "afterDblclick": {
+      "panelW": "320px",
+      "ariaNow": "320",
+      "panes": {
+        "key": "rhema:panes:v2:01M8AQXSPQ0K7GFEZZ5CF25YHX:01M8AQY4H3Z6JYWWAYQKQCJJ4T",
+        "blob": {
+          "v": 2,
+          "view": "write",
+          "findingCards": true,
+          "suggestionsInline": true,
+          "advanced": false,
+          "readerStep": 0,
+          "panelOpen": true,
+          "panelTab": "chat"
+        }
+      }
+    },
+    "afterResetReload": {
+      "panelW": "320px",
+      "panes": {
+        "key": "rhema:panes:v2:01M8AQXSPQ0K7GFEZZ5CF25YHX:01M8AQY4H3Z6JYWWAYQKQCJJ4T",
+        "blob": {
+          "v": 2,
+          "view": "write",
+          "findingCards": true,
+          "suggestionsInline": true,
+          "advanced": false,
+          "readerStep": 0,
+          "panelOpen": true,
+          "panelTab": "chat"
+        }
+      }
+    }
+  },
+  "signinVia": "mailbox",
+  "email": "test+jr7ux7pane@rhema.tools",
+  "projectSlug": "untitled",
+  "verdict": "PASS"
+}

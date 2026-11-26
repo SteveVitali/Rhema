@@ -382,6 +382,117 @@ describe("panes + the verbatim pane codec (REQ-ISL-9, REQ-SEQ-11)", () => {
   });
 });
 
+describe("BL-98 — the divider's persisted split + double-click reset (REQ-PANE-1, R7UX.7)", () => {
+  const handle = (): HTMLElement | null =>
+    document.querySelector<HTMLElement>('[data-ide-handle="panel"]');
+  const blob = (): Record<string, unknown> =>
+    JSON.parse(localStorage.getItem(paneStorageKey("u1", "p-alpha")) ?? "{}") as Record<string, unknown>;
+  const panelW = (): string => ide()?.style.getPropertyValue("--panel-w") ?? "";
+  /** happy-dom has no layout — give the `.ide` box a real right edge so
+   *  `rect.right - clientX` (the controller's drag math) resolves to the meant px. */
+  const stubIdeRect = (right: number): void => {
+    const root = ide();
+    if (root) root.getBoundingClientRect = () => new DOMRect(0, 0, right, 900);
+  };
+  const dragTo = (right: number, clientX: number): void => {
+    stubIdeRect(right);
+    const h = handle()!;
+    act(() => {
+      h.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true, pointerId: 7, clientX }));
+      h.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, cancelable: true, pointerId: 7, clientX }));
+      h.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, pointerId: 7, clientX }));
+    });
+  };
+  const dblclick = (): void => {
+    act(() => {
+      handle()!.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, cancelable: true }));
+    });
+  };
+  const remount = async (): Promise<void> => {
+    for (const r of mounted.splice(0)) act(() => r.unmount());
+    document.body.innerHTML = "";
+    await mount();
+  };
+
+  it("a drag end writes the stored split; a reload renders that split", async () => {
+    await mount();
+    dragTo(1440, 1040); // 1440 - 1040 = 400 px
+    expect(blob().panelWidth).toBe(400);
+    expect(panelW()).toBe("400px");
+    expect(handle()?.getAttribute("aria-valuenow")).toBe("400");
+    // reload: the same codec restores the split verbatim — persisted across sessions.
+    await remount();
+    expect(panelW()).toBe("400px");
+    expect(handle()?.getAttribute("aria-valuenow")).toBe("400");
+    expect(blob().panelWidth).toBe(400);
+  });
+
+  it("a double-click on the divider restores the default split AND clears the pref", async () => {
+    await mount();
+    dragTo(1440, 1040);
+    expect(blob().panelWidth).toBe(400);
+    dblclick();
+    expect(panelW()).toBe("320px"); // DEFAULT_PANEL_WIDTH
+    expect(handle()?.getAttribute("aria-valuenow")).toBe("320");
+    // cleared — the key leaves the blob; it is NOT rewritten with the default value.
+    expect(blob()).not.toHaveProperty("panelWidth");
+    // …and a later unrelated commit never re-creates the key.
+    click(document.querySelector("[data-ide-view-menu]"));
+    click(document.querySelector("[data-ide-menu='view'] [data-ide-toggle='advanced']"));
+    expect(blob()).not.toHaveProperty("panelWidth");
+    // a reload lands on the default split.
+    await remount();
+    expect(panelW()).toBe("320px");
+    expect(blob()).not.toHaveProperty("panelWidth");
+  });
+
+  it("a double-click with no stored pref is a harmless reset — the blob stays clean", async () => {
+    await mount();
+    dblclick();
+    expect(panelW()).toBe("320px");
+    expect(blob()).not.toHaveProperty("panelWidth");
+  });
+
+  it("the REQ-PANE-2 arm holds: an overlay-mode drag + reset stay session-scoped", async () => {
+    localStorage.setItem(
+      paneStorageKey("u1", "p-alpha"),
+      serializePaneState({ ...DEFAULT_PANE_STATE, panelOpen: true, panelWidth: 400 }),
+    );
+    setWidth(1100);
+    await mount();
+    expect(ide()?.dataset["panelMode"]).toBe("overlay");
+    // a drag resizes the live overlay without touching pane storage…
+    dragTo(1100, 600); // 500 px — off-snap, kept verbatim
+    expect(panelW()).toBe("500px");
+    expect(blob().panelWidth).toBe(400);
+    // …and a double-click resets the session split the same way — the blob is untouched.
+    dblclick();
+    expect(panelW()).toBe("320px");
+    expect(blob().panelWidth).toBe(400);
+  });
+
+  it("a demo boot persists the split to the SAME local pref and writes nothing else", async () => {
+    const demoBoot: SpaBoot = {
+      ...BOOT,
+      demo: { essay: "the-borrowed-commons", slug: "demo~the-borrowed-commons", signedIn: false, build: "t1" },
+    };
+    const { fetchSpy } = await mount("/p/demo~the-borrowed-commons", { boot: demoBoot });
+    const h = handle()!;
+    ide()!.getBoundingClientRect = () => new DOMRect(0, 0, 1440, 900);
+    act(() => {
+      h.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true, pointerId: 7, clientX: 1040 }));
+      h.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, pointerId: 7, clientX: 1040 }));
+    });
+    // the demo visitor's split is the same local pref (userId "demo") — visual persistence only.
+    const raw = localStorage.getItem(paneStorageKey("demo", "p-alpha"));
+    expect((JSON.parse(raw ?? "{}") as Record<string, unknown>).panelWidth).toBe(400);
+    // …and nothing user-visible was written beyond it: zero POSTs on the wire.
+    for (const call of fetchSpy.mock.calls) {
+      expect((call[1]?.method ?? "GET").toUpperCase()).toBe("GET");
+    }
+  });
+});
+
 describe("?focus=1 — applied once, then stripped (REQ-SEQ-11)", () => {
   it("view=focus lands for the session and the param leaves the URL — storage keeps 'write' (REQ-WRITE-4)", async () => {
     const { router } = await mount("/p/alpha?focus=1");

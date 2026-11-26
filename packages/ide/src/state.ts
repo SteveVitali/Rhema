@@ -13,7 +13,7 @@
 // Timeline width. Malformed input falls back per key, exactly like v1.
 
 import type { PanelTab, PaneState, ViewMode } from "./layout.js";
-import { PANEL_TABS } from "./layout.js";
+import { DEFAULT_PANEL_WIDTH, PANEL_TABS } from "./layout.js";
 
 export const PANE_STORAGE_VERSION = 2;
 /** localStorage key — per user AND project (§5.1 "persists per user/project"). */
@@ -27,7 +27,8 @@ export const DEFAULT_PANE_STATE: PaneState = {
   // on read (the codec is total over KNOWN keys — removed keys fall back to "absent").
   // panelOpen deliberately ABSENT — the ≥1440-when-findings default lives in paneLayout()
   // (REQ-PANE-2), so the codec must preserve "never touched" as "undefined".
-  panelWidth: 320,
+  // panelWidth deliberately ABSENT too (R7UX.7/BL-98) — a state with no stored custom split
+  // reads DEFAULT_PANEL_WIDTH at every read site, and a double-click reset clears the key.
   panelTab: "chat",
   findingCards: true,
   suggestionsInline: true,
@@ -87,7 +88,7 @@ function migrateV1(o: Record<string, unknown>): PaneState {
   return {
     ...base,
     panelOpen: deskOpen || timelineOpen ? true : false,
-    panelWidth: num(o["timelineWidth"], d.panelWidth, 160, 480),
+    panelWidth: num(o["timelineWidth"], DEFAULT_PANEL_WIDTH, 160, 480),
     panelTab,
   };
 }
@@ -110,7 +111,9 @@ export function parsePaneState(raw: string | null | undefined): PaneState {
     // `panelOpen` keeps three states: absent ⇒ derive the REQ-PANE-2 default in paneLayout();
     // a concrete boolean is the user's explicit intent.
     ...(typeof o["panelOpen"] === "boolean" ? { panelOpen: o["panelOpen"] } : {}),
-    panelWidth: num(o["panelWidth"], d.panelWidth, 160, 480),
+    // `panelWidth` keeps the same three states (R7UX.7/BL-98): absent ⇒ DEFAULT_PANEL_WIDTH at
+    // the read sites — a divider's double-click reset deletes the key rather than storing 320.
+    ...(typeof o["panelWidth"] === "number" ? { panelWidth: num(o["panelWidth"], DEFAULT_PANEL_WIDTH, 160, 480) } : {}),
     panelTab: oneOf(o["panelTab"], PANEL_TABS, d.panelTab),
   };
 }
@@ -131,11 +134,13 @@ export function paneTabRemembered(raw: string | null | undefined): boolean {
 
 export function serializePaneState(state: PaneState): string {
   // REQ-WRITE-4 — the session-scoped focus view is never written to pane storage; the absent
-  // `panelOpen` stays absent (the default rule, not a stored value).
+  // `panelOpen` stays absent (the default rule, not a stored value). R7UX.7/BL-98 — the absent
+  // `panelWidth` stays absent the same way (a cleared custom split never re-serializes).
   return JSON.stringify({
     v: PANE_STORAGE_VERSION,
     ...state,
     ...(state.panelOpen === undefined ? {} : { panelOpen: state.panelOpen }),
+    ...(state.panelWidth === undefined ? {} : { panelWidth: state.panelWidth }),
     view: state.view === "focus" ? "write" : state.view,
   });
 }

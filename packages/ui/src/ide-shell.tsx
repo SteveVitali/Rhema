@@ -21,6 +21,8 @@ export interface IdeLabels {
     heading: string;
     tabs: Record<PanelTab, string>;
     resize: string;
+    /** R7UX.7 (BL-98) — the divider's discoverable double-click-reset hint (`title`). */
+    resizeReset: string;
     emptyChat: string;
     emptyFeed: string;
     emptyFindings: string;
@@ -294,7 +296,7 @@ export function IdeShell(props: IdeShellProps): ReactNode {
             R7RO.2 — omitted on the phone reader (there is no panel to resize). */}
         {compact ? null : (
         <Button type="button" variant="ghost" className="ide-handle" data-ide-handle="panel" role="separator"
-                aria-label={L.panel.resize} aria-orientation="vertical"
+                aria-label={L.panel.resize} aria-orientation="vertical" title={L.panel.resizeReset}
                 aria-valuenow={320} aria-valuemin={160} aria-valuemax={480} />
         )}
         {/* R7FIX.1 (REQ-PANE-0) — the scrim an open overlay/sheet draws over the Page region;

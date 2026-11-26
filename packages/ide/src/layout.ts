@@ -21,16 +21,25 @@ export type PanelTab = "chat" | "findings" | "claims" | "timeline" | "feed";
 
 export const PANEL_TABS: readonly PanelTab[] = ["chat", "findings", "claims", "timeline", "feed"];
 
+/** The codec default for the right panel's docked width — the split a double-click reset
+ *  restores (BL-98; R7UX.7). A `panelWidth` absent from the stored blob means "no custom
+ *  split", exactly like `panelOpen`'s absent-means-derive. */
+export const DEFAULT_PANEL_WIDTH = 320;
+
 /** The persisted pane state — per user + project, never in the URL (§5.1 pane rules).
  *  R7PANE.1 (codec v2): the Timeline pane and the bottom Desk collapse into ONE right panel;
  *  `panelOpen` is optional — absent means "derive the default" (open at ≥1440 when findings
- *  exist, closed otherwise), so the REQ-PANE-2 default survives a user never touching it. */
+ *  exist, closed otherwise), so the REQ-PANE-2 default survives a user never touching it.
+ *  R7UX.7 (BL-98): `panelWidth` takes the same three-state shape — absent means
+ *  `DEFAULT_PANEL_WIDTH`, so a divider's double-click reset deletes the stored key instead of
+ *  writing the default back. */
 export interface PaneState {
   view: ViewMode;
   /** `]` — the right panel's open intent at docked widths; undefined = derive from the table. */
   panelOpen?: boolean;
-  /** the right panel's docked width (snap-constrained; LAYOUT.timelineSnapPx set is reused). */
-  panelWidth: number;
+  /** the right panel's docked width (snap-constrained; LAYOUT.timelineSnapPx set is reused);
+   *  undefined = `DEFAULT_PANEL_WIDTH` (no stored custom split). */
+  panelWidth?: number;
   /** the right panel's selected tab. */
   panelTab: PanelTab;
   /** View-menu toggles. */
@@ -158,7 +167,7 @@ export function paneLayout(width: number, input: LayoutInput): PaneLayout {
   const inFlow = mode === "narrow" || mode === "wide";
   const pageChFor = (m: PaneLayout["margin"], po: boolean, sbPx: number): number => {
     const marginPx = m === "cards" ? LAYOUT.marginPx : m === "ticks" ? 36 : 0;
-    const panelPx = panelMode === "docked" && po ? input.panelWidth : 0;
+    const panelPx = panelMode === "docked" && po ? (input.panelWidth ?? DEFAULT_PANEL_WIDTH) : 0;
     return Math.floor((width - sbPx - marginPx - panelPx) / LAYOUT.chPx);
   };
 

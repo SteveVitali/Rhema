@@ -28,6 +28,7 @@ const LABELS: IdeLabels = {
   panel: {
     heading: "Panel",
     resize: "Resize the panel",
+    resizeReset: "Drag to resize · double-click for the default split",
     tabs: { chat: "Chat", feed: "Live", findings: "Findings", claims: "Claims", timeline: "Timeline" },
     emptyChat: "No chat yet.",
     emptyFeed: "No live feed.",
