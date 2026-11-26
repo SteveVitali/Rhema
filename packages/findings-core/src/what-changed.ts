@@ -1,5 +1,6 @@
 import type { Anchor, DispositionKind } from "@rhema/contracts";
 import { normalizeText, resolveAnchor, type PassageBlock } from "./anchor.js";
+import { EDIT_PAIR_FLOOR, wordCoverage } from "./word-diff.js";
 
 // The What-changed read model + the server-side block diff (§5.8; REQ-IDE-33, REQ-BETA-7/8, REQ-DATA-25).
 // The beta renders ONE layout — move cards + an Inline hunk list — computed entirely server-side from the
@@ -71,19 +72,6 @@ export interface BlockDiff {
   readonly afterBlocks: readonly DiffBlock[];
 }
 
-/** Fraction of `a`'s words present in `b` (order-agnostic) — the edited-pair heuristic. */
-function wordCoverage(a: string, b: string): number {
-  const wa = normalizeText(a).toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
-  if (wa.length === 0) return 0;
-  const wb = new Set(normalizeText(b).toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean));
-  let hit = 0;
-  for (const w of wa) if (wb.has(w)) hit += 1;
-  return hit / wa.length;
-}
-
-/** Below this coverage two unmatched blocks are a remove+add pair, not an edit. */
-const EDIT_PAIR_FLOOR = 0.25;
-
 /**
  * The block-aligned diff vN → v(N+1). Unchanged blocks anchor an LCS over normalized text; each changed
  * region between matched blocks becomes one hunk. Kind: `added`/`removed` for one-sided regions; a 1-before/
@@ -93,7 +81,11 @@ const EDIT_PAIR_FLOOR = 0.25;
 export function diffMarkdown(beforeMd: string, afterMd: string): BlockDiff {
   const before = splitMarkdownBlocks(beforeMd);
   const after = splitMarkdownBlocks(afterMd);
+  // 333_R7UX.10 — normalize once per block, not once per dp cell (pure key ⇒ identical diff; the
+  // compare view's block-diff budget on a 100 KB pair was ~1.5 s of repeated normalization).
   const key = (b: DiffBlock) => normalizeText(b.text);
+  const keysA = before.map(key);
+  const keysB = after.map(key);
 
   // LCS over normalized block text — the unchanged spine.
   const n = before.length;
@@ -101,7 +93,7 @@ export function diffMarkdown(beforeMd: string, afterMd: string): BlockDiff {
   const dp: number[][] = Array.from({ length: n + 1 }, () => new Array<number>(m + 1).fill(0));
   for (let i = n - 1; i >= 0; i--) {
     for (let j = m - 1; j >= 0; j--) {
-      dp[i]![j] = key(before[i]!) === key(after[j]!)
+      dp[i]![j] = keysA[i]! === keysB[j]!
         ? dp[i + 1]![j + 1]! + 1
         : Math.max(dp[i + 1]![j]!, dp[i]![j + 1]!);
     }
@@ -120,7 +112,7 @@ export function diffMarkdown(beforeMd: string, afterMd: string): BlockDiff {
   let pendB: DiffBlock[] = [];
   let pendA: DiffBlock[] = [];
   while (i < n && j < m) {
-    if (key(before[i]!) === key(after[j]!)) {
+    if (keysA[i]! === keysB[j]!) {
       flushRegion(pendB, pendA);
       pendB = [];
       pendA = [];

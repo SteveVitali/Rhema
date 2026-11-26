@@ -27,6 +27,9 @@ export * from "./gate-edits.js";
 export * from "./decisions.js";
 export * from "./inbox.js";
 export * from "./what-changed.js";
+// 333_R7UX.10 (BL-88) — the word-level diff inside a changed paragraph pair; `WordRun` is the
+// prosemirror-changeset 1.x `Change` shape so the 1.x pairing reuses the runs directly.
+export * from "./word-diff.js";
 export * from "./manual-revision.js";
 export * from "./voice-status.js";
 // HOT.1 — the single evidence-shape read seam (ADR-019): every evidence consumer normalizes here.

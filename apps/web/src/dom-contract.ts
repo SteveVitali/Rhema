@@ -1741,6 +1741,7 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-compare-previous", "conditional", "client/ide.ts compare action"),
     a("data-diff-kind", "conditional", "pages.tsx/ui diff"),
     a("data-diff-side", "conditional", "pages.tsx/ui diff"),
+    a("data-diff-word", "conditional", "ui/compare.tsx", "BL-88 word-level del|ins mark inside a changed block"),
     a("data-hunk", "conditional", "pages.tsx diff hunks"),
     a("data-hunk-comment", "conditional", "pages.tsx"),
     a("data-unlinked-group", "conditional", "pages.tsx"),
