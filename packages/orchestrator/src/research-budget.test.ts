@@ -7,11 +7,13 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createOrchestratorTestDb, seedProject, seedRun, type OrchestratorTestDb } from "./testing/pg.js";
 import { makeDeps, type TestDeps } from "./testing/deps.js";
 import {
+  isTransientDbReadError,
   readRunWebToolsPolicy,
   researchBudgetConsult,
   RESEARCH_BUDGET_DEFAULT_FETCHES,
   RESEARCH_BUDGET_DEFAULT_SEARCHES,
 } from "./research-budget.js";
+import { researchBudgetState } from "./internal-api.js";
 import { mintProxyCredential } from "./provision.js";
 import { authorRunAllowlist } from "./allowlist.js";
 
@@ -167,5 +169,61 @@ describe("readRunWebToolsPolicy — the credential-context policy read", () => {
     expect(wt?.fetchBudget).toBe(48);
     const absent = await readRunWebToolsPolicy(deps, { runId: "run_none", workspaceId: seed.workspaceId });
     expect(absent).toBeNull();
+  });
+});
+
+describe("researchBudgetState — the transient-read retry (R6FIX.55)", () => {
+  const transient = () => Object.assign(new Error(""), { code: "08006" });
+  const flaky = (failures: number) => {
+    let calls = 0;
+    return {
+      run: async <T>(tenantId: string, fn: (tx: never) => Promise<T>): Promise<T> => {
+        calls++;
+        if (calls <= failures) throw transient();
+        return deps.txRunner.run(tenantId, fn as Parameters<typeof deps.txRunner.run>[1] as never) as Promise<T>;
+      },
+      calls: () => calls,
+    };
+  };
+
+  it("isTransientDbReadError names the retryable classes only", () => {
+    expect(isTransientDbReadError(Object.assign(new Error(""), { code: "08003" }))).toBe(true);
+    expect(isTransientDbReadError(Object.assign(new Error(""), { code: "57P01" }))).toBe(true);
+    expect(isTransientDbReadError(Object.assign(new Error(""), { code: "ECONNRESET" }))).toBe(true);
+    expect(isTransientDbReadError(Object.assign(new Error(""), { code: "23505" }))).toBe(false);
+    expect(isTransientDbReadError(new Error("no code"))).toBe(false);
+    expect(isTransientDbReadError("not an object")).toBe(false);
+  });
+
+  it("one transient failure retries and returns the consult", async () => {
+    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId });
+    const wrap = flaky(1);
+    const consult = await researchBudgetState(
+      { ...deps, txRunner: wrap as unknown as typeof deps.txRunner },
+      { runId: "run1", workspaceId: seed.workspaceId },
+    );
+    expect(wrap.calls()).toBe(2);
+    expect(consult.searchesRemaining).toBe(RESEARCH_BUDGET_DEFAULT_SEARCHES);
+  });
+
+  it("a non-transient failure propagates without a retry", async () => {
+    const perm = { run: async () => { throw Object.assign(new Error(""), { code: "23505" }); } };
+    await expect(
+      researchBudgetState(
+        { ...deps, txRunner: perm as unknown as typeof deps.txRunner },
+        { runId: "run1", workspaceId: seed.workspaceId },
+      ),
+    ).rejects.toMatchObject({ code: "23505" });
+  });
+
+  it("transient on both attempts still propagates (one retry, never a loop)", async () => {
+    const wrap = flaky(2);
+    await expect(
+      researchBudgetState(
+        { ...deps, txRunner: wrap as unknown as typeof deps.txRunner },
+        { runId: "run1", workspaceId: seed.workspaceId },
+      ),
+    ).rejects.toMatchObject({ code: "08006" });
+    expect(wrap.calls()).toBe(2);
   });
 });
