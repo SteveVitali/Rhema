@@ -227,6 +227,7 @@ Budget: ~400 changed lines incl. tests (S–M) — stop past it.
 - **PR:** #424 `stevenvitali/r7ux-7-pane-resize` → `main` (ticket-named base r7ux-6 was
   merged by the operator at 00:12Z mid-dispatch), head `d63533cb` — unmerged, mergePolicy
   OPERATOR.
-- **ci:** pass #424@`d63533cb` (run 45731694565 — ci-pass anchor, contracts, fast-path,
-  images 9m50s, integration, public-safe, typecheck/lint/unit 26m37s — all 7 legs);
-  records-head read pending the records commit.
+- **ci:** pass #424@`d63533cb` (run 45731694565 — all 7 legs, slowest
+  typecheck/lint/unit 26m37s); pass #424@`f304ce13` records head (run 45749187296 —
+  all 7 legs, same-tree anchor `ci-pass-b373bc747b99` fast legs since the delta is
+  records-only).
