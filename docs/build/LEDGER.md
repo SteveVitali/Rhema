@@ -70,7 +70,7 @@ pointers; substance unchanged.)_
   `01M8729FB5STEXTJN37XJ63B5J` then **completed** end-to-end (355cr) — first delivery since
   10-28 — and N11's `01M874A5Y5F31Z97VKM05MAPSZ` followed (661cr). The zero-coverage skeletons
   both runs produced are a *different* defect → F-R6FIX.45-1.
-- **OPEN 2026-11-24 — F-R6FIX.45-1: research runs deliver zero-coverage skeleton dossiers.** Both
+- **RESOLVED 2026-11-25 → `bf5650ea` live datum (the dated tail below). — F-R6FIX.45-1: research runs deliver zero-coverage skeleton dossiers.** Both
   funded-window deliveries end `run.unverified{coveredClaims:0, checkableClaims:5}` +
   `cost.refunded{zero_coverage}` — honest under REQ-SPEC-31 on N6's fictional fixture, but N11's
   run reviewed the **golden op-ed** (real checkable text) and produced the same skeleton: every
@@ -110,7 +110,7 @@ pointers; substance unchanged.)_
   523cr, no `run.unverified`, no `cost.refunded`. Real research → real coverage → verified
   delivery; the gate hole and its n=3 skeleton deliveries are closed. T10/T13/T14-content/
   N11-chip unblocked — a real-coverage dossier now exists for their owed evidence.*
-- **OPEN 2026-11-24 — F-R6FIX.45-2: SSE client-abort races crash the api instance's response —
+- **RESOLVED 2026-11-25 → `bf5650ea` 25s-reload console gate (the dated tail below). — F-R6FIX.45-2: SSE client-abort races crash the api instance's response —
   intermittent 503 bursts + web SSR 500s on live project pages.** Cloud Run log evidence:
   `TypeError [ERR_INVALID_STATE]: Controller is already closed` at
   `RunEventStreamer.sink` (sse-routes.ts:110 → event-stream.ts:163) followed immediately by
@@ -141,7 +141,7 @@ pointers; substance unchanged.)_
   `ERR_ABORTED` SSE aborts (the exact racing class) aborted cleanly — zero 500s, zero
   `ERR_INVALID_STATE` in the api window 21:00Z–01:45Z. The guarded-enqueue + tail-rejection
   fix holds under the load that produced the crash.*
-- **OPEN 2026-11-25 — F-R6FIX.45-3: the run report's spent line omits `kind=adjustment` ledger
+- **RESOLVED 2026-11-25 → diagnosis corrected + carrier `319_R6FIX.48` (PR #412, merged; deployed `bf5650ea`). — F-R6FIX.45-3: the run report's spent line omits `kind=adjustment` ledger
   rows — under-reports the actual charge whenever a finalize true-up posts.** Found by R6's own
   contract (report spent = card committed): run `01M883HDHA717J6FS925PCHJYF` — card meter +
   `cost.final.spentCredits` 523, report's "Σ debits" line 360, no refund line; ledger truth:
@@ -165,7 +165,7 @@ pointers; substance unchanged.)_
   difference-line mechanism (it validates difference rows' text *after* the failing check).
   Fix carrier **319_R6FIX.48** (PR #412): the arm sums rendered credits over gap-explaining
   `data-difference` rows (`cross_check` excluded) and requires exact equality with the gap.*
-- **OPEN 2026-11-25 — F-R6FIX.45-4: the paid T13 leg never opens the Findings desk (harness).**
+- **RESOLVED 2026-11-25 → T13 PASS at `bf5650ea` (carrier `320_R6FIX.49`, PR #413, merged; dated tail below). — F-R6FIX.45-4: the paid T13 leg never opens the Findings desk (harness).**
   The paid leg located `[data-apply]` without `openFindingsDesk` — REQ-PANE-5 (307_R6FIX.36)
   mounts findings inside the right panel's Findings tab, CSS-hidden until the desk opens, so the
   locator counted hidden DOM and `assertClick` failed `the Apply control: not visible` on a
@@ -175,7 +175,7 @@ pointers; substance unchanged.)_
   POST-capture Apply arm; the paid leg carried neither. Same sweep found dead
   `[data-findings-list]` selectors on T10's verb fallback and T14's obligation arm — the
   ancestor no longer exists on the R7b dossier. Fix carrier **320_R6FIX.49**.
-- **OPEN 2026-11-25 — F-R6FIX.45-5: T14's badge reads race POST commits (harness).** The
+- **RESOLVED 2026-11-25 → T14 + N11 PASS at `bf5650ea` (carrier `320_R6FIX.49`, PR #413, merged; dated tail below). — F-R6FIX.45-5: T14's badge reads race POST commits (harness).** The
   escalate arm reads the inbox badge right after `settleNav`, which resolves on the client
   route change and can land while the disposition POST is in flight — the twin then serves
   the pre-commit decisions set. Live datum: escalate committed `dispositions`
