@@ -862,6 +862,21 @@ has exactly one owner.
   fold confirmed (the §17 banner chain + A.13 notes now record ADR-008/104/105 → ADR-111). Gate:
   `docs/build/tools/check-adr-banners.mjs` extended to 24 pairs.
 
+- **2026-11-26 (maintenance fold — post-ADR-130 canonical-spec amendments, BL-05 continuation):**
+  the five ADRs landed since the 253_R7REC.1 fold (2026-11-08) whose spec claims reach a canonical
+  spec file are bannered in their owning sections — `docs/rhema-design-spec.md`: **ADR-136** →
+  §11.6 (REQ-DATA-21 freeze cause `superseded_by_import` + the REQ-DATA-14 empty-head definition +
+  the promote-on-launch correction) and **ADR-137** → §12.5 (`chat.token {turnId, seq, text}` joins
+  the user-event catalogue as its first `ephemeral` member — replay-live-only semantics); the DS
+  status line gains the dated maintenance-fold entry. `docs/round-7-draft-spec.md`: **ADR-131** →
+  §4.5 (sidebar-collapse `localStorage` seam + `reserved-chords.json`/`IDE_KEYMAP` generated
+  keymap), **ADR-134** → §4.8 (delegated `IdeChrome` submit + `SPA_WRITE` home + the
+  `mutationOutcome` census + the chat envelope arm), **ADR-135** → §4.11 (JSON-fetch send on the
+  envelope arm + `debitedCredits` charge + the `replySummary`/`refs` reply sidecar) with **ADR-137**
+  un-parking REQ-TALK-3's "token deltas BACKLOG". ADR-132/133 claim ticket files only — no
+  canonical-spec banner owed. `check-adr-banners.mjs` extended 24→29 pairs (all green). **(ADR-131/
+  134/135/136/137; BL-05 stays open on its operator-ratification cell.)**
+
 - **2026-11-08 (253_R7REC.1 — round-7 spec fold-back, REQ-CLOSE-3):** verified the ADR-126…130
   banner set spec §3.2 mandates and applied the missing dated banners — `docs/rhema-design-spec.md`
   §5.5 D20 + REQ-IDE-19/-41/-48 rows (ADR-130: walkthrough retired → REQ-COPY-4 composed card;

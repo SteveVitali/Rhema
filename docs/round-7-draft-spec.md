@@ -560,6 +560,15 @@ defects it would put in front of public visitors are fixed first:
   - Inside a project it opens project-scoped by default, with a "Search all projects" row.
   - A + B.
 
+> **⚑ Amendment — 2026-11-26 (ADR-131, R7SHELL.1a): shell sub-decisions recorded.** The sidebar
+> collapse state is `localStorage["rhema:sidebar:v1:<userId>"]` (`"collapsed"|"expanded"`) —
+> per-user keyed, session-only fallback, never a URL param, never server state, never leaf-read
+> (`sidebarStorageKey(userId)` is the single seam). The REQ-KEYS-1 keymap rules live as data in
+> `packages/ide/src/reserved-chords.json` (`nonCapturable`/`conventionalAvoid`/`keep`/`transitional`
+> sets — `transitional` pins each grandfathered chord to its ONE action until R7WRITE.2 retires the
+> set); `IDE_KEYMAP` is the committed binding table and `CHEAT_SHEET`/`shortcutFor` are generated
+> from it, so the `?` sheet can never drift from the bindings.
+
 ### 4.6 REQ-KIT: component primitives (GD-UX-KIT.R7; ADR-129) [A2, B7, D3, D4, D8, E1, G6, I1, I3, UXC-14…18, UXC-31/32]
 
 - `REQ-KIT-1` [R7a]: **base layer.**
@@ -686,6 +695,18 @@ defects it would put in front of public visitors are fixed first:
   - Document navigations sanctioned by S-14 are excluded by name.
   - A + B.
 
+> **⚑ Amendment — 2026-11-26 (ADR-134, R7RELOAD.1): the write-grammar mechanics recorded.** One
+> delegated submit lives at the `IdeChrome` host `onSubmit` — a leaf's own `onSubmit` claims its
+> forms first via `defaultPrevented`, so chrome panes and leaves share exactly one interception
+> grammar. The shared allowlist is `SPA_WRITE` in `apps/web/src/spa/write-paths.tsx` (the retired
+> surface grammars' union + the pane-body-only paths); chat forms stay outside it deliberately
+> (their fetch is a mutation, not a form). Every `server.ts` POST answers through `mutationOutcome`
+> or a named exemption enumerated in `write-paths.test.ts` (funnel auth forms, JSON-only endpoints,
+> the binary export, factory-registered handlers) — a source census test fails on a re-declared
+> `*_WRITE` grammar. The chat JSON arm is the `mutationOutcome` envelope verbatim
+> (`{ok:true, redirect, data}` at 200), refusals keep `chatFail`'s stable snake-case codes on both
+> arms, and no-JS forms land the `#chat` flash redirect — never a raw JSON page.
+
 ### 4.9 REQ-HOME: list, landing, new project, import [R7b] (GD-UX-HOME-LIST.R7, GD-UX-PROJECT-HOME.R7) [A1, A3, A7–A11, I1–I5, G5, UXC-17/25]
 
 - `REQ-HOME-1`: **projects list.**
@@ -783,6 +804,24 @@ defects it would put in front of public visitors are fixed first:
   - A + B.
 - `REQ-TALK-4`: Findings/Claims tabs show the latest delivered review, labelled "From Review of
   vN". "No findings yet" appears only when none was ever delivered [B17]. A + B.
+
+> **⚑ Amendment — 2026-11-26 (ADR-135, R7TALK.1a): the chat contract's decided shape.** Send is a
+> JSON fetch against the `mutationOutcome` envelope arm, never `SPA_WRITE`; the native form stays
+> the no-JS fallback. The turn's charge field is `debitedCredits` (net ledger debits − refunds,
+> cap-clamped by construction, read under the request-scoped client) — `spentCredits` burn is
+> labelled above cap via `aboveCapFmt`, never presented as the charge (no money-mode change, RV-21).
+> The reply renders from the turn-result sidecar's ≤600-char `replySummary` + `refs` citation
+> chips; the status DTO carries no model text (REQ-DATA-37). U6.chat stubs at the web route
+> boundary (`u6-stub-turn.fixture.json`; paid:false, $0). Assistant text renders via
+> `renderAssistantText` sanitized plain paragraphs pending the shared markdown renderer
+> (D-R7TALK.1a-2).
+>
+> **⚑ Amendment — 2026-11-26 (ADR-137, R7UX.8/9): REQ-TALK-3's "Token-level deltas are BACKLOG"
+> is un-parked.** `chat.token {turnId, seq, text}` joined the user-event catalogue as its first
+> `ephemeral` member — DS §12.5 carries the full record (replay-live-only semantics, per-turn seq,
+> 280-char split bound, requester-only Verbose density, `chat_turn`-only `includePartialMessages`).
+> The client renders deltas into the pending bubble mid-flight and swaps to the canonical reply on
+> the terminal refetch.
 
 ### 4.12 REQ-KEYS: a browser-safe keymap [R7b] (GD-UX-KEYS.R7) [B12, B13]
 
