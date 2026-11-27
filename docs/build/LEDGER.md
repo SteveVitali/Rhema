@@ -25,7 +25,7 @@
 ```
 projectStatus:   IN_PROGRESS
 nextTicket:        (maintenance mode)   # UX backlog wave 324–334 COMPLETE (GD-UXBACKLOG-1, operator-asked) — 334_R7UX.11 was the final row
-lastCompleted:    336_R6FIX.54      # U4 dossier discovery pass 2 — /bff/app rows + FilterSelect exempt mirror; live PASS vs prod bf5650ea; #430 unmerged; D-R6FIX.54-1 = nightly verdict on deployed SHA
+lastCompleted:    340_R6FIX.58      # vendored SDK via _SDK_BUNDLE_URI (F-R7UX.9-1); #434 unmerged; live leg parked (D-R6FIX.58-1)
 blockedOn:       (none)
 pauseRequested:  false
 returnPass:      (none)
@@ -36,7 +36,7 @@ dispatchTarget:  subagent
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main              # flat mode — inserts branch off origin/main
 pinnedBaseSha:   a34eb51           # round-7 fork point (unchanged)
-chainTip:        stevenvitali/r6fix-54b-u4-dossier-projectlist  # next insert forks origin/main (flat mode)
+chainTip:        stevenvitali/r6fix-58-sdk-bundle  # next insert forks origin/main (flat mode)
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint
 mergePolicy:     OPERATOR
@@ -50,9 +50,11 @@ _(Resolved entries are one-line stubs; their original bodies are archived verbat
 `reports/ledger-archive/2026-10-01_open-findings-return-pass.md`. Open entries are tightened with
 pointers; substance unchanged.)_
 
-- **OPEN — F-R7UX.8-1 (2026-11-26): the egress-proxy MIG's `OPPORTUNISTIC` updatePolicy does not roll a running VM when `pulumi up` changes the proxy template.** On `pr-425` the VM kept serving the deleted hello placeholder on :8443 (HTTP-200 non-Message bodies → agent phase "JSON but not a Message" failures). Fix in-run: `update-instances --minimal-action replace`. Owed: a bring-up guard — after every image-pin `up`, verify the proxy's `list-instances` template matches (or pin `PROACTIVE`). Recorded in `runs/R7UX.8.md`. _2026-11-26 (R7UX.9): recurred verbatim on `pr-426` — the guard was applied manually (`list-instances` check → replace) before the walk; the systemic fix is still owed._
+- **OPEN — F-R7UX.8-1 (2026-11-26): the egress-proxy MIG's `OPPORTUNISTIC` updatePolicy does not roll a running VM when `pulumi up` changes the proxy template.** On `pr-425` the VM kept serving the deleted hello placeholder on :8443 (HTTP-200 non-Message bodies → agent phase "JSON but not a Message" failures). Fix in-run: `update-instances --minimal-action replace`. Owed: a bring-up guard — after every image-pin `up`, verify the proxy's `list-instances` template matches (or pin `PROACTIVE`). Recorded in `runs/R7UX.8.md`. _2026-11-26 (R7UX.9): recurred verbatim on `pr-426` — the guard was applied manually (`list-instances` check → replace) before the walk; the systemic fix is still owed._ _2026-11-26 (R6FIX.56): carrier landed — `updatePolicy PROACTIVE`+`REPLACE`/`SUBSTITUTE` `maxSurgeFixed:1`/`maxUnavailableFixed:0` (zero-gap roll; `pulumi up` alone converges the proxy) — **#432 unmerged**; entry closes on the live repin datum._
 - **OPEN — F-R7UX.9-1 (2026-11-26): an `_ALLOW_PLACEHOLDER_SDK=1` run-task image cannot execute the agent at all.** The Cloud Build path drops the vendored `@anthropic-ai/claude-agent-sdk` (gitignored operator-held tree), so a run's agent phase fails `ERR_MODULE_NOT_FOUND` at `step.started` (observed on `pr-426` run `01M8BF6BJMSF2NC56ZG5E2ZYDS`, attempt 2 — attempt 1 separately flaked on the transient `GcsApiError` work-materialization class seen on UX.8). Any preview walk exercising a real `chat_turn` needs a real run-task build: copy `apps/run-task/vendor` from an operator checkout, `gcloud builds submit _SERVICES=run-task _ALLOW_PLACEHOLDER_SDK=0`, repin `runTaskImageDigest`, re-run `up` + `infra/k8s/apply.sh` (prewarm digest). Owed: the vendored SDK resolvable from a non-worktree source (or a documented bring-up step for preview walks that run agents). Recorded in `runs/R7UX.9.md`.
 - **OPEN — F-R7UX.8-2 (2026-11-26): the nonprod Anthropic key is dead at the provider.** Direct `api.anthropic.com` 401 `invalid x-api-key` on dev `anthropic-api-key` v1/v2 and both preview copies (byte-identical, sha256-verified). Dev + preview inference were dead until GD-R7UX.8-1's prod-key ruling; a fresh nonprod key is owed (operator credential act) — extends F-R6CNT.2-1's known-dev-key finding to ALL nonprod copies.
+
+- **OPEN — F-R6FIX.55-1 (2026-11-26): `GET /internal/runs/:id/research-budget` 500s on a bare pg `DatabaseError` inside `withTenant` — 12-hit burst 11-24T17:05Z → 11-25T03:43Z, quiescent since; failure class undiagnosable from the log line (no SQLSTATE emitted).** The run-task's retry-gate consult degrades to `null` honestly (falls back to the spec-stamped figure), so the blast radius is degraded consults + alert noise, not correctness. Carrier `337_R6FIX.55` (#431): `driverTags` on the route error line names the next occurrence's SQLSTATE + one transient-class retry on the pure reads. Owed: recurrence-rate datum post-deploy — a recurring burst means a deeper connection-lifecycle defect.
 
 - **RESOLVED 2026-09-11 → `readouts/GATE-G1.md` + PHASE LOG 2026-09-11 (P0.15k Stage B, PR #28).**
   G1 core criterion met live — three real-project Reviews delivered green on `dev` via the Path-B
@@ -70,7 +72,7 @@ pointers; substance unchanged.)_
   `01M8729FB5STEXTJN37XJ63B5J` then **completed** end-to-end (355cr) — first delivery since
   10-28 — and N11's `01M874A5Y5F31Z97VKM05MAPSZ` followed (661cr). The zero-coverage skeletons
   both runs produced are a *different* defect → F-R6FIX.45-1.
-- **OPEN 2026-11-24 — F-R6FIX.45-1: research runs deliver zero-coverage skeleton dossiers.** Both
+- **RESOLVED 2026-11-25 → `bf5650ea` live datum (the dated tail below). — F-R6FIX.45-1: research runs deliver zero-coverage skeleton dossiers.** Both
   funded-window deliveries end `run.unverified{coveredClaims:0, checkableClaims:5}` +
   `cost.refunded{zero_coverage}` — honest under REQ-SPEC-31 on N6's fictional fixture, but N11's
   run reviewed the **golden op-ed** (real checkable text) and produced the same skeleton: every
@@ -110,7 +112,7 @@ pointers; substance unchanged.)_
   523cr, no `run.unverified`, no `cost.refunded`. Real research → real coverage → verified
   delivery; the gate hole and its n=3 skeleton deliveries are closed. T10/T13/T14-content/
   N11-chip unblocked — a real-coverage dossier now exists for their owed evidence.*
-- **OPEN 2026-11-24 — F-R6FIX.45-2: SSE client-abort races crash the api instance's response —
+- **RESOLVED 2026-11-25 → `bf5650ea` 25s-reload console gate (the dated tail below). — F-R6FIX.45-2: SSE client-abort races crash the api instance's response —
   intermittent 503 bursts + web SSR 500s on live project pages.** Cloud Run log evidence:
   `TypeError [ERR_INVALID_STATE]: Controller is already closed` at
   `RunEventStreamer.sink` (sse-routes.ts:110 → event-stream.ts:163) followed immediately by
@@ -141,7 +143,7 @@ pointers; substance unchanged.)_
   `ERR_ABORTED` SSE aborts (the exact racing class) aborted cleanly — zero 500s, zero
   `ERR_INVALID_STATE` in the api window 21:00Z–01:45Z. The guarded-enqueue + tail-rejection
   fix holds under the load that produced the crash.*
-- **OPEN 2026-11-25 — F-R6FIX.45-3: the run report's spent line omits `kind=adjustment` ledger
+- **RESOLVED 2026-11-25 → diagnosis corrected + carrier `319_R6FIX.48` (PR #412, merged; deployed `bf5650ea`). — F-R6FIX.45-3: the run report's spent line omits `kind=adjustment` ledger
   rows — under-reports the actual charge whenever a finalize true-up posts.** Found by R6's own
   contract (report spent = card committed): run `01M883HDHA717J6FS925PCHJYF` — card meter +
   `cost.final.spentCredits` 523, report's "Σ debits" line 360, no refund line; ledger truth:
@@ -165,7 +167,7 @@ pointers; substance unchanged.)_
   difference-line mechanism (it validates difference rows' text *after* the failing check).
   Fix carrier **319_R6FIX.48** (PR #412): the arm sums rendered credits over gap-explaining
   `data-difference` rows (`cross_check` excluded) and requires exact equality with the gap.*
-- **OPEN 2026-11-25 — F-R6FIX.45-4: the paid T13 leg never opens the Findings desk (harness).**
+- **RESOLVED 2026-11-25 → T13 PASS at `bf5650ea` (carrier `320_R6FIX.49`, PR #413, merged; dated tail below). — F-R6FIX.45-4: the paid T13 leg never opens the Findings desk (harness).**
   The paid leg located `[data-apply]` without `openFindingsDesk` — REQ-PANE-5 (307_R6FIX.36)
   mounts findings inside the right panel's Findings tab, CSS-hidden until the desk opens, so the
   locator counted hidden DOM and `assertClick` failed `the Apply control: not visible` on a
@@ -175,7 +177,7 @@ pointers; substance unchanged.)_
   POST-capture Apply arm; the paid leg carried neither. Same sweep found dead
   `[data-findings-list]` selectors on T10's verb fallback and T14's obligation arm — the
   ancestor no longer exists on the R7b dossier. Fix carrier **320_R6FIX.49**.
-- **OPEN 2026-11-25 — F-R6FIX.45-5: T14's badge reads race POST commits (harness).** The
+- **RESOLVED 2026-11-25 → T14 + N11 PASS at `bf5650ea` (carrier `320_R6FIX.49`, PR #413, merged; dated tail below). — F-R6FIX.45-5: T14's badge reads race POST commits (harness).** The
   escalate arm reads the inbox badge right after `settleNav`, which resolves on the client
   route change and can land while the disposition POST is in flight — the twin then serves
   the pre-commit decisions set. Live datum: escalate committed `dispositions`
@@ -1840,3 +1842,7 @@ decomposition) predate the convention and remain in the prior region verbatim._
 - 2026-11-26 — **336_R6FIX.54 done — U4.controls dossier runId discovery (run-time insert; PR #429 on `stevenvitali/r6fix-54-u4-dossier-rundiscovery`, base main; unmerged — mergePolicy OPERATOR).** The 06:23Z nightly `45767836181` — first suite-complete run on 335_R6FIX.53's crash fix — failed one leg: dossier `landed the NotFound leaf`. Root cause: the leg's runId discovery fetched the tenant timeline twin with a bare anonymous `fetch` (→401) AND parsed a flat `twin.runs[]` the TimelineDto never returns (`rounds[].runs[].card.state`+`ungrouped`) — `runId=""` for the leg's whole life; the surface probed the NotFound leaf (control-clean → vacuous pass) until R6FIX.44's h1 guard turned it honest. Fix: `page.request.get` (context session) + `dossierRunIdFromTimeline` + owed-run guard before substitution (`u4-discovery.test.ts` 4/4; journeys build/typecheck/lint green). Deferral: D-R6FIX.54-1 (nightly verdict post-merge). harness: devin-cli/swe-2-high.
 - 2026-11-26 — **336_R6FIX.54 pass 2 done — U4 dossier discovery via `/bff/app` rows + FilterSelect exempt mirror (PR #430 on `stevenvitali/r6fix-54b-u4-dossier-projectlist`, base main; unmerged — mergePolicy OPERATOR).** Manual live re-verification of merged #429 vs prod `bf5650ea` surfaced two deeper defects the unit legs couldn't see: `/bff/p/<slug>/timeline` is demo-only (404 for tenants — pass-1's premise) and the sidebar's first project (`untitled-2`) carries no review; discovery now scans `/bff/app` rows' `latestReviewRunId` — the sidebar's own source — preferring the picked project's review, else the first row carrying one, navigating THAT row's dossier (`dossierTargetFromProjectList`). Second defect: the dossier's named `FilterSelect` exemption (findings-desk.tsx, R7KIT.3d/RV-36 no-JS GET-form sev/kind/disp selects) was never mirrored in `U4_SURFACES`' exempt containers → the live probe flagged 3 false violations; `[data-findings-filters] select` added. Verify: `u4-discovery.test.ts` 4/4 · journeys build/typecheck/lint green · **live `PASS U4.controls` vs prod `bf5650ea`** — `/p/showcase/review/01M8B8FZYDHW5WEB17DHRNCTCF`, $0. D-R6FIX.54-1 stays open for the scheduled-run verdict. harness: devin-cli/swe-2-high. `chainTip` → `stevenvitali/r6fix-54b-u4-dossier-projectlist`.
 
+- 2026-11-26 — **337_R6FIX.55 done — research-budget transient-read retry + driverTags (run-time insert; PR #431 on `stevenvitali/r6fix-55-research-budget`, base main; unmerged — mergePolicy OPERATOR).** The R6FIX.54 post-fix error sweep found 12 `unhandled_route_error` on `/internal/runs/:id/research-budget` (11-24/25 burst, quiescent since) — a bare pg `DatabaseError` inside `withTenant`, undiagnosable because the log line strips the message AND carried no SQLSTATE. Fix: `driverTags` field on `RouteErrorFields` (the `ERROR_TAG_FIELDS` allowlist — `code`/`routine`/`constraint`/`syscall` tokens, re-validated at the emit seam) + `isTransientDbReadError` + one retry on the consult's pure reads. 32/32 tests; build/typecheck/lint green. **F-R6FIX.55-1** opened for the underlying connection-drop class (recurrence watch). Sweep datums folded in: F-R6FIX.45-2's SSE class silent 55h+ post-deploy; billing recompute $256.87/mo (BL-29 note). harness: devin-cli/swe-2-high. `chainTip` → `stevenvitali/r6fix-55-research-budget`.
+- 2026-11-26 — **338_R6FIX.56 done — proxy MIG PROACTIVE zero-gap roll (run-time insert; F-R7UX.8-1; PR #432 on `stevenvitali/r6fix-56-proxy-mig-guard`, base main; unmerged — mergePolicy OPERATOR).** The MIG's default `OPPORTUNISTIC` updatePolicy never rolls a running VM on template change — pr-425/426 served the deleted hello template on :8443 (agent "JSON but not a Message"). Declared `updatePolicy`: `PROACTIVE`+`minimalAction REPLACE`+`SUBSTITUTE` with `maxSurgeFixed:1`/`maxUnavailableFixed:0` — `pulumi up` alone converges the proxy, gapless (substitute health-checks before the old drops; prod benefit: template-changing deploys now roll prod VMs). compute.test.ts posture leg 30/30. Live leg parked on the spend ruling (next natural repin). harness: devin-cli/swe-2-high. `chainTip` → `stevenvitali/r6fix-56-proxy-mig-guard`.
+- 2026-11-26 — **339_R6FIX.57 done — placeholder default → digest-pinned hello (run-time insert; F-R7UX.1-1; PR #433 on `stevenvitali/r6fix-57-pause-image`, base main; unmerged — mergePolicy OPERATOR).** gcr pruned `pause:3.9` (repo lists ≤3.2 + `deprecated-public-image-*`) — `pulumi up` sans image pins failed all Cloud Run creates on image-pull (pr-418/420 bring-ups). Default → `us-docker.pkg.dev/cloudrun/container/hello@sha256:9654ebfd…da0e`: digest survives tag GC (the failure mode), hello = prod's own `Pulumi.prod.yaml` override, and it listens on the port pause never did. Stage A: `@rhema/infra` typecheck+lint+vitest 155/155. Live leg parked — D-R6FIX.57-1 owes the next preview bring-up datum per the spend ruling; F-R7UX.1-1 stays OPEN until then. harness: devin-cli/swe-2-high. `chainTip` → `stevenvitali/r6fix-57-pause-image`.
+- 2026-11-26 — **340_R6FIX.58 done — vendored SDK resolvable from a non-worktree source (run-time insert; F-R7UX.9-1; PR #434 on `stevenvitali/r6fix-58-sdk-bundle`, base main; unmerged — mergePolicy OPERATOR).** A clean worktree can't build a real run-task image (vendor trees are gitignored operator-held) — placeholder images fail `ERR_MODULE_NOT_FOUND` at `step.started`, and preview `chat_turn` walks needed a manual copy workaround. `image-set.yaml` gains `_SDK_BUNDLE_URI` + `sdk-bundle-fetch` (cloud-sdk image, before `image-set`): extracts the operator-seeded bundle into `apps/run-task/vendor/`, then the existing context assert proves the trees. Gated to real run-task builds only. **Bundle seeded** — `gs://rhema-507501_cloudbuild/run-task-sdk/3289386ff6e96478080e37ca78ac78267d46bdd2440660e459ce76337f9c2fcf.tar.gz` (92.78 MiB, content-sha-named, private staging bucket; Cloud Build SA already reads it). cloudbuild.test.ts 7/7 + infra typecheck/lint green. Live leg parked — D-R6FIX.58-1 owes a real `gcloud builds submit _SDK_BUNDLE_URI=…` (build minutes, spend ruling); F-R7UX.9-1 stays OPEN until then. harness: devin-cli/swe-2-high. `chainTip` → `stevenvitali/r6fix-58-sdk-bundle`.

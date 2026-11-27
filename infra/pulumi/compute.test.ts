@@ -128,6 +128,19 @@ describe("R6INF.2 — the proxy ILB frontend (ADR-122; REQ-DEP-3; GD-REMAINING.R
     expect(guard).toBeLessThan(mig);
   });
 
+  it("the proxy MIG rolls PROACTIVELY on template change — gapless (F-R7UX.8-1)", () => {
+    // OPPORTUNISTIC (the default) leaves a running VM on the deleted template after an image-pin
+    // `up` — observed on pr-425/426 serving the hello placeholder on :8443. The pin asserts the
+    // declared roll posture: PROACTIVE + REPLACE with surge-over-zero-unavailable (substitute
+    // joins healthy before the old drops), so `pulumi up` alone converges the proxy.
+    const mig = SRC.slice(SRC.indexOf('new gcp.compute.RegionInstanceGroupManager(name("proxy-mig")'));
+    expect(mig).toContain('type: "PROACTIVE"');
+    expect(mig).toContain('minimalAction: "REPLACE"');
+    expect(mig).toContain("maxSurgeFixed: 1");
+    expect(mig).toContain("maxUnavailableFixed: 0");
+    expect(mig).toContain('replacementMethod: "SUBSTITUTE"');
+  });
+
   it("the non-prod self-wire falls back to the VIP, not the reserved direct-path IP", () => {
     // ADR-122 item 6: `args.proxyBaseUrl ??` resolves to `proxyVip` (the LB frontend)
     // ahead of `proxyIp` on BOTH consumers — worker ANTHROPIC_BASE_URL + api
