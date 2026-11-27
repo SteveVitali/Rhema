@@ -386,6 +386,19 @@ export function createCompute(args: ComputeArgs): Compute {
       // Non-prod pins the proxy VM to zones with capacity (a us-central1-f e2 stockout blocked the MIG instance
       // in P0.15f Stage B). Prod lets the regional MIG place its instances.
       ...(cfg.kind !== "prod" ? { distributionPolicyZones: [`${region}-a`, `${region}-c`] } : {}),
+      // F-R7UX.8-1: the default OPPORTUNISTIC updatePolicy never rolls a RUNNING instance on a
+      // template change — `pulumi up` repinning the proxy image left the VM serving the deleted
+      // template (observed on pr-425/pr-426: a hello placeholder on :8443 → agent "JSON but not a
+      // Message" failures). PROACTIVE rolls on every template update; maxSurge+zero-unavailable
+      // makes the roll gapless (substitute instance joins + health-checks before the old drops —
+      // run pods' fail-closed egress never sees a dead backend).
+      updatePolicy: {
+        type: "PROACTIVE",
+        minimalAction: "REPLACE",
+        maxSurgeFixed: 1,
+        maxUnavailableFixed: 0,
+        replacementMethod: "SUBSTITUTE",
+      },
     });
 
     // --- ADR-122: the internal passthrough NLB on a shared VIP (the address consumers dial) ----
