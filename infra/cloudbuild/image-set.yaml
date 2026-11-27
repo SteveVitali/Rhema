@@ -6,6 +6,11 @@
 #
 #   gcloud builds submit --config infra/cloudbuild/image-set.yaml --project rhema-507501 \
 #     --substitutions _AR=<repo>,_TAG=<tag>,_GIT_SHA=$(git rev-parse HEAD)[,_SERVICES=api,web]
+#   Real run-task builds from a checkout that lacks the gitignored vendor trees pass
+#   _SDK_BUNDLE_URI=gs://<bucket>/<object>.tar.gz (F-R7UX.9-1): the sdk-bundle-fetch step
+#   extracts claude-agent-sdk/ + claude-agent-sdk-linux-x64/ into apps/run-task/vendor/
+#   before the context assert — the vendored SDK then resolves from cloud storage, not the
+#   submitting worktree.
 #
 # <repo> is the stack's Artifact Registry repo the Pulumi program provisions
 # (`us-central1-docker.pkg.dev/rhema-507501/rhema-<stack>`). Reproduce the deployed set by
@@ -25,7 +30,42 @@ substitutions:
   # image this way) must FAIL, not warn-and-continue. `1` = a deliberate no-engine placeholder
   # image (CI provenance builds / preview posture stages that never launch a run).
   _ALLOW_PLACEHOLDER_SDK: "0"
+  # F-R7UX.9-1 — empty = the context must already carry apps/run-task/vendor/* (operator
+  # checkout). Set to a private GCS tarball URI to hydrate the vendor trees in-build from
+  # cloud storage instead of the submitting worktree; bundle layout: claude-agent-sdk/ +
+  # claude-agent-sdk-linux-x64/ at the tar root. Ignored when _ALLOW_PLACEHOLDER_SDK=1 or
+  # _SERVICES excludes run-task.
+  _SDK_BUNDLE_URI: ""
 steps:
+  # F-R7UX.9-1 — hydrate the gitignored vendored SDK from a private GCS bundle when the
+  # submitting checkout doesn't carry it (clean worktrees never do). Runs BEFORE image-set so
+  # the existing context assert still proves the trees landed; a no-op unless a real run-task
+  # build needs it.
+  - id: sdk-bundle-fetch
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: sh
+    args:
+      - -ec
+      - |
+        case "${_SERVICES}" in
+          *run-task*) ;;
+          *) echo "_SERVICES excludes run-task — skipping SDK bundle fetch"; exit 0 ;;
+        esac
+        if [ "${_ALLOW_PLACEHOLDER_SDK}" = "1" ]; then
+          echo "placeholder run-task build — skipping SDK bundle fetch"; exit 0
+        fi
+        if [ -z "${_SDK_BUNDLE_URI}" ]; then
+          echo "no _SDK_BUNDLE_URI — context must carry apps/run-task/vendor/* (operator checkout)"; exit 0
+        fi
+        echo "=== fetching run-task SDK bundle: ${_SDK_BUNDLE_URI}"
+        gcloud storage cp "${_SDK_BUNDLE_URI}" /tmp/run-task-sdk.tar.gz
+        tar -xzf /tmp/run-task-sdk.tar.gz -C apps/run-task/vendor/
+        for f in apps/run-task/vendor/claude-agent-sdk/sdk.mjs \
+                 apps/run-task/vendor/claude-agent-sdk-linux-x64/claude; do
+          [ -f "$f" ] || { echo "FATAL: bundle ${_SDK_BUNDLE_URI} did not provide $f" >&2; exit 1; }
+        done
+        chmod +x apps/run-task/vendor/claude-agent-sdk-linux-x64/claude
+        echo "SDK bundle hydrated: $(gcloud storage ls -L "${_SDK_BUNDLE_URI}" | grep -i 'content-length' || true)"
   - id: image-set
     name: gcr.io/cloud-builders/docker
     # BuildKit is required: the Dockerfiles use `FROM --platform=$TARGETPLATFORM` (manifest-

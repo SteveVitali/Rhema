@@ -62,4 +62,20 @@ describe("the committed image-set definition (OPS.2; BL-27)", () => {
     expect(yaml).toContain("--cache-from ${_AR}/${svc}:buildcache");
     expect(yaml).toContain('docker push "${_AR}/${svc}:buildcache"');
   });
+
+  // F-R7UX.9-1 (339-class defect): the vendored SDK must be resolvable from a non-worktree
+  // source — a private GCS bundle hydrated before the context assert, never a silent skip.
+  it("sdk-bundle-fetch runs before image-set and only for a real run-task build", () => {
+    const fetchAt = yaml.indexOf("- id: sdk-bundle-fetch");
+    const buildAt = yaml.indexOf("- id: image-set");
+    expect(fetchAt).toBeGreaterThanOrEqual(0);
+    expect(fetchAt, "fetch must precede the build's context assert").toBeLessThan(buildAt);
+    expect(yaml).toContain("gcr.io/google.com/cloudsdktool/cloud-sdk");
+    expect(yaml).toContain('_SDK_BUNDLE_URI: ""');
+    expect(yaml).toContain('${_ALLOW_PLACEHOLDER_SDK}" = "1"');
+    // The hydrated trees are exactly the ones the Dockerfile/context assert requires.
+    expect(yaml).toContain("apps/run-task/vendor/claude-agent-sdk/sdk.mjs");
+    expect(yaml).toContain("apps/run-task/vendor/claude-agent-sdk-linux-x64/claude");
+    expect(yaml).toContain("tar -xzf /tmp/run-task-sdk.tar.gz -C apps/run-task/vendor/");
+  });
 });
