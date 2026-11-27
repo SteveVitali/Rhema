@@ -19,6 +19,8 @@ The [Dockerfile](../Dockerfile) requires both inputs and verifies that the `agen
 
 Build from a checkout containing the vendor inputs. Managed worktrees and clean CI checkouts do not inherit these ignored files from another checkout.
 
+For `gcloud builds submit` runs from a checkout that lacks the trees, the committed image-set definition accepts `_SDK_BUNDLE_URI=gs://…tar.gz`: its `sdk-bundle-fetch` step hydrates `claude-agent-sdk/` + `claude-agent-sdk-linux-x64/` from the operator-seeded private bundle into this directory before the context assert (F-R7UX.9-1). The bundle layout is the two trees at the tar root; the seeded URI is recorded in the build records (`docs/build/runs/R6FIX.58.md`).
+
 An explicit `--build-arg ALLOW_PLACEHOLDER_SDK=1` permits an image for checks that never launch a model. Cloud Build exposes the same choice as `_ALLOW_PLACEHOLDER_SDK=1`. Such an image is not a working run-task deployment: the harness fails when it tries to load the absent SDK. Production image preparation must pass the real SDK checks.
 
 This README keeps the directory present for Docker's `COPY vendor/`. Do not commit the vendor trees or treat the repository's MIT license as a license to redistribute them. See [LICENSES.md](../../../LICENSES.md).
